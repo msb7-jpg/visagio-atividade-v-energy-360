@@ -83,8 +83,42 @@
 
 ---
 
-## 4. Instruções de Auto-Atualização
+## 4. Regras Concretas dos Dados & Contratos de Integração (Fatia 01)
+
+> [!NOTE]
+> A fundamentação completa de negócio e a Matriz 5W2H canônica deste domínio estão centralizadas em [`docs/planning/DOMINIO_NEGOCIO_5W2H.md`](../DOMINIO_NEGOCIO_5W2H.md).
+
+### 4.1 Especificação Concreta de Comportamento e Regras dos Dados (Zero Abstração)
+1. **Regra de Virada de Medidor (*Rollover*):**
+   - Se `leitura_atual < leitura_anterior` e `leitura_anterior >= 90000` e `leitura_atual <= 10000`, calcular:  
+     $$\text{Consumo} = (100000 - \text{leitura\_anterior}) + \text{leitura\_atual}$$
+2. **Regra de Troca Física de Medidor:**
+   - Cruzar com `medidores.csv`. Se houve desinstalação na competência, o consumo do mês é a soma residual do medidor retirado com o início do novo medidor.
+3. **Regra de Consumo Negativo sem Justificativa:**
+   - Leituras onde `leitura_atual < leitura_anterior` sem rollover ou troca física registrada são isoladas com flag `anomalia_leitura = true` e descartadas do consumo oficial, gerando evento para a fila de perdas de Adrian Cesar.
+4. **Regra de Enriquecimento de GD Solar:**
+   - Realizar `LEFT JOIN` do cadastro com `geracao_distribuida.csv` por `id_uc`. Se existir correspondência:
+     - `possui_gd = true`
+     - `potencia_gd_kw = valor_do_arquivo`
+     - `data_conexao_gd = data_do_arquivo`
+   - Se não existir correspondência: `possui_gd = false` e `potencia_gd_kw = 0.0`.
+
+### 4.2 Contratos de Integração da Fatia ("Quem Cria vs Quem Pluga")
+- **O que Renan ENTREGA para os outros colegas:**
+  - Tabela `dim_unidade_consumidora` no SQLite `v_energy.db`:
+    - Colunas: `id_uc` (PK), `codigo_cliente`, `classe_consumo`, `subgrupo_tarifario`, `municipio`, `bairro`, `alimentador`, `subestacao`, `numero_medidor_ativo`, `possui_gd` (BOOLEAN), `potencia_gd_kw` (REAL).
+  - Tabela `fato_medicao` no SQLite `v_energy.db`:
+    - Colunas: `id_medicao` (PK), `id_uc` (FK), `competencia` (TEXT 'YYYY-MM'), `leitura_anterior` (REAL), `leitura_atual` (REAL), `consumo_kwh` (REAL), `dias_faturamento` (INT).
+- **O que Renan RECEBE dos outros colegas:**
+  - Recebe os dados brutos extraídos em `data/landing/` (unidades, leituras, medidores, geracao_distribuida).
+  - Não depende de código de frontend ou backend dos outros desenvolvedores para rodar seus notebooks e exportar o SQLite.
+
+---
+
+## 5. Instruções de Auto-Atualização
 
 1. Antes de iniciar, marque o item como `[- Em andamento por Renan - YYYY-MM-DD]`.
 2. Após implementar e validar os testes de dados, marque `[x]`.
 3. Registre detalhadamente a entrega em [`changelog.md`](changelog.md).
+
+

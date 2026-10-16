@@ -9,15 +9,15 @@
 
 ## 1. Citações Oficiais e Requisitos (`atividade.pdf`)
 
-### Citações das Lideranças (`atividade.pdf`, pág. 7 e 10):
-> *Patrícia Lins · Diretora de Tecnologia:*  
-> *"Hoje, se o time de perdas quer saber quantas unidades com painel solar em Olinda tiveram queda de consumo acima de 30%, alguém abre um chamado, meu analista escreve a consulta e a resposta chega dois dias depois. Quero que a pessoa pergunte em português e tenha a resposta na hora. Com uma condição: se o agente não souber, ele tem que dizer que não sabe. Dados inventados são mais prejudiciais do que não ter."*
+### Citações das Lideranças (`atividade.pdf`, pág. 2, 7 e 10):
+> **Patrícia Lins · Diretora de Tecnologia (`atividade.pdf`, pág. 2):**  
+> *"Cada diretoria tem seu próprio sistema. A Medição exporta relatórios mensais em arquivos de texto com separador ponto-e-vírgula. O Faturamento roda num mainframe legado que só gera arquivos posicionais. O Atendimento registra chamados numa ferramenta SaaS recente que tem API REST, mas ninguém integrou com nada... Na última reunião de conselho, a Área Comercial apresentou um número de faturamento e a Área de Operações apresentou outro. A diferença era de R$ 4,2 milhões. Ninguém sabia qual estava certo."*
 
-> *Henrique Duarte · Diretor Comercial:*  
+> **Patrícia Lins · Diretora de Tecnologia (`atividade.pdf`, pág. 7):**  
+> *"Hoje, se o time de perdas quer saber quantas unidades com painel solar em Olinda tiveram queda de consumo acima de 30%, alguém abre um chamado, meu analista escreve a consulta e a resposta chega dois dias depois. Quero que a pessoa pergunte em português e tenha a resposta na hora. Com uma condição: se o agente não souber, ele tem que dizer que não sabe. Dados inventados são mais prejudiciais do que não ter... Se o sistema alucinar um número de faturamento numa reunião de diretoria, a credibilidade do projeto inteiro vai para o ralo no primeiro minuto."*
+
+> **Henrique Duarte · Diretor Comercial (`atividade.pdf`, pág. 10):**  
 > *"Eu usaria isso antes de todas as reuniões. 'Qual bairro mais perdeu volume residencial no último ano?', 'Quanto a receita comercial cresceu em Jaboatão?'. Não preciso de dashboard para isso, preciso de uma resposta rápida e atualizada em que eu possa confiar."*
-
-> *Diretrizes Gerais:*  
-> *"O agente precisa ser honesto. Um agente que inventa respostas ou apresenta dados incorretos é um problema crítico. Priorizem precisão e tratamento de erros acima de qualquer funcionalidade adicional."*
 
 ### User Stories do Case (`atividade.pdf`, pág. 9):
 > - *"• Como usuário não técnico, quero perguntar em português sobre consumo, faturamento, interrupções e atendimento e receber respostas claras, sem precisar escrever SQL."*
@@ -83,8 +83,60 @@
 
 ---
 
-## 4. Instruções de Auto-Atualização
+## 4. Interface Concreta, Comportamentos & Contratos de Integração (Fatia 07)
+
+> [!NOTE]
+> A fundamentação completa de negócio e a Matriz 5W2H canônica deste domínio estão centralizadas em [`docs/planning/DOMINIO_NEGOCIO_5W2H.md`](../DOMINIO_NEGOCIO_5W2H.md).
+
+### 4.1 Especificação Concreta de Interface, Layout e Comportamentos (Zero Abstração)
+1. **Gaveta Global do Chat (`ChatDrawer.tsx`):**
+   - Implementada com `<Sheet>` e `<SheetContent side="right">` ocupando 400px de largura fixa, com backdrop translúcido.
+   - **Cabeçalho:** Título *"Assistente V-Energy IA"* com badge verde `<Badge variant="outline">🔒 Modo Seguro (Read-Only)</Badge>`.
+   - **Área de Histórico de Conversa (`ChatMessageBubble.tsx`):**
+     - Mensagens do usuário alinhadas à direita em balão azul corporativo.
+     - Respostas da IA alinhadas à esquerda em balão Dark Navy com renderização Markdown rica (tabelas, listas e destaques).
+   - **Indicador de Progresso da FSM em Streaming (`AgentStepProgress.tsx`):**
+     - Durante o streaming SSE, exibe sequencialmente os passos ativos com animação sutil:
+       - ⏳ *"Classificando intenção..."*
+       - 🔍 *"Gerando consulta SQL para tabelas Gold..."*
+       - 🛡️ *"Validando segurança sintática da query..."*
+       - ⚡ *"Executando consulta no SQLite..."*
+       - ✍️ *"Sintetizando resposta executiva..."*
+   - **Sanfona Técnica de Auditoria (`SqlAuditAccordion.tsx`):**
+     - Ao final de cada resposta da IA, uma sanfona recolhida permite ao analista auditar a consulta:
+       - Código SQL formatado em bloco `sql` com realce de sintaxe.
+       - Telemetria de execução: Tempo total (ex: `142ms`), linhas retornadas (ex: `12 registros`).
+   - **Tratamento Estrito de Honestidade e Não-Alucinação:**
+     - Se o usuário fizer uma pergunta que não tem dados na V-Energy (ex: *"Qual o faturamento em São Paulo?"* ou *"Quem é o melhor cliente?"*):
+     - O agente responde textualmente: *"Não possuo essa informação nos dados cadastrais ou históricos da V-Energy. A base abrange a Região Metropolitana do Recife entre 2022 e 2025."*
+2. **Componente de IA Embutida (`SmartInsightCard.tsx`):**
+   - Componente visual `<Card variant="glass">` com gradiente sutil.
+   - Recebe `context: "customer360" | "revenue"` e payload com os filtros ativos.
+   - Faz chamada assíncrona para `POST /api/v1/ai/insights` e renderiza 2 a 3 bullets de insights práticos, com botão sutil de "Regenerar" e tooltip de transparência algorítmica.
+3. **Framework de Avaliação Automatizada (`evaluate_agent.py`):**
+   - Script Python que itera sobre `backend/tests/golden_dataset.json` (25+ perguntas de teste com queries gabarito).
+   - Executa a FSM para cada pergunta, compara o resultado numérico gerado contra o gabarito e gera um relatório:
+     - `Execution Accuracy (%)`
+     - `Syntactic Validity (%)`
+     - `Average Latency (ms)`
+
+### 4.2 Contratos de Integração da Fatia ("Quem Cria vs Quem Pluga")
+- **O que Miguel ENTREGA para os outros colegas:**
+  - Componente global `<ChatDrawer />` e botão disparador exportados em `@/features/chat/ChatDrawer`.
+  - Componente reutilizável `<SmartInsightCard />` exportado em `@/features/insights/SmartInsightCard`.
+  - Endpoints REST `/api/v1/chat/stream` (SSE) e `POST /api/v1/ai/insights`.
+- **O que Miguel RECEBE dos outros colegas:**
+  - **De Renan e Ryei Estevan (Fatias 01 e 02):** Recebe o schema consolidado das tabelas Gold no SQLite `v_energy.db` (`dim_unidade_consumidora`, `fato_medicao`, `fato_faturamento`, `fato_qualidade_alimentador`, `fato_atendimentos`, `fato_inspecoes_perdas`) para configurar o catálogo semântico da FSM (`catalog_prompt.py`).
+  - **De João Henrique (Fatia 06):** João Henrique importa o `<ChatDrawer />` e insere o botão disparador no cabeçalho (*Header*) global do `AppLayout.tsx`.
+  - **De Bernardo (Fatia 03):** Bernardo importa `<SmartInsightCard context="customer360" />` e posiciona no topo da `Customer360Page.tsx`.
+  - **De Célio (Fatia 04):** Célio importa `<SmartInsightCard context="revenue" />` e posiciona no topo da `RevenueDashboardPage.tsx`.
+
+---
+
+## 5. Instruções de Auto-Atualização
 
 1. Antes de iniciar, marque o item como `[- Em andamento por Miguel - YYYY-MM-DD]`.
 2. Após implementar, rodar linters e testes (`make lint-all` e `make test-all`), marque `[x]`.
 3. Registre detalhadamente a entrega em [`changelog.md`](changelog.md).
+
+

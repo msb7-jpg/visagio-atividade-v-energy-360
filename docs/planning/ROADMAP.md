@@ -104,3 +104,29 @@ Em conformidade com [`design.md`](../../design.md) e [`.agents/skills/frontend-c
        │
     10/11      Banca Final Avaliadora da Visagio
 ```
+
+---
+
+## 7. Governança de Negócio (5W2H) & Matriz de Convergência e Integração
+
+> [!IMPORTANT]
+> **Manual Obrigatório de Negócio e Metodologia 5W2H:**  
+> Todos os desenvolvedores devem ler e dominar as regras do setor elétrico, a mecânica tarifária e a modelagem 5W2H em:  
+> 🔗 [`docs/planning/DOMINIO_NEGOCIO_5W2H.md`](DOMINIO_NEGOCIO_5W2H.md)
+
+### 7.1 Matriz de Convergência e Integração ("Quem Cria vs Quem Consome/Pluga")
+
+Para eliminar qualquer ambiguidade sobre dependências entre desenvolvedores, a matriz abaixo define com precisão os pontos de conexão:
+
+| Recurso / Componente | Dono Produtor (Quem Cria) | Arquivo de Origem | Consumidores (Quem Pluga) | Ponto Exato de Inserção / Como Usar |
+|---|---|---|---|---|
+| **Tabelas Gold de Cadastro & Medição** (`dim_unidade_consumidora`, `fato_medicao`) | **Renan** (Fatia 01) | `backend/v_energy.db` | **Bernardo** (Fatia 03)<br/>**Celio** (Fatia 04)<br/>**Adrian** (Fatia 05)<br/>**Miguel** (Fatia 07) | • Bernardo consulta na rota `/customers/{id}`<br/>• Célio consulta no agregador de volume/bairros<br/>• Adrian filtra UCs com queda abrupta de consumo<br/>• Miguel mapeia no catálogo Text-to-SQL |
+| **Tabelas Gold de Faturamento, Rede & Atendimento** (`fato_faturamento`, `fato_qualidade_alimentador`, `fato_atendimentos`, `fato_inspecoes_perdas`) | **Ryei Estevan** (Fatia 02) | `backend/v_energy.db` | **Bernardo** (Fatia 03)<br/>**Celio** (Fatia 04)<br/>**Adrian** (Fatia 05)<br/>**Joao Henrique** (Fatia 06)<br/>**Miguel** (Fatia 07) | • Bernardo consome faturas e chamados na tela 360<br/>• Célio consome receita bruta e tarifas<br/>• Adrian consulta histórico de vistorias passadas<br/>• João Henrique consome DEC/FEC por alimentador<br/>• Miguel mapeia no catálogo Text-to-SQL |
+| **Dependência de Segurança RBAC** (`require_role`) | **Joao Henrique** (Fatia 06) | `backend/app/shared/dependencies.py` | **Bernardo** (Fatia 03)<br/>**Celio** (Fatia 04)<br/>**Adrian** (Fatia 05) | Cada desenvolvedor adiciona a dependência no seu roteador:<br/>• Bernardo: `require_role([UserRole.ATENDIMENTO, UserRole.DIRETORIA, UserRole.ADMIN])`<br/>• Célio: `require_role([UserRole.DIRETORIA, UserRole.ADMIN])`<br/>• Adrian: `require_role([UserRole.PERDAS, UserRole.DIRETORIA, UserRole.ADMIN])` |
+| **Shell Base da Aplicação** (`AppLayout.tsx` & `SidebarNav.tsx`) | **Joao Henrique** (Fatia 06) | `frontend/src/components/layout/` | **Todos os Desenvolvedores de Frontend** | Suas páginas são filhas do `<AppLayout>`, renderizadas no `<Outlet />`. O `SidebarNav` lê as permissões do usuário logado e exibe as rotas autorizadas. |
+| **Registro de Rotas no Frontend** | **Compartilhado** | `frontend/src/routes/AppRoutes.tsx` | **Bernardo, Celio, Adrian, Joao Henrique** | Cada desenvolvedor declara sua rota protegida:<br/>• `/customers` (Bernardo)<br/>• `/revenue` (Célio)<br/>• `/losses` (Adrian)<br/>• `/quality` (João Henrique) |
+| **IA Embutida** (`<SmartInsightCard />`) | **Miguel** (Fatia 07) | `frontend/src/features/insights/SmartInsightCard.tsx` | **Bernardo** (Fatia 03)<br/>**Celio** (Fatia 04) | • Bernardo importa e coloca no topo de `Customer360Page.tsx`<br/>• Célio importa e coloca no topo de `RevenueDashboardPage.tsx` |
+| **Assistente Text-to-SQL Global** (`<ChatDrawer />`) | **Miguel** (Fatia 07) | `frontend/src/features/chat/ChatDrawer.tsx` | **Joao Henrique** (Fatia 06) | João Henrique importa o `<ChatDrawer />` e insere o botão disparador no cabeçalho (*Header*) do `AppLayout.tsx`. |
+| **Relatório Diagnóstico da Receita** (`docs/DIAGNOSTICO_RECEITA.md`) | **Celio** (Fatia 04) | `docs/DIAGNOSTICO_RECEITA.md` | **Renan, Ryei Estevan, Adrian Cesar** | • Renan fornece o impacto da GD Solar no volume<br/>• Ryei fornece o impacto das bandeiras tarifárias<br/>• Adrian fornece a estimativa de perdas não técnicas |
+
+

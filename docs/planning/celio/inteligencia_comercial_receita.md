@@ -68,8 +68,68 @@
 
 ---
 
-## 4. Instruções de Auto-Atualização
+## 4. Telas Concretas, Decomposição & Contratos de Integração (Fatia 04)
+
+> [!NOTE]
+> A fundamentação completa de negócio e a Matriz 5W2H canônica deste domínio estão centralizadas em [`docs/planning/DOMINIO_NEGOCIO_5W2H.md`](../DOMINIO_NEGOCIO_5W2H.md).
+
+### 4.1 Especificação Concreta de Tela, Layout e Comportamentos (Zero Abstração)
+1. **Filtros Globais no Topo (`RevenueFiltersBar`):**
+   - `<Select>` Período Base (ex: "Ano 1: 2022") vs Período de Comparação (ex: "Últimos 12M: 2025").
+   - `<Select>` Município (Opções: "Todos os 14 Municípios" ou seleção individual: Recife, Olinda, Jaboatão, etc.).
+   - `<Select>` Classe de Consumo (Opções: "Todas as Classes", "B1 Residencial", "B2 Rural", "B3 Comercial/Poder Público", "A4 Industrial").
+2. **Card de IA Embutida (`SmartInsightCard.tsx`):**
+   - Localizado no topo com `<Card variant="glass">`.
+   - Exibe resumo analítico dos filtros selecionados (ex: *"No recorte atual, o reajuste tarifário gerou +R$ 14,2M em Efeito-Preço, mas a retração de volume destruiu -R$ 6,8M, sendo 68% dessa perda concentrada em Boa Viagem e Parnamirim devido à expansão de GD solar"*).
+3. **Grid de 4 Cards de KPIs Executivos (`RevenueKpiCards.tsx`):**
+   - Card 1: Faturamento Bruto Atual (R$) com badge percentual YoY ($\Delta\%$).
+   - Card 2: Volume Total Faturado (MWh) com badge percentual negativo ($\Delta\%$).
+   - Card 3: Tarifa Média Ponderada Homologada (R$/kWh).
+   - Card 4: Ticket Médio por UC Ativa (R$/mês).
+4. **Gráfico de Decomposição Waterfall (`PriceVolumeWaterfallChart.tsx`):**
+   - Gráfico de barras flutuantes em cascata com 5 colunas:
+     - Coluna 1: **Receita Base (Ano 1)** (barra neutra azul escura).
+     - Coluna 2: **Efeito-Preço** (barra verde ascendente: $+\Delta P \times Q_{\text{base}}$).
+     - Coluna 3: **Efeito-Volume** (barra vermelha descendente: $-\Delta Q \times P_{\text{base}}$).
+     - Coluna 4: **Efeito Misto / Cruzado** (barra intermediária: $\Delta P \times \Delta Q$).
+     - Coluna 5: **Receita Atual (Últimos 12M)** (barra neutra final somando os efeitos).
+   - Tooltip explicativo com a fórmula matemática e valores exatos em R$.
+5. **Tabela Territorial de Bairros (`NeighborhoodRevenueTable.tsx`):**
+   - Tabela ordenada por padrão pelo **Efeito-Volume mais negativo (maior destruição de receita em R$)**.
+   - Colunas:
+     - Município e Bairro.
+     - Volume Faturado Atual (kWh) e Variação de Volume ($\Delta\%$).
+     - Receita Atual (R$) e Efeito-Volume Financeiro (R$).
+     - Penetração de Geração Distribuída (kWp instalados).
+   - Interação: Clicar na linha abre `<Dialog>` exibindo a curva de carga histórica de 24 meses do bairro selecionado.
+
+### 4.2 Contratos de Integração da Fatia ("Quem Cria vs Quem Pluga")
+- **O que Celio ENTREGA para os outros colegas:**
+  - Rota de frontend `/revenue` no `AppRoutes.tsx`.
+  - Componente de página `RevenueDashboardPage.tsx`.
+  - Endpoints REST `/api/v1/revenue/kpis`, `/decomposition`, `/breakdown`.
+  - Relatório diagnóstico oficial em `docs/DIAGNOSTICO_RECEITA.md`.
+- **O que Celio RECEBE dos outros colegas:**
+  - **De Renan (Fatia 01):** Consome `dim_unidade_consumidora` (bairros, municípios, GD solar) e `fato_medicao` (volume medido) no SQLite `v_energy.db`.
+  - **De Ryei Estevan (Fatia 02):** Consome `fato_faturamento` (receita bruta, tarifas e bandeiras) no SQLite `v_energy.db`.
+  - **De João Henrique (Fatia 06):**
+    - Aplica a proteção de acesso no router FastAPI:  
+      `dependencies=[Depends(require_role([UserRole.DIRETORIA, UserRole.ADMIN]))]`
+    - Renderiza a página dentro do `<AppLayout>`.
+  - **De Miguel (Fatia 07):**
+    - Importa e renderiza o card de IA contextual:  
+      `<SmartInsightCard context="revenue" payload={{ period, filters }} />`.
+  - **Colaboração em `docs/DIAGNOSTICO_RECEITA.md`:**
+    - Renan fornece dados consolidados de expansão da capacidade de GD solar em MWp.
+    - Ryei fornece dados de faturamento por classe e oscilação de bandeiras.
+    - Adrian fornece a estimativa de volume e receita perdidos em fraudes/gatos.
+
+---
+
+## 5. Instruções de Auto-Atualização
 
 1. Antes de iniciar, marque o item como `[- Em andamento por Celio - YYYY-MM-DD]`.
 2. Após implementar, rodar linters e testes (`make lint-all` e `make test-all`), marque `[x]`.
 3. Registre detalhadamente a entrega em [`changelog.md`](changelog.md).
+
+

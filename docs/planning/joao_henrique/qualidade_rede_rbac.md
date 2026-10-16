@@ -9,6 +9,10 @@
 
 ## 1. Citações Oficiais e Requisitos (`atividade.pdf`)
 
+### Fala da Executiva (`atividade.pdf`, pág. 6):
+> **Beatriz Farias · Gerente de Operação:**  
+> *"Quando o DEC estoura o limite da ANEEL, a compensação financeira vem direto da nossa margem. Eu preciso de duas coisas: primeiro, saber em tempo real quais alimentadores estão mais próximos do limite regulatório para priorizar manutenção preventiva; segundo, quando um cliente liga reclamando de falta de luz, o atendente precisa saber se é um problema geral daquele alimentador ou pontual daquela unidade."*
+
 ### User Stories do Case (`atividade.pdf`, pág. 8-9):
 > - *"• Como gerente de operação, quero acompanhar DEC e FEC por alimentador ao longo do tempo e identificar os piores, para direcionar a manutenção preventiva."*
 > - *"• Como usuário, quero entrar com meu perfil e ver as telas específicas do meu cargo. (Diferencial)"*
@@ -66,8 +70,63 @@
 
 ---
 
-## 4. Instruções de Auto-Atualização
+## 4. Telas Concretas, Comportamentos & Contratos de Integração (Fatia 06)
+
+> [!NOTE]
+> A fundamentação completa de negócio e a Matriz 5W2H canônica deste domínio estão centralizadas em [`docs/planning/DOMINIO_NEGOCIO_5W2H.md`](../DOMINIO_NEGOCIO_5W2H.md).
+
+### 4.1 Especificação Concreta de Tela, Layout e Comportamentos (Zero Abstração)
+1. **Cards Superiores de Continuidade (`QualityKpiCards.tsx`):**
+   - Utilizam `<Card variant="glass">` e `<Card variant="interactive">`:
+     - Card 1: **DEC Médio da Concessão (horas)** vs Meta ANEEL (badge verde se $\le$ meta, vermelho se acima).
+     - Card 2: **FEC Médio da Concessão (vezes)** vs Meta ANEEL.
+     - Card 3: **Percentual de Alimentadores em Violação (%)** com contagem absoluta (ex: *"14 de 122 circuitos"*).
+     - Card 4: **Total de UCs Expostas a Circuitos Críticos** (impacto regulatório e risco de compensação).
+2. **Filtros Operacionais:**
+   - `<Select>` Subestação (ex: "SE Boa Viagem", "SE Santo Amaro", "Todas").
+   - `<Select>` Status Regulatório ("Todos", "Somente com Violação de Meta", "Conformes").
+3. **Tabela de Alimentadores Críticos (`FeederRankingTable.tsx`):**
+   - Ordenação inicial por **maior excesso de DEC sobre o limite ANEEL ($\Delta \text{DEC}$)**.
+   - Colunas:
+     - Código do Alimentador e Subestação de Origem.
+     - Município Atendido e Quantidade de UCs conectadas.
+     - DEC Apurado (h) e Limite ANEEL (h).
+     - FEC Apurado (vezes) e Limite ANEEL (vezes).
+     - Status Regulatório (Badges: `<Badge variant="destructive">Violação Crítica</Badge>`, `<Badge variant="outline">Alerta ($\ge 85\%$ da meta)</Badge>`, `<Badge variant="secondary">Conforme</Badge>`).
+   - Comportamento: Ao clicar na linha, abre gaveta lateral `<Sheet side="right">` exibindo o gráfico `FeederTimeSeriesChart.tsx`.
+4. **Gaveta Lateral de Série Temporal (`FeederTimeSeriesChart.tsx`):**
+   - Renderizada dentro de `<SheetContent side="right">` com 500px de largura.
+   - Gráfico de linha dos últimos **24 meses** do alimentador selecionado:
+     - Linha sólida azul: DEC apurado mensal.
+     - Linha tracejada vermelha horizontal: Limite regulatório ANEEL.
+     - Lista das principais causas históricas das ocorrências (descargas atmosféricas, colisão de veículos em postes, queda de árvores na fiação).
+5. **Comportamento do Shell RBAC (`AppLayout.tsx` & `SidebarNav.tsx`):**
+   - O componente `SidebarNav.tsx` consome o contexto de autenticação `useAuth()`.
+   - Se perfil for `atendimento`: exibe no menu apenas "Visão 360 da UC" e o atalho do Chat. Oculta "Inteligência Comercial", "Gestão de Perdas" e "Qualidade da Rede".
+   - Se o usuário tentar acessar uma URL não autorizada diretamente: interceptado pelo `ProtectedRoute.tsx` exibindo página amigável de Acesso Não Autorizado com botão para retornar à tela inicial permitida.
+
+### 4.2 Contratos de Integração da Fatia ("Quem Cria vs Quem Pluga")
+- **O que João Henrique ENTREGA para os outros colegas:**
+  - Dependência central de segurança em `backend/app/shared/dependencies.py`:
+    ```python
+    def require_role(allowed_roles: list[UserRole]):
+        """Valida token JWT e exige que user.role esteja em allowed_roles."""
+    ```
+  - Layout mestre do portal `AppLayout.tsx` e barra lateral adaptativa `SidebarNav.tsx` em `frontend/src/components/layout/`.
+  - Mecanismo de rota protegida `ProtectedRoute.tsx` em `frontend/src/routes/`.
+- **O que João Henrique RECEBE dos outros colegas:**
+  - **De Ryei Estevan (Fatia 02):** Consome a tabela `fato_qualidade_alimentador` no SQLite `v_energy.db` para alimentar os cards e o ranking.
+  - **De Renan (Fatia 01):** Consome `dim_unidade_consumidora` para contabilizar o número de UCs ativas ligadas a cada circuito elétrico.
+  - **De Miguel (Fatia 07):**
+    - Importa o componente `<ChatDrawer />` e insere o botão de disparo no cabeçalho (*Header*) global do `AppLayout.tsx`.
+  - **De Bernardo, Célio e Adrian:** Recebe as rotas e títulos de suas páginas para compor as entradas autorizadas no menu dinâmico do `SidebarNav.tsx`.
+
+---
+
+## 5. Instruções de Auto-Atualização
 
 1. Antes de iniciar, marque o item como `[- Em andamento por Joao Henrique - YYYY-MM-DD]`.
 2. Após implementar, rodar linters e testes (`make lint-all` e `make test-all`), marque `[x]`.
 3. Registre detalhadamente a entrega em [`changelog.md`](changelog.md).
+
+

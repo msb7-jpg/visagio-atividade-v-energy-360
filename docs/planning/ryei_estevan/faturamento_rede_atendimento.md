@@ -9,8 +9,10 @@
 
 ## 1. Citações Oficiais e Requisitos (`atividade.pdf`)
 
-### Citação da Liderança (`atividade.pdf`, pág. 2 e 5):
-> *"Como em boa parte do setor, o crescimento dos sistemas não veio acompanhado de uma estratégia de dados. O cadastro comercial vive em um sistema; a medição, em outro; as ocorrências de rede, em um terceiro; o call center exporta planilhas; e as inspeções de campo chegam em arquivos Excel preenchidos à mão. Cada área tem a sua versão do cliente, e nenhuma delas conversa com as outras."*
+### Fala da Executiva (`atividade.pdf`, pág. 2):
+> **Patrícia Lins · Diretora de Tecnologia:**  
+> *"Cada diretoria tem seu próprio sistema. A Medição exporta relatórios mensais em arquivos de texto com separador ponto-e-vírgula. O Faturamento roda num mainframe legado que só gera arquivos posicionais. O Atendimento registra chamados numa ferramenta SaaS recente que tem API REST, mas ninguém integrou com nada — a gente extrai dumps em JSON toda semana. E a Operação da rede mantém o cadastro dos alimentadores e transformadores numa planilha Excel que fica na rede interna e é atualizada manualmente.*  
+> *Quando a diretoria pede um cruzamento de dados — tipo 'qual o faturamento das UCs atendidas pelo alimentador que mais teve interrupções no mês passado?' —, alguém precisa baixar os quatro arquivos, abrir no Excel ou rodar scripts em Python na própria máquina, cruzar pelo código da UC e rezar para os dados baterem. Na última reunião de conselho, a Área Comercial apresentou um número de faturamento e a Área de Operações apresentou outro. A diferença era de R$ 4,2 milhões. Ninguém sabia qual estava certo."*
 
 ### User Stories do Case (`atividade.pdf`, pág. 8):
 > - *"• Como engenheiro de dados, quero modelar a camada Gold a partir das perguntas de negócio das lideranças, para que o portal e a IA consumam métricas consolidadas."*
@@ -78,8 +80,48 @@
 
 ---
 
-## 4. Instruções de Auto-Atualização
+## 4. Regras Concretas dos Dados & Contratos de Integração (Fatia 02)
+
+> [!NOTE]
+> A fundamentação completa de negócio e a Matriz 5W2H canônica deste domínio estão centralizadas em [`docs/planning/DOMINIO_NEGOCIO_5W2H.md`](../DOMINIO_NEGOCIO_5W2H.md).
+
+### 4.1 Especificação Concreta de Comportamento e Regras dos Dados (Zero Abstração)
+1. **Regra de Faturamento e Bandeira Tarifária:**
+   - Padronizar bandeiras tarifárias para string canônica: `'VERDE'`, `'AMARELA'`, `'VERMELHA_P1'`, `'VERMELHA_P2'`.
+   - Calcular tarifa aplicada: `tarifa_aplicada_rs_kwh = valor_total_rs / consumo_faturado_kwh`.
+   - Adimplência: se `data_pagamento IS NULL` e `data_vencimento < CURRENT_DATE`, `status_pagamento = 'VENCIDA'`; se `data_pagamento IS NULL`, `'ABERTA'`; se preenchida, `'PAGA'`.
+2. **Regra do Cálculo Oficial de DEC e FEC:**
+   - Para cada `id_alimentador` e `competencia`:
+     $$\text{DEC} = \frac{\sum (\text{duracao\_horas} \times \text{ucs\_atingidas})}{C_{\text{total\_alimentador}}}$$
+     $$\text{FEC} = \frac{\sum \text{ucs\_atingidas}}{C_{\text{total\_alimentador}}}$$
+   - Flag de violação: se `dec_apurado > dec_limite_aneel`, `violou_dec = true`.
+3. **Regra de Normalização de Atendimentos JSON:**
+   - O array de tratativas dentro de `atendimentos.json` é explodido via `pyspark.sql.functions.explode`.
+   - Colunas resultantes: `id_atendimento`, `id_uc`, `numero_protocolo`, `motivo_chamado`, `canal_atendimento`, `data_abertura`, `status_chamado`, `nota_csat` (INT de 0 a 10).
+4. **Regra de Unificação das Inspeções:**
+   - As 3 abas da planilha `inspecoes.xlsx` são empilhadas em uma única estrutura com schema comum, convertendo `irregularidade_encontrada` em booleano estrito.
+
+### 4.2 Contratos de Integração da Fatia ("Quem Cria vs Quem Pluga")
+- **O que Ryei Estevan ENTREGA para os outros colegas:**
+  - Tabela `fato_faturamento` no SQLite `v_energy.db`:
+    - Colunas: `id_fatura` (PK), `id_uc` (FK), `competencia` (TEXT 'YYYY-MM'), `valor_total_rs` (REAL), `consumo_faturado_kwh` (REAL), `bandeira_tarifaria` (TEXT), `tarifa_aplicada_rs_kwh` (REAL), `data_vencimento` (TEXT), `data_pagamento` (TEXT), `status_pagamento` (TEXT).
+  - Tabela `fato_qualidade_alimentador` no SQLite `v_energy.db`:
+    - Colunas: `id_alimentador` (PK), `competencia` (PK), `dec_apurado_horas` (REAL), `fec_apurado_vezes` (REAL), `dec_limite_aneel` (REAL), `fec_limite_aneel` (REAL), `violou_meta` (BOOLEAN).
+  - Tabela `fato_atendimentos` no SQLite `v_energy.db`:
+    - Colunas: `id_atendimento` (PK), `id_uc` (FK), `numero_protocolo` (TEXT), `motivo_chamado` (TEXT), `data_abertura` (TEXT), `status_chamado` (TEXT), `nota_csat` (INT).
+  - Tabela `fato_inspecoes_perdas` no SQLite `v_energy.db`:
+    - Colunas: `id_inspecao` (PK), `id_uc` (FK), `data_inspecao` (TEXT), `irregularidade_constatada` (BOOLEAN), `tipo_irregularidade` (TEXT), `kwh_recuperado` (REAL).
+  - Dicionário de dados documentado em `docs/DATA_DICTIONARY.md`.
+- **O que Ryei Estevan RECEBE dos outros colegas:**
+  - Recebe os dados brutos de `faturas.csv`, `ocorrencias_rede.csv`, `atendimentos.json` e `inspecoes.xlsx` em `data/landing/`.
+  - Conecta com `dim_unidade_consumidora` de Renan para garantir integridade referencial nas chaves estrangeiras.
+
+---
+
+## 5. Instruções de Auto-Atualização
 
 1. Antes de iniciar, marque o item como `[- Em andamento por Ryei Estevan - YYYY-MM-DD]`.
 2. Após implementar e validar os testes de dados, marque `[x]`.
 3. Registre detalhadamente a entrega em [`changelog.md`](changelog.md).
+
+

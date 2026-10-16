@@ -62,8 +62,62 @@
 
 ---
 
-## 4. Instruções de Auto-Atualização
+## 4. Telas Concretas, Layouts & Contratos de Integração (Fatia 03)
+
+> [!NOTE]
+> A fundamentação completa de negócio e a Matriz 5W2H canônica deste domínio estão centralizadas em [`docs/planning/DOMINIO_NEGOCIO_5W2H.md`](../DOMINIO_NEGOCIO_5W2H.md).
+
+### 4.1 Especificação Concreta de Tela, Layout e Comportamentos (Zero Abstração)
+1. **Barra de Busca Superior (`CustomerSearchBar.tsx`):**
+   - Campo `<Input>` com placeholder *"Digite o ID da Unidade Consumidora (ex: UC-10042)..."*.
+   - Comportamento: Disparo automático por tecla `Enter` ou debounce de 400ms. Se a UC não existir no SQLite, renderiza `<EmptyState title="Unidade Consumidora não encontrada" description="Verifique o número informado na fatura" />`.
+2. **Card de Resumo Cadastral (`CustomerOverviewCard.tsx`):**
+   - Utiliza `<Card variant="glass">` com layout em grid de 4 colunas:
+     - Coluna 1: Nome do Cliente e Código do Titular.
+     - Coluna 2: Endereço (Logradouro, Bairro, Município) e Subgrupo Tarifário (ex: B1 Residencial).
+     - Coluna 3: Circuito Elétrico (Subestação e Alimentador) e Número do Medidor Ativo.
+     - Coluna 4: Badge de Status (`<Badge variant="secondary">Ativo</Badge>`) e Badge de Geração Solar (se `possui_gd = true`, exibe `<Badge variant="outline">☀️ GD Solar (X kWp)</Badge>` com tooltip explicativo).
+3. **Card de IA Embutida (`SmartInsightCard.tsx`):**
+   - Posicionado imediatamente abaixo do resumo cadastral.
+   - Exibe análise contextual automatizada (ex: *"Esta UC registrou queda de 45% no consumo faturado a partir de março/2024, coincidindo com a conexão de sistema solar fotovoltaico de 4.5 kWp"*).
+4. **Área Central em Abas (`<Tabs defaultValue="consumption">`):**
+   - **Aba 1: Histórico de Consumo (`ConsumptionYoYChart.tsx`):**
+     - Gráfico de barras verticais comparando mês a mês os **últimos 12 meses** contra o **mesmo mês do ano anterior** (YoY).
+     - Tooltip interativo exibindo consumo em kWh, valor faturado em R$ e variação percentual ($\Delta\%$).
+     - **Diagnóstico Visual de Conta Alta:** Banner destacado no topo da aba caso o mês recente apresente variação $>25\%$:
+       - Se $\Delta\text{kWh} > 25\%$: *"Aumento decorrente de maior consumo físico de energia (+X kWh vs ano anterior)"*.
+       - Se $\Delta\text{kWh} \le 5\%$ e $\Delta\text{R\$} > 20\%$: *"Consumo físico estável, aumento gerado por acionamento de Bandeira Vermelha P2 e reajuste homologado ANEEL"*.
+   - **Aba 2: Faturas e Histórico Financeiro (`InvoicesHistoryTable.tsx`):**
+     - Tabela com colunas: Competência, Vencimento, Consumo (kWh), Valor (R$), Bandeira Tarifária (Badges: Verde, Amarela, Vermelha 1, Vermelha 2) e Status (Badge verde "Paga", amarelo "Aberta", vermelho "Vencida").
+     - Ação na linha: Botão "Espelho" abre gaveta lateral `<Sheet side="right">` com o detalhamento tributário da fatura (TUSD Fio B, TE, impostos) sem desviar o atendente da tela principal.
+   - **Aba 3: Eventos da Rede e Protocolos (`OutagesTimeline.tsx`):**
+     - Timeline cronológica vertical unindo:
+       - Interrupções do fornecimento ocorridas no alimentador daquela UC (data, duração em horas, causa).
+       - Histórico de protocolos de chamados abertos no call center com nota CSAT.
+
+### 4.2 Contratos de Integração da Fatia ("Quem Cria vs Quem Pluga")
+- **O que Bernardo ENTREGA para os outros colegas:**
+  - Rota de frontend `/customers` no `AppRoutes.tsx`.
+  - Componente de página `Customer360Page.tsx` integrada ao layout corporativo.
+  - Endpoints REST `/api/v1/customers/{id_uc}/summary`, `/history`, `/events`.
+- **O que Bernardo RECEBE dos outros colegas:**
+  - **De Renan (Fatia 01):** Consulta tabelas `dim_unidade_consumidora` e `fato_medicao` no SQLite `v_energy.db`.
+  - **De Ryei Estevan (Fatia 02):** Consulta tabelas `fato_faturamento` e `fato_atendimentos` no SQLite `v_energy.db`.
+  - **De João Henrique (Fatia 06):**
+    - Importa e aplica a dependência de segurança no seu roteador FastAPI:  
+      `dependencies=[Depends(require_role([UserRole.ATENDIMENTO, UserRole.DIRETORIA, UserRole.ADMIN]))]`
+    - Renderiza sua página dentro do `<AppLayout>` fornecido por João Henrique.
+  - **De Miguel (Fatia 07):**
+    - Importa o componente de IA embutida:  
+      `import { SmartInsightCard } from '@/features/insights/SmartInsightCard';`  
+      e o renderiza com `<SmartInsightCard context="customer360" ucId={id_uc} />`.
+
+---
+
+## 5. Instruções de Auto-Atualização
 
 1. Antes de iniciar, marque o item como `[- Em andamento por Bernardo H - YYYY-MM-DD]`.
 2. Após implementar, rodar linters e testes (`make lint-all` e `make test-all`), marque `[x]`.
 3. Registre detalhadamente a entrega em [`changelog.md`](changelog.md).
+
+
