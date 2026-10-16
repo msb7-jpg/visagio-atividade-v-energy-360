@@ -1,0 +1,44 @@
+name: v_energy_grid_360_lakehouse_pipeline
+schedule:
+  quartz_cron_expression: 0 0 4 1 * ?
+  timezone_id: America/Recife
+  pause_status: UNPAUSED
+tasks:
+  - task_key: Task_Landing_to_Bronze
+    notebook_task:
+      notebook_path: /Workspace/V_Energy_Analytics/Landing_to_Bronze
+      source: WORKSPACE
+    timeout_seconds: 3600
+    max_retries: 2
+    min_retry_interval_millis: 60000
+    retry_on_timeout: true
+  - task_key: Task_Bronze_to_Silver
+    depends_on:
+      - task_key: Task_Landing_to_Bronze
+    notebook_task:
+      notebook_path: /Workspace/V_Energy_Analytics/Bronze_to_Silver
+      source: WORKSPACE
+    timeout_seconds: 3600
+    max_retries: 2
+    min_retry_interval_millis: 60000
+    retry_on_timeout: true
+  - task_key: Task_Silver_to_Gold
+    depends_on:
+      - task_key: Task_Bronze_to_Silver
+    notebook_task:
+      notebook_path: /Workspace/V_Energy_Analytics/Silver_to_Gold
+      source: WORKSPACE
+    timeout_seconds: 3600
+    max_retries: 2
+    min_retry_interval_millis: 60000
+    retry_on_timeout: true
+  - task_key: Task_Export_Gold_to_SQLite
+    depends_on:
+      - task_key: Task_Silver_to_Gold
+    notebook_task:
+      notebook_path: /Workspace/V_Energy_Analytics/Export_Gold_to_SQLite
+      source: WORKSPACE
+    timeout_seconds: 1800
+    max_retries: 1
+format: MULTI_TASK
+max_concurrent_runs: 1

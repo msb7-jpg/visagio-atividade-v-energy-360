@@ -1,0 +1,50 @@
+# ==============================================================================
+# V-Energy Grid 360 -- .gitignore
+# ==============================================================================
+
+# Python & Virtual Environments
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Node & Frontend
+node_modules/
+.npm/
+.bun/
+frontend/dist/
+frontend/node_modules/
+*.tsbuildinfo
+
+# Database & SQLite WAL
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Environment & Credentials
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Data & Extraction (preservamos os zips originais na raiz)
+data/landing/*
+!data/landing/.gitkeep
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
