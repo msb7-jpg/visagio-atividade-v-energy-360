@@ -37,7 +37,9 @@ frontend/node_modules/
 *.pem
 *.key
 
-# Data & Extraction (preservamos os zips originais na raiz)
+# Data & Documents
+*.zip
+*.pdf
 data/landing/*
 !data/landing/.gitkeep
 
