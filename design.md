@@ -2,6 +2,7 @@
 version: "1.0.0"
 name: "SaaS Enterprise Analytics (V-Energy Grid 360)"
 description: "Design System oficial do V-Energy Grid 360: plataforma de operação, medição, faturamento e inteligência artificial para concessionárias de energia. Visual corporativo, paleta Corporate Blue, glassmorphism com backdrop blur, tipografia Inter e JetBrains Mono, cantos arredondados de 12px e total conformidade com os linters da codebase."
+reference: https://designmd.app/library/saas-enterprise-analytics
 colors:
   primary: "#0F172A"       # Dark Navy (Superfície escura / texto principal)
   secondary: "#1E40AF"     # Royal Blue (Ação primária / destaque institucional)

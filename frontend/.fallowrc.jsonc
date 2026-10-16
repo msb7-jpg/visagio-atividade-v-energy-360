@@ -1,0 +1,76 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+
+  // ===========================================================================
+  // Fallow - Análise Estática de Arquitetura, Complexidade e Código Morto
+  // ===========================================================================
+  // O Fallow analisa o repositório TypeScript/React em busca de código não utilizado,
+  // duplicação excessiva, dependências órfãs e componentes com alta complexidade.
+
+  // Arquivos e diretórios excluídos da análise
+  "ignorePatterns": [
+    "dist/**",
+    "node_modules/**",
+    "coverage/**"
+  ],
+
+  // ---------------------------------------------------------------------------
+  // 1. Detecção de Duplicação de Código (Clone Detection)
+  // ---------------------------------------------------------------------------
+  "duplicates": {
+    "enabled": true,
+    // "mild": equilíbrio ideal entre análise exata e pequenas variações estruturais
+    "mode": "mild",
+    // Percentual máximo aceitável de código duplicado no projeto (5% de tolerância)
+    "threshold": 5.0,
+    // Quantidade mínima de tokens consecutivos para caracterizar duplicação
+    "minTokens": 50,
+    // Quantidade mínima de linhas consecutivas para caracterizar um bloco clone
+    "minLines": 5,
+    // Ignora declarações de imports na comparação de duplicidade
+    "ignoreImports": true
+  },
+
+  // ---------------------------------------------------------------------------
+  // 2. Limiares de Complexidade e Saúde do Código (Health Metrics)
+  // ---------------------------------------------------------------------------
+  "health": {
+    // Complexidade ciclomática máxima por função/componente (número de ramificações if/switch/for).
+    // Mantém funções previsíveis e testáveis.
+    "maxCyclomatic": 15,
+
+    // Complexidade cognitiva máxima (mede o esforço mental de leitura devido a aninhamentos).
+    "maxCognitive": 15,
+
+    // Pontuação de risco CRAP (Change Risk Anti-Patterns):
+    // Combina complexidade e cobertura de testes. Valores > 30 indicam código arriscado de alterar.
+    "maxCrap": 30.0,
+
+    // Tamanho máximo em linhas de código (LOC) para uma única função ou componente React.
+    // Alinhado ao padrão do repositório: componentes com mais de 150 linhas devem extrair
+    // subcomponentes ou controladores com headless hooks.
+    "maxUnitSize": 150
+  },
+
+  // ---------------------------------------------------------------------------
+  // 3. Regras e Severidades (Quality Gates)
+  // ---------------------------------------------------------------------------
+  "rules": {
+    // Limites de complexidade são estritos (erros bloqueiam a validação):
+    "complexity-cyclomatic": "error",
+    "complexity-cognitive": "error",
+    "complexity-crap": "error",
+
+    // Dependências circulares e violações arquiteturais quebram o build:
+    "circular-dependencies": "error",
+    "boundary-violation": "error",
+
+    // Código morto e dependências não referenciadas são tratadas como alerta (warn):
+    // Isso evita quebrar o build devido a componentes de biblioteca (design system em src/components/ui/)
+    // que exportam variantes prontas para uso futuro.
+    "unused-files": "warn",
+    "unused-exports": "warn",
+    "unused-dependencies": "warn",
+    "unused-dev-dependencies": "warn"
+  }
+}
