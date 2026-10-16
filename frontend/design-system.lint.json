@@ -1,0 +1,67 @@
+{
+  "_instruction": "### ⚠️ IMPORTANT: Preservation of Design Intent (design.md Enterprise Analytics)\nWhen a linter or rule flags an unauthorized or raw color:\n- **DO NOT** simply replace it with a random pre-existing variable just to silence the linter.\n- **DO**: Use the corporate blue semantic tokens registered in global CSS (src/index.css): Dark Navy (#0F172A), Royal Blue (#1E40AF), Blue (#3B82F6), Light Blue (#60A5FA), White (#FFFFFF), Light Grey (#F8FAFC), Dark Grey (#334155).\n- For Button width, use the native `fullWidth` variant/prop on <Button> rather than passing ad-hoc `w-*` classes.",
+  "rules": {
+    "shadcn/no-restyle": [
+      "error",
+      {
+        "allow": ["layout"],
+        "contracts": [
+          {
+            "pattern": "^Button$",
+            "allow": ["layout"],
+            "deny": ["w-*", "h-*", "p-*", "bg-*"],
+            "message": {
+              "spacing": "Do not override Button spacing. Use standard Button sizes (sm, default, lg, icon) or the `fullWidth` variant.",
+              "default": "Do not restyle Button. Use standard variants or compose with a wrapper component."
+            }
+          },
+          {
+            "pattern": "^Badge$",
+            "allow": ["layout", "spacing"],
+            "message": {
+              "default": "Use standard Badge variants. Do not hardcode custom styles or invent one-off variants."
+            }
+          },
+          {
+            "pattern": "^CommandDialog$",
+            "allow": ["layout", "spacing", "color", "shape", "effects"]
+          },
+          {
+            "pattern": "^InputGroup$",
+            "allow": ["layout", "spacing", "shape", "color", "motion"]
+          },
+          {
+            "pattern": "^StatefulButton$",
+            "allow": ["layout", "spacing", "typography", "shape", "color"]
+          },
+          {
+            "pattern": "^(Card|CardHeader|CardContent|CardFooter)$",
+            "allow": ["layout", "spacing"]
+          }
+        ]
+      }
+    ],
+    "shadcn/no-raw-colors": [
+      "error",
+      {
+        "message": "Do not use raw Tailwind colors. Register semantic variables in global CSS (src/index.css) to preserve design aesthetic."
+      }
+    ],
+    "shadcn/no-arbitrary-values": [
+      "error",
+      {
+        "message": "Do not use arbitrary bracket values. Use the design system scale."
+      }
+    ],
+    "shadcn/no-inline-styles": "error",
+    "shadcn/require-static-classes": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/components/ui/**"],
+      "rules": {
+        "shadcn/no-restyle": "off"
+      }
+    }
+  ]
+}
