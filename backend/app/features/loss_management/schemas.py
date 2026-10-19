@@ -1,0 +1,71 @@
+"""Schemas Pydantic da gestão de perdas não técnicas e ordens de inspeção."""
+
+from datetime import datetime
+from enum import StrEnum
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class InspectionStatus(StrEnum):
+    """Ciclo de vida de uma ordem de inspeção em campo."""
+
+    GERADA = "gerada"
+    PENDENTE = "pendente"
+    CONCLUIDA = "concluida"
+    CANCELADA = "cancelada"
+
+
+class SuspicionReason(StrEnum):
+    """Motivos que colocam uma UC na fila de suspeitas."""
+
+    QUEDA_SUBITA = "queda_subita"
+    LEITURA_ZERADA = "leitura_zerada"
+
+
+class SuspiciousUnitDTO(BaseModel):
+    id_uc: str
+    municipio: str | None
+    bairro: str | None
+    classe_consumo: str | None
+    motivos: list[SuspicionReason]
+    score_risco: float = Field(ge=0, le=100, description="Probabilidade relativa de irregularidade (0-100)")
+    consumo_base_kwh: float
+    consumo_recente_kwh: float
+    kwh_estimado_recuperar: float
+    valor_estimado_recuperar_rs: float
+
+
+class InspectionOrderCreateDTO(BaseModel):
+    id_uc: str = Field(min_length=1, max_length=20)
+    motivo: str | None = Field(default=None, max_length=200)
+    kwh_estimado: float = Field(default=0.0, ge=0)
+    fiscal_responsavel: str | None = Field(default=None, max_length=120)
+
+
+class InspectionOrderUpdateDTO(BaseModel):
+    status: InspectionStatus
+    fiscal_responsavel: str | None = Field(default=None, max_length=120)
+    irregularidade_constatada: bool | None = None
+    tipo_irregularidade: str | None = Field(default=None, max_length=80)
+    kwh_recuperado: float | None = Field(default=None, ge=0)
+    numero_toi: str | None = Field(default=None, max_length=40)
+    justificativa_cancelamento: str | None = Field(default=None, max_length=500)
+
+
+class InspectionOrderDTO(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id_inspecao: int
+    id_uc: str
+    status: InspectionStatus
+    motivo: str | None
+    kwh_estimado: float
+    fiscal_responsavel: str | None
+    irregularidade_constatada: bool | None
+    tipo_irregularidade: str | None
+    kwh_recuperado: float | None
+    numero_toi: str | None
+    justificativa_cancelamento: str | None
+    criado_por: str
+    criado_em: datetime
+    atualizado_em: datetime
