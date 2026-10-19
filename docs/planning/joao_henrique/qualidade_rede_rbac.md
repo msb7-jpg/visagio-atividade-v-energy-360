@@ -58,9 +58,9 @@
 ## 3. Checklist Operacional de Execução
 
 - [ ] Criar pasta `backend/app/features/grid_quality/` com schemas, repositório, serviço e rotas.
-- [ ] Implementar dependência de RBAC `require_role(...)` em `backend/app/shared/dependencies.py`.
+- [x] Implementar dependência de RBAC `require_role(...)` em `backend/app/shared/dependencies.py`.
 - [ ] Registrar rotas em `backend/app/api/v1/router.py`.
-- [ ] Criar testes unitários em `backend/tests/test_grid_quality_service.py` e `test_rbac.py` (garantindo bloqueio 403 para rotas não autorizadas).
+- [- Em andamento por Joao Henrique - 2026-10-19] Criar testes unitários em `backend/tests/test_grid_quality_service.py` e `test_rbac.py` (garantindo bloqueio 403 para rotas não autorizadas).
 - [ ] Garantir conformidade com `make lint-backend`.
 - [ ] Criar pasta `frontend/src/features/grid_quality/` com componentes $\le 150$ linhas.
 - [ ] Implementar layout base `AppLayout.tsx` e `SidebarNav.tsx` adaptativo por perfil de cargo.
