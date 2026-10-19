@@ -1,7 +1,7 @@
 # 🕵️ Fatia 05: Gestão de Perdas, Fila de Fiscalização & Campo (Fullstack)
 
 > **Dono Único:** Adrian Cesar  
-> **Status:** Não Iniciado  
+> **Status:** Em andamento 
 > **Skills de Referência:** [`.agents/skills/backend-coding-standards/SKILL.md`](.agents/skills/backend-coding-standards/SKILL.md) & [`.agents/skills/frontend-coding-standards/SKILL.md`](.agents/skills/frontend-coding-standards/SKILL.md)  
 > **Log Individual:** [`changelog.md`](changelog.md)
 
@@ -58,11 +58,11 @@
 
 ## 3. Checklist Operacional de Execução
 
-- [ ] Criar pasta `backend/app/features/loss_management/` com schemas, repositório, serviço e rotas CRUD.
+- [x] Criar pasta `backend/app/features/loss_management/` com schemas, repositório, serviço e rotas CRUD.
 - [ ] Implementar endpoint de exportação de dados em CSV/XLSX.
 - [ ] Implementar endpoint multipart de upload de planilha com validação e conciliação no banco.
-- [ ] Registrar rotas em `backend/app/api/v1/router.py`.
-- [ ] Criar testes unitários e de integração em `backend/tests/test_loss_management_service.py` e `test_loss_router.py`.
+- [x] Registrar rotas em `backend/app/api/v1/router.py`.
+- [- Em andamento por Adrian Cesar - 2026-10-19] Criar testes unitários e de integração em `backend/tests/test_loss_management_service.py` e `test_loss_router.py`.
 - [ ] Garantir conformidade com `make lint-backend`.
 - [ ] Criar pasta `frontend/src/features/loss_management/` com componentes $\le 150$ linhas.
 - [ ] Implementar modal de upload drag-and-drop e botão de exportação.
