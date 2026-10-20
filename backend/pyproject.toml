@@ -259,6 +259,8 @@ name = "Serviços de negócio não importam frameworks HTTP (Pure Python Service
 type = "forbidden"
 source_modules = [
     "app.features.auth.service",
+    "app.features.revenue.service",
+    "app.features.revenue.decomposition",
 ]
 forbidden_modules = [
     "fastapi",
