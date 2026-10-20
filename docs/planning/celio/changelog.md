@@ -28,3 +28,15 @@
   - Seed de testes e `seeded_client` (20/10).
 - **Validação de Testes:**
   - Não se aplica (apenas documentação).
+
+### [2026-10-20] - Seed de faturamento e seeded_client
+- **Autor:** Celio
+- **O que foi feito:**
+  - `backend/tests/revenue_seed.py`: seed de `dim_unidade_consumidora` e `fato_faturamento` com 5 UCs e duas janelas de 12 competências (primeiro ano da base e últimos 12 meses), mais o `seeded_client`.
+  - `backend/tests/test_revenue_seed.py`: 3 testes (contagem de linhas, exemplo-ouro 9600 para 9504 e limpeza do `dependency_overrides`).
+- **Dificuldades / Desafios:**
+  - Premissas ainda não confirmadas: `classe_consumo` com o nome e `subgrupo_tarifario` com B1, B3 ou A4; municípios e bairros em maiúsculas; janelas 2022-07 a 2023-06 e 2025-07 a 2026-06.
+- **Próximos Passos:**
+  - Testes do service de decomposição e `schemas`, `exceptions` e `service` puros.
+- **Validação de Testes:**
+  - `make lint-all` e `make test-all` passando; `uv run pytest tests/test_revenue_seed.py`: 3 passed.
