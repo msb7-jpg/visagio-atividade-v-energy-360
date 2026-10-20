@@ -31,9 +31,12 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserDTO:
     return user
 
 
-def require_role(allowed_roles: Sequence[UserRole]) -> Callable[..., UserDTO]:
-    """Cria dependência que exige token válido (401) e papel dentro de ``allowed_roles`` (403)."""
-    allowed_values = {role.value for role in allowed_roles}
+def require_role(allowed_roles: Sequence[UserRole | str]) -> Callable[..., UserDTO]:
+    """Cria dependência que exige token válido (401) e papel dentro de ``allowed_roles`` (403).
+
+    Aceita membros de ``UserRole`` ou suas strings; string fora do enum levanta ``ValueError``.
+    """
+    allowed_values = {UserRole(role).value for role in allowed_roles}
 
     def role_checker(user: Annotated[UserDTO, Depends(get_current_user)]) -> UserDTO:
         if user.role not in allowed_values:

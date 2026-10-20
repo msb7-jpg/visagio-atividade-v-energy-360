@@ -1,7 +1,7 @@
 """Testes de RBAC: 401 (sem/token inválido), 403 (papel não autorizado) e 200 (papel autorizado)."""
 
 import pytest
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from app.core.constants import UserRole
@@ -12,6 +12,7 @@ from app.shared.dependencies import (
     RequireDiretoria,
     RequireOperacao,
     RequirePerdas,
+    require_role,
 )
 from app.shared.error_handlers import register_exception_handlers
 
@@ -112,3 +113,40 @@ async def test_login_real_dos_usuarios_seed_acessa_rota_do_seu_grupo(client, rol
 
     for route in allowed_routes:
         assert (await client.get(route, headers=bearer(token))).status_code == 200
+
+
+def build_app_with_roles(allowed_roles) -> FastAPI:
+    roles_app = FastAPI()
+    register_exception_handlers(roles_app)
+    role_guard = require_role(allowed_roles)
+
+    @roles_app.get("/protegida")
+    async def protegida(user=Depends(role_guard)) -> dict[str, str]:
+        return {"role": user.role}
+
+    return roles_app
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "allowed_roles",
+    [
+        [UserRole.DIRETOR, UserRole.GERENTE_PERDAS],
+        [UserRole.DIRETOR.value, UserRole.GERENTE_PERDAS.value],
+        [UserRole.DIRETOR, "gerente_perdas"],
+    ],
+    ids=["membros_do_enum", "strings_validas", "misto"],
+)
+async def test_require_role_aceita_enum_e_strings(allowed_roles):
+    transport = ASGITransport(app=build_app_with_roles(allowed_roles))
+    async with AsyncClient(transport=transport, base_url="http://test") as http_client:
+        autorizado = await http_client.get("/protegida", headers=bearer(token_for_role(UserRole.GERENTE_PERDAS)))
+        negado = await http_client.get("/protegida", headers=bearer(token_for_role(UserRole.ATENDENTE)))
+
+    assert autorizado.status_code == 200
+    assert negado.status_code == 403
+
+
+def test_require_role_string_invalida_levanta_value_error():
+    with pytest.raises(ValueError, match="papel_inexistente"):
+        require_role(["papel_inexistente"])
