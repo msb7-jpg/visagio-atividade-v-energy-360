@@ -43,3 +43,15 @@
   - Checklist: item "conformidade com `make lint-backend`" concluído. Testes seguem em andamento até cobrirem exportação e upload de planilha.
 - **Validação de Testes:**
   - `pytest`: 41 passed. Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos, Pyright 0 erros.
+
+### [2026-10-20] - Ordem de desenvolvimento em fases e fechamento dos testes de backend
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Adicionada a seção 3.1 "Ordem de Desenvolvimento" ao checklist (Fases 0–8): alinhamentos com Renan/Ryei, script PROVISÓRIO de dados de desenvolvimento, ajustes da fila pela fala do Gerente de Perdas, conformidade com `backend-coding-standards`, frontend obrigatório, diferenciais (exportação e upload) e documentação de suposições.
+  - Item de testes unitários/integração do backend marcado como concluído.
+- **Dificuldades / Desafios:**
+  - Vitest não iniciava com Node 22.14 (`undici` 8.12.2 exige Node >= 22.19). Resolvido atualizando o Node para 22.23.2.
+- **Próximos Passos:**
+  - Fase 0 (confirmar contratos com Renan/Ryei) e Fase 1 (script provisório de seed).
+- **Validação de Testes:**
+  - `pytest`: 41 passed. `vitest`: 1 passed. Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos, ESLint e Fallow OK.

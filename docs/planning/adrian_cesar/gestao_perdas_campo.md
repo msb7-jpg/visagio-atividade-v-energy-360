@@ -11,7 +11,7 @@
 
 ### Fala do Executivo (`atividade.pdf`, pág. 6):
 > **Rafael Coutinho · Gerente de Perdas:**  
-> *"Minha equipe faz cerca de 200 inspeções por mês, mas nosso hit rate histórico gira em torno de 50%. Metade das vezes chegamos lá e o cliente está regular. Perco um dia de equipe, combustível, e deixo de inspecionar quem realmente está fraudando. Se o sistema me desse uma lista ordenada por probabilidade de irregularidade e energia estimada a recuperar, a gente dobrava a recuperação sem contratar ninguém."*
+> *"Minha equipe consegue fazer mais de 200 inspeções por mês, e pouco mais da metade encontra alguma irregularidade. Quero abrir o sistema e ver uma fila das unidades suspeitas, da mais promissora para a menos promissora, com o motivo da suspeita e quanta energia dá para recuperar em cada uma. Dali eu escolho quem vai para campo e gero a ordem de inspeção. Quando a equipe volta, quero registrar ali mesmo o que foi encontrado. Uma lista com mil nomes sem ordem não me serve: cada inspeção que não encontra nada é um dia de equipe perdido."*
 
 ### User Stories do Case (`atividade.pdf`, pág. 8):
 > - *"• Como gerente de perdas, quero ver as unidades suspeitas ordenadas por prioridade, com o motivo da suspeita e a energia estimada a recuperar."*
@@ -62,13 +62,73 @@
 - [ ] Implementar endpoint de exportação de dados em CSV/XLSX.
 - [ ] Implementar endpoint multipart de upload de planilha com validação e conciliação no banco.
 - [x] Registrar rotas em `backend/app/api/v1/router.py`.
-- [- Em andamento por Adrian Cesar - 2026-10-19] Criar testes unitários e de integração em `backend/tests/test_loss_management_service.py` e `test_loss_router.py`.
+- [x] Criar testes unitários e de integração em `backend/tests/test_loss_management_service.py` e `test_loss_router.py`.
 - [x] Garantir conformidade com `make lint-backend`.
 - [ ] Criar pasta `frontend/src/features/loss_management/` com componentes $\le 150$ linhas.
 - [ ] Implementar modal de upload drag-and-drop e botão de exportação.
 - [ ] Adicionar rota `/losses` em `frontend/src/routes/AppRoutes.tsx`.
 - [ ] Criar testes no frontend com Vitest em `LossManagementPage.test.tsx`.
 - [ ] Garantir conformidade com `make lint-frontend`.
+
+---
+
+## 3.1 Ordem de Desenvolvimento (definida em 2026-10-20)
+
+> [!IMPORTANT]
+> Siga as fases **em ordem**. Ao fechar cada fase: `make lint-all` + `make test-all` verdes → commit → registro no [`changelog.md`](changelog.md).
+> Prioridade: **obrigatórios do PDF primeiro, diferenciais depois** ("qualidade acima de quantidade", `atividade.pdf` §7).
+
+### Fase 0 — Alinhamentos com outras fatias (sem código)
+- [ ] Confirmar com **Renan** que `fato_medicao.competencia` sai como `'YYYY-MM'` (o checklist dele também cita `MM/YYYY` na `dim_calendario`; o backend de perdas assume `YYYY-MM`).
+- [ ] Confirmar com **Ryei** as colunas de `fato_inspecoes_perdas` (`id_inspecao`, `id_uc`, `data_inspecao`, `irregularidade_constatada`, `tipo_irregularidade`, `kwh_recuperado`).
+
+### Fase 1 — ⚠️ Script PROVISÓRIO de dados de desenvolvimento
+> [!WARNING]
+> **PROVISÓRIO — NÃO é a camada Gold e NÃO faz parte da entrega de dados.** Existe apenas para desenvolver e demonstrar a fatia 05 enquanto as Fatias 01 (Renan) e 02 (Ryei) não exportam a Gold para o `v_energy.db`. Deve ser **removido** na Fase 7.
+- [ ] Criar `backend/scripts/dev_seed_loss_gold_PROVISORIO.py`, lendo `data/landing/` e gerando no `v_energy.db` **somente** as tabelas consumidas pela fatia, com **as colunas exatas dos contratos** dos colegas:
+  - `dim_unidade_consumidora` e `fato_medicao` (contrato Renan) e `fato_inspecoes_perdas` (contrato Ryei).
+- [ ] Regras de segurança: **nunca sobrescrever** tabela já existente (se a Gold real já estiver lá, o script aborta); limpeza mínima (tipos, datas, resultado normalizado); cabeçalho e logs com o aviso "PROVISÓRIO".
+- [ ] Não incluir no `make test-all` (testes continuam com fixtures sintéticas).
+
+### Fase 2 — Ajustes de backend exigidos pela fala do Gerente de Perdas
+- [ ] Excluir da fila UCs com ordem **concluída** recentemente (hoje só as ativas são excluídas; a UC volta à fila após a inspeção → "dia de equipe perdido").
+- [ ] Excluir da fila UCs já inspecionadas no histórico (`fato_inspecoes_perdas`).
+- [ ] `limit` padrão = **200** (capacidade mensal citada: "mais de 200 inspeções por mês").
+- [ ] Filtro por **bairro** além de município e classe.
+- [ ] Testes cobrindo cada regra.
+
+### Fase 3 — Conformidade com `backend-coding-standards`
+- [ ] Docstrings Google-style nos métodos públicos (repositório, serviço, rotas, fábrica de DI).
+- [ ] Mover a montagem de `SuspicionFilters` (limiar de 50%) do repositório para o serviço.
+- [ ] Serviço sem manipular o ORM diretamente (`repository.update_order(id, changes)`).
+- [ ] Decompor expressões aninhadas (`scoring.py`, `queries.py`, `service.py`).
+
+### Fase 4 — Frontend obrigatório (as 2 user stories)
+- [ ] `LossManagementPage` com abas "Fila de Suspeitas" e "Ordens em Campo" + rota `/losses`.
+- [ ] Fila: ranking, motivo (badges), kWh/R$ a recuperar, filtros (município, bairro, classe), botão "Gerar ordem".
+- [ ] Ordens: lista com status, avançar status, registrar resultado de campo, cancelar com justificativa (`AlertDialog`).
+- [ ] Estado vazio explicativo na fila (com os dados atuais a fila pode vir vazia — ver Fase 8).
+- [ ] Testes Vitest + `make lint-frontend`.
+
+### Fase 5 — Diferencial: exportar a fila para a equipe de campo
+- [ ] `GET /api/v1/losses/inspections/export` (CSV) com as ordens `gerada`/`pendente` — o que de fato vai a campo — incluindo `id_inspecao` e colunas em branco para o resultado.
+- [ ] Botão "Exportar para campo" no frontend.
+
+### Fase 6 — Diferencial: upload da planilha preenchida em campo
+- [ ] `POST /api/v1/losses/inspections/upload` (multipart `.xlsx`/`.csv`), conciliando pelo `id_inspecao` do arquivo exportado na Fase 5.
+- [ ] Normalizar a bagunça real de campo (ref. `inspecoes.xlsx`): variações de `resultado` ("CONFIRMADA", "irregularidade confirmada", "NADA CONSTA"), datas (`2025-08-01`, `14.08.2025`, `09-01-2025`), decimais com vírgula, múltiplas abas.
+- [ ] Retornar `UploadResultDTO` (conciliadas, rejeitadas com motivo, kWh total) sem abortar o lote por uma linha inválida.
+- [ ] Modal drag-and-drop no frontend.
+
+### Fase 7 — Troca do provisório pela Gold real
+- [ ] Quando Renan/Ryei exportarem a Gold: **apagar** o script da Fase 1 e as tabelas geradas por ele, rodar a fila contra os dados reais e conferir os números.
+
+### Fase 8 — Documentação e suposições (README / changelog)
+- [ ] Taxa real de acerto das inspeções nos dados: **62,7%** (a fala cita "pouco mais da metade").
+- [ ] Limiar de queda ≥ 50%: **93%** de acerto nas inspeções históricas com esse sinal.
+- [ ] Exclusão de UCs com GD: **3%** de acerto nas 31 inspeções em UCs com painel solar.
+- [ ] Fila quase vazia na competência mais recente (2026-06) é esperada: a onda de quedas de meados de 2025 já foi inspecionada.
+- [ ] Fórmula da energia estimada a recuperar (déficit mensal × 3 meses) como suposição.
 
 ---
 
@@ -84,7 +144,7 @@
 2. **Aba 1: Fila de Suspeitas (`SuspiciousUnitsTable.tsx`):**
    - **Barra de Ações do Topo:**
      - Botão primário: *"Exportar Fila para Campo (CSV/XLSX)"* (baixa o arquivo pronto para despacho das equipes).
-     - Filtro por Município e Classe tarifária.
+     - Filtro por Município, Bairro e Classe tarifária.
    - **Tabela com Ordenação Decrescente por Valor Esperado:**
      - Coluna 1: ID da UC (ex: `UC-04912`).
      - Coluna 2: Município e Bairro.
