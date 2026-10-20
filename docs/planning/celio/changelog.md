@@ -29,14 +29,16 @@
 - **Validação de Testes:**
   - Não se aplica (apenas documentação).
 
-### [2026-10-20] - Seed de faturamento e seeded_client
+### [2026-10-20] - Seed de testes e service puro da decomposição
 - **Autor:** Celio
 - **O que foi feito:**
   - `backend/tests/revenue_seed.py`: seed de `dim_unidade_consumidora` e `fato_faturamento` com 5 UCs e duas janelas de 12 competências (primeiro ano da base e últimos 12 meses), mais o `seeded_client`.
   - `backend/tests/test_revenue_seed.py`: 3 testes (contagem de linhas, exemplo-ouro 9600 para 9504 e limpeza do `dependency_overrides`).
+  - `backend/app/features/revenue/`: `schemas.py`, `exceptions.py`, `decomposition.py` (cálculo puro) e `service.py`, mais o service no contrato 1 do import-linter.
+  - `backend/tests/test_revenue_service.py`: 16 testes (exemplo-ouro 800 para 792, caso só de mix, identidade da soma dos efeitos em 7 cenários, segmentos novo e perdido, janelas inválidas e sem dados).
 - **Dificuldades / Desafios:**
-  - Premissas ainda não confirmadas: `classe_consumo` com o nome e `subgrupo_tarifario` com B1, B3 ou A4; municípios e bairros em maiúsculas; janelas 2022-07 a 2023-06 e 2025-07 a 2026-06.
+  - Decisão: a decomposição é feita por segmento e o efeito de volume total é dividido em volume puro e mix, porque no agregado os números do case não fecham. Segmento novo ou perdido tem toda a variação atribuída ao volume.
 - **Próximos Passos:**
-  - Testes do service de decomposição e `schemas`, `exceptions` e `service` puros.
+  - Repository com SQL agregado, `dependencies`, `router` com `EndpointDoc` e RBAC (22/10).
 - **Validação de Testes:**
-  - `make lint-all` e `make test-all` passando; `uv run pytest tests/test_revenue_seed.py`: 3 passed.
+  - `make lint-all` e `make test-all` passando; `uv run pytest tests/test_revenue_seed.py`: 3 passed; `uv run pytest tests/test_revenue_service.py`: 16 passed.
