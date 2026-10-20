@@ -1,54 +1,28 @@
 """Acesso a dados da gestão de perdas: perfis de consumo (Gold) e ordens de inspeção."""
 
+import logging
 from collections.abc import Mapping
 
-from sqlalchemy import exists, select, text
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import exists, select
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.loss_management.models import InspectionOrder
+from app.features.loss_management.queries import (
+    ACTIVE_STATUSES,
+    SuspicionFilters,
+    build_windows,
+    latest_competencia_query,
+    suspicious_profiles_query,
+)
 from app.features.loss_management.schemas import InspectionOrderCreateDTO, InspectionStatus
 from app.features.loss_management.scoring import LIMIAR_QUEDA_SUBITA, ConsumptionProfile
 from app.shared.exceptions import DatabaseReadError
 
-ACTIVE_STATUSES = (InspectionStatus.GERADA.value, InspectionStatus.PENDENTE.value)
+logger = logging.getLogger(__name__)
 
-# Janela recente = 3 últimas competências; base = 12 competências anteriores a ela.
-CONSUMPTION_PROFILES_SQL = text("""
-WITH referencia AS (
-    SELECT
-        strftime('%Y-%m', MAX(competencia) || '-01', '-2 months') AS inicio_recente,
-        strftime('%Y-%m', MAX(competencia) || '-01', '-14 months') AS inicio_base
-    FROM fato_medicao
-),
-consumo AS (
-    SELECT
-        med.id_uc,
-        AVG(CASE WHEN med.competencia < ref.inicio_recente THEN med.consumo_kwh END) AS consumo_base_kwh,
-        AVG(CASE WHEN med.competencia >= ref.inicio_recente THEN med.consumo_kwh END) AS consumo_recente_kwh,
-        SUM(CASE WHEN med.competencia >= ref.inicio_recente AND med.consumo_kwh = 0 THEN 1 ELSE 0 END)
-            AS meses_zerados
-    FROM fato_medicao AS med
-    CROSS JOIN referencia AS ref
-    WHERE med.competencia >= ref.inicio_base
-    GROUP BY med.id_uc
-)
-SELECT
-    uc.id_uc, uc.municipio, uc.bairro, uc.classe_consumo,
-    consumo.consumo_base_kwh, consumo.consumo_recente_kwh, consumo.meses_zerados
-FROM consumo
-JOIN dim_unidade_consumidora AS uc ON uc.id_uc = consumo.id_uc
-WHERE COALESCE(uc.possui_gd, 0) = 0
-  AND consumo.consumo_base_kwh > 0
-  AND consumo.consumo_recente_kwh IS NOT NULL
-  AND (consumo.consumo_recente_kwh <= consumo.consumo_base_kwh * (1 - :limiar_queda)
-       OR consumo.meses_zerados > 0)
-  AND (:municipio IS NULL OR uc.municipio = :municipio)
-  AND (:classe IS NULL OR uc.classe_consumo = :classe)
-  AND uc.id_uc NOT IN (
-      SELECT id_uc FROM ordem_inspecao WHERE status IN ('gerada', 'pendente')
-  )
-""")
+# Tabela ausente (SQLite: OperationalError; Postgres: ProgrammingError) ou coluna fora do contrato Gold.
+GOLD_QUERY_ERRORS = (OperationalError, ProgrammingError)
 
 
 class LossRepository:
@@ -60,12 +34,17 @@ class LossRepository:
     async def fetch_consumption_profiles(
         self, municipio: str | None, classe: str | None
     ) -> list[ConsumptionProfile]:
-        params = {"limiar_queda": LIMIAR_QUEDA_SUBITA, "municipio": municipio, "classe": classe}
+        filters = SuspicionFilters(limiar_queda=LIMIAR_QUEDA_SUBITA, municipio=municipio, classe=classe)
         try:
-            result = await self.session.execute(CONSUMPTION_PROFILES_SQL, params)
-        except OperationalError as e:
+            ultima_competencia = await self.session.scalar(latest_competencia_query())
+            if ultima_competencia is None:
+                return []
+            query = suspicious_profiles_query(build_windows(ultima_competencia), filters)
+            result = await self.session.execute(query)
+        except GOLD_QUERY_ERRORS as e:
+            logger.exception("Falha ao consultar tabelas Gold de medição para a fila de suspeitas.")
             raise DatabaseReadError(
-                "Tabelas Gold de medição indisponíveis (dim_unidade_consumidora/fato_medicao)."
+                "Falha ao consultar tabelas Gold de medição (dim_unidade_consumidora/fato_medicao)."
             ) from e
         return [ConsumptionProfile(**row) for row in result.mappings()]
 
