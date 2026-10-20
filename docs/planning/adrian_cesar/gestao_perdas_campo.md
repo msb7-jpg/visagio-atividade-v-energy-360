@@ -85,11 +85,12 @@
 ### Fase 1 — ⚠️ Script PROVISÓRIO de dados de desenvolvimento
 > [!WARNING]
 > **PROVISÓRIO — NÃO é a camada Gold e NÃO faz parte da entrega de dados.** Existe apenas para desenvolver e demonstrar a fatia 05 enquanto as Fatias 01 (Renan) e 02 (Ryei) não exportam a Gold para o `v_energy.db`. Deve ser **removido** na Fase 7.
-- [ ] Criar `backend/scripts/dev_seed_loss_gold_PROVISORIO.py`, lendo `data/landing/` e gerando no `v_energy.db` **somente** as tabelas consumidas pela fatia, com **as colunas exatas dos contratos** dos colegas:
+>
+> **Somente local:** o script de seed fica apenas na máquina do Adrian (ignorado via `.git/info/exclude`) e **não é versionado** neste repositório nem enviado no PR.
+- [x] Criar (localmente) um script de seed, lendo `data/landing/` e gerando no `v_energy.db` **somente** as tabelas consumidas pela fatia, com **as colunas exatas dos contratos** dos colegas:
   - `dim_unidade_consumidora` e `fato_medicao` (contrato Renan) e `fato_inspecoes_perdas` (contrato Ryei).
-- [ ] Regras de segurança: **nunca sobrescrever** tabela já existente (se a Gold real já estiver lá, o script aborta); limpeza mínima (tipos, datas, resultado normalizado); cabeçalho e logs com o aviso "PROVISÓRIO".
-- [ ] Não incluir no `make test-all` (testes continuam com fixtures sintéticas).
-
+- [x] Regras de segurança: **nunca sobrescrever** tabela já existente (se a Gold real já estiver lá, o script aborta); limpeza mínima (tipos, datas, resultado normalizado); cabeçalho e logs com o aviso "PROVISÓRIO".
+- [x] Não incluir no `make test-all` (testes continuam com fixtures sintéticas).
 ### Fase 2 — Ajustes de backend exigidos pela fala do Gerente de Perdas
 - [ ] Excluir da fila UCs com ordem **concluída** recentemente (hoje só as ativas são excluídas; a UC volta à fila após a inspeção → "dia de equipe perdido").
 - [ ] Excluir da fila UCs já inspecionadas no histórico (`fato_inspecoes_perdas`).
@@ -121,7 +122,7 @@
 - [ ] Modal drag-and-drop no frontend.
 
 ### Fase 7 — Troca do provisório pela Gold real
-- [ ] Quando Renan/Ryei exportarem a Gold: **apagar** o script da Fase 1 e as tabelas geradas por ele, rodar a fila contra os dados reais e conferir os números.
+- [ ] Quando Renan/Ryei exportarem a Gold: **apagar** o seed local da Fase 1 e as tabelas geradas por ele, rodar a fila contra os dados reais e conferir os números.
 
 ### Fase 8 — Documentação e suposições (README / changelog)
 - [ ] Taxa real de acerto das inspeções nos dados: **62,7%** (a fala cita "pouco mais da metade").

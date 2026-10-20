@@ -55,3 +55,18 @@
   - Fase 0 (confirmar contratos com Renan/Ryei) e Fase 1 (script provisório de seed).
 - **Validação de Testes:**
   - `pytest`: 41 passed. `vitest`: 1 passed. Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos, ESLint e Fallow OK.
+
+### [2026-10-20] - Fase 1: script PROVISÓRIO de dados de desenvolvimento
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Criado um script de seed **somente local** (⚠️ provisório, não é a Gold; não versionado nem enviado no PR; remover na Fase 7). Gera `dim_unidade_consumidora`, `fato_medicao` e `fato_inspecoes_perdas` com as colunas dos contratos de Renan e Ryei a partir de `data/landing/`.
+  - Segurança: aborta se qualquer tabela-alvo existir; DDL + dados numa única transação (`autocommit=False`); `--drop` remove apenas tabelas marcadas em `_seed_provisorio_fatia05`.
+  - Limpeza: 30.132 leituras duplicadas idênticas e 1.261 UCs repetidas descartadas; classe unificada (caixa e acento); `NULL`/`-`/`N/A` tratados como ausentes; resultado de campo normalizado em booleano; decimais com vírgula; datas por separador (`-` = MM-DD-AAAA, `.` e `/` = DD-MM-AAAA).
+  - `openpyxl` usado só em tempo de execução (`uv run --with openpyxl`), sem alterar `pyproject.toml`/`uv.lock` compartilhados.
+- **Dificuldades / Desafios:**
+  - No modo padrão do `sqlite3`, `CREATE TABLE` não entra na transação: uma falha deixava tabelas vazias. Corrigido com `autocommit=False` e validado com execução que falha de propósito.
+- **Próximos Passos:**
+  - Fase 2: excluir da fila UCs com ordem concluída e já inspecionadas no histórico, `limit` padrão 200 e filtro por bairro.
+- **Validação de Testes:**
+  - Seed: 45.200 UCs, 2.152.336 medições (2022-07 a 2026-06), 1.389 inspeções (acerto 62,7%, 0 datas inválidas, 0 FKs órfãs). Fila real: 83 UCs.
+  - `pytest`: 41 passed. `vitest`: 1 passed. Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos, ESLint e Fallow OK.
