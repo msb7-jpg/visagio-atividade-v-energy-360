@@ -1,7 +1,7 @@
 # 👤 Fatia 03: Visão 360 da Unidade Consumidora (Fullstack)
 
 > **Dono Único:** Bernardo H  
-> **Status:** Não Iniciado  
+> **Status:** Em andamento (backend)  
 > **Skills de Referência:** [`.agents/skills/backend-coding-standards/SKILL.md`](.agents/skills/backend-coding-standards/SKILL.md) & [`.agents/skills/frontend-coding-standards/SKILL.md`](.agents/skills/frontend-coding-standards/SKILL.md)  
 > **Log Individual:** [`changelog.md`](changelog.md)
 
@@ -11,7 +11,7 @@
 
 ### Citação da Liderança (`atividade.pdf`, pág. 6-7):
 > *Camila Barreto · Gerente de Atendimento:*  
-> *"O cliente liga, o atendente pede o número da unidade que está na conta e digita no sistema. Nessa hora tem que aparecer tudo numa tela só: quem é o cliente, o consumo dos últimos meses ao lado do mesmo período do ano passado, as faturas em aberto, o medidor instalado, se ele tem painel solar, se a rua dele teve falta de luz e os chamados que ele já abriu. Hoje meu atendente abre quatro sistemas e o cliente espera na linha. Quando alguém diz que a conta veio alta, o atendente precisa conseguir responder na hora se foi aumento de consumo, se a bandeira tarifária mudou ou se teve reajuste na tarifa."*
+> *"O cliente liga, o atendente pede o número da unidade que está na conta e digita no sistema. Nessa hora tem que aparecer tudo numa tela só: quem é o cliente, o consumo dos últimos meses ao lado do mesmo período do ano passado, as faturas em aberto, o medidor instalado, se ele tem painel solar, se a rua dele teve falta de luz e os chamados que ele já abriu. Hoje meu atendente abre quatro sistemas e o cliente espera na linha. Quando alguém diz que a conta veio alta, o atendente precisa conseguir responder na hora se o consumo realmente subiu."*
 
 ### User Story do Case (`atividade.pdf`, pág. 8):
 > - *"• Como atendente, quero encontrar uma unidade consumidora e ver numa única tela seu histórico de consumo, faturas, medidor, geração própria, interrupções e chamados, para responder ao cliente na hora, inclusive quando ele reclama de conta alta."*
@@ -51,10 +51,10 @@
 
 ## 3. Checklist Operacional de Execução
 
-- [ ] Criar pasta `backend/app/features/customer360/` com `schemas.py`, `repository.py`, `service.py` e `router.py`.
-- [ ] Registrar rotas em `backend/app/api/v1/router.py`.
-- [ ] Criar testes do backend em `backend/tests/test_customer360_service.py` e `test_customer360_router.py`.
-- [ ] Garantir conformidade com `make lint-backend` (Ruff, Pylint $\le 300$ linhas, import-linter).
+- [x] Criar pasta `backend/app/features/customer360/` com `schemas.py`, `repository.py`, `service.py` e `router.py`.
+- [x] Registrar rotas em `backend/app/api/v1/router.py`.
+- [x] Criar testes do backend em `backend/tests/test_customer360_service.py` e `test_customer360_router.py`.
+- [x] Garantir conformidade com `make lint-backend` (Ruff, Pylint $\le 300$ linhas, import-linter).
 - [ ] Criar pasta `frontend/src/features/customer360/` com página, controller headless e subcomponentes atômicos ($\le 150$ linhas).
 - [ ] Adicionar rota `/customers` em `frontend/src/routes/AppRoutes.tsx`.
 - [ ] Criar testes unitários no frontend com Vitest em `Customer360Page.test.tsx`.
@@ -69,7 +69,7 @@
 
 ### 4.1 Especificação Concreta de Tela, Layout e Comportamentos (Zero Abstração)
 1. **Barra de Busca Superior (`CustomerSearchBar.tsx`):**
-   - Campo `<Input>` com placeholder *"Digite o ID da Unidade Consumidora (ex: UC-10042)..."*.
+   - Campo `<Input>` com placeholder *"Digite o ID da Unidade Consumidora (ex: UC100000)..."*.
    - Comportamento: Disparo automático por tecla `Enter` ou debounce de 400ms. Se a UC não existir no SQLite, renderiza `<EmptyState title="Unidade Consumidora não encontrada" description="Verifique o número informado na fatura" />`.
 2. **Card de Resumo Cadastral (`CustomerOverviewCard.tsx`):**
    - Utiliza `<Card variant="glass">` com layout em grid de 4 colunas:
@@ -114,7 +114,34 @@
 
 ---
 
-## 5. Instruções de Auto-Atualização
+## 5. Pendências, Esclarecimentos e Decisões em Aberto
+
+> Atualizado em 2026-10-19 após a entrega do backend. Marque `[x]` ao resolver.
+
+### 5.1 Esclarecer com outras fatias
+- [ ] **Renan (Fatia 01):** incluir `nome_titular` na `dim_unidade_consumidora` (o case pede *"quem é o cliente"*). O backend já exibe a coluna automaticamente se ela existir.
+- [ ] **Ryei (Fatia 02):** exportar uma tabela com as ocorrências individuais de rede (`id_uc`, `alimentador`, data, duração, causa). Hoje a aba de interrupções usa só o DEC/FEC mensal da `fato_qualidade_alimentador`.
+- [ ] **Ryei (Fatia 02):** criar `CREATE INDEX idx_fato_atend_uc ON fato_atendimentos(id_uc)` (sem ele, `/events` varre ~319 mil chamados a cada busca).
+- [ ] **Ryei + João Henrique:** `dec_limite_aneel` / `violou_meta` contradizem o glossário do case (*"não para comparar com os limites regulatórios reais"*). Definir se a Visão 360 mostra badge de meta ANEEL.
+- [ ] **João Henrique + Adrian:** confirmar a inclusão do `gerente_perdas` no acesso à Visão 360 (case, seção 3: *"o atendente, o analista de perdas e o diretor comercial"*). Atualizar a matriz RBAC do `ROADMAP.md` (linha 125).
+
+### 5.2 Corrigir / decidir na minha fatia
+- [ ] Decidir com o time o limiar de ±10% de variação de consumo (`LIMIAR_VARIACAO_CONSUMO_PCT`).
+- [ ] Opcional: incluir a variação da tarifa (reajuste) no diagnóstico de conta alta (hoje: consumo + bandeira).
+- [ ] Ciente: `status_pagamento = VENCIDA` é calculado na exportação da Fatia 02; pode ficar defasado até a próxima carga.
+- [ ] Registrar as decisões da Fatia 03 em `docs/DECISOES.md` (formato ADR) e as suposições no `README.md` (obrigatório no case).
+- [ ] Trocar a seed pelo `v_energy.db` real e conferir os tipos/valores; ajustar `tests/customer360_seed.py` se o schema divergir.
+
+### 5.3 Frontend e integração
+- [ ] Instalar `bun` e `make` no ambiente local (hoje ausentes).
+- [ ] Escolher biblioteca de gráfico (proposta: `recharts`) e avisar o time.
+- [ ] Implementar o frontend (checklist da seção 3).
+- [ ] Integrar `<AppLayout>` (João Henrique) e `<SmartInsightCard context="customer360" ucId={id_uc} />` (Miguel) quando entregues.
+- [ ] Rodar `make lint-all` e `make test-all`, abrir PR da branch `feat/fatia-03-visao360`.
+
+---
+
+## 6. Instruções de Auto-Atualização
 
 1. Antes de iniciar, marque o item como `[- Em andamento por Bernardo H - YYYY-MM-DD]`.
 2. Após implementar, rodar linters e testes (`make lint-all` e `make test-all`), marque `[x]`.
