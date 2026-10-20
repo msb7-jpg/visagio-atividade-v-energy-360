@@ -63,7 +63,7 @@
 - [ ] Implementar endpoint multipart de upload de planilha com validação e conciliação no banco.
 - [x] Registrar rotas em `backend/app/api/v1/router.py`.
 - [- Em andamento por Adrian Cesar - 2026-10-19] Criar testes unitários e de integração em `backend/tests/test_loss_management_service.py` e `test_loss_router.py`.
-- [ ] Garantir conformidade com `make lint-backend`.
+- [x] Garantir conformidade com `make lint-backend`.
 - [ ] Criar pasta `frontend/src/features/loss_management/` com componentes $\le 150$ linhas.
 - [ ] Implementar modal de upload drag-and-drop e botão de exportação.
 - [ ] Adicionar rota `/losses` em `frontend/src/routes/AppRoutes.tsx`.

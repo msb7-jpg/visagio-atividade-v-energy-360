@@ -33,3 +33,13 @@
   - Usar `fato_inspecoes_perdas` (Ryei) para calibrar o score com o hit rate histórico.
 - **Validação de Testes:**
   - `pytest`: 28 passed (16 novos em `test_loss_management_service.py` e `test_loss_router.py`). Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos, Pyright 0 erros.
+
+### [2026-10-19] - Consulta portável, documentação OpenAPI e conformidade de lint
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - SQL bruto da fila de suspeitas reescrito com SQLAlchemy Core (`queries.py`), sem funções específicas de SQLite; compila em SQLite, PostgreSQL e MySQL.
+  - Criado `app/shared/docs.py` (`EndpointDoc`) para padronizar a documentação Swagger, aplicado aos 4 endpoints de perdas (`router_metadata.py`), com 401/403/409/500 documentados.
+  - Falhas de consulta às tabelas Gold passam a ser registradas em log com a causa original.
+  - Checklist: item "conformidade com `make lint-backend`" concluído. Testes seguem em andamento até cobrirem exportação e upload de planilha.
+- **Validação de Testes:**
+  - `pytest`: 41 passed. Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos, Pyright 0 erros.
