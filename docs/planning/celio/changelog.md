@@ -17,3 +17,14 @@
   - Implementar backend em `backend/app/features/revenue/` e testes com cenários reais.
 - **Validação de Testes:**
   - Aguardando implementação.
+
+### [2026-10-19] - Início da execução da Fatia 04
+- **Autor:** Celio
+- **O que foi feito:**
+  - Branch `feat/fatia-04-receita` criada a partir da `main` (d90fe16); checklist marcado como em andamento.
+- **Dificuldades / Desafios:**
+  - Ainda não há `v_energy.db`; os nomes de colunas vêm só dos contratos escritos.
+- **Próximos Passos:**
+  - Seed de testes e `seeded_client` (20/10).
+- **Validação de Testes:**
+  - Não se aplica (apenas documentação).
