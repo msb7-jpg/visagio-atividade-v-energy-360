@@ -6,6 +6,12 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app.core.constants import UserRole
 from app.features.loss_management.dependencies import LossSvc
+from app.features.loss_management.router_metadata import (
+    create_inspection_doc,
+    list_inspections_doc,
+    list_suspicious_units_doc,
+    update_inspection_doc,
+)
 from app.features.loss_management.schemas import (
     InspectionOrderCreateDTO,
     InspectionOrderDTO,
@@ -27,7 +33,7 @@ router = APIRouter(
 @router.get(
     "/suspicious-units",
     response_model=list[SuspiciousUnitDTO],
-    summary="Fila de UCs suspeitas priorizada por energia esperada a recuperar",
+    **list_suspicious_units_doc.to_dict(),
 )
 async def list_suspicious_units(
     service: LossSvc,
@@ -38,7 +44,11 @@ async def list_suspicious_units(
     return await service.list_suspicious_units(municipio, classe, limit)
 
 
-@router.get("/inspections", response_model=list[InspectionOrderDTO], summary="Listar ordens de inspeção")
+@router.get(
+    "/inspections",
+    response_model=list[InspectionOrderDTO],
+    **list_inspections_doc.to_dict(),
+)
 async def list_inspections(
     service: LossSvc,
     status_filter: Annotated[InspectionStatus | None, Query(alias="status")] = None,
@@ -50,7 +60,7 @@ async def list_inspections(
     "/inspections",
     response_model=InspectionOrderDTO,
     status_code=status.HTTP_201_CREATED,
-    summary="Gerar ordem de inspeção para uma UC",
+    **create_inspection_doc.to_dict(),
 )
 async def create_inspection(
     payload: InspectionOrderCreateDTO, service: LossSvc, user: CurrentUser
@@ -61,7 +71,7 @@ async def create_inspection(
 @router.patch(
     "/inspections/{id_inspecao}",
     response_model=InspectionOrderDTO,
-    summary="Atualizar status, registrar resultado de campo ou cancelar ordem",
+    **update_inspection_doc.to_dict(),
 )
 async def update_inspection(
     id_inspecao: int, payload: InspectionOrderUpdateDTO, service: LossSvc
