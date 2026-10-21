@@ -68,7 +68,13 @@ SEED_UNITS = (
     SeedUnit("UC100003", "ALM-REC-004", False, 0.0, 200.0, 280.0),
     SeedUnit("UC100004", "ALM-REC-004", False, 0.0, 200.0, 200.0),
     SeedUnit("UC100005", "ALM-OLI-002", False, 0.0, 150.0, 150.0, meses_historico=6),
+    SeedUnit("UC100006", "ALM-REC-004", False, 0.0, 200.0, 200.0),
 )
+
+DIAS_PADRAO = 30
+MEASUREMENT_OVERRIDES = {
+    ("UC100006", "2026-06"): (240.0, 36),
+}
 
 INVOICE_OVERRIDES = {
     ("UC100004", "2026-06"): ("VERMELHA_P2", "ABERTA"),
@@ -87,7 +93,15 @@ def history_months(unit: SeedUnit) -> list[str]:
     return [shift_competencia(ULTIMA_COMPETENCIA, -offset) for offset in reversed(range(unit.meses_historico))]
 
 
+def monthly_days(unit: SeedUnit, competencia: str) -> int:
+    override = MEASUREMENT_OVERRIDES.get((unit.id_uc, competencia))
+    return override[1] if override else DIAS_PADRAO
+
+
 def monthly_kwh(unit: SeedUnit, competencia: str) -> float:
+    override = MEASUREMENT_OVERRIDES.get((unit.id_uc, competencia))
+    if override:
+        return override[0]
     recent_year_start = shift_competencia(ULTIMA_COMPETENCIA, -11)
     return unit.kwh_ano_recente if competencia >= recent_year_start else unit.kwh_ano_anterior
 
@@ -113,7 +127,7 @@ def measurement_rows() -> list[dict[str, object]]:
             rows.append({
                 "id_medicao": f"LT-{unit.id_uc}-{competencia}", "id_uc": unit.id_uc, "competencia": competencia,
                 "leitura_anterior": accumulated_reading, "leitura_atual": accumulated_reading + consumption,
-                "consumo_kwh": consumption, "dias_faturamento": 30,
+                "consumo_kwh": consumption, "dias_faturamento": monthly_days(unit, competencia),
             })
             accumulated_reading += consumption
     return rows

@@ -1,6 +1,11 @@
 import pytest
 
-from app.features.customer360.consumption_analysis import classify_trend, percent_change, shift_competencia
+from app.features.customer360.consumption_analysis import (
+    classify_trend,
+    daily_average,
+    percent_change,
+    shift_competencia,
+)
 from app.features.customer360.exceptions import CustomerNotFoundError
 from app.features.customer360.schemas import (
     ConsumptionTrend,
@@ -8,9 +13,11 @@ from app.features.customer360.schemas import (
     FeederQualityMonthDTO,
     InvoiceDTO,
     MeasurementDTO,
+    MonthlyComparisonDTO,
     ServiceTicketDTO,
 )
 from app.features.customer360.service import Customer360Service
+from app.features.customer360.yoy_totals import summarize_window
 
 
 class FakeCustomer360Repository:
@@ -179,3 +186,57 @@ async def test_lowercase_number_with_spaces_finds_the_unit():
     summary = await Customer360Service(FakeCustomer360Repository(UNIT)).get_summary("  uc100000 ")
 
     assert summary.id_uc == "UC100000"
+
+
+def test_daily_average_handles_missing_or_zero_days():
+    assert daily_average(240.0, 36) == pytest.approx(6.67)
+    assert daily_average(240.0, 0) is None
+    assert daily_average(None, 30) is None
+
+
+async def test_diagnosis_separates_longer_billing_period_from_real_consumption():
+    measurements = [
+        MeasurementDTO(competencia="2025-06", consumo_kwh=200.0, dias_faturamento=30),
+        MeasurementDTO(competencia="2026-06", consumo_kwh=240.0, dias_faturamento=36),
+    ]
+    service = Customer360Service(FakeCustomer360Repository(UNIT, measurements))
+    diagnosis = (await service.get_history("UC100000")).diagnostico
+
+    assert diagnosis is not None
+    assert diagnosis.tendencia_consumo == ConsumptionTrend.SUBIU
+    assert (diagnosis.dias_faturamento, diagnosis.dias_faturamento_ano_anterior) == (36, 30)
+    assert diagnosis.media_diaria_kwh == pytest.approx(6.67)
+    assert diagnosis.tendencia_media_diaria == ConsumptionTrend.ESTAVEL
+
+
+async def test_diagnosis_reports_tariff_variation():
+    invoices = [
+        invoice("2026-12", 176.0).model_copy(update={"tarifa_aplicada_rs_kwh": 0.88}),
+        invoice("2025-12", 160.0).model_copy(update={"tarifa_aplicada_rs_kwh": 0.80}),
+    ]
+    diagnosis = (await build_service(200.0, 200.0, invoices).get_history("UC100000")).diagnostico
+
+    assert diagnosis is not None
+    assert (diagnosis.tarifa_rs_kwh, diagnosis.tarifa_rs_kwh_ano_anterior) == (0.88, 0.80)
+    assert diagnosis.variacao_tarifa_pct == pytest.approx(10.0)
+
+
+async def test_history_totals_compare_twelve_months():
+    history = await build_service(recent_kwh=280.0, previous_kwh=200.0).get_history("UC100000")
+
+    totals = history.resumo_12_meses
+    assert totals is not None
+    assert totals.meses_comparados == 12
+    assert (totals.consumo_kwh, totals.consumo_kwh_ano_anterior) == (3360.0, 2400.0)
+    assert totals.variacao_consumo_pct == pytest.approx(40.0)
+
+
+def test_totals_ignore_months_without_previous_year():
+    recent_only = [
+        MonthlyComparisonDTO(
+            competencia=f"2026-{month:02d}", competencia_ano_anterior=f"2025-{month:02d}", consumo_kwh=150.0
+        )
+        for month in range(1, 7)
+    ]
+
+    assert summarize_window(recent_only) is None

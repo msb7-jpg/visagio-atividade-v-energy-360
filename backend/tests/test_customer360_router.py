@@ -157,3 +157,21 @@ async def test_missing_gold_tables_return_database_error():
 
     assert response.status_code == 500
     assert response.json()["error_type"] == "DatabaseReadError"
+
+
+async def test_history_explains_longer_billing_period(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/UC100006/history", headers=attendant_headers)
+
+    diagnosis = response.json()["diagnostico"]
+    assert diagnosis["tendencia_consumo"] == "SUBIU"
+    assert (diagnosis["dias_faturamento"], diagnosis["dias_faturamento_ano_anterior"]) == (36, 30)
+    assert diagnosis["tendencia_media_diaria"] == "ESTAVEL"
+
+
+async def test_history_returns_twelve_month_totals_and_tariff(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/UC100003/history", headers=attendant_headers)
+
+    body = response.json()
+    assert body["resumo_12_meses"]["meses_comparados"] == 12
+    assert body["resumo_12_meses"]["variacao_consumo_pct"] == pytest.approx(40.0)
+    assert body["diagnostico"]["variacao_tarifa_pct"] == pytest.approx(10.0)

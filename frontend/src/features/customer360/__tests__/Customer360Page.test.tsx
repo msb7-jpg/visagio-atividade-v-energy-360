@@ -47,7 +47,16 @@ const stableWithFlagChange: HighBillDiagnosis = {
   tendencia_consumo: 'ESTAVEL',
   bandeira_atual: 'VERMELHA_P2',
   bandeira_ano_anterior: 'VERDE',
-  bandeira_mudou: true
+  bandeira_mudou: true,
+  dias_faturamento: 30,
+  dias_faturamento_ano_anterior: 30,
+  media_diaria_kwh: 6.67,
+  media_diaria_kwh_ano_anterior: 6.67,
+  variacao_media_diaria_pct: 0,
+  tendencia_media_diaria: 'ESTAVEL',
+  tarifa_rs_kwh: 0.97,
+  tarifa_rs_kwh_ano_anterior: 0.8,
+  variacao_tarifa_pct: 21.3
 }
 
 function buildInvoice(competencia: string, status: string, valor: number): Invoice {
@@ -79,8 +88,25 @@ function buildHistory(diagnosis: HighBillDiagnosis): CustomerHistory {
       valor_total_rs: 194,
       valor_total_rs_ano_anterior: 160,
       variacao_valor_pct: 21.3,
-      bandeira_tarifaria: 'VERMELHA_P2'
+      bandeira_tarifaria: 'VERMELHA_P2',
+      dias_faturamento: diagnosis.dias_faturamento,
+      dias_faturamento_ano_anterior: diagnosis.dias_faturamento_ano_anterior,
+      media_diaria_kwh: diagnosis.media_diaria_kwh,
+      media_diaria_kwh_ano_anterior: diagnosis.media_diaria_kwh_ano_anterior,
+      variacao_media_diaria_pct: diagnosis.variacao_media_diaria_pct,
+      tarifa_rs_kwh: diagnosis.tarifa_rs_kwh,
+      tarifa_rs_kwh_ano_anterior: diagnosis.tarifa_rs_kwh_ano_anterior,
+      variacao_tarifa_pct: diagnosis.variacao_tarifa_pct
     }],
+    resumo_12_meses: {
+      meses_comparados: 12,
+      consumo_kwh: 2400,
+      consumo_kwh_ano_anterior: 2400,
+      variacao_consumo_pct: 0,
+      valor_total_rs: 2150.5,
+      valor_total_rs_ano_anterior: 1920,
+      variacao_valor_pct: 12
+    },
     diagnostico: diagnosis,
     faturas: [...openInvoices, buildInvoice('2026-04', 'PAGA', 176)],
     faturas_em_aberto: openInvoices,
@@ -168,6 +194,35 @@ describe('Customer360Page', () => {
 
     expect(await screen.findByText(/O consumo de jun\/2026 ficou estável/)).toBeInTheDocument()
     expect(screen.getByText(/A bandeira tarifária mudou de Verde para Vermelha P2/)).toBeInTheDocument()
+  })
+
+  it('explica a conta pelo preço do kWh e mostra os totais de 12 meses', async () => {
+    renderPage()
+    searchFor('UC100004')
+
+    expect(await screen.findByText(/O preço médio do kWh subiu 21,3%/)).toBeInTheDocument()
+    expect(screen.getByText(/R\$\s0,97\/kWh vs R\$\s0,80\/kWh/)).toBeInTheDocument()
+    expect(screen.getByText('Últimos 12 meses · consumo')).toBeInTheDocument()
+    expect(screen.getByText('R$ 2.150,50')).toBeInTheDocument()
+  })
+
+  it('separa período de faturamento mais longo do consumo real', async () => {
+    mockedApi.getHistory.mockResolvedValue(buildHistory({
+      ...stableWithFlagChange,
+      consumo_kwh: 240,
+      variacao_consumo_pct: 20,
+      tendencia_consumo: 'SUBIU',
+      bandeira_mudou: false,
+      dias_faturamento: 36,
+      media_diaria_kwh: 6.67,
+      variacao_media_diaria_pct: 0,
+      variacao_tarifa_pct: null
+    }))
+    renderPage()
+    searchFor('UC100004')
+
+    expect(await screen.findByText(/Este período teve 36 dias de faturamento contra 30; por dia, o consumo ficou estável/)).toBeInTheDocument()
+    expect(screen.queryByText(/preço médio do kWh/)).not.toBeInTheDocument()
   })
 
   it('aponta aumento real de consumo', async () => {
