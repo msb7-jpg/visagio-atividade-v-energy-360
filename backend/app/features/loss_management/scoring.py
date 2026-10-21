@@ -26,42 +26,84 @@ class ConsumptionProfile:
 
 
 def consumption_drop_ratio(profile: ConsumptionProfile) -> float:
-    """Fração de queda do consumo recente em relação à base (0 quando não houve queda)."""
+    """Calcula a fração de queda do consumo recente em relação à base.
+
+    Args:
+        profile: Consumo médio da UC nas janelas base e recente.
+
+    Returns:
+        Queda entre 0 e 1 (0 quando não houve queda ou a base é nula).
+    """
     if profile.consumo_base_kwh <= 0:
         return 0.0
     recent_share = profile.consumo_recente_kwh / profile.consumo_base_kwh
-    return max(0.0, 1.0 - recent_share)
+    drop_ratio = 1.0 - recent_share
+    return max(0.0, drop_ratio)
 
 
 def detect_reasons(profile: ConsumptionProfile) -> list[SuspicionReason]:
-    """Lista os motivos de suspeita aplicáveis ao perfil de consumo."""
-    reasons: list[SuspicionReason] = []
-    if consumption_drop_ratio(profile) >= LIMIAR_QUEDA_SUBITA:
-        reasons.append(SuspicionReason.QUEDA_SUBITA)
-    if profile.meses_zerados > 0:
-        reasons.append(SuspicionReason.LEITURA_ZERADA)
-    return reasons
+    """Lista os motivos de suspeita aplicáveis ao perfil de consumo.
+
+    Args:
+        profile: Consumo médio da UC nas janelas base e recente.
+
+    Returns:
+        Motivos detectados (queda súbita e/ou leitura zerada); vazio se a UC não é suspeita.
+    """
+    has_sudden_drop = consumption_drop_ratio(profile) >= LIMIAR_QUEDA_SUBITA
+    has_zero_reading = profile.meses_zerados > 0
+    reason_checks = (
+        (has_sudden_drop, SuspicionReason.QUEDA_SUBITA),
+        (has_zero_reading, SuspicionReason.LEITURA_ZERADA),
+    )
+    return [reason for is_detected, reason in reason_checks if is_detected]
 
 
 def risk_score(profile: ConsumptionProfile) -> float:
-    """Score de risco de 0 a 100 combinando intensidade da queda e leituras zeradas."""
+    """Calcula o score de risco combinando intensidade da queda e leituras zeradas.
+
+    Args:
+        profile: Consumo médio da UC nas janelas base e recente.
+
+    Returns:
+        Score de 0 a 100, com uma casa decimal.
+    """
     drop_points = consumption_drop_ratio(profile) * PESO_QUEDA_CONSUMO
     zero_points = BONUS_LEITURA_ZERADA if profile.meses_zerados > 0 else 0.0
-    return round(min(SCORE_MAXIMO, drop_points + zero_points), 1)
+    raw_score = drop_points + zero_points
+    capped_score = min(SCORE_MAXIMO, raw_score)
+    return round(capped_score, 1)
 
 
 def estimated_recoverable_kwh(profile: ConsumptionProfile) -> float:
-    """Energia não faturada estimada na janela de recuperação."""
-    monthly_deficit_kwh = max(0.0, profile.consumo_base_kwh - profile.consumo_recente_kwh)
-    return round(monthly_deficit_kwh * JANELA_RECUPERACAO_MESES, 1)
+    """Estima a energia não faturada na janela de recuperação.
+
+    Args:
+        profile: Consumo médio da UC nas janelas base e recente.
+
+    Returns:
+        Déficit mensal (base - recente, mínimo 0) multiplicado pelos meses de recuperação.
+    """
+    consumption_gap_kwh = profile.consumo_base_kwh - profile.consumo_recente_kwh
+    monthly_deficit_kwh = max(0.0, consumption_gap_kwh)
+    recoverable_kwh = monthly_deficit_kwh * JANELA_RECUPERACAO_MESES
+    return round(recoverable_kwh, 1)
 
 
 def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | None:
-    """Converte um perfil em item da fila, ou None quando não há motivo de suspeita."""
+    """Converte um perfil de consumo em item da fila de suspeitas.
+
+    Args:
+        profile: Consumo médio da UC nas janelas base e recente.
+
+    Returns:
+        O item da fila com motivos, score e energia a recuperar, ou None se não há suspeita.
+    """
     reasons = detect_reasons(profile)
     if not reasons:
         return None
     recoverable_kwh = estimated_recoverable_kwh(profile)
+    recoverable_value_rs = recoverable_kwh * TARIFA_MEDIA_RS_KWH
     return SuspiciousUnitDTO(
         id_uc=profile.id_uc,
         municipio=profile.municipio,
@@ -72,17 +114,33 @@ def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | No
         consumo_base_kwh=round(profile.consumo_base_kwh, 1),
         consumo_recente_kwh=round(profile.consumo_recente_kwh, 1),
         kwh_estimado_recuperar=recoverable_kwh,
-        valor_estimado_recuperar_rs=round(recoverable_kwh * TARIFA_MEDIA_RS_KWH, 2),
+        valor_estimado_recuperar_rs=round(recoverable_value_rs, 2),
     )
 
 
 def expected_recovery_kwh(unit: SuspiciousUnitDTO) -> float:
-    """Valor esperado de recuperação: probabilidade relativa x energia estimada."""
-    return unit.score_risco / SCORE_MAXIMO * unit.kwh_estimado_recuperar
+    """Calcula o valor esperado de recuperação usado para ordenar a fila.
+
+    Args:
+        unit: Item da fila com score de risco e energia estimada.
+
+    Returns:
+        Probabilidade relativa (score / 100) multiplicada pelo kWh estimado a recuperar.
+    """
+    relative_probability = unit.score_risco / SCORE_MAXIMO
+    return relative_probability * unit.kwh_estimado_recuperar
 
 
 def rank_suspicious_units(profiles: list[ConsumptionProfile], limit: int) -> list[SuspiciousUnitDTO]:
-    """Monta a fila priorizada pelo valor esperado de recuperação (decrescente)."""
+    """Monta a fila priorizada pelo valor esperado de recuperação.
+
+    Args:
+        profiles: Perfis de consumo candidatos.
+        limit: Tamanho máximo da fila.
+
+    Returns:
+        Itens suspeitos em ordem decrescente de valor esperado, até `limit` itens.
+    """
     candidates = [unit for profile in profiles if (unit := build_suspicious_unit(profile)) is not None]
     ranked = sorted(candidates, key=expected_recovery_kwh, reverse=True)
     return ranked[:limit]

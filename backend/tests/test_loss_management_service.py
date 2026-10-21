@@ -1,8 +1,11 @@
+from datetime import UTC, datetime
+
 import pytest
 
 from app.features.loss_management.exceptions import InspectionConflictError
 from app.features.loss_management.schemas import (
     InspectionOrderCreateDTO,
+    InspectionOrderDTO,
     InspectionOrderUpdateDTO,
     InspectionStatus,
     SuspicionReason,
@@ -13,7 +16,7 @@ from app.features.loss_management.scoring import (
     rank_suspicious_units,
 )
 from app.features.loss_management.service import LossService, validate_transition
-from app.shared.exceptions import BadRequestException
+from app.shared.exceptions import BadRequestException, NotFoundException
 
 
 def make_profile(id_uc: str, base_kwh: float, recent_kwh: float, zero_months: int = 0) -> ConsumptionProfile:
@@ -108,3 +111,96 @@ async def test_create_rejects_unit_with_active_order():
 
     with pytest.raises(InspectionConflictError):
         await service.create_inspection(InspectionOrderCreateDTO(id_uc="UC1"), criado_por="perdas@venergy.com")
+
+
+def make_order_dto(status: InspectionStatus, **overrides: object) -> InspectionOrderDTO:
+    order_fields = {
+        "id_inspecao": 7, "id_uc": "UC1", "status": status, "motivo": None, "kwh_estimado": 750.0,
+        "fiscal_responsavel": None, "irregularidade_constatada": None, "tipo_irregularidade": None,
+        "kwh_recuperado": None, "numero_toi": None, "justificativa_cancelamento": None,
+        "criado_por": "perdas@venergy.com", "criado_em": datetime(2026, 10, 20, tzinfo=UTC),
+        "atualizado_em": datetime(2026, 10, 20, tzinfo=UTC),
+    }
+    return InspectionOrderDTO(**(order_fields | overrides))
+
+
+class FakeDtoOnlyRepository:
+    """Repositório que só expõe DTOs: o serviço não pode depender de objetos ORM."""
+
+    def __init__(self, stored_order: InspectionOrderDTO | None) -> None:
+        self.stored_order = stored_order
+        self.applied_payload: InspectionOrderUpdateDTO | None = None
+
+    async def get_order(self, id_inspecao: int) -> InspectionOrderDTO | None:
+        del id_inspecao
+        return self.stored_order
+
+    async def update_order(self, id_inspecao: int, payload: InspectionOrderUpdateDTO) -> InspectionOrderDTO:
+        del id_inspecao
+        self.applied_payload = payload
+        assert self.stored_order is not None
+        return self.stored_order.model_copy(update=payload.model_dump(exclude_none=True))
+
+
+async def test_update_inspection_delegates_persistence_to_repository_with_dtos():
+    repository = FakeDtoOnlyRepository(make_order_dto(InspectionStatus.GERADA))
+    service = LossService(repository=repository)  # type: ignore[arg-type]
+
+    payload = InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE)
+
+    updated = await service.update_inspection(7, payload)
+
+    assert updated.status == InspectionStatus.PENDENTE
+    assert repository.applied_payload == payload
+
+
+async def test_update_unknown_inspection_raises_not_found():
+    service = LossService(repository=FakeDtoOnlyRepository(None))  # type: ignore[arg-type]
+
+    with pytest.raises(NotFoundException):
+        await service.update_inspection(99, InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE))
+
+
+@pytest.mark.parametrize(
+    ("current_status", "payload"),
+    [
+        (InspectionStatus.GERADA, InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE, numero_toi="TOI-1")),
+        (
+            InspectionStatus.PENDENTE,
+            InspectionOrderUpdateDTO(
+                status=InspectionStatus.CONCLUIDA, irregularidade_constatada=True, justificativa_cancelamento="x"
+            ),
+        ),
+        (
+            InspectionStatus.GERADA,
+            InspectionOrderUpdateDTO(
+                status=InspectionStatus.CANCELADA, justificativa_cancelamento="Equipe realocada", kwh_recuperado=10
+            ),
+        ),
+    ],
+)
+def test_fields_outside_target_status_are_rejected(current_status, payload):
+    with pytest.raises(BadRequestException):
+        validate_transition(current_status, payload)
+
+
+def test_conclusion_without_irregularity_rejects_irregularity_details():
+    payload = InspectionOrderUpdateDTO(
+        status=InspectionStatus.CONCLUIDA, irregularidade_constatada=False, kwh_recuperado=120.0
+    )
+
+    with pytest.raises(BadRequestException):
+        validate_transition(InspectionStatus.PENDENTE, payload)
+
+
+def test_conclusion_with_irregularity_accepts_field_details():
+    payload = InspectionOrderUpdateDTO(
+        status=InspectionStatus.CONCLUIDA,
+        irregularidade_constatada=True,
+        tipo_irregularidade="desvio",
+        kwh_recuperado=680.0,
+        numero_toi="TOI-1",
+        fiscal_responsavel="Equipe 3",
+    )
+
+    validate_transition(InspectionStatus.PENDENTE, payload)

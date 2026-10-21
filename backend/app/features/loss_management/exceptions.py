@@ -10,3 +10,10 @@ class InspectionConflictError(DomainException):
 
     def __init__(self, message: str):
         super().__init__(message=message, status_code=int(HTTPStatus.CONFLICT))
+
+
+class ActiveOrderConflictError(InspectionConflictError):
+    """A UC já possui ordem de inspeção ativa (gerada ou pendente)."""
+
+    def __init__(self, id_uc: str):
+        super().__init__(f"A UC {id_uc} já possui ordem de inspeção ativa.")

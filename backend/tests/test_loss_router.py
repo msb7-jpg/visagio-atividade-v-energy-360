@@ -12,18 +12,26 @@ BASE_URL = "/api/v1/losses"
 COMPETENCIAS = [f"{year}-{month:02d}" for year in (2024, 2025) for month in range(1, 13)] + ["2026-01"]
 RECENT_COMPETENCIAS = COMPETENCIAS[-3:]
 
-# (id_uc, possui_gd, consumo base, consumo nas 3 competências recentes)
+# (id_uc, possui_gd, bairro, consumo base, consumo nas 3 competências recentes)
 SEED_UNITS = [
-    ("UC_FRAUDE", 0, 300.0, [50.0, 50.0, 50.0]),
-    ("UC_ZERADA", 0, 150.0, [150.0, 0.0, 150.0]),
-    ("UC_NORMAL", 0, 200.0, [200.0, 200.0, 200.0]),
-    ("UC_SOLAR", 1, 300.0, [40.0, 40.0, 40.0]),
+    ("UC_FRAUDE", 0, "Centro", 300.0, [50.0, 50.0, 50.0]),
+    ("UC_ZERADA", 0, "Centro", 150.0, [150.0, 0.0, 150.0]),
+    ("UC_NORMAL", 0, "Centro", 200.0, [200.0, 200.0, 200.0]),
+    ("UC_SOLAR", 1, "Centro", 300.0, [40.0, 40.0, 40.0]),
+    ("UC_INSPECIONADA", 0, "Centro", 250.0, [50.0, 50.0, 50.0]),
+    ("UC_INSPECAO_ANTIGA", 0, "Boa Viagem", 200.0, [50.0, 50.0, 50.0]),
+]
+
+# Janela de análise da última competência (2026-01) começa em 2024-11: só inspeções a partir dela excluem a UC.
+SEED_INSPECTIONS = [
+    ("IN1", "UC_INSPECIONADA", "2025-08-10", 1),
+    ("IN2", "UC_INSPECAO_ANTIGA", "2023-05-02", 0),
 ]
 
 
 def build_measurement_rows() -> list[dict[str, object]]:
     rows = []
-    for id_uc, _, base_kwh, recent_values in SEED_UNITS:
+    for id_uc, _, _, base_kwh, recent_values in SEED_UNITS:
         recent_by_month = dict(zip(RECENT_COMPETENCIAS, recent_values, strict=True))
         rows.extend(
             {"id_uc": id_uc, "competencia": competencia, "consumo_kwh": recent_by_month.get(competencia, base_kwh)}
@@ -38,9 +46,20 @@ async def seed_gold_tables(connection) -> None:
         "municipio TEXT, bairro TEXT, possui_gd BOOLEAN)"
     ))
     await connection.execute(text("CREATE TABLE fato_medicao (id_uc TEXT, competencia TEXT, consumo_kwh REAL)"))
+    await connection.execute(text(
+        "CREATE TABLE fato_inspecoes_perdas (id_inspecao TEXT PRIMARY KEY, id_uc TEXT, data_inspecao TEXT, "
+        "irregularidade_constatada BOOLEAN)"
+    ))
     await connection.execute(
-        text("INSERT INTO dim_unidade_consumidora VALUES (:id_uc, 'Residencial', 'Recife', 'Centro', :possui_gd)"),
-        [{"id_uc": id_uc, "possui_gd": possui_gd} for id_uc, possui_gd, _, _ in SEED_UNITS],
+        text("INSERT INTO dim_unidade_consumidora VALUES (:id_uc, 'Residencial', 'Recife', :bairro, :possui_gd)"),
+        [{"id_uc": id_uc, "possui_gd": possui_gd, "bairro": bairro} for id_uc, possui_gd, bairro, _, _ in SEED_UNITS],
+    )
+    await connection.execute(
+        text("INSERT INTO fato_inspecoes_perdas VALUES (:id_inspecao, :id_uc, :data_inspecao, :irregular)"),
+        [
+            {"id_inspecao": id_inspecao, "id_uc": id_uc, "data_inspecao": data_inspecao, "irregular": irregular}
+            for id_inspecao, id_uc, data_inspecao, irregular in SEED_INSPECTIONS
+        ],
     )
     await connection.execute(
         text("INSERT INTO fato_medicao VALUES (:id_uc, :competencia, :consumo_kwh)"), build_measurement_rows()
@@ -84,7 +103,7 @@ async def test_suspicious_units_ranked_and_solar_excluded(client):
 
     assert response.status_code == 200
     units = response.json()
-    assert [unit["id_uc"] for unit in units] == ["UC_FRAUDE", "UC_ZERADA"]
+    assert [unit["id_uc"] for unit in units] == ["UC_FRAUDE", "UC_INSPECAO_ANTIGA", "UC_ZERADA"]
     assert units[0]["motivos"] == ["queda_subita"]
     assert units[0]["kwh_estimado_recuperar"] == pytest.approx(750.0)
 
@@ -128,6 +147,9 @@ async def test_inspection_lifecycle(client):
     listed = await client.get(f"{BASE_URL}/inspections", headers=headers, params={"status": "concluida"})
     assert [item["id_inspecao"] for item in listed.json()] == [order["id_inspecao"]]
 
+    queue_after_conclusion = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
+    assert "UC_FRAUDE" not in [unit["id_uc"] for unit in queue_after_conclusion.json()]
+
 
 async def test_cancel_requires_justification_and_unknown_order_is_404(client):
     headers = await auth_headers(client, "perdas@venergy.com")
@@ -143,6 +165,43 @@ async def test_cancel_requires_justification_and_unknown_order_is_404(client):
     assert without_reason.status_code == 400
     assert cancelled.json()["status"] == "cancelada"
     assert missing.status_code == 404
+
+
+async def test_cancelled_order_returns_unit_to_queue(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_ZERADA"})
+    cancel = {"status": "cancelada", "justificativa_cancelamento": "Equipe realocada"}
+    await client.patch(f"{BASE_URL}/inspections/{created.json()['id_inspecao']}", headers=headers, json=cancel)
+
+    queue = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
+
+    assert "UC_ZERADA" in [unit["id_uc"] for unit in queue.json()]
+
+
+async def test_unit_inspected_within_analysis_window_leaves_queue(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    response = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
+
+    queued_ids = [unit["id_uc"] for unit in response.json()]
+    assert "UC_INSPECIONADA" not in queued_ids
+    assert "UC_INSPECAO_ANTIGA" in queued_ids
+
+
+async def test_queue_can_be_filtered_by_bairro(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    response = await client.get(f"{BASE_URL}/suspicious-units", headers=headers, params={"bairro": "Boa Viagem"})
+
+    assert [unit["id_uc"] for unit in response.json()] == ["UC_INSPECAO_ANTIGA"]
+
+
+async def test_queue_default_limit_matches_monthly_field_capacity(client):
+    response = await client.get("/openapi.json")
+
+    parameters = response.json()["paths"][f"{BASE_URL}/suspicious-units"]["get"]["parameters"]
+    limit_parameter = next(parameter for parameter in parameters if parameter["name"] == "limit")
+    assert limit_parameter["schema"]["default"] == 200
 
 
 async def test_missing_gold_tables_returns_clear_error():

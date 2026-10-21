@@ -11,13 +11,15 @@ list_suspicious_units_doc = EndpointDoc(
     summary="Fila de UCs suspeitas priorizada por energia esperada a recuperar",
     description=(
         "Lista UCs com queda >= 50% do consumo médio das 3 últimas competências em relação às 12 anteriores, "
-        "ou com leitura zerada. Exclui UCs com geração distribuída e UCs com ordem de inspeção ativa. "
-        "Ordenação decrescente por valor esperado (score de risco x kWh estimado a recuperar)."
+        "ou com leitura zerada. Exclui UCs com geração distribuída, com ordem de inspeção ativa e as já "
+        "inspecionadas dentro da janela de análise (ordem concluída ou histórico de campo); ordem cancelada "
+        "devolve a UC à fila. Filtros por município, bairro e classe; limite padrão de 200 (capacidade mensal "
+        "da equipe de campo). Ordenação decrescente por valor esperado (score de risco x kWh estimado)."
     ),
     response_description="Fila priorizada de UCs suspeitas.",
     responses={
         **AUTH_ERROR_RESPONSES,
-        500: {"description": "Falha ao consultar tabelas Gold de medição (dim_unidade_consumidora/fato_medicao)."},
+        500: {"description": "Falha ao consultar tabelas Gold (cadastro, medição ou inspeções)."},
     },
 )
 

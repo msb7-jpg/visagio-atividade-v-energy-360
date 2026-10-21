@@ -2,10 +2,13 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String
+from sqlalchemy import Boolean, DateTime, Float, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+from app.features.loss_management.schemas import InspectionStatus
+
+ACTIVE_STATUSES = (InspectionStatus.GERADA.value, InspectionStatus.PENDENTE.value)
 
 
 def _utc_now() -> datetime:
@@ -29,3 +32,14 @@ class InspectionOrder(Base):
     criado_por: Mapped[str] = mapped_column(String(120))
     criado_em: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)
     atualizado_em: Mapped[datetime] = mapped_column(DateTime, default=_utc_now, onupdate=_utc_now)
+
+
+# Garante no banco, inclusive sob requisições concorrentes, no máximo uma ordem ativa por UC.
+_is_active_order = InspectionOrder.status.in_(ACTIVE_STATUSES)
+Index(
+    "uq_ordem_inspecao_uc_ativa",
+    InspectionOrder.id_uc,
+    unique=True,
+    sqlite_where=_is_active_order,
+    postgresql_where=_is_active_order,
+)

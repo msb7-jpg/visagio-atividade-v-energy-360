@@ -18,6 +18,7 @@ from app.features.loss_management.schemas import (
     InspectionOrderUpdateDTO,
     InspectionStatus,
     SuspiciousUnitDTO,
+    SuspiciousUnitsFilterDTO,
 )
 from app.shared.dependencies import CurrentUser, require_role
 
@@ -36,12 +37,10 @@ router = APIRouter(
     **list_suspicious_units_doc.to_dict(),
 )
 async def list_suspicious_units(
-    service: LossSvc,
-    municipio: str | None = None,
-    classe: str | None = None,
-    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    service: LossSvc, queue_filter: Annotated[SuspiciousUnitsFilterDTO, Query()]
 ) -> list[SuspiciousUnitDTO]:
-    return await service.list_suspicious_units(municipio, classe, limit)
+    """Devolve a fila de UCs suspeitas priorizada."""
+    return await service.list_suspicious_units(queue_filter)
 
 
 @router.get(
@@ -53,6 +52,7 @@ async def list_inspections(
     service: LossSvc,
     status_filter: Annotated[InspectionStatus | None, Query(alias="status")] = None,
 ) -> list[InspectionOrderDTO]:
+    """Lista as ordens de inspeção, com filtro opcional por status."""
     return await service.list_inspections(status_filter)
 
 
@@ -65,6 +65,7 @@ async def list_inspections(
 async def create_inspection(
     payload: InspectionOrderCreateDTO, service: LossSvc, user: CurrentUser
 ) -> InspectionOrderDTO:
+    """Gera uma ordem de inspeção registrando o usuário autenticado como autor."""
     return await service.create_inspection(payload, criado_por=user.email)
 
 
@@ -76,4 +77,5 @@ async def create_inspection(
 async def update_inspection(
     id_inspecao: int, payload: InspectionOrderUpdateDTO, service: LossSvc
 ) -> InspectionOrderDTO:
+    """Atualiza status, resultado de campo ou cancelamento de uma ordem."""
     return await service.update_inspection(id_inspecao, payload)

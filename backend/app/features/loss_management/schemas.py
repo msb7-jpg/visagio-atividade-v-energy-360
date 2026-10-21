@@ -22,6 +22,18 @@ class SuspicionReason(StrEnum):
     LEITURA_ZERADA = "leitura_zerada"
 
 
+FILA_CAPACIDADE_MENSAL = 200  # "mais de 200 inspeções por mês" (Gerente de Perdas, atividade.pdf)
+
+
+class SuspiciousUnitsFilterDTO(BaseModel):
+    """Filtros territoriais, de classe e tamanho da fila de suspeitas (query params)."""
+
+    municipio: str | None = None
+    bairro: str | None = None
+    classe: str | None = None
+    limit: int = Field(default=FILA_CAPACIDADE_MENSAL, ge=1, le=500)
+
+
 class SuspiciousUnitDTO(BaseModel):
     id_uc: str
     municipio: str | None
