@@ -1,9 +1,11 @@
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts'
 import type { TooltipProps } from 'recharts'
 import { ChartContainer, ChartLegendItem, ChartTooltipFrame } from '@/components/ui/chart'
-import type { MonthlyComparison } from '@/features/customer360/types/customer360Types'
+import { YearTotalsSummary } from '@/features/customer360/components/YearTotalsSummary'
+import type { MonthlyComparison, YearOverYearTotals } from '@/features/customer360/types/customer360Types'
 import {
   formatCompetencia,
+  formatDailyKwh,
   formatFlag,
   formatKwh,
   formatMoney,
@@ -27,6 +29,7 @@ function ConsumptionTooltip({ active, payload }: TooltipProps<number, string>) {
     <ChartTooltipFrame title={`${formatCompetencia(row.competencia)} vs ${formatCompetencia(row.competencia_ano_anterior)}`}>
       <span>Consumo: {formatKwh(row.consumo_kwh)} vs {formatKwh(row.consumo_kwh_ano_anterior)} ({formatPercent(row.variacao_consumo_pct)})</span>
       <span>Valor: {formatMoney(row.valor_total_rs)} vs {formatMoney(row.valor_total_rs_ano_anterior)} ({formatPercent(row.variacao_valor_pct)})</span>
+      <span>Por dia: {formatDailyKwh(row.media_diaria_kwh)} vs {formatDailyKwh(row.media_diaria_kwh_ano_anterior)} ({row.dias_faturamento ?? '—'} vs {row.dias_faturamento_ano_anterior ?? '—'} dias)</span>
       <span className="text-muted-foreground">Bandeira: {formatFlag(row.bandeira_tarifaria)}</span>
     </ChartTooltipFrame>
   )
@@ -62,18 +65,20 @@ function ConsumptionDataTable({ rows }: { rows: ChartRow[] }) {
 
 interface ConsumptionYoYChartProps {
   months: MonthlyComparison[]
+  totals: YearOverYearTotals | null
 }
 
 /**
  * Gráfico de barras do consumo dos últimos 12 meses ao lado do mesmo mês do ano anterior.
  *
- * @param props - Meses comparados retornados por `/history`.
+ * @param props - Meses comparados e totais de 12 meses retornados por `/history`.
  * @returns Gráfico com legenda, tooltip detalhado e tabela acessível equivalente.
  */
-export function ConsumptionYoYChart({ months }: ConsumptionYoYChartProps) {
+export function ConsumptionYoYChart({ months, totals }: ConsumptionYoYChartProps) {
   const rows: ChartRow[] = months.map((month) => ({ ...month, mes: formatCompetencia(month.competencia) }))
   return (
     <div className="flex flex-col gap-3">
+      {totals ? <YearTotalsSummary totals={totals} /> : null}
       <div className="flex flex-wrap items-center gap-4">
         <span className="text-foreground text-sm font-semibold">Consumo mensal (kWh)</span>
         <ChartLegendItem label="Últimos 12 meses" series="chart-1" />

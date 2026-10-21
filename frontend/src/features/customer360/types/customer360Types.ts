@@ -37,6 +37,14 @@ export interface MonthlyComparison {
   valor_total_rs_ano_anterior: number | null
   variacao_valor_pct: number | null
   bandeira_tarifaria: string | null
+  dias_faturamento: number | null
+  dias_faturamento_ano_anterior: number | null
+  media_diaria_kwh: number | null
+  media_diaria_kwh_ano_anterior: number | null
+  variacao_media_diaria_pct: number | null
+  tarifa_rs_kwh: number | null
+  tarifa_rs_kwh_ano_anterior: number | null
+  variacao_tarifa_pct: number | null
 }
 
 export interface HighBillDiagnosis {
@@ -49,12 +57,32 @@ export interface HighBillDiagnosis {
   bandeira_atual: string | null
   bandeira_ano_anterior: string | null
   bandeira_mudou: boolean
+  dias_faturamento: number | null
+  dias_faturamento_ano_anterior: number | null
+  media_diaria_kwh: number | null
+  media_diaria_kwh_ano_anterior: number | null
+  variacao_media_diaria_pct: number | null
+  tendencia_media_diaria: ConsumptionTrend
+  tarifa_rs_kwh: number | null
+  tarifa_rs_kwh_ano_anterior: number | null
+  variacao_tarifa_pct: number | null
+}
+
+export interface YearOverYearTotals {
+  meses_comparados: number
+  consumo_kwh: number
+  consumo_kwh_ano_anterior: number
+  variacao_consumo_pct: number | null
+  valor_total_rs: number | null
+  valor_total_rs_ano_anterior: number | null
+  variacao_valor_pct: number | null
 }
 
 export interface CustomerHistory {
   id_uc: string
   competencia_referencia: string | null
   meses: MonthlyComparison[]
+  resumo_12_meses: YearOverYearTotals | null
   diagnostico: HighBillDiagnosis | null
   faturas: Invoice[]
   faturas_em_aberto: Invoice[]

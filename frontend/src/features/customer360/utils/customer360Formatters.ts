@@ -5,6 +5,8 @@ const EMPTY_VALUE = '—'
 
 const energyFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
 const moneyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+const tariffFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 3 })
+const magnitudeFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
 const percentFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1, signDisplay: 'exceptZero' })
 
 export type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline'
@@ -52,6 +54,26 @@ export function formatCount(count: number, singular: string, plural: string): st
 }
 
 /**
+ * Formata o preço médio do kWh em reais.
+ *
+ * @param tariff - Preço em R$/kWh, ou null quando não há fatura.
+ * @returns Texto como "R$ 0,88/kWh" ou travessão.
+ */
+export function formatTariff(tariff: number | null): string {
+  return tariff === null ? EMPTY_VALUE : `${tariffFormatter.format(tariff)}/kWh`
+}
+
+/**
+ * Formata consumo médio diário.
+ *
+ * @param dailyKwh - Consumo em kWh por dia, ou null sem leitura.
+ * @returns Texto como "6,7 kWh/dia" ou travessão.
+ */
+export function formatDailyKwh(dailyKwh: number | null): string {
+  return dailyKwh === null ? EMPTY_VALUE : `${energyFormatter.format(dailyKwh)} kWh/dia`
+}
+
+/**
  * Formata potência instalada em kW no padrão brasileiro.
  *
  * @param kilowatts - Potência em kW, ou null quando não informada.
@@ -89,6 +111,16 @@ export function formatMoney(amount: number | null): string {
  */
 export function formatPercent(percent: number | null): string {
   return percent === null ? EMPTY_VALUE : `${percentFormatter.format(percent)}%`
+}
+
+/**
+ * Formata o tamanho de uma variação percentual, sem sinal, para frases que já dizem se subiu ou caiu.
+ *
+ * @param percent - Variação em pontos percentuais.
+ * @returns Texto como "10%".
+ */
+export function formatPercentMagnitude(percent: number): string {
+  return `${magnitudeFormatter.format(Math.abs(percent))}%`
 }
 
 /**

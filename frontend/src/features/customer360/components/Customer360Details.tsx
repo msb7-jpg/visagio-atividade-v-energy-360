@@ -53,7 +53,7 @@ export function Customer360Details({ idUc, hasSolar }: Customer360DetailsProps) 
         <TabsContent value="consumption" className="mt-4 min-w-0">
           <QuerySection data={historyQuery.data} isError={historyQuery.isError} errorTitle="Não foi possível carregar o consumo">
             {(history) => (history.meses.length > 0
-              ? <ConsumptionYoYChart months={history.meses} />
+              ? <ConsumptionYoYChart months={history.meses} totals={history.resumo_12_meses} />
               : <EmptyState title="Sem leituras" description="Ainda não há leituras de consumo para esta unidade." icon={<FileSearch className="size-10" />} />)}
           </QuerySection>
         </TabsContent>
