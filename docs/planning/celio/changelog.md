@@ -29,16 +29,23 @@
 - **Validação de Testes:**
   - Não se aplica (apenas documentação).
 
-### [2026-10-20] - Seed de testes e service puro da decomposição
+### [2026-10-20] - Seed de testes, service puro e endpoint de decomposição
 - **Autor:** Celio
 - **O que foi feito:**
   - `backend/tests/revenue_seed.py`: seed de `dim_unidade_consumidora` e `fato_faturamento` com 5 UCs e duas janelas de 12 competências (primeiro ano da base e últimos 12 meses), mais o `seeded_client`.
   - `backend/tests/test_revenue_seed.py`: 3 testes (contagem de linhas, exemplo-ouro 9600 para 9504 e limpeza do `dependency_overrides`).
   - `backend/app/features/revenue/`: `schemas.py`, `exceptions.py`, `decomposition.py` (cálculo puro) e `service.py`, mais o service no contrato 1 do import-linter.
   - `backend/tests/test_revenue_service.py`: 16 testes (exemplo-ouro 800 para 792, caso só de mix, identidade da soma dos efeitos em 7 cenários, segmentos novo e perdido, janelas inválidas e sem dados).
+  - `backend/app/features/revenue/repository.py`: SQL agregado de faturamento por classe, município e bairro nas duas janelas (base e atual), com filtros opcionais e erro de leitura convertido em exceção de domínio.
+  - `backend/app/features/revenue/dependencies.py` e `router.py`: rota `GET /api/v1/revenue/decomposition`, restrita à Diretoria (RBAC), com janelas e filtros recebidos por query string, registrada em `app/api/v1/router.py`.
+  - `backend/tests/test_revenue_router.py`: 10 testes de integração do endpoint usando o seed (200 com identidade dos efeitos, filtros, 400 para janelas inválidas ou sobrepostas, 403 para perfil sem permissão, 404 sem dados).
 - **Dificuldades / Desafios:**
   - Decisão: a decomposição é feita por segmento e o efeito de volume total é dividido em volume puro e mix, porque no agregado os números do case não fecham. Segmento novo ou perdido tem toda a variação atribuída ao volume.
+  - Decisão: o RBAC usa o alias `RequireDiretoria`, que continua valendo mesmo se o PR do João alterar a assinatura de `require_role`.
+  - Premissas a confirmar com Dados: `classe_consumo` com o nome da classe, município e bairro em maiúsculas, e valor faturado conforme a Gold.
+  - `app/api/v1/router.py` é um arquivo compartilhado e pode gerar conflito de merge com os PRs de outras fatias.
 - **Próximos Passos:**
-  - Repository com SQL agregado, `dependencies`, `router` com `EndpointDoc` e RBAC (22/10).
+  - Endpoints de KPIs e breakdown, histórico por bairro e ranking com paginação (23/10).
+  - `EXPLAIN QUERY PLAN` e contador de queries, `EndpointDoc` (quando `app/shared/docs.py` entrar na `main`) e ADR (23/10).
 - **Validação de Testes:**
-  - `make lint-all` e `make test-all` passando; `uv run pytest tests/test_revenue_seed.py`: 3 passed; `uv run pytest tests/test_revenue_service.py`: 16 passed.
+  - `make lint-all` e `make test-all` passando (41 testes); `uv run pytest tests/test_revenue_seed.py`: 3 passed; `uv run pytest tests/test_revenue_service.py`: 16 passed; `uv run pytest tests/test_revenue_router.py`: 10 passed.
