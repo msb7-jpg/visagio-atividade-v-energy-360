@@ -20,7 +20,7 @@ UNIT_SQL = text("SELECT * FROM dim_unidade_consumidora WHERE id_uc = :id_uc")
 UNIT_EXISTS_SQL = text("SELECT 1 AS existe FROM dim_unidade_consumidora WHERE id_uc = :id_uc LIMIT 1")
 
 MEASUREMENTS_SQL = text("""
-SELECT competencia, consumo_kwh
+SELECT competencia, consumo_kwh, dias_faturamento
 FROM fato_medicao
 WHERE id_uc = :id_uc
 ORDER BY competencia

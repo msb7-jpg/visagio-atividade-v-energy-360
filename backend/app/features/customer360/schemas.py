@@ -56,6 +56,7 @@ class MeasurementDTO(GoldRowModel):
 
     competencia: str
     consumo_kwh: float | None = None
+    dias_faturamento: int | None = None
 
 
 class MonthlyComparisonDTO(BaseModel):
@@ -70,6 +71,14 @@ class MonthlyComparisonDTO(BaseModel):
     valor_total_rs_ano_anterior: float | None = None
     variacao_valor_pct: float | None = None
     bandeira_tarifaria: str | None = None
+    dias_faturamento: int | None = None
+    dias_faturamento_ano_anterior: int | None = None
+    media_diaria_kwh: float | None = None
+    media_diaria_kwh_ano_anterior: float | None = None
+    variacao_media_diaria_pct: float | None = None
+    tarifa_rs_kwh: float | None = None
+    tarifa_rs_kwh_ano_anterior: float | None = None
+    variacao_tarifa_pct: float | None = None
 
 
 class HighBillDiagnosisDTO(BaseModel):
@@ -84,6 +93,27 @@ class HighBillDiagnosisDTO(BaseModel):
     bandeira_atual: str | None = None
     bandeira_ano_anterior: str | None = None
     bandeira_mudou: bool = False
+    dias_faturamento: int | None = None
+    dias_faturamento_ano_anterior: int | None = None
+    media_diaria_kwh: float | None = None
+    media_diaria_kwh_ano_anterior: float | None = None
+    variacao_media_diaria_pct: float | None = None
+    tendencia_media_diaria: ConsumptionTrend = ConsumptionTrend.SEM_COMPARACAO
+    tarifa_rs_kwh: float | None = None
+    tarifa_rs_kwh_ano_anterior: float | None = None
+    variacao_tarifa_pct: float | None = None
+
+
+class YearOverYearTotalsDTO(BaseModel):
+    """Totais dos 12 meses contra os mesmos meses do ano anterior, somando só os meses comparáveis."""
+
+    meses_comparados: int
+    consumo_kwh: float
+    consumo_kwh_ano_anterior: float
+    variacao_consumo_pct: float | None = None
+    valor_total_rs: float | None = None
+    valor_total_rs_ano_anterior: float | None = None
+    variacao_valor_pct: float | None = None
 
 
 class CustomerHistoryDTO(BaseModel):
@@ -92,6 +122,7 @@ class CustomerHistoryDTO(BaseModel):
     id_uc: str
     competencia_referencia: str | None = None
     meses: list[MonthlyComparisonDTO]
+    resumo_12_meses: YearOverYearTotalsDTO | None = None
     diagnostico: HighBillDiagnosisDTO | None = None
     faturas: list[InvoiceDTO]
     faturas_em_aberto: list[InvoiceDTO]

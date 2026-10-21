@@ -261,6 +261,7 @@ source_modules = [
     "app.features.auth.service",
     "app.features.customer360.service",
     "app.features.customer360.consumption_analysis",
+    "app.features.customer360.yoy_totals",
 ]
 forbidden_modules = [
     "fastapi",

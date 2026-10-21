@@ -20,6 +20,7 @@ from app.features.customer360.schemas import (
     MonthlyComparisonDTO,
     ServiceTicketDTO,
 )
+from app.features.customer360.yoy_totals import summarize_window
 
 STATUS_EM_ABERTO = frozenset({"ABERTA", "VENCIDA"})
 
@@ -85,6 +86,7 @@ class Customer360Service:
             id_uc=normalized_id,
             competencia_referencia=diagnosis.competencia_referencia if diagnosis else None,
             meses=monthly_comparison,
+            resumo_12_meses=summarize_window(monthly_comparison),
             diagnostico=diagnosis,
             faturas=invoices,
             faturas_em_aberto=open_invoices,
@@ -134,6 +136,6 @@ def _analyze_consumption(
     reference = latest_competencia(measurements)
     if reference is None:
         return [], None
-    consumption_by_month = {measurement.competencia: measurement.consumo_kwh for measurement in measurements}
-    monthly_comparison = build_monthly_comparison(reference, consumption_by_month, invoices_by_month)
+    measurements_by_month = {measurement.competencia: measurement for measurement in measurements}
+    monthly_comparison = build_monthly_comparison(reference, measurements_by_month, invoices_by_month)
     return monthly_comparison, diagnose_high_bill(monthly_comparison[-1], invoices_by_month)
