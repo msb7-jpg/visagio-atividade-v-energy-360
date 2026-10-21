@@ -24,6 +24,7 @@ export function SuspiciousQueueTab() {
         isError={isError}
         isEmpty={units.length === 0}
         errorTitle="Não foi possível carregar a fila"
+        errorDescription="Verifique a conexão com a API e se as tabelas Gold de cadastro e medição estão disponíveis."
         emptyTitle="Nenhuma UC suspeita na fila"
         emptyDescription="Nenhuma UC atende aos critérios. UCs com geração distribuída, com ordem ativa ou já inspecionadas na janela de análise ficam fora da fila."
       >

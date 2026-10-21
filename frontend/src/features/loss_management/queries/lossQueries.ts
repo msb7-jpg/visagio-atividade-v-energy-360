@@ -12,15 +12,27 @@ export const lossKeys = {
 const LOSS_STALE_TIME_MS = 30 * 1000
 
 /**
+ * Remove filtros vazios: evita query params em branco e chaves de cache distintas para a mesma fila.
+ *
+ * @param filters - Filtros digitados na tela.
+ * @returns Apenas os filtros preenchidos.
+ */
+function compactFilters(filters: SuspiciousUnitsFilter): SuspiciousUnitsFilter {
+  const filledEntries = Object.entries(filters).filter(([, filterValue]) => Boolean(filterValue?.trim()))
+  return Object.fromEntries(filledEntries)
+}
+
+/**
  * Opções reutilizáveis da consulta da fila de suspeitas.
  *
  * @param filters - Filtros de município, bairro e classe.
  * @returns Opções de query com chave hierárquica e cancelamento via signal.
  */
 export function suspiciousUnitsQueryOptions(filters: SuspiciousUnitsFilter) {
+  const activeFilters = compactFilters(filters)
   return queryOptions({
-    queryKey: lossKeys.suspiciousUnits(filters),
-    queryFn: ({ signal }) => lossApi.listSuspiciousUnits(filters, signal),
+    queryKey: lossKeys.suspiciousUnits(activeFilters),
+    queryFn: ({ signal }) => lossApi.listSuspiciousUnits(activeFilters, signal),
     staleTime: LOSS_STALE_TIME_MS
   })
 }

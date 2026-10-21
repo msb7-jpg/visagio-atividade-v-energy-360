@@ -10,6 +10,7 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
+import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { useUpdateInspectionMutation } from '@/features/loss_management/hooks/useLossMutations'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
@@ -64,7 +65,9 @@ export function CancelOrderDialog({ order, onClose }: CancelOrderDialogProps) {
             variant="destructive"
             onClick={handleConfirm}
             disabled={!trimmedJustification || updateMutation.isPending}
+            aria-busy={updateMutation.isPending}
           >
+            {updateMutation.isPending ? <Spinner className="size-4" /> : null}
             Confirmar cancelamento
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -8,16 +8,10 @@ import type {
   SuspiciousUnitsFilter
 } from '@/features/loss_management/types/lossTypes'
 
-/** Remove filtros vazios para não enviar query params em branco. */
-function compactFilters(filters: SuspiciousUnitsFilter): SuspiciousUnitsFilter {
-  const filledEntries = Object.entries(filters).filter(([, filterValue]) => Boolean(filterValue?.trim()))
-  return Object.fromEntries(filledEntries)
-}
-
 export const lossApi = {
   async listSuspiciousUnits(filters: SuspiciousUnitsFilter, signal?: AbortSignal): Promise<SuspiciousUnit[]> {
     const { data } = await apiClient.get<SuspiciousUnit[]>('/losses/suspicious-units', {
-      params: compactFilters(filters),
+      params: filters,
       signal
     })
     return data

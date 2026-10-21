@@ -30,6 +30,7 @@ export function InspectionOrdersTab() {
         isError={isError}
         isEmpty={orders.length === 0}
         errorTitle="Não foi possível carregar as ordens"
+        errorDescription="Verifique a conexão com a API e tente novamente."
         emptyTitle="Nenhuma ordem de inspeção"
         emptyDescription="Gere ordens a partir da Fila de Suspeitas para acompanhá-las aqui."
       >

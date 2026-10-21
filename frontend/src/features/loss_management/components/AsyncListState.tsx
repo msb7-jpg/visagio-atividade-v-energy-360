@@ -8,6 +8,7 @@ interface AsyncListStateProps {
   isError: boolean
   isEmpty: boolean
   errorTitle: string
+  errorDescription: string
   emptyTitle: string
   emptyDescription: string
   children: ReactNode
@@ -24,6 +25,7 @@ export function AsyncListState({
   isError,
   isEmpty,
   errorTitle,
+  errorDescription,
   emptyTitle,
   emptyDescription,
   children
@@ -32,13 +34,7 @@ export function AsyncListState({
     return <LoadingSkeleton count={5} className="h-8" />
   }
   if (isError) {
-    return (
-      <EmptyState
-        title={errorTitle}
-        description="Verifique a conexão com a API e se as tabelas Gold estão disponíveis."
-        icon={<AlertTriangle className="size-10" />}
-      />
-    )
+    return <EmptyState title={errorTitle} description={errorDescription} icon={<AlertTriangle className="size-10" />} />
   }
   if (isEmpty) {
     return <EmptyState title={emptyTitle} description={emptyDescription} icon={<Inbox className="size-10" />} />

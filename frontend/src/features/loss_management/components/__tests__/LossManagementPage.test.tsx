@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AxiosError, type AxiosResponse } from 'axios'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -158,5 +159,78 @@ describe('LossManagementPage', () => {
     await waitFor(() => expect(mockedApi.updateInspection).toHaveBeenCalledWith(1, {
       status: 'cancelada', justificativa_cancelamento: 'Cliente regularizou'
     }))
+  })
+})
+
+function buildApiError(status: number, detail: string): AxiosError {
+  const response = { status, statusText: '', headers: {}, config: {}, data: { detail } } as AxiosResponse
+  return new AxiosError(detail, String(status), undefined, undefined, response)
+}
+
+async function openCancelDialog() {
+  mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'pendente' })])
+  renderPage()
+  const table = await openOrdersTab()
+  fireEvent.click(within(table).getByRole('button', { name: 'Cancelar ordem' }))
+  fireEvent.change(await screen.findByLabelText(/^Justificativa/), { target: { value: 'Cliente regularizou' } })
+  return screen.getByRole('button', { name: 'Confirmar cancelamento' })
+}
+
+describe('LossManagementPage - erros e estados de envio', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockedApi.listSuspiciousUnits.mockResolvedValue([suspiciousUnit])
+    mockedApi.listInspections.mockResolvedValue([])
+  })
+
+  it('mostra a mensagem da API quando a UC já tem ordem ativa', async () => {
+    const conflictDetail = 'A UC UC104779 já possui ordem de inspeção ativa.'
+    mockedApi.createInspection.mockRejectedValue(buildApiError(409, conflictDetail))
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Gerar ordem para UC104779' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirmar ordem' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(conflictDetail)
+  })
+
+  it('mostra a mensagem da API quando o cancelamento é recusado', async () => {
+    const conflictDetail = "Transição de status inválida: 'concluida' -> 'cancelada'."
+    mockedApi.updateInspection.mockRejectedValue(buildApiError(409, conflictDetail))
+    const confirmButton = await openCancelDialog()
+
+    fireEvent.click(confirmButton)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(conflictDetail)
+  })
+
+  it('sinaliza o envio em andamento no cancelamento', async () => {
+    mockedApi.updateInspection.mockReturnValue(new Promise(() => undefined))
+    const confirmButton = await openCancelDialog()
+
+    fireEvent.click(confirmButton)
+
+    await waitFor(() => expect(confirmButton).toHaveAttribute('aria-busy', 'true'))
+    expect(confirmButton).toBeDisabled()
+  })
+
+  it('não refaz a consulta ao filtrar com todos os campos vazios', async () => {
+    renderPage()
+    await screen.findByRole('row', { name: /UC104779/ })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }))
+    await screen.findByRole('row', { name: /UC104779/ })
+
+    expect(mockedApi.listSuspiciousUnits).toHaveBeenCalledTimes(1)
+  })
+
+  it('explica a falha das ordens sem citar as tabelas Gold', async () => {
+    mockedApi.listInspections.mockRejectedValue(buildApiError(500, 'Erro interno'))
+    renderPage()
+
+    fireEvent.click(screen.getByRole('tab', { name: /Ordens em Campo/ }))
+
+    expect(await screen.findByText('Não foi possível carregar as ordens')).toBeInTheDocument()
+    expect(screen.queryByText(/Gold/)).not.toBeInTheDocument()
   })
 })

@@ -30,7 +30,7 @@ export function ActionDialogFooter({
       {errorMessage ? <p className="text-destructive text-sm" role="alert">{errorMessage}</p> : null}
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>Voltar</Button>
-        <Button type="button" onClick={onConfirm} disabled={isPending || isConfirmDisabled}>
+        <Button type="button" onClick={onConfirm} disabled={isPending || isConfirmDisabled} aria-busy={isPending}>
           {isPending ? <Spinner className="size-4" /> : null}
           {confirmLabel}
         </Button>
