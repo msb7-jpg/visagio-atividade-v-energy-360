@@ -48,9 +48,12 @@ class SuspiciousUnitDTO(BaseModel):
 
 
 class InspectionOrderCreateDTO(BaseModel):
+    """Abertura de ordem: o kWh estimado é calculado pelo servidor, nunca aceito do cliente."""
+
+    model_config = ConfigDict(extra="forbid")
+
     id_uc: str = Field(min_length=1, max_length=20)
     motivo: str | None = Field(default=None, max_length=200)
-    kwh_estimado: float = Field(default=0.0, ge=0)
     fiscal_responsavel: str | None = Field(default=None, max_length=120)
 
 

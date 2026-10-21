@@ -32,11 +32,18 @@ list_inspections_doc = EndpointDoc(
 
 create_inspection_doc = EndpointDoc(
     summary="Gerar ordem de inspeção para uma UC",
-    description="Abre uma ordem com status 'gerada' e registra o usuário autenticado como autor.",
+    description=(
+        "Abre uma ordem com status 'gerada' e registra o usuário autenticado como autor. A UC precisa existir "
+        "no cadastro. O kWh estimado é calculado pelo servidor com a regra da fila (não é aceito no corpo); "
+        "UC fora da fila (sem suspeita ou com GD) gera ordem manual com 0 kWh."
+    ),
     response_description="Ordem de inspeção criada.",
     responses={
         **AUTH_ERROR_RESPONSES,
+        404: {"description": "UC não encontrada no cadastro."},
         409: {"description": "A UC já possui ordem de inspeção ativa (gerada ou pendente)."},
+        422: {"description": "Corpo inválido, inclusive campos não aceitos como 'kwh_estimado'."},
+        500: {"description": "Falha ao consultar tabelas Gold (cadastro ou medição)."},
     },
 )
 

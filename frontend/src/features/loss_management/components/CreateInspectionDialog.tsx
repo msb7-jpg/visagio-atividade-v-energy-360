@@ -22,7 +22,7 @@ export function CreateInspectionDialog({ unit, onClose }: CreateInspectionDialog
 
   const handleConfirm = () => {
     createMutation.mutate(
-      { id_uc: unit.id_uc, motivo, kwh_estimado: unit.kwh_estimado_recuperar },
+      { id_uc: unit.id_uc, motivo },
       { onSuccess: onClose }
     )
   }

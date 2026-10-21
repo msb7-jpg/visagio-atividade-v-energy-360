@@ -20,6 +20,7 @@ SEED_UNITS = [
     ("UC_SOLAR", 1, "Centro", 300.0, [40.0, 40.0, 40.0]),
     ("UC_INSPECIONADA", 0, "Centro", 250.0, [50.0, 50.0, 50.0]),
     ("UC_INSPECAO_ANTIGA", 0, "Boa Viagem", 200.0, [50.0, 50.0, 50.0]),
+    ("UC_SEM_LEITURA", 0, "Centro", 300.0, [None, None, None]),
 ]
 
 # Janela de análise da última competência (2026-01) começa em 2024-11: só inspeções a partir dela excluem a UC.
@@ -33,9 +34,11 @@ def build_measurement_rows() -> list[dict[str, object]]:
     rows = []
     for id_uc, _, _, base_kwh, recent_values in SEED_UNITS:
         recent_by_month = dict(zip(RECENT_COMPETENCIAS, recent_values, strict=True))
+        # None na janela recente = competência sem leitura (a linha não existe em fato_medicao).
         rows.extend(
             {"id_uc": id_uc, "competencia": competencia, "consumo_kwh": recent_by_month.get(competencia, base_kwh)}
             for competencia in COMPETENCIAS
+            if recent_by_month.get(competencia, base_kwh) is not None
         )
     return rows
 
@@ -149,6 +152,45 @@ async def test_inspection_lifecycle(client):
 
     queue_after_conclusion = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
     assert "UC_FRAUDE" not in [unit["id_uc"] for unit in queue_after_conclusion.json()]
+
+
+async def test_create_rejects_unit_missing_from_registry(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    response = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_QUE_NAO_EXISTE"})
+    orders = await client.get(f"{BASE_URL}/inspections", headers=headers)
+
+    assert response.status_code == 404
+    assert "UC_QUE_NAO_EXISTE" in response.json()["detail"]
+    assert orders.json() == []
+
+
+async def test_create_computes_estimated_kwh_on_server_like_the_queue(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+
+    assert created.status_code == 201
+    assert created.json()["kwh_estimado"] == pytest.approx(750.0)
+
+
+async def test_create_rejects_client_supplied_estimated_kwh(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    payload = {"id_uc": "UC_FRAUDE", "kwh_estimado": 999999}
+
+    response = await client.post(f"{BASE_URL}/inspections", headers=headers, json=payload)
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("id_uc", ["UC_NORMAL", "UC_SOLAR", "UC_SEM_LEITURA"])
+async def test_registered_unit_outside_queue_gets_manual_order_with_zero_kwh(client, id_uc):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": id_uc})
+
+    assert created.status_code == 201
+    assert created.json()["kwh_estimado"] == pytest.approx(0.0)
 
 
 async def test_cancel_requires_justification_and_unknown_order_is_404(client):

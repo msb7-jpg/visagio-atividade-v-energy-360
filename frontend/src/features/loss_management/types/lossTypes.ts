@@ -43,11 +43,10 @@ export interface InspectionOrder {
   atualizado_em: string
 }
 
-/** Payload de abertura de ordem a partir da fila. */
+/** Payload de abertura de ordem a partir da fila (o kWh estimado é calculado pelo servidor). */
 export interface InspectionOrderCreate {
   id_uc: string
   motivo?: string
-  kwh_estimado?: number
 }
 
 /** Payload de mudança de status, resultado de campo ou cancelamento. */

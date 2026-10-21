@@ -26,36 +26,36 @@ async def repository():
 
 
 async def test_database_rejects_second_active_order_for_same_unit(repository):
-    await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR)
+    await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR, kwh_estimado=0.0)
 
     # Simula a corrida: a segunda requisição já passou pela checagem do serviço.
     with pytest.raises(InspectionConflictError):
-        await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR)
+        await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR, kwh_estimado=0.0)
 
 
 async def test_rejected_duplicate_keeps_session_usable(repository):
-    await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR)
+    await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR, kwh_estimado=0.0)
     with pytest.raises(InspectionConflictError):
-        await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR)
+        await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR, kwh_estimado=0.0)
 
-    other_order = await repository.create_order(InspectionOrderCreateDTO(id_uc="UC2"), AUTHOR)
+    other_order = await repository.create_order(InspectionOrderCreateDTO(id_uc="UC2"), AUTHOR, kwh_estimado=0.0)
 
     assert other_order.id_uc == "UC2"
 
 
 async def test_cancelled_order_does_not_block_new_order_for_unit(repository):
-    first_order = await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR)
+    first_order = await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR, kwh_estimado=0.0)
     cancellation = InspectionOrderUpdateDTO(status=InspectionStatus.CANCELADA, justificativa_cancelamento="UC demolida")
     await repository.update_order(first_order.id_inspecao, cancellation)
 
-    new_order = await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR)
+    new_order = await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR, kwh_estimado=0.0)
 
     assert new_order.status == InspectionStatus.GERADA
 
 
 async def test_update_order_applies_only_informed_fields_of_dto(repository):
     created = await repository.create_order(
-        InspectionOrderCreateDTO(id_uc="UC1", motivo="queda_subita", kwh_estimado=750.0), AUTHOR
+        InspectionOrderCreateDTO(id_uc="UC1", motivo="queda_subita"), AUTHOR, kwh_estimado=750.0
     )
     dispatch = InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE, fiscal_responsavel="Fiscal Ana")
 

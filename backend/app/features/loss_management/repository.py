@@ -2,7 +2,7 @@
 
 import logging
 
-from sqlalchemy import exists, select
+from sqlalchemy import RowMapping, exists, select
 from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +12,7 @@ from app.features.loss_management.queries import (
     SuspicionFilters,
     build_windows,
     latest_competencia_query,
+    registered_unit_query,
     suspicious_profiles_query,
 )
 from app.features.loss_management.schemas import (
@@ -20,7 +21,7 @@ from app.features.loss_management.schemas import (
     InspectionOrderUpdateDTO,
     InspectionStatus,
 )
-from app.features.loss_management.scoring import ConsumptionProfile
+from app.features.loss_management.scoring import ConsumptionProfile, RegisteredUnit
 from app.shared.exceptions import DatabaseReadError
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,28 @@ def to_order_dto(order: InspectionOrder) -> InspectionOrderDTO:
         Representação da ordem para as camadas de serviço e transporte.
     """
     return InspectionOrderDTO.model_validate(order)
+
+
+def to_registered_unit(row: RowMapping) -> RegisteredUnit:
+    """Converte a linha do cadastro em UC registrada; consumo ausente vira zero e sem leitura recente.
+
+    Args:
+        row: Linha de `registered_unit_query`.
+
+    Returns:
+        A UC com perfil de consumo e indicação de geração distribuída.
+    """
+    profile = ConsumptionProfile(
+        id_uc=row["id_uc"],
+        municipio=row["municipio"],
+        bairro=row["bairro"],
+        classe_consumo=row["classe_consumo"],
+        consumo_base_kwh=row.get("consumo_base_kwh") or 0.0,
+        consumo_recente_kwh=row.get("consumo_recente_kwh") or 0.0,
+        meses_zerados=row.get("meses_zerados") or 0,
+    )
+    has_recent_reading = row.get("consumo_recente_kwh") is not None
+    return RegisteredUnit(profile=profile, possui_gd=bool(row["possui_gd"]), has_recent_reading=has_recent_reading)
 
 
 class LossRepository:
@@ -74,6 +97,28 @@ class LossRepository:
             logger.exception("Falha ao consultar tabelas Gold para a fila de suspeitas.")
             raise DatabaseReadError(GOLD_TABLES_ERROR_MESSAGE) from e
         return [ConsumptionProfile(**row) for row in result.mappings()]
+
+    async def fetch_registered_unit(self, id_uc: str) -> RegisteredUnit | None:
+        """Busca a UC no cadastro com o consumo da mesma janela usada pela fila.
+
+        Args:
+            id_uc: Identificador da unidade consumidora.
+
+        Returns:
+            A UC com perfil de consumo, ou None se ela não existir no cadastro.
+
+        Raises:
+            DatabaseReadError: Se as tabelas Gold estiverem ausentes ou fora do contrato.
+        """
+        try:
+            ultima_competencia = await self.session.scalar(latest_competencia_query())
+            windows = build_windows(ultima_competencia) if ultima_competencia else None
+            result = await self.session.execute(registered_unit_query(id_uc, windows))
+        except GOLD_QUERY_ERRORS as e:
+            logger.exception("Falha ao consultar tabelas Gold para validar a UC %s.", id_uc)
+            raise DatabaseReadError(GOLD_TABLES_ERROR_MESSAGE) from e
+        row = result.mappings().first()
+        return to_registered_unit(row) if row else None
 
     async def list_orders(self, status: InspectionStatus | None) -> list[InspectionOrderDTO]:
         """Lista as ordens de inspeção da mais recente para a mais antiga.
@@ -116,12 +161,15 @@ class LossRepository:
         )
         return bool(await self.session.scalar(select(active_order_exists)))
 
-    async def create_order(self, payload: InspectionOrderCreateDTO, criado_por: str) -> InspectionOrderDTO:
+    async def create_order(
+        self, payload: InspectionOrderCreateDTO, criado_por: str, *, kwh_estimado: float
+    ) -> InspectionOrderDTO:
         """Persiste uma nova ordem com status inicial `gerada`.
 
         Args:
             payload: Dados de abertura da ordem.
             criado_por: E-mail do usuário que gerou a ordem.
+            kwh_estimado: Energia estimada a recuperar, calculada pelo serviço.
 
         Returns:
             A ordem criada, com identificador e datas preenchidos.
@@ -131,6 +179,7 @@ class LossRepository:
         """
         order = InspectionOrder(
             **payload.model_dump(),
+            kwh_estimado=kwh_estimado,
             status=InspectionStatus.GERADA.value,
             criado_por=criado_por,
         )

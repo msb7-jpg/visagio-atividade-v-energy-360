@@ -130,11 +130,12 @@ def latest_competencia_query() -> Select[str | None]:
     return select(func.max(fato_medicao.c.competencia))
 
 
-def consumption_subquery(windows: ConsumptionWindows) -> Subquery:
+def consumption_subquery(windows: ConsumptionWindows, id_uc: str | None = None) -> Subquery:
     """Agrega o consumo por UC nas duas janelas e conta meses zerados na recente.
 
     Args:
         windows: Janelas base e recente.
+        id_uc: Restringe a agregação a uma única UC; None agrega todas.
 
     Returns:
         Subquery `consumo` com `id_uc`, `consumo_base_kwh`, `consumo_recente_kwh` e `meses_zerados`.
@@ -147,6 +148,7 @@ def consumption_subquery(windows: ConsumptionWindows) -> Subquery:
     base_consumption_kwh = case((is_base, consumo_kwh))
     recent_consumption_kwh = case((is_recent, consumo_kwh))
     zero_month_flag = case((is_zero_recent, 1), else_=0)
+    unit_condition = [fato_medicao.c.id_uc == id_uc] if id_uc is not None else []
     return (
         select(
             fato_medicao.c.id_uc,
@@ -154,9 +156,31 @@ def consumption_subquery(windows: ConsumptionWindows) -> Subquery:
             func.avg(recent_consumption_kwh).label("consumo_recente_kwh"),
             func.sum(zero_month_flag).label("meses_zerados"),
         )
-        .where(competencia >= windows.inicio_base)
+        .where(competencia >= windows.inicio_base, *unit_condition)
         .group_by(fato_medicao.c.id_uc)
         .subquery("consumo")
+    )
+
+
+def registered_unit_query(id_uc: str, windows: ConsumptionWindows | None) -> Select:
+    """Busca a UC no cadastro com seu consumo agregado, mesmo que ela não tenha medições.
+
+    Args:
+        id_uc: Identificador da unidade consumidora.
+        windows: Janelas de análise; None quando ainda não há medições.
+
+    Returns:
+        SELECT com cadastro, `possui_gd` e, havendo janelas, o consumo agregado (NULL sem medição).
+    """
+    uc = dim_unidade_consumidora
+    unit_columns = (uc.c.id_uc, uc.c.municipio, uc.c.bairro, uc.c.classe_consumo, uc.c.possui_gd)
+    if windows is None:
+        return select(*unit_columns).where(uc.c.id_uc == id_uc)
+    consumo = consumption_subquery(windows, id_uc)
+    return (
+        select(*unit_columns, consumo.c.consumo_base_kwh, consumo.c.consumo_recente_kwh, consumo.c.meses_zerados)
+        .outerjoin_from(uc, consumo, uc.c.id_uc == consumo.c.id_uc)
+        .where(uc.c.id_uc == id_uc)
     )
 
 

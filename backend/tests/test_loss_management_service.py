@@ -12,7 +12,9 @@ from app.features.loss_management.schemas import (
 )
 from app.features.loss_management.scoring import (
     ConsumptionProfile,
+    RegisteredUnit,
     build_suspicious_unit,
+    order_estimated_kwh,
     rank_suspicious_units,
 )
 from app.features.loss_management.service import LossService, validate_transition
@@ -29,6 +31,11 @@ def make_profile(id_uc: str, base_kwh: float, recent_kwh: float, zero_months: in
         consumo_recente_kwh=recent_kwh,
         meses_zerados=zero_months,
     )
+
+
+def make_unit(base_kwh: float, recent_kwh: float, possui_gd: bool = False) -> RegisteredUnit:
+    profile = make_profile("UC1", base_kwh=base_kwh, recent_kwh=recent_kwh)
+    return RegisteredUnit(profile=profile, possui_gd=possui_gd, has_recent_reading=True)
 
 
 def test_sudden_drop_is_flagged_with_recoverable_energy():
@@ -100,17 +107,82 @@ def test_cancellation_requires_non_blank_justification():
         validate_transition(InspectionStatus.GERADA, payload)
 
 
-class FakeRepositoryWithActiveOrder:
+def test_order_kwh_matches_queue_for_suspicious_unit():
+    unit = make_unit(300.0, 50.0)
+
+    assert order_estimated_kwh(unit) == pytest.approx(750.0)
+
+
+def test_order_kwh_is_zero_for_unit_without_suspicion():
+    unit = make_unit(200.0, 200.0)
+
+    assert order_estimated_kwh(unit) == pytest.approx(0.0)
+
+
+def test_order_kwh_is_zero_for_unit_with_distributed_generation():
+    unit = make_unit(300.0, 50.0, possui_gd=True)
+
+    assert order_estimated_kwh(unit) == pytest.approx(0.0)
+
+
+def test_order_kwh_is_zero_for_unit_without_recent_reading():
+    profile = make_profile("UC1", base_kwh=300.0, recent_kwh=0.0)
+    unit = RegisteredUnit(profile=profile, possui_gd=False, has_recent_reading=False)
+
+    assert order_estimated_kwh(unit) == pytest.approx(0.0)
+
+
+class FakeCreationRepository:
+    """Repositório de criação: cadastro opcional, ordem ativa configurável e registro do kWh gravado."""
+
+    def __init__(self, registered_unit: RegisteredUnit | None, has_active: bool = False) -> None:
+        self.registered_unit = registered_unit
+        self.has_active = has_active
+        self.saved_kwh: float | None = None
+
+    async def fetch_registered_unit(self, id_uc: str) -> RegisteredUnit | None:
+        del id_uc
+        return self.registered_unit
+
     async def has_active_order(self, id_uc: str) -> bool:
         del id_uc
-        return True
+        return self.has_active
+
+    async def create_order(
+        self, payload: InspectionOrderCreateDTO, criado_por: str, *, kwh_estimado: float
+    ) -> InspectionOrderDTO:
+        del criado_por
+        self.saved_kwh = kwh_estimado
+        return make_order_dto(InspectionStatus.GERADA, id_uc=payload.id_uc, kwh_estimado=kwh_estimado)
+
+
+SUSPICIOUS_UNIT = make_unit(300.0, 50.0)
 
 
 async def test_create_rejects_unit_with_active_order():
-    service = LossService(repository=FakeRepositoryWithActiveOrder())  # type: ignore[arg-type]
+    service = LossService(repository=FakeCreationRepository(SUSPICIOUS_UNIT, has_active=True))  # type: ignore[arg-type]
 
     with pytest.raises(InspectionConflictError):
         await service.create_inspection(InspectionOrderCreateDTO(id_uc="UC1"), criado_por="perdas@venergy.com")
+
+
+async def test_create_rejects_unit_missing_from_registry():
+    repository = FakeCreationRepository(None)
+    service = LossService(repository=repository)  # type: ignore[arg-type]
+
+    with pytest.raises(NotFoundException):
+        await service.create_inspection(InspectionOrderCreateDTO(id_uc="UC_X"), criado_por="perdas@venergy.com")
+    assert repository.saved_kwh is None
+
+
+async def test_create_saves_kwh_computed_by_server():
+    repository = FakeCreationRepository(SUSPICIOUS_UNIT)
+    service = LossService(repository=repository)  # type: ignore[arg-type]
+
+    created = await service.create_inspection(InspectionOrderCreateDTO(id_uc="UC1"), criado_por="perdas@venergy.com")
+
+    assert repository.saved_kwh == pytest.approx(750.0)
+    assert created.kwh_estimado == pytest.approx(750.0)
 
 
 def make_order_dto(status: InspectionStatus, **overrides: object) -> InspectionOrderDTO:

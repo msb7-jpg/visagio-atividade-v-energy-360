@@ -25,6 +25,15 @@ class ConsumptionProfile:
     meses_zerados: int
 
 
+@dataclass(frozen=True, slots=True)
+class RegisteredUnit:
+    """UC encontrada no cadastro, com seu perfil de consumo e a indicação de geração distribuída."""
+
+    profile: ConsumptionProfile
+    possui_gd: bool
+    has_recent_reading: bool
+
+
 def consumption_drop_ratio(profile: ConsumptionProfile) -> float:
     """Calcula a fração de queda do consumo recente em relação à base.
 
@@ -116,6 +125,22 @@ def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | No
         kwh_estimado_recuperar=recoverable_kwh,
         valor_estimado_recuperar_rs=round(recoverable_value_rs, 2),
     )
+
+
+def order_estimated_kwh(unit: RegisteredUnit) -> float:
+    """Calcula o kWh estimado de uma nova ordem com a mesma regra da fila.
+
+    Args:
+        unit: UC do cadastro com seu perfil de consumo.
+
+    Returns:
+        O kWh a recuperar que a fila mostraria; 0 para ordem manual (UC com GD, sem leitura recente
+        ou sem suspeita), pois a fila não lista essas UCs.
+    """
+    if unit.possui_gd or not unit.has_recent_reading:
+        return 0.0
+    suspicious_unit = build_suspicious_unit(unit.profile)
+    return suspicious_unit.kwh_estimado_recuperar if suspicious_unit else 0.0
 
 
 def expected_recovery_kwh(unit: SuspiciousUnitDTO) -> float:

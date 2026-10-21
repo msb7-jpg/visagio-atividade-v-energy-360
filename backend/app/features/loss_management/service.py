@@ -11,7 +11,7 @@ from app.features.loss_management.schemas import (
     SuspiciousUnitDTO,
     SuspiciousUnitsFilterDTO,
 )
-from app.features.loss_management.scoring import LIMIAR_QUEDA_SUBITA, rank_suspicious_units
+from app.features.loss_management.scoring import LIMIAR_QUEDA_SUBITA, order_estimated_kwh, rank_suspicious_units
 from app.shared.exceptions import BadRequestException, NotFoundException
 
 ALLOWED_TRANSITIONS: dict[InspectionStatus, frozenset[InspectionStatus]] = {
@@ -132,21 +132,29 @@ class LossService:
         return await self.repository.list_orders(status)
 
     async def create_inspection(self, payload: InspectionOrderCreateDTO, criado_por: str) -> InspectionOrderDTO:
-        """Gera uma ordem de inspeção a partir da fila.
+        """Gera uma ordem de inspeção para uma UC do cadastro.
+
+        O kWh estimado é recalculado aqui com a regra da fila; UC fora da fila vira ordem manual com 0 kWh.
 
         Args:
-            payload: UC, motivo e kWh estimado da ordem.
+            payload: UC e motivo da ordem.
             criado_por: E-mail do usuário que gerou a ordem.
 
         Returns:
             A ordem criada com status `gerada`.
 
         Raises:
+            NotFoundException: Se a UC não existir no cadastro.
             InspectionConflictError: Se a UC já tiver ordem ativa.
+            DatabaseReadError: Se as tabelas Gold não puderem ser consultadas.
         """
+        registered_unit = await self.repository.fetch_registered_unit(payload.id_uc)
+        if registered_unit is None:
+            raise NotFoundException(f"UC {payload.id_uc} não encontrada no cadastro.")
         if await self.repository.has_active_order(payload.id_uc):
             raise ActiveOrderConflictError(payload.id_uc)
-        return await self.repository.create_order(payload, criado_por)
+        kwh_estimado = order_estimated_kwh(registered_unit)
+        return await self.repository.create_order(payload, criado_por, kwh_estimado=kwh_estimado)
 
     async def update_inspection(self, id_inspecao: int, payload: InspectionOrderUpdateDTO) -> InspectionOrderDTO:
         """Avança o status de uma ordem, registra o resultado de campo ou a cancela.

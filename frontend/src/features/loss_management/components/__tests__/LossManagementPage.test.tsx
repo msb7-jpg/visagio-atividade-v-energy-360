@@ -111,7 +111,7 @@ describe('LossManagementPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmar ordem' }))
 
     await waitFor(() => expect(mockedApi.createInspection).toHaveBeenCalledWith({
-      id_uc: 'UC104779', motivo: 'Queda súbita', kwh_estimado: 22426.2
+      id_uc: 'UC104779', motivo: 'Queda súbita'
     }))
   })
 
