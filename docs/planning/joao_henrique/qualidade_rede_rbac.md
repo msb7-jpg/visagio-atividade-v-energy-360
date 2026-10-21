@@ -1,7 +1,7 @@
 # 🌐 Fatia 06: Qualidade da Rede (DEC/FEC) & Plataforma com RBAC (Fullstack)
 
 > **Dono Único:** Joao Henrique  
-> **Status:** Não Iniciado  
+> **Status:** Em andamento  
 > **Skills de Referência:** [`.agents/skills/backend-coding-standards/SKILL.md`](.agents/skills/backend-coding-standards/SKILL.md) & [`.agents/skills/frontend-coding-standards/SKILL.md`](.agents/skills/frontend-coding-standards/SKILL.md)  
 > **Log Individual:** [`changelog.md`](changelog.md)
 
@@ -11,13 +11,31 @@
 
 ### Fala da Executiva (`atividade.pdf`, pág. 6):
 > **Beatriz Farias · Gerente de Operação:**  
-> *"Quando o DEC estoura o limite da ANEEL, a compensação financeira vem direto da nossa margem. Eu preciso de duas coisas: primeiro, saber em tempo real quais alimentadores estão mais próximos do limite regulatório para priorizar manutenção preventiva; segundo, quando um cliente liga reclamando de falta de luz, o atendente precisa saber se é um problema geral daquele alimentador ou pontual daquela unidade."*
+> *"A ANEEL cobra DEC e FEC da gente, e multa quando passamos do limite. Quero acompanhar esses indicadores por alimentador, saber quais regiões concentram as piores interrupções e onde a manutenção preventiva dá mais retorno."*
 
 ### User Stories do Case (`atividade.pdf`, pág. 8-9):
 > - *"• Como gerente de operação, quero acompanhar DEC e FEC por alimentador ao longo do tempo e identificar os piores, para direcionar a manutenção preventiva."*
 > - *"• Como usuário, quero entrar com meu perfil e ver as telas específicas do meu cargo. (Diferencial)"*
 > - *"• Como usuário do portal, quero filtrar e recortar as informações conforme a minha necessidade, para chegar rápido ao que procuro."*
 > - *"• Como desenvolvedor, quero testes automatizados no backend, para que novas mudanças não quebrem o que já funciona. (Diferencial)"*
+
+### Requisitos extraídos do case
+
+- **Regiões com as piores interrupções:** Beatriz Farias, pág. 6: *"saber quais regiões concentram as piores interrupções"*. Granularidade de "região": pendente da decisão do grupo (B3).
+- **Retorno da manutenção preventiva:** Beatriz Farias, pág. 6: *"onde a manutenção preventiva dá mais retorno"*; user story, pág. 8: *"...para direcionar a manutenção preventiva."* Como medir o "retorno": pendente da decisão do grupo (B4).
+
+### Prioridade dos requisitos
+
+- **Requisito do case:** acompanhar DEC e FEC por alimentador ao longo do tempo e identificar os piores (`atividade.pdf`, pág. 8).
+- **Diferencial:** perfil por cargo (RBAC) e testes automatizados no backend (`atividade.pdf`, pág. 9).
+
+### Observação sobre os dados (`atividade.pdf`, pág. 4)
+
+> *"Nos dados deste case, cada registro de ocorrência corresponde a uma unidade consumidora interrompida, e os valores absolutos são simplificados: servem para comparar alimentadores e períodos entre si, não para comparar com os limites regulatórios reais."*
+
+- Os valores de DEC e FEC são simplificados: servem para comparar alimentadores e períodos entre si, não com os limites regulatórios reais.
+- Cada registro de ocorrência corresponde a uma UC interrompida.
+- **Pendente (B1):** as menções a "meta/limite ANEEL" no restante deste documento (seções 2 e 4) ficam pendentes da decisão do grupo sobre a origem do limite.
 
 ---
 
@@ -33,7 +51,7 @@
   - `dependencies.py`: Fábrica `get_grid_quality_service` e alias `GridQualitySvc`.
   - `router.py`: Rotas `GET /quality/indicators` (`competencia`), `/quality/feeders` (`competencia`, `status`) e `/quality/feeders/{id_alimentador}/history` (`meses`, de 1 a 48, padrão 24), sob `/api/v1` quando registradas, protegidas com `RequireOperacao`.
 - `auth/rbac`:
-  - Enriquecimento de token JWT com perfil de cargo (`diretoria`, `atendimento`, `perdas`, `operacao`, `admin`).
+  - Enriquecimento de token JWT com perfil de cargo. Papéis existentes no código (`UserRole` em `backend/app/core/constants.py`): `diretor`, `gerente_operacao`, `gerente_atendimento`, `gerente_perdas`, `atendente`. Não haverá perfil ADMIN (decisão de 2026-10-21).
   - Dependência central `require_role(allowed_roles: Sequence[UserRole | str])` em `backend/app/shared/dependencies.py`, com os grupos de papéis em `backend/app/shared/role_groups.py`.
 
 ### Frontend (`frontend/src/features/grid_quality/` & `frontend/src/components/layout/`):

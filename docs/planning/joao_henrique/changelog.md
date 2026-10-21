@@ -9,7 +9,7 @@
 ### [2026-10-16] - Inicialização do Planejamento da Fatia 06
 - **Autor:** Antigravity / Time V-Energy
 - **O que foi feito:**
-  - Estruturação do checklist operacional em `06_dev_grid_quality_rbac.md`.
+  - Estruturação do checklist operacional em `qualidade_rede_rbac.md`.
   - Mapeamento das rotas de DEC/FEC por alimentador e regras de RBAC dinâmico por perfil.
 - **Dificuldades / Desafios:**
   - Orquestrar a navegação protegida no frontend para direcionar imediatamente ao cargo correto no login.
@@ -30,6 +30,16 @@
   - Criar `backend/app/features/grid_quality/` e `test_grid_quality_service.py`; item de testes do checklist segue em andamento.
 - **Validação de Testes:**
   - Ruff, Pylint (10/10), import-linter (4 contratos mantidos) e `uv run pytest` (45 testes) aprovados. Executados direto via `uv run` (equivalentes ao `make lint-backend`).
+
+### [2026-10-20] - Fix: `require_role` aceita papéis em string (compatibilidade com a Fatia 05)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Commit `ed98c57` (`fix(auth)`): `require_role` em `backend/app/shared/dependencies.py` passou a aceitar `Sequence[UserRole | str]` e normaliza com `UserRole(role).value`; string fora do enum levanta `ValueError`. Aliases e mensagens de 401 e 403 mantidos.
+  - 4 casos de teste novos em `backend/tests/test_rbac.py`: membros do enum, strings válidas, lista mista e string inválida.
+- **Dificuldades / Desafios:**
+  - Na simulação de junção com `origin/feat/fatia-05-perdas`, a lista de strings da Fatia 05 (`LOSS_ROLES`) gerava `AttributeError` na importação com a versão anterior (`role.value`).
+- **Validação de Testes:**
+  - `make lint-backend` aprovado e `uv run pytest` com 49 testes aprovados.
 
 ### [2026-10-21] - Backend de qualidade da rede (`grid_quality`): DEC/FEC por alimentador
 - **Autor:** Joao Henrique
@@ -58,3 +68,16 @@
   - Registrar o router em `api/v1/router.py` e incluir `grid_quality.service` e `grid_quality.rules` no contrato do import-linter em `pyproject.toml` (arquivos compartilhados).
   - Perguntas B1 a B6 do grupo (origem do limite, denominador do DEC/FEC, região, causa e retorno da manutenção, histórico de 24 meses, subestação e chave de junção).
   - Frontend da fatia, `AppLayout`/`SidebarNav` e testes de frontend; validar contra o `v_energy.db` real quando o pipeline entregar `fato_qualidade_alimentador`.
+
+### [2026-10-21] - Alinhamento do documento com o case
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `qualidade_rede_rbac.md` §1: fala da Beatriz Farias substituída pelo texto literal da pág. 6 do `atividade.pdf` (o texto anterior não constava no PDF).
+  - §1: requisitos da pág. 6 e da user story da pág. 8 (regiões com as piores interrupções; retorno da manutenção preventiva), sem definir métrica.
+  - §1: nota de prioridade: DEC/FEC por alimentador é requisito (pág. 8); RBAC e testes de backend são Diferencial (pág. 9).
+  - §1: nota "Observação sobre os dados (pág. 4)": valores simplificados, 1 registro = 1 UC; as menções a "meta/limite ANEEL" seguem pendentes de B1.
+  - §2: perfis do token JWT passam a listar os papéis de `UserRole`. **Decisão de 2026-10-21: não haverá perfil ADMIN.** Status do cabeçalho: "Em andamento".
+  - Não foram alteradas as menções a meta/limite ANEEL, subestação, município, causas, 24 meses, filtros e a separação atendente × gerente_atendimento.
+- **Pendências (perguntas ao grupo que continuam abertas):**
+  - B1 origem do limite; B2 denominador do DEC/FEC e `ucs_atingidas` × 1 registro = 1 UC; B3 granularidade de "região"; B4 métrica de "retorno" da manutenção preventiva e causas; B5 histórico de 24 meses (os dados cobrem 4 anos); B6 subestação nos dados e chave `alimentador` × `id_alimentador`; B7 papéis finais (ADMIN decidido; restam os nomes finais e atendente × gerente_atendimento); B8 filtros do portal, comparação entre períodos e dono da story "principais indicadores"; B9 suposições no README e `SmartInsightCard` na tela de qualidade; B10 números do 5W2H que não constam no PDF e intervalo de anos (2022-2025 contra 5 arquivos de leituras).
+  - Avisar o grupo: `ROADMAP.md` §7.1 e os planos de Bernardo, Célio e Adrian citam `UserRole.ADMIN`, que não existe e não existirá.
