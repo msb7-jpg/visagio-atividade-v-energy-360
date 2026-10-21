@@ -70,3 +70,72 @@
 - **Validação de Testes:**
   - Seed: 45.200 UCs, 2.152.336 medições (2022-07 a 2026-06), 1.389 inspeções (acerto 62,7%, 0 datas inválidas, 0 FKs órfãs). Fila real: 83 UCs.
   - `pytest`: 41 passed. `vitest`: 1 passed. Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos, ESLint e Fallow OK.
+
+### [2026-10-20] - Fase 2: fila ajustada à fala do Gerente de Perdas
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Fila exclui UCs já inspecionadas dentro da janela de análise (15 meses): ordem **concluída** no sistema ou registro em `fato_inspecoes_perdas` (Fatia 02). Ordem cancelada devolve a UC à fila. Evita mandar a equipe a uma UC cujo sinal de queda já foi verificado ("cada inspeção que não encontra nada é um dia de equipe perdido").
+  - `limit` padrão = 200 (`FILA_CAPACIDADE_MENSAL`, "mais de 200 inspeções por mês").
+  - Filtro por **bairro** além de município e classe; query params agrupados em `SuspiciousUnitsFilterDTO`.
+  - Antecipado da Fase 3: montagem de `SuspicionFilters` (limiar de 50%) movida do repositório para o serviço.
+  - Documentação OpenAPI e mensagem de erro 500 atualizadas para incluir `fato_inspecoes_perdas`.
+- **Dificuldades / Desafios:**
+  - Definir "recentemente": adotada a própria janela de análise do score, para a regra ser explicável ao gerente.
+- **Próximos Passos:**
+  - Fase 3 (docstrings, `update_order` no repositório, decompor expressões aninhadas).
+- **Validação de Testes:**
+  - 7 testes novos (TDD: RED confirmado antes da implementação). `pytest`: 48 passed. Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos, Pyright 0 erros.
+  - Dados de desenvolvimento locais: fila caiu de 83 para 79 UCs (4 já inspecionadas excluídas); filtro por bairro validado.
+
+### [2026-10-20] - Fase 3: conformidade com `backend-coding-standards`
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Docstrings Google-style (`Args`/`Returns`/`Raises`) em todas as funções e métodos públicos de repositório, serviço, consultas, scoring, rotas e fábrica de DI.
+  - Isolamento do ORM: `LossRepository` devolve apenas `InspectionOrderDTO` (`to_order_dto`); `apply_changes(order, changes)` substituído por `update_order(id_inspecao, changes)`. O serviço não recebe nem manipula mais objetos ORM.
+  - Expressões aninhadas decompostas em variáveis intermediárias nomeadas (`shift_competencia`, `build_windows`, `consumption_subquery`, `excluded_units_query`, `suspicious_profiles_query`, `risk_score`, `estimated_recoverable_kwh`, `expected_recovery_kwh`); `detect_reasons` sem mutação de lista.
+- **Dificuldades / Desafios:**
+  - Garantir que as docstrings das rotas não substituíssem as descrições do OpenAPI (`EndpointDoc` tem precedência; verificado).
+- **Próximos Passos:**
+  - Fase 4: frontend obrigatório (fila + ordens em campo).
+- **Validação de Testes:**
+  - 2 testes novos com repositório falso só de DTOs (RED antes da refatoração). `pytest`: 50 passed. Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos, Pyright 0 erros. Frontend: ESLint, Fallow e vitest OK.
+  - Fila nos dados locais inalterada (79 UCs, ~100 mil kWh), confirmando refatoração sem mudança de comportamento.
+
+### [2026-10-20] - Fase 4: frontend obrigatório (fila de suspeitas e ordens em campo)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Fatia vertical `frontend/src/features/loss_management/`: tipos espelhando os DTOs do backend, `lossApi` (axios com `signal`), `queryOptions` com fábrica de chaves (`lossKeys`), hooks separados de query e de mutation (invalidam fila e ordens após cada ação).
+  - `LossManagementPage` com abas "Fila de Suspeitas" e "Ordens em Campo" e rota protegida `/losses` (RBAC `diretor`/`gerente_perdas`, igual ao backend).
+  - Fila: ranking, motivo em badges, score, kWh e R$ a recuperar, filtros por município/bairro/classe e diálogo "Gerar ordem".
+  - Ordens: status em badge, "Enviar para campo" (fiscal responsável), "Registrar resultado" (irregularidade, tipo, kWh recuperado, TOI) e "Cancelar ordem" via `AlertDialog` com justificativa obrigatória.
+  - Componentes compartilhados da feature (`AsyncListState`, `ActionDialogFooter`) para carregamento/erro/vazio e rodapé com travamento `isPending` + mensagem de erro da API.
+- **Dificuldades / Desafios:**
+  - `shadcn/no-restyle` proíbe tipografia/cor direto em `TableCell` e espaçamento em `Tabs`: resolvido envolvendo o conteúdo em `span` e usando margem no `TabsContent`.
+- **Próximos Passos:**
+  - Fase 5 (exportar a fila para a equipe de campo).
+- **Validação de Testes:**
+  - 7 testes Vitest novos (RED antes da implementação): fila com motivo/kWh, estado vazio, filtro por bairro, gerar ordem, enviar para campo, registrar resultado e cancelamento com justificativa obrigatória. `vitest`: 8 passed. ESLint 0 problemas, Fallow OK, `bun run build` OK; maior componente com 112 linhas.
+  - Ponta a ponta local (backend + Vite proxy, login real): fila com 79 UCs, filtro por bairro, ordens HTTP 200 e perfil sem permissão HTTP 403. Backend: `pytest` 50 passed.
+
+### [2026-10-20] - Correções da revisão de padrões de backend (loss_management)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Fila de suspeitas: o histórico de `fato_inspecoes_perdas` passa a ignorar `id_uc` NULL; antes, uma única linha nula fazia o `NOT IN` esvaziar a fila inteira.
+  - `PATCH /losses/inspections/{id}`: cada status de destino aceita só os seus campos (pendente: fiscal; concluída: fiscal e resultado de campo; cancelada: justificativa). Sem irregularidade constatada, tipo, kWh recuperado e TOI são rejeitados (400).
+  - Frontend (`RegisterResultDialog`): kWh recuperado e TOI ficam desabilitados e não são enviados quando não há irregularidade.
+- **Próximos Passos:**
+  - Índice único parcial em `ordem_inspecao` e update condicional de status para eliminar as condições de corrida; paginação de `GET /losses/inspections`.
+- **Validação de Testes:**
+  - Ruff, Pylint 10/10, import-linter (4 contratos), ESLint e Fallow OK; pytest 56 passed, vitest 8 passed.
+
+### [2026-10-20] - Correções da revisão de backend (ordem ativa única e contrato do update)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Índice único parcial `uq_ordem_inspecao_uc_ativa` em `ordem_inspecao(id_uc) WHERE status IN ('gerada','pendente')`: impede duas ordens ativas para a mesma UC mesmo com requisições concorrentes (a checagem `has_active_order` do serviço continua como caminho rápido).
+  - `LossRepository.create_order` converte o `IntegrityError` em `ActiveOrderConflictError` (409), com rollback da sessão.
+  - `LossRepository.update_order` passa a receber `InspectionOrderUpdateDTO` em vez de `Mapping[str, object]`.
+  - `ACTIVE_STATUSES` movido para `models.py` (fonte única para índice, fila e repositório).
+- **Dificuldades / Desafios:**
+  - `create_all` não adiciona índices a tabelas já existentes: bancos locais criados antes precisam do `CREATE UNIQUE INDEX` manual.
+- **Validação de Testes:**
+  - `pytest`: 61 passed (5 novos em `test_loss_repository.py`, escritos antes da correção). Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos.

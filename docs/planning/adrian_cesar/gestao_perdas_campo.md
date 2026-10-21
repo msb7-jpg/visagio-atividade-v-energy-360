@@ -64,11 +64,11 @@
 - [x] Registrar rotas em `backend/app/api/v1/router.py`.
 - [x] Criar testes unitários e de integração em `backend/tests/test_loss_management_service.py` e `test_loss_router.py`.
 - [x] Garantir conformidade com `make lint-backend`.
-- [ ] Criar pasta `frontend/src/features/loss_management/` com componentes $\le 150$ linhas.
+- [x] Criar pasta `frontend/src/features/loss_management/` com componentes $\le 150$ linhas.
 - [ ] Implementar modal de upload drag-and-drop e botão de exportação.
-- [ ] Adicionar rota `/losses` em `frontend/src/routes/AppRoutes.tsx`.
-- [ ] Criar testes no frontend com Vitest em `LossManagementPage.test.tsx`.
-- [ ] Garantir conformidade com `make lint-frontend`.
+- [x] Adicionar rota `/losses` em `frontend/src/routes/AppRoutes.tsx`.
+- [x] Criar testes no frontend com Vitest em `components/__tests__/LossManagementPage.test.tsx` (7 cenários).
+- [x] Garantir conformidade com `make lint-frontend`.
 
 ---
 
@@ -92,24 +92,24 @@
 - [x] Regras de segurança: **nunca sobrescrever** tabela já existente (se a Gold real já estiver lá, o script aborta); limpeza mínima (tipos, datas, resultado normalizado); cabeçalho e logs com o aviso "PROVISÓRIO".
 - [x] Não incluir no `make test-all` (testes continuam com fixtures sintéticas).
 ### Fase 2 — Ajustes de backend exigidos pela fala do Gerente de Perdas
-- [ ] Excluir da fila UCs com ordem **concluída** recentemente (hoje só as ativas são excluídas; a UC volta à fila após a inspeção → "dia de equipe perdido").
-- [ ] Excluir da fila UCs já inspecionadas no histórico (`fato_inspecoes_perdas`).
-- [ ] `limit` padrão = **200** (capacidade mensal citada: "mais de 200 inspeções por mês").
-- [ ] Filtro por **bairro** além de município e classe.
-- [ ] Testes cobrindo cada regra.
+- [x] Excluir da fila UCs com ordem **concluída** recentemente (hoje só as ativas são excluídas; a UC volta à fila após a inspeção → "dia de equipe perdido"). Regra: ordem concluída dentro da janela de análise (15 meses) exclui; cancelada devolve a UC à fila.
+- [x] Excluir da fila UCs já inspecionadas no histórico (`fato_inspecoes_perdas`). Mesma janela: inspeção a partir do início da janela de análise exclui a UC.
+- [x] `limit` padrão = **200** (capacidade mensal citada: "mais de 200 inspeções por mês").
+- [x] Filtro por **bairro** além de município e classe.
+- [x] Testes cobrindo cada regra.
 
 ### Fase 3 — Conformidade com `backend-coding-standards`
-- [ ] Docstrings Google-style nos métodos públicos (repositório, serviço, rotas, fábrica de DI).
-- [ ] Mover a montagem de `SuspicionFilters` (limiar de 50%) do repositório para o serviço.
-- [ ] Serviço sem manipular o ORM diretamente (`repository.update_order(id, changes)`).
-- [ ] Decompor expressões aninhadas (`scoring.py`, `queries.py`, `service.py`).
+- [x] Docstrings Google-style nos métodos públicos (repositório, serviço, rotas, fábrica de DI). Também em `queries.py` e `scoring.py`.
+- [x] Mover a montagem de `SuspicionFilters` (limiar de 50%) do repositório para o serviço. (antecipado na Fase 2: serviço recebe `SuspiciousUnitsFilterDTO` e monta os filtros)
+- [x] Serviço sem manipular o ORM diretamente (`repository.update_order(id, changes)`). Repositório devolve só DTOs (`to_order_dto`); serviço não importa nem toca o modelo ORM.
+- [x] Decompor expressões aninhadas (`scoring.py`, `queries.py`, `service.py`).
 
 ### Fase 4 — Frontend obrigatório (as 2 user stories)
-- [ ] `LossManagementPage` com abas "Fila de Suspeitas" e "Ordens em Campo" + rota `/losses`.
-- [ ] Fila: ranking, motivo (badges), kWh/R$ a recuperar, filtros (município, bairro, classe), botão "Gerar ordem".
-- [ ] Ordens: lista com status, avançar status, registrar resultado de campo, cancelar com justificativa (`AlertDialog`).
-- [ ] Estado vazio explicativo na fila (com os dados atuais a fila pode vir vazia — ver Fase 8).
-- [ ] Testes Vitest + `make lint-frontend`.
+- [x] `LossManagementPage` com abas "Fila de Suspeitas" e "Ordens em Campo" + rota `/losses`.
+- [x] Fila: ranking, motivo (badges), kWh/R$ a recuperar, filtros (município, bairro, classe), botão "Gerar ordem".
+- [x] Ordens: lista com status, avançar status, registrar resultado de campo, cancelar com justificativa (`AlertDialog`).
+- [x] Estado vazio explicativo na fila (com os dados atuais a fila pode vir vazia — ver Fase 8).
+- [x] Testes Vitest + `make lint-frontend`.
 
 ### Fase 5 — Diferencial: exportar a fila para a equipe de campo
 - [ ] `GET /api/v1/losses/inspections/export` (CSV) com as ordens `gerada`/`pendente` — o que de fato vai a campo — incluindo `id_inspecao` e colunas em branco para o resultado.
