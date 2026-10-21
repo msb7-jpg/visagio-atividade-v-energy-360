@@ -88,3 +88,14 @@
 - **Validação de Testes:**
   - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (57) aprovados.
   - Frontend: ESLint, Fallow, `tsc -b` e Vitest (15) aprovados; capturas em celular e desktop sem rolagem horizontal.
+
+### [2026-10-22] - Busca da UC com sugestões, medidor, recentes e link
+- **Autor:** Bernardo H
+- **O que foi feito:**
+  - Número aceito em qualquer formato: `100004`, `uc 100004`, `UC-100004` e `UC100004` abrem a mesma UC (backend `search_terms.py` e frontend `searchTerms.ts` com a mesma regra).
+  - Nova rota `GET /api/v1/customers/search?q=` com sugestões pelo começo do número da UC ou do medidor (até 8, busca por intervalo para usar o índice do cadastro).
+  - Campo de busca com sugestões enquanto digita (componente `components/ui/command.tsx` sobre `cmdk`), navegação por setas e Enter seguro: se as sugestões ainda não chegaram para o texto atual, abre o texto digitado.
+  - Buscas recentes como atalhos (salvas só no navegador do atendente) e UC no endereço da página (`/customers?uc=UC100004`).
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter e pytest (76) aprovados.
+  - Frontend: ESLint, Fallow, `tsc -b` e Vitest (29) aprovados; fluxo validado no navegador (digitar, setas, Enter, recentes) em celular e desktop.

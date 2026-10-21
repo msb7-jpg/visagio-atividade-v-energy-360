@@ -122,6 +122,8 @@
 - [ ] **Renan (Fatia 01):** incluir `nome_titular` na `dim_unidade_consumidora` (o case pede *"quem é o cliente"*). O backend já exibe a coluna automaticamente se ela existir.
 - [ ] **Renan (Fatia 01):** incluir `tipo_leitura` (REAL/ESTIMADA) na `fato_medicao`: 18% das leituras de 2025 são estimadas, causa comum de conta alta.
 - [ ] **Renan (Fatia 01):** incluir a data de conexão da GD (`data_conexao`) e tipo/data de instalação do medidor na `dim_unidade_consumidora`.
+- [ ] **Renan (Fatia 01):** criar índice em `dim_unidade_consumidora(numero_medidor_ativo)` para a busca por medidor (hoje varre ~46 mil linhas, ainda rápido).
+- [ ] Quando o `nome_titular` existir, incluir a busca por nome nas sugestões.
 - [ ] **Ryei (Fatia 02):** exportar uma tabela com as ocorrências individuais de rede (`id_uc`, `alimentador`, data, duração, causa). Hoje a aba de interrupções usa só o DEC/FEC mensal da `fato_qualidade_alimentador`.
 - [ ] **Ryei (Fatia 02), baixa prioridade:** criar `CREATE INDEX idx_fato_atend_uc ON fato_atendimentos(id_uc)`. Medido com o volume real (319 mil chamados): ~11 ms por busca sem índice, então não bloqueia.
 - [ ] **Ryei + João Henrique:** `dec_limite_aneel` / `violou_meta` contradizem o glossário do case (*"não para comparar com os limites regulatórios reais"*). Definir se a Visão 360 mostra badge de meta ANEEL.
