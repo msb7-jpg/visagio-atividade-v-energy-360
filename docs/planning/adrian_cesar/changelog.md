@@ -139,3 +139,13 @@
   - `create_all` não adiciona índices a tabelas já existentes: bancos locais criados antes precisam do `CREATE UNIQUE INDEX` manual.
 - **Validação de Testes:**
   - `pytest`: 61 passed (5 novos em `test_loss_repository.py`, escritos antes da correção). Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos.
+
+### [2026-10-20] - Correções da revisão de frontend
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Testes de erro da API: mensagem do `detail` exibida no diálogo ao gerar ordem para UC com ordem ativa (409) e ao ter o cancelamento recusado.
+  - Cancelamento mostra `Spinner` e `aria-busy` durante o envio, como os demais diálogos (`ActionDialogFooter` também ganhou `aria-busy`).
+  - `compactFilters` movido para `lossQueries.ts`: a chave da query usa só filtros preenchidos, evitando requisição e cache duplicados ao filtrar com campos vazios.
+  - `AsyncListState` recebe `errorDescription`; a aba de ordens não cita mais as tabelas Gold.
+- **Validação de Testes:**
+  - Vitest: 13 passed (5 novos, escritos antes da correção; 3 falharam no RED). ESLint OK, Fallow 0 acima do limite, `tsc -b` sem erros.
