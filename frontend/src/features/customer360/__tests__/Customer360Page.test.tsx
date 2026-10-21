@@ -15,6 +15,7 @@ import type {
 
 vi.mock('@/features/customer360/api/customer360Api', () => ({
   customer360Api: {
+    search: vi.fn(),
     getSummary: vi.fn(),
     getHistory: vi.fn(),
     getEvents: vi.fn()
@@ -136,19 +137,23 @@ function notFoundError(): AxiosError {
   return new AxiosError('Not Found', 'ERR_BAD_REQUEST', undefined, undefined, response)
 }
 
-function renderPage() {
+function renderPage(initialPath = '/customers') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialPath]}>
         <Customer360Page />
       </MemoryRouter>
     </QueryClientProvider>
   )
 }
 
+function typeInSearch(typedId: string) {
+  fireEvent.change(screen.getByRole('combobox', { name: 'Número da UC ou do medidor' }), { target: { value: typedId } })
+}
+
 function searchFor(typedId: string) {
-  fireEvent.change(screen.getByLabelText('Número da Unidade Consumidora'), { target: { value: typedId } })
+  typeInSearch(typedId)
   fireEvent.click(screen.getByRole('button', { name: /Buscar/ }))
 }
 
@@ -161,10 +166,13 @@ class ResizeObserverStub {
 describe('Customer360Page', () => {
   beforeAll(() => {
     vi.stubGlobal('ResizeObserver', ResizeObserverStub)
+    Element.prototype.scrollIntoView = vi.fn()
   })
 
   beforeEach(() => {
     vi.clearAllMocks()
+    window.localStorage.clear()
+    mockedApi.search.mockResolvedValue([])
     mockedApi.getSummary.mockResolvedValue(summary)
     mockedApi.getHistory.mockResolvedValue(buildHistory(stableWithFlagChange))
     mockedApi.getEvents.mockResolvedValue(events)
@@ -285,6 +293,53 @@ describe('Customer360Page', () => {
 
     expect(await screen.findByText(/a energia gerada é abatida do consumo faturado/)).toBeInTheDocument()
     expect(screen.getByText(/GD Solar \(4,5 kW\)/)).toBeInTheDocument()
+  })
+
+  it('aceita só os dígitos do número da conta e guarda a UC no endereço da página', async () => {
+    renderPage()
+    searchFor('100004')
+
+    expect(await screen.findByText('MD500004')).toBeInTheDocument()
+    expect(mockedApi.getSummary).toHaveBeenCalledWith('UC100004', expect.anything())
+  })
+
+  it('abre direto a UC informada no endereço da página', async () => {
+    renderPage('/customers?uc=UC100004')
+
+    expect(await screen.findByText('MD500004')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Número da UC ou do medidor' })).toHaveValue('UC100004')
+  })
+
+  it('sugere UCs enquanto o atendente digita e abre a escolhida', async () => {
+    mockedApi.search.mockResolvedValue([{
+      id_uc: 'UC100004',
+      nome_titular: null,
+      numero_medidor_ativo: 'MD500004',
+      bairro: 'Arruda',
+      municipio: 'Recife',
+      classe_consumo: 'Residencial',
+      possui_gd: false
+    }])
+    renderPage()
+    typeInSearch('10000')
+
+    const suggestion = await screen.findByRole('option', { name: /UC100004/ })
+    expect(mockedApi.search).toHaveBeenCalledWith('10000', expect.anything())
+    fireEvent.click(suggestion)
+
+    expect(await screen.findByText('MD500004')).toBeInTheDocument()
+    expect(mockedApi.getSummary).toHaveBeenCalledWith('UC100004', expect.anything())
+  })
+
+  it('lembra as UCs consultadas como atalhos de busca recente', async () => {
+    renderPage()
+    searchFor('UC100004')
+    await screen.findByText('MD500004')
+
+    const recents = await screen.findByRole('navigation', { name: 'Buscas recentes' })
+    expect(within(recents).getByText('UC100004')).toBeInTheDocument()
+    fireEvent.click(within(recents).getByRole('button', { name: 'Limpar' }))
+    expect(screen.queryByRole('navigation', { name: 'Buscas recentes' })).not.toBeInTheDocument()
   })
 
   it('avisa quando a UC não existe', async () => {

@@ -175,3 +175,33 @@ async def test_history_returns_twelve_month_totals_and_tariff(client, attendant_
     assert body["resumo_12_meses"]["meses_comparados"] == 12
     assert body["resumo_12_meses"]["variacao_consumo_pct"] == pytest.approx(40.0)
     assert body["diagnostico"]["variacao_tarifa_pct"] == pytest.approx(10.0)
+
+
+async def test_search_suggests_units_by_number_prefix(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/search", params={"q": "10000"}, headers=attendant_headers)
+
+    assert response.status_code == 200
+    suggestions = response.json()
+    assert [suggestion["id_uc"] for suggestion in suggestions][:3] == ["UC100001", "UC100002", "UC100003"]
+    assert suggestions[0]["bairro"] == "Arruda"
+
+
+async def test_search_finds_unit_by_meter_number(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/search", params={"q": "MD500002"}, headers=attendant_headers)
+
+    assert [suggestion["id_uc"] for suggestion in response.json()] == ["UC100002"]
+
+
+async def test_search_respects_limit_and_minimum_length(client, attendant_headers):
+    limited = await client.get(f"{BASE_URL}/search", params={"q": "UC1", "limite": 2}, headers=attendant_headers)
+    too_short = await client.get(f"{BASE_URL}/search", params={"q": "10"}, headers=attendant_headers)
+
+    assert len(limited.json()) == 2
+    assert too_short.json() == []
+
+
+async def test_digits_only_number_opens_the_unit(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/100004/summary", headers=attendant_headers)
+
+    assert response.status_code == 200
+    assert response.json()["id_uc"] == "UC100004"

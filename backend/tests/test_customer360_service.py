@@ -9,6 +9,7 @@ from app.features.customer360.consumption_analysis import (
 from app.features.customer360.exceptions import CustomerNotFoundError
 from app.features.customer360.schemas import (
     ConsumptionTrend,
+    CustomerSearchResultDTO,
     CustomerSummaryDTO,
     FeederQualityMonthDTO,
     InvoiceDTO,
@@ -33,6 +34,7 @@ class FakeCustomer360Repository:
         self.measurements = measurements or []
         self.invoices = invoices or []
         self.requested_feeder: str | None = None
+        self.searched_range = None
 
     async def fetch_unit(self, id_uc: str) -> CustomerSummaryDTO | None:
         return self.unit if self.unit and self.unit.id_uc == id_uc else None
@@ -56,6 +58,11 @@ class FakeCustomer360Repository:
     async def fetch_service_tickets(self, id_uc: str) -> list[ServiceTicketDTO]:
         del id_uc
         return [ServiceTicketDTO(id_atendimento="AT1", motivo_chamado="FATURA")]
+
+    async def search_units(self, uc_range, meter_range, limite: int) -> list[CustomerSearchResultDTO]:
+        del meter_range, limite
+        self.searched_range = uc_range
+        return [CustomerSearchResultDTO(id_uc="UC100000")]
 
 
 UNIT = CustomerSummaryDTO(id_uc="UC100000", alimentador="ALM-REC-004")
@@ -240,3 +247,13 @@ def test_totals_ignore_months_without_previous_year():
     ]
 
     assert summarize_window(recent_only) is None
+
+
+async def test_search_ignores_short_text_and_normalizes_digits():
+    repository = FakeCustomer360Repository(UNIT)
+    service = Customer360Service(repository)
+
+    assert await service.search("10", 8) == []
+    assert repository.searched_range is None
+    await service.search("10000", 8)
+    assert repository.searched_range.start == "UC10000"
