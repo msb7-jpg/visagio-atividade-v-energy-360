@@ -262,6 +262,7 @@ source_modules = [
     "app.features.customer360.service",
     "app.features.customer360.consumption_analysis",
     "app.features.customer360.yoy_totals",
+    "app.features.customer360.search_terms",
 ]
 forbidden_modules = [
     "fastapi",

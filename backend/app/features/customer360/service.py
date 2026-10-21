@@ -12,6 +12,7 @@ from app.features.customer360.exceptions import CustomerNotFoundError
 from app.features.customer360.schemas import (
     CustomerEventTimelineDTO,
     CustomerHistoryDTO,
+    CustomerSearchResultDTO,
     CustomerSummaryDTO,
     FeederQualityMonthDTO,
     HighBillDiagnosisDTO,
@@ -19,6 +20,13 @@ from app.features.customer360.schemas import (
     MeasurementDTO,
     MonthlyComparisonDTO,
     ServiceTicketDTO,
+)
+from app.features.customer360.search_terms import (
+    PrefixRange,
+    is_searchable,
+    normalize_id_uc,
+    normalize_meter,
+    prefix_range,
 )
 from app.features.customer360.yoy_totals import summarize_window
 
@@ -34,6 +42,9 @@ class Customer360Reader(Protocol):
     async def fetch_invoices(self, id_uc: str) -> list[InvoiceDTO]: ...
     async def fetch_feeder_quality(self, id_alimentador: str, limite_meses: int) -> list[FeederQualityMonthDTO]: ...
     async def fetch_service_tickets(self, id_uc: str) -> list[ServiceTicketDTO]: ...
+    async def search_units(
+        self, uc_range: PrefixRange, meter_range: PrefixRange, limite: int
+    ) -> list[CustomerSearchResultDTO]: ...
 
 
 class Customer360Service:
@@ -41,6 +52,22 @@ class Customer360Service:
 
     def __init__(self, repository: Customer360Reader) -> None:
         self.repository = repository
+
+    async def search(self, typed_text: str, limite: int) -> list[CustomerSearchResultDTO]:
+        """Sugere UCs enquanto o atendente digita, pelo começo do número da UC ou do medidor.
+
+        Args:
+            typed_text: Texto digitado em qualquer formato (ex: `10000`, `uc 100`, `MD5000`).
+            limite: Quantidade máxima de sugestões.
+
+        Returns:
+            Sugestões em ordem de número; vazio se o texto tiver menos de 3 caracteres úteis.
+        """
+        if not is_searchable(typed_text):
+            return []
+        uc_range = prefix_range(normalize_id_uc(typed_text))
+        meter_range = prefix_range(normalize_meter(typed_text))
+        return await self.repository.search_units(uc_range, meter_range, limite)
 
     async def get_summary(self, id_uc: str) -> CustomerSummaryDTO:
         """Busca o cadastro da UC.
@@ -116,18 +143,6 @@ class Customer360Service:
             qualidade_alimentador=feeder_quality,
             chamados=tickets,
         )
-
-
-def normalize_id_uc(id_uc: str) -> str:
-    """Padroniza o número digitado pelo atendente (espaços e caixa) para o formato do cadastro, ex: `UC100000`.
-
-    Args:
-        id_uc: Número da UC como digitado, ex: ` uc100000 `.
-
-    Returns:
-        Identificador sem espaços e em caixa alta.
-    """
-    return id_uc.strip().upper()
 
 
 def _analyze_consumption(

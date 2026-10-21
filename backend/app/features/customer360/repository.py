@@ -7,17 +7,28 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.customer360.schemas import (
+    CustomerSearchResultDTO,
     CustomerSummaryDTO,
     FeederQualityMonthDTO,
     InvoiceDTO,
     MeasurementDTO,
     ServiceTicketDTO,
 )
+from app.features.customer360.search_terms import PrefixRange
 from app.shared.exceptions import DatabaseReadError
 
 UNIT_SQL = text("SELECT * FROM dim_unidade_consumidora WHERE id_uc = :id_uc")
 
 UNIT_EXISTS_SQL = text("SELECT 1 AS existe FROM dim_unidade_consumidora WHERE id_uc = :id_uc LIMIT 1")
+
+SEARCH_SQL = text("""
+SELECT *
+FROM dim_unidade_consumidora
+WHERE (id_uc >= :uc_start AND id_uc < :uc_end)
+   OR (numero_medidor_ativo >= :meter_start AND numero_medidor_ativo < :meter_end)
+ORDER BY id_uc
+LIMIT :limite
+""")
 
 MEASUREMENTS_SQL = text("""
 SELECT competencia, consumo_kwh, dias_faturamento
@@ -65,6 +76,20 @@ class Customer360Repository:
         """Verifica a existência da UC sem carregar o cadastro."""
         rows = await self._fetch_rows(UNIT_EXISTS_SQL, {"id_uc": id_uc}, "dim_unidade_consumidora")
         return bool(rows)
+
+    async def search_units(
+        self, uc_range: PrefixRange, meter_range: PrefixRange, limite: int
+    ) -> list[CustomerSearchResultDTO]:
+        """UCs cujo número ou medidor começa com o texto buscado, em ordem de número."""
+        params = {
+            "uc_start": uc_range.start,
+            "uc_end": uc_range.end,
+            "meter_start": meter_range.start,
+            "meter_end": meter_range.end,
+            "limite": limite,
+        }
+        rows = await self._fetch_rows(SEARCH_SQL, params, "dim_unidade_consumidora")
+        return [CustomerSearchResultDTO.model_validate(row) for row in rows]
 
     async def fetch_measurements(self, id_uc: str) -> list[MeasurementDTO]:
         """Consumo medido por competência, em ordem cronológica."""

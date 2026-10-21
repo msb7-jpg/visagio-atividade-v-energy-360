@@ -37,6 +37,18 @@ class CustomerSummaryDTO(GoldRowModel):
     potencia_gd_kw: float | None = None
 
 
+class CustomerSearchResultDTO(GoldRowModel):
+    """Sugestão da busca: identificação da UC e dados que ajudam o atendente a confirmar o cliente."""
+
+    id_uc: str
+    nome_titular: str | None = None
+    numero_medidor_ativo: str | None = None
+    bairro: str | None = None
+    municipio: str | None = None
+    classe_consumo: str | None = None
+    possui_gd: bool = False
+
+
 class InvoiceDTO(GoldRowModel):
     """Fatura mensal lida de `fato_faturamento`."""
 
