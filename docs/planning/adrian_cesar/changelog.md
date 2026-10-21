@@ -149,3 +149,15 @@
   - `AsyncListState` recebe `errorDescription`; a aba de ordens não cita mais as tabelas Gold.
 - **Validação de Testes:**
   - Vitest: 13 passed (5 novos, escritos antes da correção; 3 falharam no RED). ESLint OK, Fallow 0 acima do limite, `tsc -b` sem erros.
+
+### [2026-10-21] - Revisão: ordem só para UC do cadastro e kWh calculado no servidor
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - `POST /losses/inspections` busca a UC em `dim_unidade_consumidora` e devolve 404 se ela não existir. Antes, a API criava ordem para `UC_QUE_NAO_EXISTE`.
+  - `kwh_estimado` deixou de ser aceito no corpo (`extra="forbid"` → 422) e é calculado pelo serviço com a mesma regra e janela da fila (`order_estimated_kwh`). Antes, o cliente podia gravar qualquer valor (ex.: 999.999).
+  - UC do cadastro que a fila não listaria (sem suspeita, com GD ou sem leitura nas 3 últimas competências) gera ordem manual com 0 kWh.
+  - Frontend deixa de enviar `kwh_estimado` ao gerar a ordem.
+- **Decisões:**
+  - UC fora da fila apenas por inspeção recente mantém o kWh calculado pelo consumo: a reinspeção é uma escolha consciente do gerente e o déficit continua sendo um fato do consumo.
+- **Validação de Testes:**
+  - `pytest`: 73 passed (novos testes de rota e de serviço escritos antes da correção; 3 falharam no RED, mais 1 no RED do caso sem leitura recente apontado na revisão de código). Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. ESLint e Fallow OK, `tsc -b` sem erros, vitest 13 passed.

@@ -98,6 +98,13 @@
 - [x] Filtro por **bairro** além de município e classe.
 - [x] Testes cobrindo cada regra.
 
+### Fase 2.1 — Correções da revisão de 2026-10-21
+- [x] `POST /inspections` valida a UC no cadastro (404 se não existir) e calcula `kwh_estimado` no servidor com a mesma regra da fila; UC sem suspeita, com GD ou sem leitura recente gera ordem manual com 0 kWh.
+- [ ] Fila funciona sem `fato_inspecoes_perdas` (sem excluir o histórico de campo), avisando que o histórico não foi aplicado.
+- [ ] Remover a dupla contagem da queda na prioridade (`score × kWh` ≈ queda² × base).
+- [ ] Ordens fora do `v_energy.db` (ou garantia do pipeline de que a exportação não recria o arquivo).
+- [ ] Tarifa real de `fato_faturamento` no valor a recuperar (aguarda Ryei) e prioridade pela taxa histórica de acerto.
+
 ### Fase 3 — Conformidade com `backend-coding-standards`
 - [x] Docstrings Google-style nos métodos públicos (repositório, serviço, rotas, fábrica de DI). Também em `queries.py` e `scoring.py`.
 - [x] Mover a montagem de `SuspicionFilters` (limiar de 50%) do repositório para o serviço. (antecipado na Fase 2: serviço recebe `SuspiciousUnitsFilterDTO` e monta os filtros)
