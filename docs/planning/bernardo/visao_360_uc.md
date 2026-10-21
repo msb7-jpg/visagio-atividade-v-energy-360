@@ -120,6 +120,8 @@
 
 ### 5.1 Esclarecer com outras fatias
 - [ ] **Renan (Fatia 01):** incluir `nome_titular` na `dim_unidade_consumidora` (o case pede *"quem é o cliente"*). O backend já exibe a coluna automaticamente se ela existir.
+- [ ] **Renan (Fatia 01):** incluir `tipo_leitura` (REAL/ESTIMADA) na `fato_medicao`: 18% das leituras de 2025 são estimadas, causa comum de conta alta.
+- [ ] **Renan (Fatia 01):** incluir a data de conexão da GD (`data_conexao`) e tipo/data de instalação do medidor na `dim_unidade_consumidora`.
 - [ ] **Ryei (Fatia 02):** exportar uma tabela com as ocorrências individuais de rede (`id_uc`, `alimentador`, data, duração, causa). Hoje a aba de interrupções usa só o DEC/FEC mensal da `fato_qualidade_alimentador`.
 - [ ] **Ryei (Fatia 02), baixa prioridade:** criar `CREATE INDEX idx_fato_atend_uc ON fato_atendimentos(id_uc)`. Medido com o volume real (319 mil chamados): ~11 ms por busca sem índice, então não bloqueia.
 - [ ] **Ryei + João Henrique:** `dec_limite_aneel` / `violou_meta` contradizem o glossário do case (*"não para comparar com os limites regulatórios reais"*). Definir se a Visão 360 mostra badge de meta ANEEL.
@@ -128,12 +130,15 @@
 
 ### 5.2 Corrigir / decidir na minha fatia
 - [ ] Decidir com o time o limiar de ±10% de variação de consumo (`LIMIAR_VARIACAO_CONSUMO_PCT`).
-- [ ] Opcional: incluir a variação da tarifa (reajuste) no diagnóstico de conta alta (hoje: consumo + bandeira).
+- [x] Diagnóstico de conta alta com 4 causas: consumo, dias faturados, bandeira e preço do kWh (2026-10-22).
 - [ ] Ciente: `status_pagamento = VENCIDA` é calculado na exportação da Fatia 02; pode ficar defasado até a próxima carga.
 - [ ] Registrar as decisões da Fatia 03 em `docs/DECISOES.md` (formato ADR) e as suposições no `README.md` (obrigatório no case).
 - [ ] Após o merge da Fatia 05, adotar o `EndpointDoc` (`app/shared/docs.py`) com um `router_metadata.py`, no mesmo padrão do Adrian.
 - [ ] No merge com `main`, resolver os conflitos esperados em `api/v1/router.py` e `pyproject.toml` mantendo as linhas de todas as fatias (simulado em 2026-10-21: 165 testes verdes).
 - [ ] Trocar a seed pelo `v_energy.db` real e conferir os tipos/valores; ajustar `tests/customer360_seed.py` se o schema divergir.
+
+- [ ] Sugestão: mostrar o histórico de inspeções de perdas da UC (`fato_inspecoes_perdas`), completando a visão do analista de perdas.
+- [ ] Sugestão: mostrar a pontualidade de pagamento (pagas após o vencimento) a partir de `data_pagamento` e `data_vencimento`.
 
 ### 5.3 Frontend e integração
 - [x] Instalar `bun` no ambiente local. `make` segue ausente (comandos do Makefile rodados manualmente).

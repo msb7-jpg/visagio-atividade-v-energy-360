@@ -78,3 +78,13 @@
   - Busca não pisca o carregamento quando o cache é atualizado em segundo plano.
 - **Validação de Testes:**
   - Vitest 13 testes aprovados (12 da Visão 360), ESLint, Fallow, `tsc -b` aprovados; zero rolagem horizontal nas 3 larguras e 3 abas.
+
+### [2026-10-22] - Diagnóstico de conta alta com 4 causas e totais de 12 meses
+- **Autor:** Bernardo H
+- **O que foi feito:**
+  - Backend: média diária (kWh/dia) a partir de `dias_faturamento`, variação do preço médio do kWh (`tarifa_aplicada_rs_kwh`) e tendência do consumo por dia no diagnóstico; novo `resumo_12_meses` (consumo e valor somando só meses comparáveis) em `yoy_totals.py`.
+  - Frontend: aviso "Conta alta?" lista dias faturados, bandeira, preço do kWh e geração solar; totais de 12 meses acima do gráfico; tooltip com kWh/dia e dias faturados.
+  - Seed: novo cenário `UC100006` (240 kWh em 36 dias vs 200 kWh em 30 dias: total sobe 20%, consumo por dia estável).
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (57) aprovados.
+  - Frontend: ESLint, Fallow, `tsc -b` e Vitest (15) aprovados; capturas em celular e desktop sem rolagem horizontal.
