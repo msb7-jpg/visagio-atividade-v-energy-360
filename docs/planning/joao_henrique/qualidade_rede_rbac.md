@@ -24,14 +24,17 @@
 ## 2. Escopo Técnico da Fatia (Backend + Frontend + Testes)
 
 ### Backend (`backend/app/features/grid_quality/` & `backend/app/features/auth/`):
-- `grid_quality`:
-  - `schemas.py`: Schemas Pydantic (`QualityIndicatorsDTO`, `FeederRankingDTO`, `FeederTimeSeriesDTO`).
-  - `repository.py`: Consultas SQL nos alimentadores comparando DEC/FEC contra metas da ANEEL.
-  - `service.py`: Lógica Pure Python de ranking e identificação de circuitos com estouro de limites regulatórios.
-  - `router.py`: Rotas `GET /api/v1/quality/indicators`, `/feeders`, `/feeders/{id}/history`.
+- `grid_quality` (rotas ainda não registradas em `api/v1/router.py`; ver checklist):
+  - `schemas.py`: Schemas Pydantic (`QualityStatus`, `FeederRankingDTO`, `QualityIndicatorsDTO`, `FeederTimeSeriesPointDTO`, `FeederTimeSeriesDTO`).
+  - `rules.py`: Regras puras, sem FastAPI e sem SQLAlchemy: `classify_status` (VIOLACAO, ALERTA a partir de 85% do limite, CONFORME), `delta_dec`, `rank_feeders` e `summarize_indicators` (média simples entre alimentadores; a ponderada por UCs depende da pergunta B2 do grupo).
+  - `queries.py`: Consultas SQLAlchemy Core sobre `fato_qualidade_alimentador`; único módulo que conhece o nome da tabela e das colunas do contrato.
+  - `repository.py`: `GridQualityRepository` sobre `AsyncSession`; falha de tabela ou coluna vira `DatabaseReadError`.
+  - `service.py`: `GridQualityService` com indicadores, ranking e histórico. O limite é lido da coluna do contrato; a origem dele segue em aberto (pergunta B1).
+  - `dependencies.py`: Fábrica `get_grid_quality_service` e alias `GridQualitySvc`.
+  - `router.py`: Rotas `GET /quality/indicators` (`competencia`), `/quality/feeders` (`competencia`, `status`) e `/quality/feeders/{id_alimentador}/history` (`meses`, de 1 a 48, padrão 24), sob `/api/v1` quando registradas, protegidas com `RequireOperacao`.
 - `auth/rbac`:
   - Enriquecimento de token JWT com perfil de cargo (`diretoria`, `atendimento`, `perdas`, `operacao`, `admin`).
-  - Dependência central `require_role(roles: list[UserRole])` em `backend/app/shared/dependencies.py`.
+  - Dependência central `require_role(allowed_roles: Sequence[UserRole | str])` em `backend/app/shared/dependencies.py`, com os grupos de papéis em `backend/app/shared/role_groups.py`.
 
 ### Frontend (`frontend/src/features/grid_quality/` & `frontend/src/components/layout/`):
 - `GridQualityPage.tsx`: Painel de continuidade operacional ($\le 150$ linhas).
@@ -57,11 +60,11 @@
 
 ## 3. Checklist Operacional de Execução
 
-- [ ] Criar pasta `backend/app/features/grid_quality/` com schemas, repositório, serviço e rotas.
+- [x] Criar pasta `backend/app/features/grid_quality/` com schemas, repositório, serviço e rotas.
 - [x] Implementar dependência de RBAC `require_role(...)` em `backend/app/shared/dependencies.py`.
-- [ ] Registrar rotas em `backend/app/api/v1/router.py`.
-- [- Em andamento por Joao Henrique - 2026-10-19] Criar testes unitários em `backend/tests/test_grid_quality_service.py` e `test_rbac.py` (garantindo bloqueio 403 para rotas não autorizadas).
-- [ ] Garantir conformidade com `make lint-backend`.
+- [ ] Registrar rotas em `backend/app/api/v1/router.py`. (pendente: arquivo compartilhado)
+- [x] Criar testes unitários em `backend/tests/test_grid_quality_service.py` e `test_rbac.py` (garantindo bloqueio 403 para rotas não autorizadas). Também: `test_grid_quality_repository.py`, `test_grid_quality_router.py` e `test_grid_quality_imports.py`.
+- [x] Garantir conformidade com `make lint-backend`.
 - [ ] Criar pasta `frontend/src/features/grid_quality/` com componentes $\le 150$ linhas.
 - [ ] Implementar layout base `AppLayout.tsx` e `SidebarNav.tsx` adaptativo por perfil de cargo.
 - [ ] Configurar redirecionamento automático por cargo no login em `frontend/src/routes/AppRoutes.tsx`.
@@ -109,9 +112,10 @@
 - **O que João Henrique ENTREGA para os outros colegas:**
   - Dependência central de segurança em `backend/app/shared/dependencies.py`:
     ```python
-    def require_role(allowed_roles: list[UserRole]):
-        """Valida token JWT e exige que user.role esteja em allowed_roles."""
+    def require_role(allowed_roles: Sequence[UserRole | str]) -> Callable[..., UserDTO]:
+        """Valida token JWT e exige que user.role esteja em allowed_roles (string fora do enum levanta ValueError)."""
     ```
+  - Grupos de papéis centralizados em `backend/app/shared/role_groups.py` (`DIRETORIA_ONLY`, `OPERACAO_ACCESS`, `ATENDIMENTO_ACCESS`, `PERDAS_ACCESS`) e aliases `Require*` em `dependencies.py`.
   - Layout mestre do portal `AppLayout.tsx` e barra lateral adaptativa `SidebarNav.tsx` em `frontend/src/components/layout/`.
   - Mecanismo de rota protegida `ProtectedRoute.tsx` em `frontend/src/routes/`.
 - **O que João Henrique RECEBE dos outros colegas:**
