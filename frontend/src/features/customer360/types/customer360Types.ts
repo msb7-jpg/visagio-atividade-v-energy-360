@@ -15,6 +15,16 @@ export interface CustomerSummary {
   potencia_gd_kw: number | null
 }
 
+export interface CustomerSearchResult {
+  id_uc: string
+  nome_titular: string | null
+  numero_medidor_ativo: string | null
+  bairro: string | null
+  municipio: string | null
+  classe_consumo: string | null
+  possui_gd: boolean
+}
+
 export interface Invoice {
   id_fatura: string
   competencia: string

@@ -6,16 +6,17 @@ import { Button } from '@/components/ui/button'
 import { Customer360Details } from '@/features/customer360/components/Customer360Details'
 import { CustomerOverviewCard } from '@/features/customer360/components/CustomerOverviewCard'
 import { CustomerSearchBar } from '@/features/customer360/components/CustomerSearchBar'
+import { RecentCustomers } from '@/features/customer360/components/RecentCustomers'
 import { useCustomer360Controller } from '@/features/customer360/hooks/useCustomer360Controller'
 
-type CustomerResultProps = Omit<ReturnType<typeof useCustomer360Controller>, 'typedId' | 'setTypedId' | 'submitSearch'>
+type CustomerResultProps = Pick<ReturnType<typeof useCustomer360Controller>, 'searchedId' | 'summary' | 'isNotFound' | 'isError'>
 
 function CustomerResult({ searchedId, summary, isNotFound, isError }: CustomerResultProps) {
   if (searchedId.length === 0) {
     return (
       <EmptyState
         title="Busque uma unidade consumidora"
-        description="Digite o número da UC que está na conta do cliente para ver cadastro, consumo, faturas, interrupções e chamados."
+        description="Digite o número da UC que está na conta do cliente (ou o número do medidor) para ver cadastro, consumo, faturas, interrupções e chamados."
         icon={<UserSearch className="size-10" />}
       />
     )
@@ -55,7 +56,7 @@ function CustomerResult({ searchedId, summary, isNotFound, isError }: CustomerRe
  * @returns Página com busca, resumo do cliente, diagnóstico de conta alta e abas de detalhe.
  */
 export function Customer360Page() {
-  const { typedId, setTypedId, submitSearch, ...result } = useCustomer360Controller()
+  const { submitSearch, isSearching, recentCustomers, clearRecent, ...result } = useCustomer360Controller()
 
   return (
     <div className="bg-background min-h-dvh">
@@ -75,7 +76,10 @@ export function Customer360Page() {
             </Link>
           </Button>
         </div>
-        <CustomerSearchBar value={typedId} onChange={setTypedId} onSubmit={submitSearch} isSearching={result.isSearching} />
+        <div className="flex flex-col gap-3">
+          <CustomerSearchBar key={result.searchedId} initialText={result.searchedId} onSubmit={submitSearch} isSearching={isSearching} />
+          <RecentCustomers recentCustomers={recentCustomers} onSelect={submitSearch} onClear={clearRecent} />
+        </div>
         <CustomerResult {...result} />
       </main>
     </div>

@@ -1,42 +1,46 @@
-import { useState } from 'react'
-import { isNotFoundError } from '@/features/customer360/queries/customer360Queries'
+import { useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useCustomerSummaryQuery } from '@/features/customer360/hooks/useCustomer360Queries'
+import { useRecentCustomers } from '@/features/customer360/hooks/useRecentCustomers'
+import { isNotFoundError } from '@/features/customer360/queries/customer360Queries'
+import { normalizeIdUc } from '@/features/customer360/utils/searchTerms'
+
+const UC_PARAM = 'uc'
 
 /**
- * Padroniza o número digitado pelo atendente para o formato do cadastro (ex: ` uc100000 ` → `UC100000`).
+ * Controller headless da Visão 360: a UC buscada vive no endereço da página (`?uc=UC100004`),
+ * o que permite atualizar, voltar e compartilhar o link sem perder o cliente.
  *
- * @param typedId - Texto digitado no campo de busca.
- * @returns Número sem espaços e em caixa alta.
- */
-function normalizeIdUc(typedId: string): string {
-  return typedId.trim().toUpperCase()
-}
-
-/**
- * Controller headless da Visão 360: guarda a UC digitada, dispara a busca e expõe o estado do cadastro.
- *
- * @returns Texto digitado, UC buscada, ações de busca e estados do cadastro.
+ * @returns UC buscada, ação de busca, estados do cadastro e buscas recentes.
  */
 export function useCustomer360Controller() {
-  const [typedId, setTypedId] = useState('')
-  const [searchedId, setSearchedId] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const searchedId = normalizeIdUc(searchParams.get(UC_PARAM) ?? '')
   const summaryQuery = useCustomerSummaryQuery(searchedId)
+  const { recentCustomers, rememberCustomer, clearRecent } = useRecentCustomers()
+  const summary = summaryQuery.data
 
-  const submitSearch = () => {
-    const normalizedId = normalizeIdUc(typedId)
+  useEffect(() => {
+    if (summary) {
+      rememberCustomer(summary)
+    }
+  }, [summary, rememberCustomer])
+
+  const submitSearch = (typedText: string) => {
+    const normalizedId = normalizeIdUc(typedText)
     if (normalizedId.length > 0) {
-      setSearchedId(normalizedId)
+      setSearchParams({ [UC_PARAM]: normalizedId })
     }
   }
 
   return {
-    typedId,
-    setTypedId,
     searchedId,
     submitSearch,
-    summary: summaryQuery.data,
+    summary,
     isSearching: summaryQuery.isFetching,
     isNotFound: isNotFoundError(summaryQuery.error),
-    isError: summaryQuery.isError && !isNotFoundError(summaryQuery.error)
+    isError: summaryQuery.isError && !isNotFoundError(summaryQuery.error),
+    recentCustomers,
+    clearRecent
   }
 }

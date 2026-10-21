@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   customerEventsQueryOptions,
   customerHistoryQueryOptions,
+  customerSearchQueryOptions,
   customerSummaryQueryOptions
 } from '@/features/customer360/queries/customer360Queries'
 
@@ -33,4 +34,14 @@ export function useCustomerHistoryQuery(idUc: string) {
  */
 export function useCustomerEventsQuery(idUc: string) {
   return useQuery(customerEventsQueryOptions(idUc))
+}
+
+/**
+ * Sugestões de UC para o texto digitado na busca.
+ *
+ * @param typedText - Texto digitado, já com debounce (menos de 3 caracteres não consulta).
+ * @returns Estado da query de sugestões.
+ */
+export function useCustomerSearchQuery(typedText: string) {
+  return useQuery(customerSearchQueryOptions(typedText))
 }
