@@ -1,7 +1,7 @@
 # 👤 Fatia 03: Visão 360 da Unidade Consumidora (Fullstack)
 
 > **Dono Único:** Bernardo H  
-> **Status:** Em andamento (backend)  
+> **Status:** Backend e frontend concluídos · Integração pendente  
 > **Skills de Referência:** [`.agents/skills/backend-coding-standards/SKILL.md`](.agents/skills/backend-coding-standards/SKILL.md) & [`.agents/skills/frontend-coding-standards/SKILL.md`](.agents/skills/frontend-coding-standards/SKILL.md)  
 > **Log Individual:** [`changelog.md`](changelog.md)
 
@@ -55,10 +55,10 @@
 - [x] Registrar rotas em `backend/app/api/v1/router.py`.
 - [x] Criar testes do backend em `backend/tests/test_customer360_service.py` e `test_customer360_router.py`.
 - [x] Garantir conformidade com `make lint-backend` (Ruff, Pylint $\le 300$ linhas, import-linter).
-- [ ] Criar pasta `frontend/src/features/customer360/` com página, controller headless e subcomponentes atômicos ($\le 150$ linhas).
-- [ ] Adicionar rota `/customers` em `frontend/src/routes/AppRoutes.tsx`.
-- [ ] Criar testes unitários no frontend com Vitest em `Customer360Page.test.tsx`.
-- [ ] Garantir conformidade com `make lint-frontend` (Fallow e ESLint).
+- [x] Criar pasta `frontend/src/features/customer360/` com página, controller headless e subcomponentes atômicos ($\le 150$ linhas).
+- [x] Adicionar rota `/customers` em `frontend/src/routes/AppRoutes.tsx`.
+- [x] Criar testes unitários no frontend com Vitest em `Customer360Page.test.tsx`.
+- [x] Garantir conformidade com `make lint-frontend` (Fallow e ESLint).
 
 ---
 
@@ -121,21 +121,29 @@
 ### 5.1 Esclarecer com outras fatias
 - [ ] **Renan (Fatia 01):** incluir `nome_titular` na `dim_unidade_consumidora` (o case pede *"quem é o cliente"*). O backend já exibe a coluna automaticamente se ela existir.
 - [ ] **Ryei (Fatia 02):** exportar uma tabela com as ocorrências individuais de rede (`id_uc`, `alimentador`, data, duração, causa). Hoje a aba de interrupções usa só o DEC/FEC mensal da `fato_qualidade_alimentador`.
-- [ ] **Ryei (Fatia 02):** criar `CREATE INDEX idx_fato_atend_uc ON fato_atendimentos(id_uc)` (sem ele, `/events` varre ~319 mil chamados a cada busca).
+- [ ] **Ryei (Fatia 02), baixa prioridade:** criar `CREATE INDEX idx_fato_atend_uc ON fato_atendimentos(id_uc)`. Medido com o volume real (319 mil chamados): ~11 ms por busca sem índice, então não bloqueia.
 - [ ] **Ryei + João Henrique:** `dec_limite_aneel` / `violou_meta` contradizem o glossário do case (*"não para comparar com os limites regulatórios reais"*). Definir se a Visão 360 mostra badge de meta ANEEL.
 - [ ] **João Henrique + Adrian:** confirmar a inclusão do `gerente_perdas` no acesso à Visão 360 (case, seção 3: *"o atendente, o analista de perdas e o diretor comercial"*). Atualizar a matriz RBAC do `ROADMAP.md` (linha 125).
+- [ ] **João Henrique:** criar um grupo `CUSTOMER360_ACCESS` em `app/shared/role_groups.py` (incluindo `GERENTE_PERDAS`) e trocar a lista local `CUSTOMER360_ROLES` do meu router por ele, quando a branch do RBAC for mergeada.
 
 ### 5.2 Corrigir / decidir na minha fatia
 - [ ] Decidir com o time o limiar de ±10% de variação de consumo (`LIMIAR_VARIACAO_CONSUMO_PCT`).
 - [ ] Opcional: incluir a variação da tarifa (reajuste) no diagnóstico de conta alta (hoje: consumo + bandeira).
 - [ ] Ciente: `status_pagamento = VENCIDA` é calculado na exportação da Fatia 02; pode ficar defasado até a próxima carga.
 - [ ] Registrar as decisões da Fatia 03 em `docs/DECISOES.md` (formato ADR) e as suposições no `README.md` (obrigatório no case).
+- [ ] Após o merge da Fatia 05, adotar o `EndpointDoc` (`app/shared/docs.py`) com um `router_metadata.py`, no mesmo padrão do Adrian.
+- [ ] No merge com `main`, resolver os conflitos esperados em `api/v1/router.py` e `pyproject.toml` mantendo as linhas de todas as fatias (simulado em 2026-10-21: 165 testes verdes).
 - [ ] Trocar a seed pelo `v_energy.db` real e conferir os tipos/valores; ajustar `tests/customer360_seed.py` se o schema divergir.
 
 ### 5.3 Frontend e integração
-- [ ] Instalar `bun` e `make` no ambiente local (hoje ausentes).
-- [ ] Escolher biblioteca de gráfico (proposta: `recharts`) e avisar o time.
-- [ ] Implementar o frontend (checklist da seção 3).
+- [x] Instalar `bun` no ambiente local. `make` segue ausente (comandos do Makefile rodados manualmente).
+- [ ] Instalar `make` no Windows para rodar `make lint-all` / `make test-all` direto.
+- [x] Biblioteca de gráfico: chart no padrão shadcn (`components/ui/chart.tsx`) sobre Recharts 2.15. Avisar o time para reutilizarem.
+- [x] Implementar o frontend (checklist da seção 3).
+- [ ] Propor ao time carregar as páginas sob demanda (`React.lazy`) no `AppRoutes.tsx`: o bundle passou de 500 kB.
+- [ ] No merge com a Fatia 05, resolver o conflito esperado em `AppRoutes.tsx` mantendo as rotas `/losses` e `/customers` (simulado em 2026-10-21: ESLint, Fallow, tsc, build e 25 testes verdes).
+- [ ] Propor ao João um `PageHeader` compartilhado junto do `AppLayout`: o cabeçalho com "Voltar ao painel" é igual ao da Fatia 05 (Fallow: 20 linhas duplicadas, dentro do limite de 5%).
+- [ ] Adicionar acesso à `/customers` no menu (`SidebarNav` do João) ou no `DashboardPage`; hoje a rota só é acessada digitando a URL.
 - [ ] Integrar `<AppLayout>` (João Henrique) e `<SmartInsightCard context="customer360" ucId={id_uc} />` (Miguel) quando entregues.
 - [ ] Rodar `make lint-all` e `make test-all`, abrir PR da branch `feat/fatia-03-visao360`.
 
