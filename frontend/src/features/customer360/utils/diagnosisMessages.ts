@@ -10,6 +10,8 @@ import {
 } from '@/features/customer360/utils/customer360Formatters'
 
 const MIN_TARIFF_CHANGE_PCT = 1
+const MIN_BILLING_DAYS_GAP = 3
+const FLAG_COST_ORDER = ['VERDE', 'AMARELA', 'VERMELHA_P1', 'VERMELHA_P2']
 
 const TREND_VERBS: Record<Exclude<ConsumptionTrend, 'SEM_COMPARACAO'>, string> = {
   SUBIU: 'subiu',
@@ -36,23 +38,28 @@ export function describeConsumption(diagnosis: HighBillDiagnosis): string {
 
 /**
  * Frase sobre período de faturamento diferente, que muda o total sem mudar o consumo por dia.
+ * Só aparece quando a diferença é de pelo menos 3 dias e muda a conclusão (ex: total subiu, mas por dia ficou estável).
  *
  * @param diagnosis - Diagnóstico de conta alta retornado por `/history`.
- * @returns Frase com dias faturados e média diária, ou null quando os períodos têm a mesma duração.
+ * @returns Frase com dias faturados e média diária, ou null quando os dias não explicam a variação.
  */
 export function describeBillingDays(diagnosis: HighBillDiagnosis): string | null {
   const currentDays = diagnosis.dias_faturamento
   const previousDays = diagnosis.dias_faturamento_ano_anterior
-  if (currentDays === null || previousDays === null || currentDays === previousDays) {
+  const dailyTrend = diagnosis.tendencia_media_diaria
+  if (currentDays === null || previousDays === null || dailyTrend === 'SEM_COMPARACAO') {
     return null
   }
-  const dailyTrend = diagnosis.tendencia_media_diaria === 'SEM_COMPARACAO' ? 'não pôde ser comparado' : TREND_VERBS[diagnosis.tendencia_media_diaria]
+  const hasRelevantGap = Math.abs(currentDays - previousDays) >= MIN_BILLING_DAYS_GAP
+  if (!hasRelevantGap || dailyTrend === diagnosis.tendencia_consumo) {
+    return null
+  }
   const dailyReadings = `${formatDailyKwh(diagnosis.media_diaria_kwh)} vs ${formatDailyKwh(diagnosis.media_diaria_kwh_ano_anterior)}`
-  return `Este período teve ${currentDays} dias de faturamento contra ${previousDays}; por dia, o consumo ${dailyTrend} (${dailyReadings}).`
+  return `Este período teve ${currentDays} dias de faturamento contra ${previousDays}; por dia, o consumo ${TREND_VERBS[dailyTrend]} (${dailyReadings}).`
 }
 
 /**
- * Frase sobre a mudança de bandeira tarifária, que encarece a conta sem mudar o consumo.
+ * Frase sobre a mudança de bandeira tarifária, dizendo se ela encareceu ou barateou a conta sem mudar o consumo.
  *
  * @param diagnosis - Diagnóstico de conta alta retornado por `/history`.
  * @returns Frase da bandeira, ou null quando ela não mudou.
@@ -61,9 +68,11 @@ export function describeFlagChange(diagnosis: HighBillDiagnosis): string | null 
   if (!diagnosis.bandeira_mudou) {
     return null
   }
-  const previousFlag = formatFlag(diagnosis.bandeira_ano_anterior)
-  const currentFlag = formatFlag(diagnosis.bandeira_atual)
-  return `A bandeira tarifária mudou de ${previousFlag} para ${currentFlag}, o que altera o valor da conta mesmo sem mudar o consumo.`
+  const flags = `de ${formatFlag(diagnosis.bandeira_ano_anterior)} para ${formatFlag(diagnosis.bandeira_atual)}`
+  const isMoreExpensive = FLAG_COST_ORDER.indexOf(diagnosis.bandeira_atual ?? '') > FLAG_COST_ORDER.indexOf(diagnosis.bandeira_ano_anterior ?? '')
+  return isMoreExpensive
+    ? `A bandeira tarifária ficou mais cara (${flags}), o que encarece a conta mesmo sem aumento de consumo.`
+    : `A bandeira tarifária ficou mais barata (${flags}), o que reduz o valor da conta.`
 }
 
 /**
