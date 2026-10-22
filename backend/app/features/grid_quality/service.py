@@ -11,7 +11,7 @@ from app.features.grid_quality.schemas import (
 from app.shared.exceptions import NotFoundException
 
 MESES_HISTORICO_MINIMO = 1
-MESES_HISTORICO_PADRAO = 24
+MESES_HISTORICO_PADRAO = 48
 MESES_HISTORICO_MAXIMO = 48
 
 

@@ -74,7 +74,7 @@ class StubQualityService:
         self.calls.append(("feeders", competencia, status))
         return [RANKING_ENTRY]
 
-    async def get_feeder_history(self, id_alimentador, meses=24):
+    async def get_feeder_history(self, id_alimentador, meses=48):
         """Registra o pedido; levanta NotFoundException para o alimentador inexistente."""
         self.calls.append(("history", id_alimentador, meses))
         if id_alimentador == MISSING_FEEDER_ID:
@@ -167,11 +167,11 @@ async def test_ranking_repassa_competencia_e_status_ao_servico(client, stub_serv
     assert stub_service.calls == [("feeders", "2000-01", QualityStatus.VIOLACAO)]
 
 
-async def test_historico_usa_24_meses_por_padrao(client, stub_service):
+async def test_historico_usa_48_meses_por_padrao(client, stub_service):
     response = await client.get(f"/quality/feeders/{FEEDER_ID}/history", headers=bearer_for_role(UserRole.DIRETOR))
 
     assert response.status_code == 200
-    assert stub_service.calls == [("history", FEEDER_ID, 24)]
+    assert stub_service.calls == [("history", FEEDER_ID, 48)]
 
 
 async def test_historico_de_alimentador_inexistente_retorna_404(client):
