@@ -190,3 +190,22 @@
   - Multiplicar por uma probabilidade só faria sentido se ela fosse independente do kWh; a taxa histórica de acerto por sinal (item seguinte da Fase 2.1) é o candidato, e fica para quando o histórico da Fatia 02 estiver na Gold.
 - **Validação de Testes:**
   - 3 testes novos (RED confirmado: o da dupla contagem e o do desempate falharam antes da correção). `pytest`: 86 passed. Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. Frontend não alterado.
+
+### [2026-10-21] - Fase 5: exportar as ordens para a equipe de campo (CSV)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - `GET /api/v1/losses/inspections/export`: baixa um CSV com as ordens `gerada` e `pendente` (as que vão a campo; concluídas e canceladas ficam de fora), ordenadas por `id_inspecao`. Mesmo RBAC das demais rotas (`diretor` e `gerente_perdas`).
+  - Colunas pré-preenchidas: `id_inspecao`, `id_uc`, `status`, `motivo`, `kwh_estimado`, `fiscal_responsavel`, `criado_em`. Em branco para a equipe preencher: `data_inspecao`, `irregularidade_constatada`, `tipo_irregularidade`, `kwh_recuperado`, `numero_toi`. O `id_inspecao` é a chave de conciliação do upload (Fase 6).
+  - Formato pensado para o Excel em pt-BR: separador `;`, UTF-8 com BOM (acentos) e vírgula decimal no kWh.
+  - Textos livres (`motivo`, `fiscal_responsavel`, `id_uc`) que começam com `=`, `+`, `-` ou `@` recebem apóstrofo, para não executarem como fórmula na planilha (CSV injection).
+  - Módulo puro novo `export.py`; `LossRepository.list_active_orders`; `LossService.export_field_orders_csv`.
+  - Frontend: `ExportOrdersButton` na aba "Ordens em Campo" (travado com `Spinner`/`aria-busy` durante o download, mostra o `detail` da API em caso de erro), `lossApi.exportInspections` (`responseType: 'blob'`), `useExportInspectionsMutation` e `saveBlobAsFile`.
+  - Correções da revisão de código: erro da exportação lido como `Blob` agora é convertido em JSON (`parseBlobErrorBody`) e mostra o `detail` real da API em vez da mensagem genérica; `URL.revokeObjectURL` adiado em 10 s para não cancelar o download em alguns navegadores; kWh formatado com `.1f` (sem notação científica); botão desabilitado quando não há ordem `gerada`/`pendente`; teste passa a exigir o BOM no início do arquivo.
+- **Decisões:**
+  - O botão ficou na aba de ordens, e não na fila de suspeitas como no croqui da §4.1: o arquivo contém as ordens já geradas, que são listadas nessa aba.
+  - Só CSV por enquanto; `.xlsx` não foi implementado (o checklist da Fase 5 pede CSV).
+  - O CSV não traz município e bairro, pois a ordem não os armazena; incluí-los exigiria juntar `dim_unidade_consumidora` na exportação.
+- **Próximos Passos:**
+  - Fase 6: upload da planilha preenchida, conciliando por `id_inspecao` e lendo o mesmo formato (`;`, vírgula decimal, BOM).
+- **Validação de Testes:**
+  - RED confirmado antes da implementação (módulo `export` e `ExportOrdersButton` inexistentes). Backend: 13 testes novos, `pytest` 99 passed; Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. Frontend: 9 testes novos, `vitest` 26 passed; ESLint OK, `tsc -b` sem erros, Fallow 0 acima do limite.

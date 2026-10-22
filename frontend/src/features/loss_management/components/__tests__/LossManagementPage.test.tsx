@@ -168,6 +168,22 @@ describe('LossManagementPage', () => {
     }))
   })
 
+  it('só permite exportar quando há ordem gerada ou em campo', async () => {
+    mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'concluida', irregularidade_constatada: true })])
+    renderPage()
+    await openOrdersTab()
+
+    expect(screen.getByRole('button', { name: /Exportar para campo/ })).toBeDisabled()
+  })
+
+  it('habilita a exportação quando há ordem pendente em campo', async () => {
+    mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'pendente' })])
+    renderPage()
+    await openOrdersTab()
+
+    expect(screen.getByRole('button', { name: /Exportar para campo/ })).toBeEnabled()
+  })
+
   it('envia ordem gerada para campo com o fiscal responsável', async () => {
     mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'gerada' })])
     renderPage()

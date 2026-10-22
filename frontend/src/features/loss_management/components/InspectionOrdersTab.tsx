@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AsyncListState } from '@/features/loss_management/components/AsyncListState'
 import { CancelOrderDialog } from '@/features/loss_management/components/CancelOrderDialog'
 import { DispatchOrderDialog } from '@/features/loss_management/components/DispatchOrderDialog'
+import { ExportOrdersButton } from '@/features/loss_management/components/ExportOrdersButton'
 import { InspectionOrdersTable, type OrderActionKind } from '@/features/loss_management/components/InspectionOrdersTable'
 import { RegisterResultDialog } from '@/features/loss_management/components/RegisterResultDialog'
 import { useInspectionsQuery } from '@/features/loss_management/hooks/useLossQueries'
@@ -20,11 +21,13 @@ interface PendingAction {
 export function InspectionOrdersTab() {
   const { data: orders = [], isLoading, isError } = useInspectionsQuery()
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+  const hasOrdersToDispatch = orders.some((order) => order.status === 'gerada' || order.status === 'pendente')
   const closeAction = () => setPendingAction(null)
   const actionKind = pendingAction?.kind
 
   return (
     <div className="flex flex-col gap-4">
+      <ExportOrdersButton disabled={!hasOrdersToDispatch} />
       <AsyncListState
         isLoading={isLoading}
         isError={isError}

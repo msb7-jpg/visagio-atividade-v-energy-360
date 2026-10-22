@@ -102,7 +102,7 @@
 - [x] `POST /inspections` valida a UC no cadastro (404 se não existir) e calcula `kwh_estimado` no servidor com a mesma regra da fila; UC sem suspeita, com GD ou sem leitura recente gera ordem manual com 0 kWh.
 - [x] Fila funciona sem `fato_inspecoes_perdas` (sem excluir o histórico de campo), avisando que o histórico não foi aplicado. (resposta passou a ser o envelope `{itens, avisos}`; banner na aba da fila)
 - [x] Remover a dupla contagem da queda na prioridade (`score × kWh` ≈ queda² × base). (fila ordena por kWh a recuperar; score só desempata)
-- [ ] Ordens fora do `v_energy.db` (ou garantia do pipeline de que a exportação não recria o arquivo).
+- [x] Ordens fora do `v_energy.db` (ou garantia do pipeline de que a exportação não recria o arquivo). (Decisão: `ordem_inspecao` fica no `v_energy.db`; o padrão de exportação da skill `medallion-lakehouse-pipeline` §5 grava cada tabela Gold com `if_exists="replace"` e não recria o arquivo. Confirmar a premissa com Renan e Ryei na Fase 0.)
 - [ ] Tarifa real de `fato_faturamento` no valor a recuperar (aguarda Ryei) e prioridade pela taxa histórica de acerto.
 
 ### Fase 3 — Conformidade com `backend-coding-standards`
@@ -119,8 +119,8 @@
 - [x] Testes Vitest + `make lint-frontend`.
 
 ### Fase 5 — Diferencial: exportar a fila para a equipe de campo
-- [ ] `GET /api/v1/losses/inspections/export` (CSV) com as ordens `gerada`/`pendente` — o que de fato vai a campo — incluindo `id_inspecao` e colunas em branco para o resultado.
-- [ ] Botão "Exportar para campo" no frontend.
+- [x] `GET /api/v1/losses/inspections/export` (CSV) com as ordens `gerada`/`pendente` — o que de fato vai a campo — incluindo `id_inspecao` e colunas em branco para o resultado.
+- [x] Botão "Exportar para campo" no frontend. (na aba "Ordens em Campo", onde as ordens exportadas são listadas)
 
 ### Fase 6 — Diferencial: upload da planilha preenchida em campo
 - [ ] `POST /api/v1/losses/inspections/upload` (multipart `.xlsx`/`.csv`), conciliando pelo `id_inspecao` do arquivo exportado na Fase 5.

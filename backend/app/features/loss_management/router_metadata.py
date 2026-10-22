@@ -38,6 +38,17 @@ list_inspections_doc = EndpointDoc(
     responses=AUTH_ERROR_RESPONSES,
 )
 
+export_inspections_doc = EndpointDoc(
+    summary="Exportar para campo as ordens de inspeção ativas (CSV)",
+    description=(
+        "Baixa um CSV (separador ';', UTF-8 com BOM) com as ordens 'gerada' e 'pendente', que são as que vão "
+        "a campo. Traz 'id_inspecao' e as colunas de resultado em branco, para a equipe preencher e devolver "
+        "pelo upload. Textos livres que começam com '=', '+', '-' ou '@' recebem apóstrofo para não virarem fórmula."
+    ),
+    response_description="Arquivo CSV com uma linha por ordem ativa.",
+    responses=AUTH_ERROR_RESPONSES,
+)
+
 create_inspection_doc = EndpointDoc(
     summary="Gerar ordem de inspeção para uma UC",
     description=(

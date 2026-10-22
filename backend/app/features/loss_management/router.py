@@ -2,12 +2,13 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.core.constants import UserRole
 from app.features.loss_management.dependencies import LossSvc
 from app.features.loss_management.router_metadata import (
     create_inspection_doc,
+    export_inspections_doc,
     list_inspections_doc,
     list_suspicious_units_doc,
     update_inspection_doc,
@@ -23,6 +24,7 @@ from app.features.loss_management.schemas import (
 from app.shared.dependencies import CurrentUser, require_role
 
 LOSS_ROLES = [UserRole.DIRETOR.value, UserRole.GERENTE_PERDAS.value]
+EXPORT_FILENAME = "ordens_inspecao_campo.csv"
 
 router = APIRouter(
     prefix="/losses",
@@ -54,6 +56,21 @@ async def list_inspections(
 ) -> list[InspectionOrderDTO]:
     """Lista as ordens de inspeção, com filtro opcional por status."""
     return await service.list_inspections(status_filter)
+
+
+@router.get(
+    "/inspections/export",
+    response_class=Response,
+    **export_inspections_doc.to_dict(),
+)
+async def export_inspections(service: LossSvc) -> Response:
+    """Baixa o CSV das ordens ativas para despacho à equipe de campo."""
+    csv_content = await service.export_field_orders_csv()
+    return Response(
+        content=csv_content.encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{EXPORT_FILENAME}"'},
+    )
 
 
 @router.post(

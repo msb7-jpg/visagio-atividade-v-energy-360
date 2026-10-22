@@ -149,6 +149,20 @@ class LossRepository:
         result = await self.session.scalars(filtered_query)
         return [to_order_dto(order) for order in result.all()]
 
+    async def list_active_orders(self) -> list[InspectionOrderDTO]:
+        """Lista as ordens que seguem para campo (geradas e pendentes), da mais antiga para a mais nova.
+
+        Returns:
+            Ordens ativas em ordem crescente de identificador.
+        """
+        query = (
+            select(InspectionOrder)
+            .where(InspectionOrder.status.in_(ACTIVE_STATUSES))
+            .order_by(InspectionOrder.id_inspecao)
+        )
+        result = await self.session.scalars(query)
+        return [to_order_dto(order) for order in result.all()]
+
     async def get_order(self, id_inspecao: int) -> InspectionOrderDTO | None:
         """Busca uma ordem de inspeção pelo identificador.
 

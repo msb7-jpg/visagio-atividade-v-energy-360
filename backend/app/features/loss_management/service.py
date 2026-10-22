@@ -1,6 +1,7 @@
 """Regras de negócio da fila de suspeitas e do ciclo de vida das ordens de inspeção."""
 
 from app.features.loss_management.exceptions import ActiveOrderConflictError, InspectionConflictError
+from app.features.loss_management.export import render_field_orders_csv
 from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.repository import LossRepository
 from app.features.loss_management.schemas import (
@@ -143,6 +144,15 @@ class LossService:
             Ordens da mais recente para a mais antiga.
         """
         return await self.repository.list_orders(status)
+
+    async def export_field_orders_csv(self) -> str:
+        """Gera a planilha CSV das ordens que seguem para campo (geradas e pendentes).
+
+        Returns:
+            Conteúdo do CSV, com as colunas de resultado de campo em branco para a equipe preencher.
+        """
+        active_orders = await self.repository.list_active_orders()
+        return render_field_orders_csv(active_orders)
 
     async def create_inspection(self, payload: InspectionOrderCreateDTO, criado_por: str) -> InspectionOrderDTO:
         """Gera uma ordem de inspeção para uma UC do cadastro.

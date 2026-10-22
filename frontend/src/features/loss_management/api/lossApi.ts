@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client'
+import { parseBlobErrorBody } from '@/features/loss_management/utils/blobErrorBody'
 import type {
   InspectionOrder,
   InspectionOrderCreate,
@@ -23,6 +24,15 @@ export const lossApi = {
       signal
     })
     return data
+  },
+
+  async exportInspections(signal?: AbortSignal): Promise<Blob> {
+    try {
+      const { data } = await apiClient.get<Blob>('/losses/inspections/export', { responseType: 'blob', signal })
+      return data
+    } catch (error) {
+      throw await parseBlobErrorBody(error)
+    }
   },
 
   async createInspection(payload: InspectionOrderCreate): Promise<InspectionOrder> {

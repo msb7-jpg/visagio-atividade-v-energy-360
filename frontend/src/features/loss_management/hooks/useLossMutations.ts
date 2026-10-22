@@ -2,6 +2,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { lossApi } from '@/features/loss_management/api/lossApi'
 import { lossKeys } from '@/features/loss_management/queries/lossQueries'
 import type { InspectionOrderCreate, InspectionOrderUpdate } from '@/features/loss_management/types/lossTypes'
+import { saveBlobAsFile } from '@/features/loss_management/utils/downloadFile'
+
+const EXPORT_FILENAME = 'ordens_inspecao_campo.csv'
 
 interface UpdateInspectionVariables {
   idInspecao: number
@@ -28,6 +31,20 @@ export function useCreateInspectionMutation() {
   return useMutation({
     mutationFn: (payload: InspectionOrderCreate) => lossApi.createInspection(payload),
     onSuccess: invalidateLosses
+  })
+}
+
+/**
+ * Baixa o CSV das ordens ativas para a equipe de campo.
+ *
+ * @returns Mutação de exportação (não altera dados, então não invalida as listas).
+ */
+export function useExportInspectionsMutation() {
+  return useMutation({
+    mutationFn: async () => {
+      const csvBlob = await lossApi.exportInspections()
+      saveBlobAsFile(csvBlob, EXPORT_FILENAME)
+    }
   })
 }
 
