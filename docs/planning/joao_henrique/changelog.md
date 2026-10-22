@@ -81,3 +81,21 @@
 - **Pendências (perguntas ao grupo que continuam abertas):**
   - B1 origem do limite; B2 denominador do DEC/FEC e `ucs_atingidas` × 1 registro = 1 UC; B3 granularidade de "região"; B4 métrica de "retorno" da manutenção preventiva e causas; B5 histórico de 24 meses (os dados cobrem 4 anos); B6 subestação nos dados e chave `alimentador` × `id_alimentador`; B7 papéis finais (ADMIN decidido; restam os nomes finais e atendente × gerente_atendimento); B8 filtros do portal, comparação entre períodos e dono da story "principais indicadores"; B9 suposições no README e `SmartInsightCard` na tela de qualidade; B10 números do 5W2H que não constam no PDF e intervalo de anos (2022-2025 contra 5 arquivos de leituras).
   - Avisar o grupo: `ROADMAP.md` §7.1 e os planos de Bernardo, Célio e Adrian citam `UserRole.ADMIN`, que não existe e não existirá.
+
+### [2026-10-22] - Decisões do grupo: região, histórico de 48 meses, causas e DEC/FEC
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `grid_quality/service.py`: `MESES_HISTORICO_PADRAO` passou de 24 para 48 (o máximo continua 48); a rota `/quality/feeders/{id_alimentador}/history` usa a mesma constante. `test_grid_quality_router.py`: stub e teste do padrão atualizados para 48.
+  - `qualidade_rede_rbac.md`: subestação removida (controller, filtro, coluna "Subestação de Origem" e filtro da tela 4.1); filtros passam a ser município, bairro e alimentador. Histórico de 48 meses nas seções 2 e 4. Região = município e bairro (decisão do grupo, B3); o município vem do alimentador (relação 1:1, observado nos dados brutos). Aba renomeada para "Visão por Região (município e bairro)", com a visão por bairro dependendo de dado pendente.
+  - DEC = soma das durações (horas) ÷ UCs do alimentador; FEC = nº de ocorrências ÷ UCs do alimentador; cada linha da base é uma UC. Denominador fixo ou mensal: pendente (B2).
+  - Textos de tela: "ANEEL/meta ANEEL" trocado por "limite de referência (suposição pendente, B1)"; nomes de coluna do contrato (`dec_limite_aneel`, `fec_limite_aneel`) mantidos.
+  - Causas: CLIMATICA, VEGETACAO, TERCEIROS, FALHA DE EQUIPAMENTO, SOBRECARGA, NAO IDENTIFICADA. SidebarNav: perfil `atendimento` trocado por `atendente` e `gerente_atendimento` (grupo `ATENDIMENTO_ACCESS`).
+  - Observação registrada: números calculados sobre os dados BRUTOS, antes do pipeline; podem mudar após o Silver/Gold.
+- **Pendências:**
+  - Ryei: tabela de ocorrências com causa (o contrato atual de `fato_qualidade_alimentador` não tem causa).
+  - Origem do bairro: provável `dim_unidade_consumidora` (Renan), a confirmar.
+  - Quais tipos de ocorrência contam como interrupção (hoje a fórmula conta todas as linhas da base).
+  - B1 (origem do limite) e B2 (denominador fixo ou mensal) seguem abertas. Nenhuma agregação por município foi criada.
+- **Validação de Testes:**
+  - `make lint-backend`: Ruff, Pylint 10.00/10 e import-linter com 4 contratos mantidos.
+  - `uv run pytest` em `backend`: 119 testes aprovados.
