@@ -1,5 +1,7 @@
 """Regras de negócio da fila de suspeitas e do ciclo de vida das ordens de inspeção."""
 
+import asyncio
+
 from app.features.loss_management.exceptions import ActiveOrderConflictError, InspectionConflictError
 from app.features.loss_management.export import render_field_orders_csv
 from app.features.loss_management.queries import SuspicionFilters
@@ -11,11 +13,16 @@ from app.features.loss_management.schemas import (
     InspectionStatus,
     QueueWarningCode,
     QueueWarningDTO,
+    RejectedRowDTO,
     SuspiciousQueueDTO,
     SuspiciousUnitsFilterDTO,
+    UploadResultDTO,
 )
 from app.features.loss_management.scoring import LIMIAR_QUEDA_SUBITA, order_estimated_kwh, rank_suspicious_units
-from app.shared.exceptions import BadRequestException, NotFoundException
+from app.features.loss_management.update_rules import ensure_fields_match_status, ensure_required_fields
+from app.features.loss_management.upload_parser import read_spreadsheet
+from app.features.loss_management.upload_reconcile import reconcile_rows, referenced_order_ids
+from app.shared.exceptions import NotFoundException
 
 ALLOWED_TRANSITIONS: dict[InspectionStatus, frozenset[InspectionStatus]] = {
     InspectionStatus.GERADA: frozenset({InspectionStatus.PENDENTE, InspectionStatus.CANCELADA}),
@@ -31,15 +38,6 @@ FIELD_HISTORY_NOT_APPLIED_WARNING = QueueWarningDTO(
         "podem aparecer na fila. Ordens concluídas no sistema continuam sendo excluídas."
     ),
 )
-
-IRREGULARITY_DETAIL_FIELDS = frozenset({"tipo_irregularidade", "kwh_recuperado", "numero_toi"})
-
-FIELDS_BY_TARGET_STATUS: dict[InspectionStatus, frozenset[str]] = {
-    InspectionStatus.PENDENTE: frozenset({"fiscal_responsavel"}),
-    InspectionStatus.CONCLUIDA: frozenset({"fiscal_responsavel", "irregularidade_constatada"})
-    | IRREGULARITY_DETAIL_FIELDS,
-    InspectionStatus.CANCELADA: frozenset({"justificativa_cancelamento"}),
-}
 
 
 def validate_transition(current_status: InspectionStatus, payload: InspectionOrderUpdateDTO) -> None:
@@ -61,47 +59,6 @@ def validate_transition(current_status: InspectionStatus, payload: InspectionOrd
         )
     ensure_required_fields(payload)
     ensure_fields_match_status(payload)
-
-
-def ensure_required_fields(payload: InspectionOrderUpdateDTO) -> None:
-    """Exige o resultado de campo na conclusão e a justificativa no cancelamento.
-
-    Args:
-        payload: Alteração solicitada.
-
-    Raises:
-        BadRequestException: Se faltar o resultado de campo ou a justificativa.
-    """
-    if payload.status == InspectionStatus.CONCLUIDA and payload.irregularidade_constatada is None:
-        raise BadRequestException("Informe se houve irregularidade constatada para concluir a ordem.")
-    justification_text = (payload.justificativa_cancelamento or "").strip()
-    if payload.status == InspectionStatus.CANCELADA and not justification_text:
-        raise BadRequestException("Justificativa é obrigatória para cancelar a ordem.")
-
-
-def ensure_fields_match_status(payload: InspectionOrderUpdateDTO) -> None:
-    """Rejeita campos que não pertencem ao status de destino.
-
-    Detalhes da irregularidade (tipo, kWh recuperado, TOI) só valem quando ela foi constatada.
-
-    Args:
-        payload: Alteração solicitada.
-
-    Raises:
-        BadRequestException: Se vierem campos incompatíveis com o status ou com o resultado de campo.
-    """
-    informed_fields = payload.model_dump(exclude_none=True, exclude={"status"}).keys()
-    allowed_fields = FIELDS_BY_TARGET_STATUS.get(payload.status, frozenset())
-    unexpected_fields = sorted(informed_fields - allowed_fields)
-    if unexpected_fields:
-        raise BadRequestException(
-            f"Campos não aceitos para o status '{payload.status}': {', '.join(unexpected_fields)}."
-        )
-    misplaced_details = sorted(informed_fields & IRREGULARITY_DETAIL_FIELDS)
-    if payload.irregularidade_constatada is False and misplaced_details:
-        raise BadRequestException(
-            f"Sem irregularidade constatada, não informe: {', '.join(misplaced_details)}."
-        )
 
 
 class LossService:
@@ -202,3 +159,41 @@ class LossService:
         if updated_order is None:
             raise NotFoundException(f"Ordem de inspeção {id_inspecao} não encontrada.")
         return updated_order
+
+    async def upload_field_results(self, content: bytes, filename: str) -> UploadResultDTO:
+        """Concilia a planilha preenchida em campo com as ordens ativas e conclui as que casam.
+
+        Linhas inválidas são recusadas com motivo, sem abortar o lote; as válidas são gravadas num único commit.
+
+        Args:
+            content: Bytes do arquivo .csv ou .xlsx devolvido pela equipe de campo.
+            filename: Nome original do arquivo, usado para escolher o formato.
+
+        Returns:
+            Resumo com ordens conciliadas, linhas sem resultado, linhas recusadas e kWh recuperado total.
+
+        Raises:
+            BadRequestException: Se o arquivo for de formato inválido, corrompido ou sem a coluna `id_inspecao`.
+        """
+        rows = await asyncio.to_thread(read_spreadsheet, content, filename)
+        order_statuses = await self.repository.get_order_statuses(referenced_order_ids(rows))
+        plan = reconcile_rows(rows, order_statuses)
+        applied_ids = await self.repository.apply_field_results(plan.updates)
+        kwh_recovered = sum(plan.updates[order_id].kwh_recuperado or 0.0 for order_id in applied_ids)
+        applied_set = set(applied_ids)
+        skipped_rejections = [
+            RejectedRowDTO(
+                aba=plan.origins[order_id].sheet,
+                linha=plan.origins[order_id].line,
+                id_inspecao=order_id,
+                motivo=f"Ordem {order_id} deixou o fluxo de campo durante o envio e não foi alterada.",
+            )
+            for order_id in plan.updates
+            if order_id not in applied_set
+        ]
+        return UploadResultDTO(
+            conciliadas=len(applied_ids),
+            ignoradas=plan.ignored,
+            rejeitadas=[*plan.rejections, *skipped_rejections],
+            kwh_recuperado_total=round(kwh_recovered, 2),
+        )

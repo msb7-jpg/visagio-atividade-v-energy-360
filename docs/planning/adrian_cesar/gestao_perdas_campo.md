@@ -60,12 +60,12 @@
 
 - [x] Criar pasta `backend/app/features/loss_management/` com schemas, repositório, serviço e rotas CRUD.
 - [ ] Implementar endpoint de exportação de dados em CSV/XLSX.
-- [ ] Implementar endpoint multipart de upload de planilha com validação e conciliação no banco.
+- [x] Implementar endpoint multipart de upload de planilha com validação e conciliação no banco.
 - [x] Registrar rotas em `backend/app/api/v1/router.py`.
 - [x] Criar testes unitários e de integração em `backend/tests/test_loss_management_service.py` e `test_loss_router.py`.
 - [x] Garantir conformidade com `make lint-backend`.
 - [x] Criar pasta `frontend/src/features/loss_management/` com componentes $\le 150$ linhas.
-- [ ] Implementar modal de upload drag-and-drop e botão de exportação.
+- [x] Implementar modal de upload drag-and-drop e botão de exportação.
 - [x] Adicionar rota `/losses` em `frontend/src/routes/AppRoutes.tsx`.
 - [x] Criar testes no frontend com Vitest em `components/__tests__/LossManagementPage.test.tsx` (7 cenários).
 - [x] Garantir conformidade com `make lint-frontend`.
@@ -123,10 +123,10 @@
 - [x] Botão "Exportar para campo" no frontend. (na aba "Ordens em Campo", onde as ordens exportadas são listadas)
 
 ### Fase 6 — Diferencial: upload da planilha preenchida em campo
-- [ ] `POST /api/v1/losses/inspections/upload` (multipart `.xlsx`/`.csv`), conciliando pelo `id_inspecao` do arquivo exportado na Fase 5.
-- [ ] Normalizar a bagunça real de campo (ref. `inspecoes.xlsx`): variações de `resultado` ("CONFIRMADA", "irregularidade confirmada", "NADA CONSTA"), datas (`2025-08-01`, `14.08.2025`, `09-01-2025`), decimais com vírgula, múltiplas abas.
-- [ ] Retornar `UploadResultDTO` (conciliadas, rejeitadas com motivo, kWh total) sem abortar o lote por uma linha inválida.
-- [ ] Modal drag-and-drop no frontend.
+- [x] `POST /api/v1/losses/inspections/upload` (multipart `.xlsx`/`.csv`), conciliando pelo `id_inspecao` do arquivo exportado na Fase 5.
+- [x] Normalizar a bagunça real de campo (ref. `inspecoes.xlsx`): variações de `resultado` ("CONFIRMADA", "irregularidade confirmada", "NADA CONSTA"), datas (`2025-08-01`, `14.08.2025`, `09-01-2025`), decimais com vírgula, múltiplas abas.
+- [x] Retornar `UploadResultDTO` (conciliadas, rejeitadas com motivo, kWh total) sem abortar o lote por uma linha inválida.
+- [x] Modal drag-and-drop no frontend.
 
 ### Fase 7 — Troca do provisório pela Gold real
 - [ ] Quando Renan/Ryei exportarem a Gold: **apagar** o seed local da Fase 1 e as tabelas geradas por ele, rodar a fila contra os dados reais e conferir os números.

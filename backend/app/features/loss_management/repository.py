@@ -1,6 +1,8 @@
 """Acesso a dados da gestão de perdas: perfis de consumo (Gold) e ordens de inspeção."""
 
 import logging
+from collections.abc import Collection, Mapping
+from itertools import batched
 
 from sqlalchemy import RowMapping, exists, inspect, select
 from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
@@ -26,6 +28,8 @@ from app.features.loss_management.scoring import ConsumptionProfile, QueueCandid
 from app.shared.exceptions import DatabaseReadError
 
 logger = logging.getLogger(__name__)
+
+ID_BATCH_SIZE = 500  # abaixo do limite de 999 variáveis do SQLite antigo
 
 # Tabela ausente (SQLite: OperationalError; Postgres: ProgrammingError) ou coluna fora do contrato Gold.
 GOLD_QUERY_ERRORS = (OperationalError, ProgrammingError)
@@ -240,3 +244,43 @@ class LossRepository:
         await self.session.commit()
         await self.session.refresh(order)
         return to_order_dto(order)
+
+    async def get_order_statuses(self, ids: Collection[int]) -> dict[int, InspectionStatus]:
+        """Busca o status atual das ordens citadas, numa única consulta.
+
+        Args:
+            ids: Identificadores das ordens.
+
+        Returns:
+            Status por identificador; ordens inexistentes ficam de fora.
+        """
+        statuses: dict[int, InspectionStatus] = {}
+        for id_batch in batched(sorted(ids), ID_BATCH_SIZE):
+            query = select(InspectionOrder.id_inspecao, InspectionOrder.status).where(
+                InspectionOrder.id_inspecao.in_(id_batch)
+            )
+            result = await self.session.execute(query)
+            statuses.update({id_inspecao: InspectionStatus(status) for id_inspecao, status in result.all()})
+        return statuses
+
+    async def apply_field_results(self, updates: Mapping[int, InspectionOrderUpdateDTO]) -> list[int]:
+        """Conclui, num único commit, as ordens que ainda estão em campo.
+
+        Args:
+            updates: Resultado de campo já validado, por identificador de ordem.
+
+        Returns:
+            Identificadores das ordens de fato atualizadas; as que deixaram o fluxo de campo entre a
+            validação e a gravação (ex.: canceladas por outro usuário) ficam intactas e de fora.
+        """
+        applied_ids: list[int] = []
+        for id_batch in batched(sorted(updates), ID_BATCH_SIZE):
+            query = select(InspectionOrder).where(
+                InspectionOrder.id_inspecao.in_(id_batch), InspectionOrder.status.in_(ACTIVE_STATUSES)
+            )
+            for order in (await self.session.scalars(query)).all():
+                for field_name, field_value in updates[order.id_inspecao].model_dump(exclude_none=True).items():
+                    setattr(order, field_name, field_value)
+                applied_ids.append(order.id_inspecao)
+        await self.session.commit()
+        return applied_ids

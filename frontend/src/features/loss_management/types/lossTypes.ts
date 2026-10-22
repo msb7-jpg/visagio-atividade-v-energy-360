@@ -73,3 +73,19 @@ export interface InspectionOrderUpdate {
   numero_toi?: string
   justificativa_cancelamento?: string
 }
+
+/** Linha da planilha de campo que não foi conciliada. */
+export interface RejectedRow {
+  aba: string | null
+  linha: number
+  id_inspecao: number | null
+  motivo: string
+}
+
+/** Resumo da conciliação da planilha de retorno de campo. */
+export interface UploadResult {
+  conciliadas: number
+  ignoradas: number
+  rejeitadas: RejectedRow[]
+  kwh_recuperado_total: number
+}

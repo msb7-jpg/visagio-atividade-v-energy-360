@@ -2,16 +2,18 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 
 from app.core.constants import UserRole
 from app.features.loss_management.dependencies import LossSvc
+from app.features.loss_management.exceptions import UploadTooLargeError
 from app.features.loss_management.router_metadata import (
     create_inspection_doc,
     export_inspections_doc,
     list_inspections_doc,
     list_suspicious_units_doc,
     update_inspection_doc,
+    upload_inspections_doc,
 )
 from app.features.loss_management.schemas import (
     InspectionOrderCreateDTO,
@@ -20,11 +22,13 @@ from app.features.loss_management.schemas import (
     InspectionStatus,
     SuspiciousQueueDTO,
     SuspiciousUnitsFilterDTO,
+    UploadResultDTO,
 )
 from app.shared.dependencies import CurrentUser, require_role
 
 LOSS_ROLES = [UserRole.DIRETOR.value, UserRole.GERENTE_PERDAS.value]
 EXPORT_FILENAME = "ordens_inspecao_campo.csv"
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
 router = APIRouter(
     prefix="/losses",
@@ -96,3 +100,18 @@ async def update_inspection(
 ) -> InspectionOrderDTO:
     """Atualiza status, resultado de campo ou cancelamento de uma ordem."""
     return await service.update_inspection(id_inspecao, payload)
+
+
+@router.post(
+    "/inspections/upload",
+    response_model=UploadResultDTO,
+    **upload_inspections_doc.to_dict(),
+)
+async def upload_inspections(
+    service: LossSvc, file: Annotated[UploadFile, File(description="Planilha .csv/.xlsx")]
+) -> UploadResultDTO:
+    """Registra os resultados de campo a partir da planilha preenchida pela equipe."""
+    content = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise UploadTooLargeError(MAX_UPLOAD_BYTES)
+    return await service.upload_field_results(content, file.filename or "")

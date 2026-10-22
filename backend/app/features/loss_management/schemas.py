@@ -104,3 +104,21 @@ class InspectionOrderDTO(BaseModel):
     criado_por: str
     criado_em: datetime
     atualizado_em: datetime
+
+
+class RejectedRowDTO(BaseModel):
+    """Linha da planilha de campo que não foi conciliada, com o motivo."""
+
+    aba: str | None = Field(description="Aba do .xlsx; vazio para CSV")
+    linha: int = Field(description="Número da linha na planilha (cabeçalho = 1)")
+    id_inspecao: int | None
+    motivo: str
+
+
+class UploadResultDTO(BaseModel):
+    """Resumo da conciliação da planilha de retorno de campo."""
+
+    conciliadas: int = Field(description="Ordens concluídas a partir da planilha")
+    ignoradas: int = Field(description="Linhas sem resultado preenchido (ainda em campo)")
+    rejeitadas: list[RejectedRowDTO]
+    kwh_recuperado_total: float = Field(description="Soma do kWh recuperado das ordens conciliadas")

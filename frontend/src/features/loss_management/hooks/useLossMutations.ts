@@ -60,3 +60,16 @@ export function useUpdateInspectionMutation() {
     onSuccess: invalidateLosses
   })
 }
+
+/**
+ * Envia a planilha preenchida em campo e conclui as ordens conciliadas.
+ *
+ * @returns Mutação de upload (invalida fila e ordens, pois ordens concluídas mudam as duas listas).
+ */
+export function useUploadFieldResultsMutation() {
+  const invalidateLosses = useInvalidateLosses()
+  return useMutation({
+    mutationFn: (file: File) => lossApi.uploadFieldResults(file),
+    onSuccess: invalidateLosses
+  })
+}

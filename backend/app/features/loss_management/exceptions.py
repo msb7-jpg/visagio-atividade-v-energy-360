@@ -17,3 +17,13 @@ class ActiveOrderConflictError(InspectionConflictError):
 
     def __init__(self, id_uc: str):
         super().__init__(f"A UC {id_uc} já possui ordem de inspeção ativa.")
+
+
+class UploadTooLargeError(DomainException):
+    """Arquivo enviado maior que o limite aceito."""
+
+    def __init__(self, max_bytes: int):
+        super().__init__(
+            message=f"Arquivo acima do limite de {max_bytes // (1024 * 1024)} MB.",
+            status_code=int(HTTPStatus.REQUEST_ENTITY_TOO_LARGE),
+        )

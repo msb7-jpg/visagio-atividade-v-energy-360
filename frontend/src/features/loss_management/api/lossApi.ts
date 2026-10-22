@@ -6,7 +6,8 @@ import type {
   InspectionOrderUpdate,
   InspectionStatus,
   SuspiciousQueue,
-  SuspiciousUnitsFilter
+  SuspiciousUnitsFilter,
+  UploadResult
 } from '@/features/loss_management/types/lossTypes'
 
 export const lossApi = {
@@ -37,6 +38,15 @@ export const lossApi = {
 
   async createInspection(payload: InspectionOrderCreate): Promise<InspectionOrder> {
     const { data } = await apiClient.post<InspectionOrder>('/losses/inspections', payload)
+    return data
+  },
+
+  async uploadFieldResults(file: File): Promise<UploadResult> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const { data } = await apiClient.post<UploadResult>('/losses/inspections/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
     return data
   },
 

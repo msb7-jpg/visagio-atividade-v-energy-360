@@ -80,3 +80,22 @@ update_inspection_doc = EndpointDoc(
         409: {"description": "Transição de status inválida."},
     },
 )
+
+upload_inspections_doc = EndpointDoc(
+    summary="Subir a planilha de retorno de campo e registrar os resultados",
+    description=(
+        "Recebe o .csv (separador ';' ou ',') ou .xlsx (todas as abas) devolvido pela equipe de campo e concilia "
+        "cada linha pelo 'id_inspecao' da planilha exportada. Ordens 'gerada' ou 'pendente' com resultado "
+        "preenchido passam a 'concluida'. Aceita as variações reais de campo: resultado ('CONFIRMADA', 'NADA "
+        "CONSTA', 'sim', 'não'), datas ('2025-08-01', '14.08.2025', '09-01-2025' como dia-mês-ano) e decimais "
+        "com vírgula. Uma linha inválida é recusada com motivo sem abortar as demais; linhas sem resultado "
+        "preenchido são contadas em 'ignoradas'. Limite de 5 MB e 10.000 linhas."
+    ),
+    response_description="Resumo da conciliação: conciliadas, ignoradas, rejeitadas com motivo e kWh total.",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        400: {"description": "Formato inválido, arquivo corrompido ou sem a coluna 'id_inspecao'."},
+        413: {"description": "Arquivo acima do limite de 5 MB."},
+        422: {"description": "Arquivo não enviado (campo multipart 'file')."},
+    },
+)

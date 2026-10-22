@@ -209,3 +209,22 @@
   - Fase 6: upload da planilha preenchida, conciliando por `id_inspecao` e lendo o mesmo formato (`;`, vírgula decimal, BOM).
 - **Validação de Testes:**
   - RED confirmado antes da implementação (módulo `export` e `ExportOrdersButton` inexistentes). Backend: 13 testes novos, `pytest` 99 passed; Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. Frontend: 9 testes novos, `vitest` 26 passed; ESLint OK, `tsc -b` sem erros, Fallow 0 acima do limite.
+
+### [2026-10-21] - Fase 6: upload da planilha preenchida em campo
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - `POST /api/v1/losses/inspections/upload` (multipart, campo `file`, `.csv` ou `.xlsx`, todas as abas): concilia cada linha pelo `id_inspecao` do arquivo exportado na Fase 5 e conclui as ordens `gerada`/`pendente` com resultado preenchido. Mesmo RBAC das demais rotas. Limite de 5 MB (413) e 10.000 linhas (400).
+  - Retorna `UploadResultDTO`: `conciliadas`, `ignoradas` (linhas sem resultado, ainda em campo), `rejeitadas` (aba, linha, `id_inspecao` e motivo) e `kwh_recuperado_total`. Uma linha inválida nunca aborta o lote; as válidas são gravadas num único commit.
+  - Normalização da bagunça de campo: resultado ("CONFIRMADA", "irregularidade confirmada", "NADA CONSTA", "sim", "não", "não confirmada"...), datas (`2025-08-01`, `14.08.2025`, `09-01-2025`, `14/08/2025` e datas nativas do Excel), decimais (`1.234,56`, `1,234.56`, `0,5`, `850 kWh`), cabeçalhos sem acento/caixa ("ID Inspeção"), CSV com `;`, `,` ou tab e UTF-8/Windows-1252.
+  - Regras de recusa: id inválido ou inexistente, ordem já concluída/cancelada, id repetido no arquivo, valor ilegível, kWh sem irregularidade (contraditório). A validação de campos × status foi extraída de `service.py` para `update_rules.py` e é a mesma do `PATCH`.
+  - Módulos novos puros (sem FastAPI): `upload_values.py`, `upload_parser.py`, `upload_reconcile.py`, `update_rules.py`. Dependências novas: `openpyxl` e `python-multipart`.
+  - Frontend: botão "Subir planilha de campo" na aba "Ordens em Campo" abre `InspectionUploadModal` (arrastar e soltar + seleção de arquivo, recusa de formato no cliente, travamento durante o envio) com `UploadResultSummary` (ordens conciliadas, kWh, linhas ignoradas e rejeitadas com motivo). O upload invalida fila e ordens.
+- **Decisões e limitações:**
+  - `09-01-2025` é lido como dia-mês-ano (pt-BR); a ordem de campo só chega a `concluida` pela planilha mesmo vinda de `gerada`, pois o retorno de campo não passa pelo passo manual de envio.
+  - `data_inspecao` é validada, mas não gravada: `ordem_inspecao` não tem a coluna e o `create_all` não altera tabelas existentes. Se for necessária, exige migração.
+  - O R$ do resumo (exemplo do `atividade.pdf`) fica fora até a tarifa real de `fato_faturamento` (Ryei).
+  - Não foi possível testar contra `inspecoes.xlsx` real: o arquivo não está no repositório; os formatos vêm da descrição da fatia.
+  - Se uma ordem sair de campo entre a validação e a gravação (ex.: cancelada por outro usuário), ela é preservada e volta em `rejeitadas`.
+  - Correções da revisão: limite de 10.000 linhas aplicado durante a leitura; erros de aba corrompida viram 400; `reset_dimensions()` contra dimensão declarada errada; consultas por ids em lotes de 500; `NADA CONSTA` aceita 0 kWh e tipo/TOI preenchidos (descartados); ids `15.0`/`15,0` aceitos.
+- **Validação de Testes:**
+  - Backend: 83 testes novos, `pytest` 182 passed; Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. Frontend: 7 testes novos, `vitest` 33 passed; ESLint OK, `tsc -b` sem erros, Fallow 0 acima do limite. `make` não existe neste shell; os mesmos comandos foram rodados diretamente.
