@@ -99,3 +99,15 @@
 - **Validação de Testes:**
   - Backend: Ruff, Pylint 10/10, import-linter e pytest (76) aprovados.
   - Frontend: ESLint, Fallow, `tsc -b` e Vitest (29) aprovados; fluxo validado no navegador (digitar, setas, Enter, recentes) em celular e desktop.
+
+### [2026-10-22] - Validação com dados reais e ajustes nas frases do diagnóstico
+- **Autor:** Bernardo H
+- **O que foi feito:**
+  - Validação da API contra um banco montado a partir dos arquivos brutos no formato do contrato (45 mil UCs, 2,15 mi de leituras e faturas, fora do repositório): 300 UCs sorteadas, 0 divergências entre a API e o recálculo independente (referência, kWh, comparação anual, tendência, valores, faturas em aberto e totais de 12 meses). Tempo das 3 chamadas da tela: 8 ms (mediana); busca: 2 a 9 ms.
+  - Frase de dias faturados só aparece com diferença de 3 dias ou mais e quando muda a conclusão (total vs por dia).
+  - Frase da bandeira diz se a conta ficou mais cara ou mais barata pela bandeira.
+- **Achados nos dados:**
+  - Em jul/2025 houve ~5x mais interrupções que a média, em todos os 122 alimentadores (evento compartilhado com a Fatia 06).
+  - As datas de leitura do bruto geram intervalos de 19 a 47 dias; a confiabilidade da média por dia depende do `dias_faturamento` da Fatia 01.
+- **Validação de Testes:**
+  - Frontend: ESLint, Fallow, `tsc -b` e Vitest (34) aprovados.

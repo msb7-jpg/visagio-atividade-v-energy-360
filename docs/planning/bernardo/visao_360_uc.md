@@ -124,6 +124,8 @@
 - [ ] **Renan (Fatia 01):** incluir a data de conexão da GD (`data_conexao`) e tipo/data de instalação do medidor na `dim_unidade_consumidora`.
 - [ ] **Renan (Fatia 01):** criar índice em `dim_unidade_consumidora(numero_medidor_ativo)` para a busca por medidor (hoje varre ~46 mil linhas, ainda rápido).
 - [ ] Quando o `nome_titular` existir, incluir a busca por nome nas sugestões.
+- [ ] **Renan (Fatia 01):** como o `dias_faturamento` será calculado? No bruto, as datas de leitura geram intervalos de 19 a 47 dias, o que torna a média por dia instável.
+- [ ] **João Henrique (Fatia 06):** compartilhar o achado de jul/2025 (~5x mais interrupções que a média, em todos os alimentadores).
 - [ ] **Ryei (Fatia 02):** exportar uma tabela com as ocorrências individuais de rede (`id_uc`, `alimentador`, data, duração, causa). Hoje a aba de interrupções usa só o DEC/FEC mensal da `fato_qualidade_alimentador`.
 - [ ] **Ryei (Fatia 02), baixa prioridade:** criar `CREATE INDEX idx_fato_atend_uc ON fato_atendimentos(id_uc)`. Medido com o volume real (319 mil chamados): ~11 ms por busca sem índice, então não bloqueia.
 - [ ] **Ryei + João Henrique:** `dec_limite_aneel` / `violou_meta` contradizem o glossário do case (*"não para comparar com os limites regulatórios reais"*). Definir se a Visão 360 mostra badge de meta ANEEL.
