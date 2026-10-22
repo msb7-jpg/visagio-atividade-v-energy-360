@@ -110,13 +110,13 @@ class LossService:
         self.repository = repository
 
     async def list_suspicious_units(self, queue_filter: SuspiciousUnitsFilterDTO) -> SuspiciousQueueDTO:
-        """Monta a fila de UCs suspeitas priorizada por valor esperado de recuperação.
+        """Monta a fila de UCs suspeitas priorizada pela energia estimada a recuperar.
 
         Args:
             queue_filter: Filtros de município, bairro e classe e o tamanho da fila.
 
         Returns:
-            UCs suspeitas em ordem decrescente de valor esperado, limitadas a `queue_filter.limit`,
+            UCs suspeitas em ordem decrescente de kWh a recuperar, limitadas a `queue_filter.limit`,
             e os avisos de degradação da análise (ex.: histórico de campo não aplicado).
 
         Raises:

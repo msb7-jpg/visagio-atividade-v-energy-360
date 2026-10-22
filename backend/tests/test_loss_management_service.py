@@ -70,7 +70,7 @@ def test_score_is_capped_at_100():
     assert unit.score_risco == pytest.approx(100.0)
 
 
-def test_ranking_orders_by_expected_recovery_and_applies_limit():
+def test_ranking_orders_by_recoverable_kwh_and_applies_limit():
     profiles = [
         make_profile("UC_PEQUENA", base_kwh=100, recent_kwh=10),
         make_profile("UC_GRANDE", base_kwh=1000, recent_kwh=100),
@@ -80,6 +80,33 @@ def test_ranking_orders_by_expected_recovery_and_applies_limit():
     ranked = rank_suspicious_units(profiles, limit=1)
 
     assert [unit.id_uc for unit in ranked] == ["UC_GRANDE"]
+
+
+def test_ranking_does_not_count_the_drop_twice_through_score_and_kwh():
+    deep_drop_small_base = make_profile("UC_QUEDA_TOTAL", base_kwh=300, recent_kwh=0)
+    moderate_drop_large_base = make_profile("UC_BASE_GRANDE", base_kwh=1000, recent_kwh=480)
+
+    ranked = rank_suspicious_units([deep_drop_small_base, moderate_drop_large_base], limit=2)
+
+    assert [unit.id_uc for unit in ranked] == ["UC_BASE_GRANDE", "UC_QUEDA_TOTAL"]
+
+
+def test_ranking_breaks_kwh_ties_by_risk_score():
+    lower_risk = make_profile("UC_RISCO_MENOR", base_kwh=300, recent_kwh=100)
+    higher_risk = make_profile("UC_RISCO_MAIOR", base_kwh=300, recent_kwh=100, zero_months=1)
+
+    ranked = rank_suspicious_units([lower_risk, higher_risk], limit=2)
+
+    assert [unit.id_uc for unit in ranked] == ["UC_RISCO_MAIOR", "UC_RISCO_MENOR"]
+
+
+def test_ranking_is_deterministic_when_kwh_and_score_tie():
+    profiles = [make_profile(id_uc, base_kwh=300, recent_kwh=100) for id_uc in ("UC_C", "UC_A", "UC_B")]
+
+    ranked = rank_suspicious_units(profiles, limit=3)
+    reversed_ranked = rank_suspicious_units(list(reversed(profiles)), limit=3)
+
+    assert [unit.id_uc for unit in ranked] == [unit.id_uc for unit in reversed_ranked] == ["UC_A", "UC_B", "UC_C"]
 
 
 @pytest.mark.parametrize(

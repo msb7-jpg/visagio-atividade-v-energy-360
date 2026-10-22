@@ -178,3 +178,15 @@
   - Quando a Fatia 02 exportar a tabela, o aviso some sozinho; nenhuma mudança de código é necessária.
 - **Validação de Testes:**
   - RED confirmado antes da implementação (9 testes de backend e 9 de frontend falhando). `pytest`: 83 passed (10 novos, com cobertura de 97% em `loss_management`). Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. `vitest`: 17 passed (4 novos). ESLint OK, Fallow 0 acima do limite, `tsc -b` sem erros.
+
+### [2026-10-21] - Fase 2.1: fim da dupla contagem da queda na prioridade da fila
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - A fila era ordenada por `score × kWh`. Os dois crescem com a queda de consumo (score = queda × 80; kWh = base × queda × 3), então o produto valia ≈ queda² × base e punha à frente UCs de base pequena com queda total em vez de UCs de base grande com queda moderada.
+  - `expected_recovery_kwh` foi substituída por `priority_key`: a fila ordena por kWh estimado a recuperar (que já embute a intensidade da queda) e o score de risco só desempata. O score continua exibido sem alteração.
+  - Empate total (mesmo kWh e mesmo score) resolvido por `id_uc`, para o corte do `limit` e a ordem da fila serem estáveis entre requisições.
+  - Docstrings, descrição OpenAPI de `GET /losses/suspicious-units` e `DOMINIO_NEGOCIO_5W2H.md` atualizados ("valor esperado" → "kWh a recuperar").
+- **Decisões:**
+  - Multiplicar por uma probabilidade só faria sentido se ela fosse independente do kWh; a taxa histórica de acerto por sinal (item seguinte da Fase 2.1) é o candidato, e fica para quando o histórico da Fatia 02 estiver na Gold.
+- **Validação de Testes:**
+  - 3 testes novos (RED confirmado: o da dupla contagem e o do desempate falharam antes da correção). `pytest`: 86 passed. Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. Frontend não alterado.

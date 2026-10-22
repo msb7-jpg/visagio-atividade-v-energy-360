@@ -151,29 +151,33 @@ def order_estimated_kwh(unit: RegisteredUnit) -> float:
     return suspicious_unit.kwh_estimado_recuperar if suspicious_unit else 0.0
 
 
-def expected_recovery_kwh(unit: SuspiciousUnitDTO) -> float:
-    """Calcula o valor esperado de recuperação usado para ordenar a fila.
+def priority_key(unit: SuspiciousUnitDTO) -> tuple[float, float]:
+    """Define a chave de prioridade da fila.
+
+    O kWh estimado já carrega a intensidade da queda (déficit = base * queda); multiplicá-lo
+    pelo score, que também cresce com a queda, contaria a queda duas vezes. Por isso o kWh
+    ordena a fila e o score só desempata.
 
     Args:
-        unit: Item da fila com score de risco e energia estimada.
+        unit: Item da fila com energia estimada e score de risco.
 
     Returns:
-        Probabilidade relativa (score / 100) multiplicada pelo kWh estimado a recuperar.
+        Par (kWh estimado a recuperar, score de risco) para ordenação decrescente.
     """
-    relative_probability = unit.score_risco / SCORE_MAXIMO
-    return relative_probability * unit.kwh_estimado_recuperar
+    return unit.kwh_estimado_recuperar, unit.score_risco
 
 
 def rank_suspicious_units(profiles: list[ConsumptionProfile], limit: int) -> list[SuspiciousUnitDTO]:
-    """Monta a fila priorizada pelo valor esperado de recuperação.
+    """Monta a fila priorizada pela energia estimada a recuperar.
 
     Args:
         profiles: Perfis de consumo candidatos.
         limit: Tamanho máximo da fila.
 
     Returns:
-        Itens suspeitos em ordem decrescente de valor esperado, até `limit` itens.
+        Itens suspeitos em ordem decrescente de kWh a recuperar (desempate por score), até `limit` itens.
     """
     candidates = [unit for profile in profiles if (unit := build_suspicious_unit(profile)) is not None]
-    ranked = sorted(candidates, key=expected_recovery_kwh, reverse=True)
+    candidates_by_id = sorted(candidates, key=lambda unit: unit.id_uc)
+    ranked = sorted(candidates_by_id, key=priority_key, reverse=True)
     return ranked[:limit]
