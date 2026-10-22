@@ -17,6 +17,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -59,6 +61,9 @@
 
   --destructive: oklch(0.58 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
+
+  --warning: oklch(0.80 0.16 80);                /* Amber 400: atenção que não bloqueia */
+  --warning-foreground: oklch(0.208 0.042 265.755);
 
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 14%);
@@ -105,6 +110,9 @@
 
   --destructive: oklch(0.58 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
+
+  --warning: oklch(0.52 0.14 65);                /* Amber 700: contraste AA sobre fundo claro */
+  --warning-foreground: oklch(1 0 0);
 
   --border: oklch(0.90 0.01 250);                /* Slate 200 */
   --input: oklch(0.90 0.01 250);
