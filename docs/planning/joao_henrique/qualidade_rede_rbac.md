@@ -46,14 +46,14 @@
 ## 2. Escopo Técnico da Fatia (Backend + Frontend + Testes)
 
 ### Backend (`backend/app/features/grid_quality/` & `backend/app/features/auth/`):
-- `grid_quality` (rotas ainda não registradas em `api/v1/router.py`; ver checklist):
+- `grid_quality` (rotas registradas em `api/v1/router.py`):
   - `schemas.py`: Schemas Pydantic (`QualityStatus`, `FeederRankingDTO`, `QualityIndicatorsDTO`, `FeederTimeSeriesPointDTO`, `FeederTimeSeriesDTO`).
   - `rules.py`: Regras puras, sem FastAPI e sem SQLAlchemy: `classify_status` (VIOLACAO, ALERTA a partir de 85% do limite, CONFORME), `delta_dec`, `rank_feeders` e `summarize_indicators` (média simples entre alimentadores; a ponderada por UCs depende da pergunta B2 do grupo).
   - `queries.py`: Consultas SQLAlchemy Core sobre `fato_qualidade_alimentador`; único módulo que conhece o nome da tabela e das colunas do contrato.
   - `repository.py`: `GridQualityRepository` sobre `AsyncSession`; falha de tabela ou coluna vira `DatabaseReadError`.
   - `service.py`: `GridQualityService` com indicadores, ranking e histórico. O limite é lido da coluna do contrato; a origem dele segue em aberto (pergunta B1).
   - `dependencies.py`: Fábrica `get_grid_quality_service` e alias `GridQualitySvc`.
-  - `router.py`: Rotas `GET /quality/indicators` (`competencia`), `/quality/feeders` (`competencia`, `status`) e `/quality/feeders/{id_alimentador}/history` (`meses`, de 1 a 48, padrão 48), sob `/api/v1` quando registradas, protegidas com `RequireOperacao`.
+  - `router.py`: Rotas `GET /quality/indicators` (`competencia`), `/quality/feeders` (`competencia`, `status`) e `/quality/feeders/{id_alimentador}/history` (`meses`, de 1 a 48, padrão 48), sob `/api/v1`, protegidas com `RequireOperacao`.
 - `auth/rbac`:
   - Enriquecimento de token JWT com perfil de cargo. Papéis existentes no código (`UserRole` em `backend/app/core/constants.py`): `diretor`, `gerente_operacao`, `gerente_atendimento`, `gerente_perdas`, `atendente`. Não haverá perfil ADMIN (decisão de 2026-10-21).
   - Dependência central `require_role(allowed_roles: Sequence[UserRole | str])` em `backend/app/shared/dependencies.py`, com os grupos de papéis em `backend/app/shared/role_groups.py`.
@@ -84,7 +84,7 @@
 
 - [x] Criar pasta `backend/app/features/grid_quality/` com schemas, repositório, serviço e rotas.
 - [x] Implementar dependência de RBAC `require_role(...)` em `backend/app/shared/dependencies.py`.
-- [ ] Registrar rotas em `backend/app/api/v1/router.py`. (pendente: arquivo compartilhado)
+- [x] Registrar rotas em `backend/app/api/v1/router.py`. (também incluídos `grid_quality.service` e `grid_quality.rules` no contrato 1 do import-linter em `backend/pyproject.toml`)
 - [x] Criar testes unitários em `backend/tests/test_grid_quality_service.py` e `test_rbac.py` (garantindo bloqueio 403 para rotas não autorizadas). Também: `test_grid_quality_repository.py`, `test_grid_quality_router.py` e `test_grid_quality_imports.py`.
 - [x] Garantir conformidade com `make lint-backend`.
 - [ ] Criar pasta `frontend/src/features/grid_quality/` com componentes $\le 150$ linhas.

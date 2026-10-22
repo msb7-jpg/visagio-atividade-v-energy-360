@@ -99,3 +99,17 @@
 - **Validação de Testes:**
   - `make lint-backend`: Ruff, Pylint 10.00/10 e import-linter com 4 contratos mantidos.
   - `uv run pytest` em `backend`: 119 testes aprovados.
+
+### [2026-10-22] - Registro das rotas `/quality` e contrato do import-linter
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Commit `695c694` (`feat(fatia-06-qualidade)`): `backend/app/api/v1/router.py` passou a registrar o router de `grid_quality` (prefixo `/quality`) com `include_router`, no mesmo padrão dos routers de auth e chat.
+  - `backend/pyproject.toml`: `app.features.grid_quality.service` e `app.features.grid_quality.rules` incluídos no contrato 1 do import-linter ("Serviços de negócio não importam frameworks HTTP"), ao lado de `app.features.auth.service`. Mudanças só de acréscimo (4 linhas), para facilitar o merge com as Fatias 03, 04 e 05.
+  - `qualidade_rede_rbac.md`: item "Registrar rotas em `router.py`" marcado `[x]`; texto da seção 2 atualizado (rotas registradas).
+- **Validação de Testes:**
+  - `make lint-backend`: Ruff, Pylint 10.00/10 e import-linter com 4 contratos mantidos e 0 quebrados.
+  - `uv run pytest` em `backend`: 119 testes aprovados.
+  - `app.openapi()['paths']` lista `/api/v1/quality/indicators`, `/api/v1/quality/feeders` e `/api/v1/quality/feeders/{id_alimentador}/history`.
+- **Pendências:**
+  - Conflitos esperados em `router.py` e `pyproject.toml` com as Fatias 03, 04 e 05: resolver na reunião com o grupo, mantendo as linhas de todas as fatias.
+  - As demais pendências das entradas anteriores continuam abertas (B1 a B10, frontend da fatia, `v_energy.db` real, tabela de ocorrências com causa).
