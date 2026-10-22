@@ -195,7 +195,7 @@ def _optional_filters(filters: SuspicionFilters) -> list[ColumnElement[bool]]:
     ]
 
 
-def excluded_units_query(windows: ConsumptionWindows) -> CompoundSelect:
+def excluded_units_query(windows: ConsumptionWindows, *, include_field_history: bool = True) -> Select | CompoundSelect:
     """Lista as UCs que não podem entrar na fila.
 
     Saem da fila: UCs com ordem ativa e UCs inspecionadas dentro da janela de análise, seja por
@@ -203,9 +203,10 @@ def excluded_units_query(windows: ConsumptionWindows) -> CompoundSelect:
 
     Args:
         windows: Janelas de análise da fila.
+        include_field_history: False ignora `fato_inspecoes_perdas` (tabela ainda não exportada pela Fatia 02).
 
     Returns:
-        UNION dos `id_uc` excluídos.
+        `id_uc` excluídos; UNION com o histórico de campo quando ele é aplicado.
     """
     cutoff = inspection_cutoff_date(windows)
     cutoff_datetime = datetime.combine(cutoff, datetime.min.time())
@@ -215,6 +216,8 @@ def excluded_units_query(windows: ConsumptionWindows) -> CompoundSelect:
         InspectionOrder.atualizado_em >= cutoff_datetime,
     )
     system_orders = select(InspectionOrder.id_uc).where(or_(is_active, is_recently_completed))
+    if not include_field_history:
+        return system_orders
     # Um único id_uc NULL faria o NOT IN avaliar UNKNOWN para todas as UCs e esvaziar a fila.
     historical_inspections = select(fato_inspecoes_perdas.c.id_uc).where(
         fato_inspecoes_perdas.c.id_uc.is_not(None),
@@ -223,7 +226,9 @@ def excluded_units_query(windows: ConsumptionWindows) -> CompoundSelect:
     return system_orders.union(historical_inspections)
 
 
-def suspicious_profiles_query(windows: ConsumptionWindows, filters: SuspicionFilters) -> Select:
+def suspicious_profiles_query(
+    windows: ConsumptionWindows, filters: SuspicionFilters, *, include_field_history: bool = True
+) -> Select:
     """Monta a consulta dos perfis de consumo candidatos à fila de suspeitas.
 
     Candidata é a UC sem GD, sem inspeção recente, com queda acima do limiar ou leitura zerada.
@@ -231,13 +236,14 @@ def suspicious_profiles_query(windows: ConsumptionWindows, filters: SuspicionFil
     Args:
         windows: Janelas base e recente.
         filters: Limiar de queda e filtros opcionais de município, bairro e classe.
+        include_field_history: False monta a fila sem excluir as UCs do histórico de campo.
 
     Returns:
         SELECT com cadastro e consumo agregado das UCs candidatas.
     """
     consumo = consumption_subquery(windows)
     uc = dim_unidade_consumidora
-    excluded_units = excluded_units_query(windows)
+    excluded_units = excluded_units_query(windows, include_field_history=include_field_history)
     remaining_share = 1 - filters.limiar_queda
     drop_ceiling_kwh = consumo.c.consumo_base_kwh * remaining_share
     has_sudden_drop = consumo.c.consumo_recente_kwh <= drop_ceiling_kwh

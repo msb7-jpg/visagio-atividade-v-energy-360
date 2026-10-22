@@ -18,6 +18,20 @@ export interface SuspiciousUnit {
   valor_estimado_recuperar_rs: number
 }
 
+/** Avisos de degradação da análise devolvidos junto com a fila. */
+export type QueueWarningCode = 'historico_campo_nao_aplicado'
+
+export interface QueueWarning {
+  codigo: QueueWarningCode
+  mensagem: string
+}
+
+/** Resposta de `GET /losses/suspicious-units`: UCs priorizadas e avisos (lista vazia = análise completa). */
+export interface SuspiciousQueue {
+  itens: SuspiciousUnit[]
+  avisos: QueueWarning[]
+}
+
 /** Filtros opcionais da fila de suspeitas. */
 export interface SuspiciousUnitsFilter {
   municipio?: string

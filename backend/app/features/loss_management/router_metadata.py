@@ -14,12 +14,20 @@ list_suspicious_units_doc = EndpointDoc(
         "ou com leitura zerada. Exclui UCs com geração distribuída, com ordem de inspeção ativa e as já "
         "inspecionadas dentro da janela de análise (ordem concluída ou histórico de campo); ordem cancelada "
         "devolve a UC à fila. Filtros por município, bairro e classe; limite padrão de 200 (capacidade mensal "
-        "da equipe de campo). Ordenação decrescente por valor esperado (score de risco x kWh estimado)."
+        "da equipe de campo). Ordenação decrescente por valor esperado (score de risco x kWh estimado). "
+        "Se a tabela de inspeções de campo (Fatia 02) ainda não existir, a fila é montada sem excluir esse "
+        "histórico e a resposta traz o aviso 'historico_campo_nao_aplicado' em 'avisos'."
     ),
-    response_description="Fila priorizada de UCs suspeitas.",
+    response_description="Fila priorizada de UCs suspeitas (`itens`) e avisos de degradação da análise (`avisos`).",
     responses={
         **AUTH_ERROR_RESPONSES,
-        500: {"description": "Falha ao consultar tabelas Gold (cadastro, medição ou inspeções)."},
+        500: {
+            "description": (
+                "Falha ao consultar tabelas Gold: cadastro ou medição ausentes ou fora do contrato, ou "
+                "inspeções de campo existentes com colunas fora do contrato (só a ausência da tabela de "
+                "inspeções é tolerada, com aviso)."
+            )
+        },
     },
 )
 

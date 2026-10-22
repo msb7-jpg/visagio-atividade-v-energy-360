@@ -72,6 +72,15 @@ def test_queue_query_excludes_historical_inspections():
     assert "fato_inspecoes_perdas" in str(query)
 
 
+def test_queue_query_can_skip_historical_inspections_table():
+    filters = SuspicionFilters(limiar_queda=0.5)
+
+    query = suspicious_profiles_query(build_windows("2026-01"), filters, include_field_history=False)
+
+    assert "fato_inspecoes_perdas" not in str(query)
+    assert "ordem_inspecao" in str(query)
+
+
 GOLD_FIXTURE_STATEMENTS = (
     "CREATE TABLE fato_medicao (id_uc TEXT, competencia TEXT, consumo_kwh REAL)",
     (

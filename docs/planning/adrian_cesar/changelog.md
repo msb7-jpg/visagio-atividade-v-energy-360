@@ -161,3 +161,20 @@
   - UC fora da fila apenas por inspeção recente mantém o kWh calculado pelo consumo: a reinspeção é uma escolha consciente do gerente e o déficit continua sendo um fato do consumo.
 - **Validação de Testes:**
   - `pytest`: 73 passed (novos testes de rota e de serviço escritos antes da correção; 3 falharam no RED, mais 1 no RED do caso sem leitura recente apontado na revisão de código). Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. ESLint e Fallow OK, `tsc -b` sem erros, vitest 13 passed.
+
+### [2026-10-21] - Revisão: fila funciona sem `fato_inspecoes_perdas` e avisa
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - `GET /losses/suspicious-units` não dá mais erro 500 quando `fato_inspecoes_perdas` ainda não foi exportada: a fila é montada sem excluir o histórico de campo (as ordens do sistema, ativas e concluídas, continuam excluindo).
+  - **Contrato mudou:** a resposta deixou de ser uma lista e virou o envelope `{ "itens": [...], "avisos": [{ "codigo", "mensagem" }] }`. `avisos` vem vazio quando a análise está completa; sem o histórico traz `historico_campo_nao_aplicado`.
+  - O repositório checa a existência da tabela (`inspect(...).has_table`) e só a ausência dela é tolerada: colunas fora do contrato, ou cadastro/medição ausentes, continuam sendo erro 500 explícito.
+  - Frontend: tipos `SuspiciousQueue`/`QueueWarning`, novo `components/ui/alert.tsx` (padrão shadcn, variantes `default`, `warning` e `destructive`) e `QueueWarnings`, que mostra o banner "Histórico de inspeções de campo não aplicado." entre os filtros e a tabela, inclusive acima do estado vazio.
+- **Decisões:**
+  - Criado o token semântico `warning` (âmbar; `--warning` e `--warning-foreground` nos temas dark e light, em `index.css`, documentado no `design.md`) e a variante `<Alert variant="warning">`, usada no banner: `destructive` seria alarmista para um aviso que não impede o uso da fila.
+  - `components.json` não existe no frontend, então o `alert.tsx` foi escrito à mão no padrão shadcn em vez de usar `shadcn add alert`.
+  - Correções da revisão de código: o `Alert` usa `role="status"` (só a variante `destructive` usa `role="alert"`); a query da fila usa `placeholderData: keepPreviousData`, então o banner não pisca nem é reanunciado ao trocar o filtro; título de fallback para códigos de aviso desconhecidos; documentação do 500 cobre a tabela de inspeções fora do contrato.
+- **Próximos Passos:**
+  - Item 3 da Fase 2.1 (dupla contagem da queda na prioridade).
+  - Quando a Fatia 02 exportar a tabela, o aviso some sozinho; nenhuma mudança de código é necessária.
+- **Validação de Testes:**
+  - RED confirmado antes da implementação (9 testes de backend e 9 de frontend falhando). `pytest`: 83 passed (10 novos, com cobertura de 97% em `loss_management`). Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. `vitest`: 17 passed (4 novos). ESLint OK, Fallow 0 acima do limite, `tsc -b` sem erros.

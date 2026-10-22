@@ -43,20 +43,11 @@ def build_measurement_rows() -> list[dict[str, object]]:
     return rows
 
 
-async def seed_gold_tables(connection) -> None:
-    await connection.execute(text(
-        "CREATE TABLE dim_unidade_consumidora (id_uc TEXT PRIMARY KEY, classe_consumo TEXT, "
-        "municipio TEXT, bairro TEXT, possui_gd BOOLEAN)"
-    ))
-    await connection.execute(text("CREATE TABLE fato_medicao (id_uc TEXT, competencia TEXT, consumo_kwh REAL)"))
+async def seed_field_history_table(connection) -> None:
     await connection.execute(text(
         "CREATE TABLE fato_inspecoes_perdas (id_inspecao TEXT PRIMARY KEY, id_uc TEXT, data_inspecao TEXT, "
         "irregularidade_constatada BOOLEAN)"
     ))
-    await connection.execute(
-        text("INSERT INTO dim_unidade_consumidora VALUES (:id_uc, 'Residencial', 'Recife', :bairro, :possui_gd)"),
-        [{"id_uc": id_uc, "possui_gd": possui_gd, "bairro": bairro} for id_uc, possui_gd, bairro, _, _ in SEED_UNITS],
-    )
     await connection.execute(
         text("INSERT INTO fato_inspecoes_perdas VALUES (:id_inspecao, :id_uc, :data_inspecao, :irregular)"),
         [
@@ -64,17 +55,31 @@ async def seed_gold_tables(connection) -> None:
             for id_inspecao, id_uc, data_inspecao, irregular in SEED_INSPECTIONS
         ],
     )
+
+
+async def seed_gold_tables(connection, *, with_field_history: bool = True) -> None:
+    await connection.execute(text(
+        "CREATE TABLE dim_unidade_consumidora (id_uc TEXT PRIMARY KEY, classe_consumo TEXT, "
+        "municipio TEXT, bairro TEXT, possui_gd BOOLEAN)"
+    ))
+    await connection.execute(text("CREATE TABLE fato_medicao (id_uc TEXT, competencia TEXT, consumo_kwh REAL)"))
+    await connection.execute(
+        text("INSERT INTO dim_unidade_consumidora VALUES (:id_uc, 'Residencial', 'Recife', :bairro, :possui_gd)"),
+        [{"id_uc": id_uc, "possui_gd": possui_gd, "bairro": bairro} for id_uc, possui_gd, bairro, _, _ in SEED_UNITS],
+    )
     await connection.execute(
         text("INSERT INTO fato_medicao VALUES (:id_uc, :competencia, :consumo_kwh)"), build_measurement_rows()
     )
+    if with_field_history:
+        await seed_field_history_table(connection)
 
 
-async def open_client(with_gold_tables: bool):
+async def open_client(with_gold_tables: bool, *, with_field_history: bool = True):
     engine = create_async_engine("sqlite+aiosqlite://", poolclass=StaticPool)
     async with engine.begin() as connection:
         await connection.run_sync(InspectionOrder.metadata.create_all)
         if with_gold_tables:
-            await seed_gold_tables(connection)
+            await seed_gold_tables(connection, with_field_history=with_field_history)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
     async def override_get_db():
@@ -105,7 +110,7 @@ async def test_suspicious_units_ranked_and_solar_excluded(client):
     response = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
 
     assert response.status_code == 200
-    units = response.json()
+    units = response.json()["itens"]
     assert [unit["id_uc"] for unit in units] == ["UC_FRAUDE", "UC_INSPECAO_ANTIGA", "UC_ZERADA"]
     assert units[0]["motivos"] == ["queda_subita"]
     assert units[0]["kwh_estimado_recuperar"] == pytest.approx(750.0)
@@ -132,7 +137,7 @@ async def test_inspection_lifecycle(client):
     assert duplicated.status_code == 409
 
     queue = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
-    assert "UC_FRAUDE" not in [unit["id_uc"] for unit in queue.json()]
+    assert "UC_FRAUDE" not in [unit["id_uc"] for unit in queue.json()["itens"]]
 
     order_url = f"{BASE_URL}/inspections/{order['id_inspecao']}"
     skipped = await client.patch(order_url, headers=headers, json={"status": "concluida"})
@@ -151,7 +156,7 @@ async def test_inspection_lifecycle(client):
     assert [item["id_inspecao"] for item in listed.json()] == [order["id_inspecao"]]
 
     queue_after_conclusion = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
-    assert "UC_FRAUDE" not in [unit["id_uc"] for unit in queue_after_conclusion.json()]
+    assert "UC_FRAUDE" not in [unit["id_uc"] for unit in queue_after_conclusion.json()["itens"]]
 
 
 async def test_create_rejects_unit_missing_from_registry(client):
@@ -217,7 +222,7 @@ async def test_cancelled_order_returns_unit_to_queue(client):
 
     queue = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
 
-    assert "UC_ZERADA" in [unit["id_uc"] for unit in queue.json()]
+    assert "UC_ZERADA" in [unit["id_uc"] for unit in queue.json()["itens"]]
 
 
 async def test_unit_inspected_within_analysis_window_leaves_queue(client):
@@ -225,7 +230,7 @@ async def test_unit_inspected_within_analysis_window_leaves_queue(client):
 
     response = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
 
-    queued_ids = [unit["id_uc"] for unit in response.json()]
+    queued_ids = [unit["id_uc"] for unit in response.json()["itens"]]
     assert "UC_INSPECIONADA" not in queued_ids
     assert "UC_INSPECAO_ANTIGA" in queued_ids
 
@@ -235,7 +240,7 @@ async def test_queue_can_be_filtered_by_bairro(client):
 
     response = await client.get(f"{BASE_URL}/suspicious-units", headers=headers, params={"bairro": "Boa Viagem"})
 
-    assert [unit["id_uc"] for unit in response.json()] == ["UC_INSPECAO_ANTIGA"]
+    assert [unit["id_uc"] for unit in response.json()["itens"]] == ["UC_INSPECAO_ANTIGA"]
 
 
 async def test_queue_default_limit_matches_monthly_field_capacity(client):
@@ -244,6 +249,45 @@ async def test_queue_default_limit_matches_monthly_field_capacity(client):
     parameters = response.json()["paths"][f"{BASE_URL}/suspicious-units"]["get"]["parameters"]
     limit_parameter = next(parameter for parameter in parameters if parameter["name"] == "limit")
     assert limit_parameter["schema"]["default"] == 200
+
+
+async def test_queue_has_no_warnings_when_field_history_is_applied(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    response = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
+
+    assert response.json()["avisos"] == []
+
+
+async def test_queue_works_without_field_history_table_and_warns():
+    engine, http_client = await open_client(with_gold_tables=True, with_field_history=False)
+    async with http_client:
+        headers = await auth_headers(http_client, "perdas@venergy.com")
+        response = await http_client.get(f"{BASE_URL}/suspicious-units", headers=headers)
+    app.dependency_overrides.clear()
+    await engine.dispose()
+
+    assert response.status_code == 200
+    body = response.json()
+    # Sem o histórico de campo, UC_INSPECIONADA volta a aparecer: a exclusão por inspeção não foi aplicada.
+    assert sorted(unit["id_uc"] for unit in body["itens"]) == [
+        "UC_FRAUDE", "UC_INSPECAO_ANTIGA", "UC_INSPECIONADA", "UC_ZERADA"
+    ]
+    assert [warning["codigo"] for warning in body["avisos"]] == ["historico_campo_nao_aplicado"]
+    assert "Ordens concluídas no sistema continuam sendo excluídas" in body["avisos"][0]["mensagem"]
+
+
+async def test_queue_without_field_history_still_excludes_units_with_system_orders():
+    engine, http_client = await open_client(with_gold_tables=True, with_field_history=False)
+    async with http_client:
+        headers = await auth_headers(http_client, "perdas@venergy.com")
+        await http_client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+        response = await http_client.get(f"{BASE_URL}/suspicious-units", headers=headers)
+    app.dependency_overrides.clear()
+    await engine.dispose()
+
+    assert response.status_code == 200
+    assert "UC_FRAUDE" not in [unit["id_uc"] for unit in response.json()["itens"]]
 
 
 async def test_missing_gold_tables_returns_clear_error():

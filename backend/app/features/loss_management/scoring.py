@@ -26,6 +26,14 @@ class ConsumptionProfile:
 
 
 @dataclass(frozen=True, slots=True)
+class QueueCandidates:
+    """Perfis candidatos à fila e se o histórico de campo (Fatia 02) foi usado para excluí-los."""
+
+    profiles: list[ConsumptionProfile]
+    field_history_applied: bool
+
+
+@dataclass(frozen=True, slots=True)
 class RegisteredUnit:
     """UC encontrada no cadastro, com seu perfil de consumo e a indicação de geração distribuída."""
 

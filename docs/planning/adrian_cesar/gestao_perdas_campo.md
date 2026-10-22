@@ -100,7 +100,7 @@
 
 ### Fase 2.1 — Correções da revisão de 2026-10-21
 - [x] `POST /inspections` valida a UC no cadastro (404 se não existir) e calcula `kwh_estimado` no servidor com a mesma regra da fila; UC sem suspeita, com GD ou sem leitura recente gera ordem manual com 0 kWh.
-- [ ] Fila funciona sem `fato_inspecoes_perdas` (sem excluir o histórico de campo), avisando que o histórico não foi aplicado.
+- [x] Fila funciona sem `fato_inspecoes_perdas` (sem excluir o histórico de campo), avisando que o histórico não foi aplicado. (resposta passou a ser o envelope `{itens, avisos}`; banner na aba da fila)
 - [ ] Remover a dupla contagem da queda na prioridade (`score × kWh` ≈ queda² × base).
 - [ ] Ordens fora do `v_energy.db` (ou garantia do pipeline de que a exportação não recria o arquivo).
 - [ ] Tarifa real de `fato_faturamento` no valor a recuperar (aguarda Ryei) e prioridade pela taxa histórica de acerto.

@@ -5,7 +5,12 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { lossApi } from '@/features/loss_management/api/lossApi'
 import { LossManagementPage } from '@/features/loss_management/components/LossManagementPage'
-import type { InspectionOrder, SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
+import type {
+  InspectionOrder,
+  QueueWarning,
+  SuspiciousQueue,
+  SuspiciousUnit
+} from '@/features/loss_management/types/lossTypes'
 
 vi.mock('@/features/loss_management/api/lossApi', () => ({
   lossApi: {
@@ -29,6 +34,15 @@ const suspiciousUnit: SuspiciousUnit = {
   consumo_recente_kwh: 3069.3,
   kwh_estimado_recuperar: 22426.2,
   valor_estimado_recuperar_rs: 19062.27
+}
+
+const fieldHistoryWarning: QueueWarning = {
+  codigo: 'historico_campo_nao_aplicado',
+  mensagem: 'Mensagem de aviso enviada pela API.'
+}
+
+function buildQueue(itens: SuspiciousUnit[], avisos: QueueWarning[] = []): SuspiciousQueue {
+  return { itens, avisos }
 }
 
 function buildOrder(overrides: Partial<InspectionOrder>): InspectionOrder {
@@ -70,7 +84,7 @@ async function openOrdersTab() {
 describe('LossManagementPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockedApi.listSuspiciousUnits.mockResolvedValue([suspiciousUnit])
+    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([suspiciousUnit]))
     mockedApi.listInspections.mockResolvedValue([])
     mockedApi.createInspection.mockResolvedValue(buildOrder({}))
     mockedApi.updateInspection.mockResolvedValue(buildOrder({}))
@@ -86,10 +100,49 @@ describe('LossManagementPage', () => {
   })
 
   it('explica quando a fila está vazia', async () => {
-    mockedApi.listSuspiciousUnits.mockResolvedValue([])
+    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([]))
     renderPage()
 
     expect(await screen.findByText('Nenhuma UC suspeita na fila')).toBeInTheDocument()
+  })
+
+  it('avisa que o histórico de campo não foi aplicado sem esconder a fila', async () => {
+    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([suspiciousUnit], [fieldHistoryWarning]))
+    renderPage()
+
+    const warning = await screen.findByRole('status')
+
+    expect(within(warning).getByText('Histórico de inspeções de campo não aplicado.')).toBeInTheDocument()
+    expect(within(warning).getByText('Mensagem de aviso enviada pela API.')).toBeInTheDocument()
+    expect(screen.getByRole('row', { name: /UC104779/ })).toBeInTheDocument()
+  })
+
+  it('mantém o aviso visível enquanto um novo filtro é carregado', async () => {
+    mockedApi.listSuspiciousUnits.mockResolvedValueOnce(buildQueue([suspiciousUnit], [fieldHistoryWarning]))
+    mockedApi.listSuspiciousUnits.mockReturnValueOnce(new Promise(() => {}))
+    renderPage()
+    await screen.findByText('Histórico de inspeções de campo não aplicado.')
+
+    fireEvent.change(screen.getByLabelText('Bairro'), { target: { value: 'Várzea' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }))
+    await waitFor(() => expect(mockedApi.listSuspiciousUnits).toHaveBeenCalledTimes(2))
+
+    expect(screen.getByText('Histórico de inspeções de campo não aplicado.')).toBeInTheDocument()
+  })
+
+  it('mantém o aviso acima do estado vazio da fila', async () => {
+    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([], [fieldHistoryWarning]))
+    renderPage()
+
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+    expect(screen.getByText('Nenhuma UC suspeita na fila')).toBeInTheDocument()
+  })
+
+  it('não mostra aviso quando o histórico de campo foi aplicado', async () => {
+    renderPage()
+    await screen.findByRole('row', { name: /UC104779/ })
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('aplica o filtro por bairro', async () => {
@@ -179,7 +232,7 @@ async function openCancelDialog() {
 describe('LossManagementPage - erros e estados de envio', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockedApi.listSuspiciousUnits.mockResolvedValue([suspiciousUnit])
+    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([suspiciousUnit]))
     mockedApi.listInspections.mockResolvedValue([])
   })
 

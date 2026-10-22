@@ -2,7 +2,7 @@
 
 import logging
 
-from sqlalchemy import RowMapping, exists, select
+from sqlalchemy import RowMapping, exists, inspect, select
 from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +11,7 @@ from app.features.loss_management.models import ACTIVE_STATUSES, InspectionOrder
 from app.features.loss_management.queries import (
     SuspicionFilters,
     build_windows,
+    fato_inspecoes_perdas,
     latest_competencia_query,
     registered_unit_query,
     suspicious_profiles_query,
@@ -21,7 +22,7 @@ from app.features.loss_management.schemas import (
     InspectionOrderUpdateDTO,
     InspectionStatus,
 )
-from app.features.loss_management.scoring import ConsumptionProfile, RegisteredUnit
+from app.features.loss_management.scoring import ConsumptionProfile, QueueCandidates, RegisteredUnit
 from app.shared.exceptions import DatabaseReadError
 
 logger = logging.getLogger(__name__)
@@ -73,30 +74,44 @@ class LossRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def fetch_consumption_profiles(self, filters: SuspicionFilters) -> list[ConsumptionProfile]:
+    async def has_field_history_table(self) -> bool:
+        """Indica se `fato_inspecoes_perdas` (Fatia 02) já foi exportada para o banco Gold.
+
+        Returns:
+            True se a tabela existe; só a ausência da tabela é tolerada, colunas fora do contrato não.
+        """
+        return await self.session.run_sync(
+            lambda sync_session: inspect(sync_session.connection()).has_table(fato_inspecoes_perdas.name)
+        )
+
+    async def fetch_consumption_profiles(self, filters: SuspicionFilters) -> QueueCandidates:
         """Busca os perfis de consumo candidatos à fila de suspeitas.
 
-        A janela de análise é ancorada na competência mais recente de `fato_medicao`.
+        A janela de análise é ancorada na competência mais recente de `fato_medicao`. Sem a tabela
+        `fato_inspecoes_perdas`, a fila é montada sem excluir o histórico de campo.
 
         Args:
             filters: Limiar de queda e filtros territoriais/de classe da fila.
 
         Returns:
-            Perfis de consumo das UCs candidatas; lista vazia se ainda não há medições.
+            Perfis das UCs candidatas (vazio se ainda não há medições) e se o histórico de campo foi aplicado.
 
         Raises:
-            DatabaseReadError: Se as tabelas Gold estiverem ausentes ou fora do contrato.
+            DatabaseReadError: Se as tabelas de cadastro/medição estiverem ausentes ou fora do contrato.
         """
         try:
+            field_history_applied = await self.has_field_history_table()
             ultima_competencia = await self.session.scalar(latest_competencia_query())
             if ultima_competencia is None:
-                return []
-            query = suspicious_profiles_query(build_windows(ultima_competencia), filters)
+                return QueueCandidates(profiles=[], field_history_applied=field_history_applied)
+            windows = build_windows(ultima_competencia)
+            query = suspicious_profiles_query(windows, filters, include_field_history=field_history_applied)
             result = await self.session.execute(query)
         except GOLD_QUERY_ERRORS as e:
             logger.exception("Falha ao consultar tabelas Gold para a fila de suspeitas.")
             raise DatabaseReadError(GOLD_TABLES_ERROR_MESSAGE) from e
-        return [ConsumptionProfile(**row) for row in result.mappings()]
+        profiles = [ConsumptionProfile(**row) for row in result.mappings()]
+        return QueueCandidates(profiles=profiles, field_history_applied=field_history_applied)
 
     async def fetch_registered_unit(self, id_uc: str) -> RegisteredUnit | None:
         """Busca a UC no cadastro com o consumo da mesma janela usada pela fila.

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AsyncListState } from '@/features/loss_management/components/AsyncListState'
 import { CreateInspectionDialog } from '@/features/loss_management/components/CreateInspectionDialog'
 import { QueueFiltersForm } from '@/features/loss_management/components/QueueFiltersForm'
+import { QueueWarnings } from '@/features/loss_management/components/QueueWarnings'
 import { SuspiciousUnitsTable } from '@/features/loss_management/components/SuspiciousUnitsTable'
 import { useSuspiciousUnitsQuery } from '@/features/loss_management/hooks/useLossQueries'
 import type { SuspiciousUnit, SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
@@ -14,11 +15,14 @@ import type { SuspiciousUnit, SuspiciousUnitsFilter } from '@/features/loss_mana
 export function SuspiciousQueueTab() {
   const [filters, setFilters] = useState<SuspiciousUnitsFilter>({})
   const [selectedUnit, setSelectedUnit] = useState<SuspiciousUnit | null>(null)
-  const { data: units = [], isLoading, isError } = useSuspiciousUnitsQuery(filters)
+  const { data: queue, isLoading, isError } = useSuspiciousUnitsQuery(filters)
+  const units = queue?.itens ?? []
+  const warnings = queue?.avisos ?? []
 
   return (
     <div className="flex flex-col gap-4">
       <QueueFiltersForm onApply={setFilters} />
+      <QueueWarnings warnings={warnings} />
       <AsyncListState
         isLoading={isLoading}
         isError={isError}

@@ -8,7 +8,9 @@ from app.features.loss_management.schemas import (
     InspectionOrderDTO,
     InspectionOrderUpdateDTO,
     InspectionStatus,
-    SuspiciousUnitDTO,
+    QueueWarningCode,
+    QueueWarningDTO,
+    SuspiciousQueueDTO,
     SuspiciousUnitsFilterDTO,
 )
 from app.features.loss_management.scoring import LIMIAR_QUEDA_SUBITA, order_estimated_kwh, rank_suspicious_units
@@ -20,6 +22,14 @@ ALLOWED_TRANSITIONS: dict[InspectionStatus, frozenset[InspectionStatus]] = {
     InspectionStatus.CONCLUIDA: frozenset(),
     InspectionStatus.CANCELADA: frozenset(),
 }
+
+FIELD_HISTORY_NOT_APPLIED_WARNING = QueueWarningDTO(
+    codigo=QueueWarningCode.HISTORICO_CAMPO_NAO_APLICADO,
+    mensagem=(
+        "A tabela de inspeções (Fatia 02) ainda não está disponível, então UCs já inspecionadas em campo "
+        "podem aparecer na fila. Ordens concluídas no sistema continuam sendo excluídas."
+    ),
+)
 
 IRREGULARITY_DETAIL_FIELDS = frozenset({"tipo_irregularidade", "kwh_recuperado", "numero_toi"})
 
@@ -99,14 +109,15 @@ class LossService:
     def __init__(self, repository: LossRepository) -> None:
         self.repository = repository
 
-    async def list_suspicious_units(self, queue_filter: SuspiciousUnitsFilterDTO) -> list[SuspiciousUnitDTO]:
+    async def list_suspicious_units(self, queue_filter: SuspiciousUnitsFilterDTO) -> SuspiciousQueueDTO:
         """Monta a fila de UCs suspeitas priorizada por valor esperado de recuperação.
 
         Args:
             queue_filter: Filtros de município, bairro e classe e o tamanho da fila.
 
         Returns:
-            UCs suspeitas em ordem decrescente de valor esperado, limitadas a `queue_filter.limit`.
+            UCs suspeitas em ordem decrescente de valor esperado, limitadas a `queue_filter.limit`,
+            e os avisos de degradação da análise (ex.: histórico de campo não aplicado).
 
         Raises:
             DatabaseReadError: Se as tabelas Gold não puderem ser consultadas.
@@ -117,8 +128,10 @@ class LossService:
             bairro=queue_filter.bairro,
             classe=queue_filter.classe,
         )
-        profiles = await self.repository.fetch_consumption_profiles(filters)
-        return rank_suspicious_units(profiles, queue_filter.limit)
+        candidates = await self.repository.fetch_consumption_profiles(filters)
+        units = rank_suspicious_units(candidates.profiles, queue_filter.limit)
+        warnings = [] if candidates.field_history_applied else [FIELD_HISTORY_NOT_APPLIED_WARNING]
+        return SuspiciousQueueDTO(itens=units, avisos=warnings)
 
     async def list_inspections(self, status: InspectionStatus | None) -> list[InspectionOrderDTO]:
         """Lista as ordens de inspeção, opcionalmente filtradas por status.

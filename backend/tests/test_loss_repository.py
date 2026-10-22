@@ -1,15 +1,22 @@
+from unittest.mock import AsyncMock
+
 import pytest
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app.features.loss_management.exceptions import InspectionConflictError
 from app.features.loss_management.models import InspectionOrder
+from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.repository import LossRepository
 from app.features.loss_management.schemas import (
     InspectionOrderCreateDTO,
     InspectionOrderUpdateDTO,
     InspectionStatus,
 )
+from app.features.loss_management.scoring import QueueCandidates
+from app.shared.exceptions import DatabaseReadError
 
 AUTHOR = "perdas@venergy.com"
 
@@ -72,3 +79,57 @@ async def test_update_unknown_order_returns_none(repository):
     payload = InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE)
 
     assert await repository.update_order(999, payload) is None
+
+
+QUEUE_FILTERS = SuspicionFilters(limiar_queda=0.5)
+REGISTRY_AND_MEASUREMENT_DDL = (
+    (
+        "CREATE TABLE dim_unidade_consumidora "
+        "(id_uc TEXT, municipio TEXT, bairro TEXT, classe_consumo TEXT, possui_gd BOOLEAN)"
+    ),
+    "CREATE TABLE fato_medicao (id_uc TEXT, competencia TEXT, consumo_kwh REAL)",
+)
+FIELD_HISTORY_DDL = "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT)"
+FIELD_HISTORY_OUTSIDE_CONTRACT_DDL = "CREATE TABLE fato_inspecoes_perdas (id_inspecao TEXT)"
+ONE_MEASUREMENT_DML = "INSERT INTO fato_medicao VALUES ('UC1', '2026-01', 10)"
+
+
+async def run_statements(repository: LossRepository, *statements: str) -> None:
+    for statement in statements:
+        await repository.session.execute(text(statement))
+
+
+async def test_field_history_table_is_detected_only_when_exported(repository):
+    assert await repository.has_field_history_table() is False
+
+    await run_statements(repository, FIELD_HISTORY_DDL)
+
+    assert await repository.has_field_history_table() is True
+
+
+async def test_queue_without_measurements_still_reports_whether_history_was_applied(repository):
+    await run_statements(repository, *REGISTRY_AND_MEASUREMENT_DDL)
+    without_history = await repository.fetch_consumption_profiles(QUEUE_FILTERS)
+
+    await run_statements(repository, FIELD_HISTORY_DDL)
+    with_history = await repository.fetch_consumption_profiles(QUEUE_FILTERS)
+
+    assert without_history == QueueCandidates(profiles=[], field_history_applied=False)
+    assert with_history == QueueCandidates(profiles=[], field_history_applied=True)
+
+
+async def test_failure_while_checking_history_table_is_a_read_error(repository, monkeypatch):
+    database_error = OperationalError("PRAGMA table_info", {}, Exception("banco indisponível"))
+    monkeypatch.setattr(repository, "has_field_history_table", AsyncMock(side_effect=database_error))
+
+    with pytest.raises(DatabaseReadError):
+        await repository.fetch_consumption_profiles(QUEUE_FILTERS)
+
+
+async def test_history_table_outside_contract_is_a_read_error_not_a_warning(repository):
+    await run_statements(
+        repository, *REGISTRY_AND_MEASUREMENT_DDL, FIELD_HISTORY_OUTSIDE_CONTRACT_DDL, ONE_MEASUREMENT_DML
+    )
+
+    with pytest.raises(DatabaseReadError):
+        await repository.fetch_consumption_profiles(QUEUE_FILTERS)

@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/react-query'
+import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 import { lossApi } from '@/features/loss_management/api/lossApi'
 import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
 
@@ -33,7 +33,9 @@ export function suspiciousUnitsQueryOptions(filters: SuspiciousUnitsFilter) {
   return queryOptions({
     queryKey: lossKeys.suspiciousUnits(activeFilters),
     queryFn: ({ signal }) => lossApi.listSuspiciousUnits(activeFilters, signal),
-    staleTime: LOSS_STALE_TIME_MS
+    staleTime: LOSS_STALE_TIME_MS,
+    // Mantém fila e avisos na tela enquanto o novo filtro carrega, sem piscar nem reanunciar o banner.
+    placeholderData: keepPreviousData
   })
 }
 

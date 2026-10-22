@@ -3,15 +3,19 @@ from datetime import UTC, datetime
 import pytest
 
 from app.features.loss_management.exceptions import InspectionConflictError
+from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.schemas import (
     InspectionOrderCreateDTO,
     InspectionOrderDTO,
     InspectionOrderUpdateDTO,
     InspectionStatus,
+    QueueWarningCode,
     SuspicionReason,
+    SuspiciousUnitsFilterDTO,
 )
 from app.features.loss_management.scoring import (
     ConsumptionProfile,
+    QueueCandidates,
     RegisteredUnit,
     build_suspicious_unit,
     order_estimated_kwh,
@@ -276,3 +280,36 @@ def test_conclusion_with_irregularity_accepts_field_details():
     )
 
     validate_transition(InspectionStatus.PENDENTE, payload)
+
+
+class FakeQueueRepository:
+    """Repositório da fila: devolve candidatos prontos e informa se o histórico de campo foi aplicado."""
+
+    def __init__(self, candidates: QueueCandidates) -> None:
+        self.candidates = candidates
+
+    async def fetch_consumption_profiles(self, filters: SuspicionFilters) -> QueueCandidates:
+        del filters
+        return self.candidates
+
+
+async def test_queue_warns_when_field_history_was_not_applied():
+    profile = make_profile("UC1", base_kwh=300, recent_kwh=50)
+    candidates = QueueCandidates(profiles=[profile], field_history_applied=False)
+    service = LossService(repository=FakeQueueRepository(candidates))  # type: ignore[arg-type]
+
+    queue = await service.list_suspicious_units(SuspiciousUnitsFilterDTO())
+
+    assert [unit.id_uc for unit in queue.itens] == ["UC1"]
+    assert [warning.codigo for warning in queue.avisos] == [QueueWarningCode.HISTORICO_CAMPO_NAO_APLICADO]
+
+
+async def test_queue_has_no_warnings_when_field_history_was_applied():
+    profile = make_profile("UC1", base_kwh=300, recent_kwh=50)
+    candidates = QueueCandidates(profiles=[profile], field_history_applied=True)
+    service = LossService(repository=FakeQueueRepository(candidates))  # type: ignore[arg-type]
+
+    queue = await service.list_suspicious_units(SuspiciousUnitsFilterDTO())
+
+    assert [unit.id_uc for unit in queue.itens] == ["UC1"]
+    assert queue.avisos == []

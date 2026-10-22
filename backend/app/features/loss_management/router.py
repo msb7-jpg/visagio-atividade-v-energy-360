@@ -17,7 +17,7 @@ from app.features.loss_management.schemas import (
     InspectionOrderDTO,
     InspectionOrderUpdateDTO,
     InspectionStatus,
-    SuspiciousUnitDTO,
+    SuspiciousQueueDTO,
     SuspiciousUnitsFilterDTO,
 )
 from app.shared.dependencies import CurrentUser, require_role
@@ -33,12 +33,12 @@ router = APIRouter(
 
 @router.get(
     "/suspicious-units",
-    response_model=list[SuspiciousUnitDTO],
+    response_model=SuspiciousQueueDTO,
     **list_suspicious_units_doc.to_dict(),
 )
 async def list_suspicious_units(
     service: LossSvc, queue_filter: Annotated[SuspiciousUnitsFilterDTO, Query()]
-) -> list[SuspiciousUnitDTO]:
+) -> SuspiciousQueueDTO:
     """Devolve a fila de UCs suspeitas priorizada."""
     return await service.list_suspicious_units(queue_filter)
 

@@ -4,13 +4,13 @@ import type {
   InspectionOrderCreate,
   InspectionOrderUpdate,
   InspectionStatus,
-  SuspiciousUnit,
+  SuspiciousQueue,
   SuspiciousUnitsFilter
 } from '@/features/loss_management/types/lossTypes'
 
 export const lossApi = {
-  async listSuspiciousUnits(filters: SuspiciousUnitsFilter, signal?: AbortSignal): Promise<SuspiciousUnit[]> {
-    const { data } = await apiClient.get<SuspiciousUnit[]>('/losses/suspicious-units', {
+  async listSuspiciousUnits(filters: SuspiciousUnitsFilter, signal?: AbortSignal): Promise<SuspiciousQueue> {
+    const { data } = await apiClient.get<SuspiciousQueue>('/losses/suspicious-units', {
       params: filters,
       signal
     })

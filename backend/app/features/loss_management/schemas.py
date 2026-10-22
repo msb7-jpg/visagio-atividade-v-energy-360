@@ -47,6 +47,26 @@ class SuspiciousUnitDTO(BaseModel):
     valor_estimado_recuperar_rs: float
 
 
+class QueueWarningCode(StrEnum):
+    """Avisos que a fila devolve quando precisou degradar a análise."""
+
+    HISTORICO_CAMPO_NAO_APLICADO = "historico_campo_nao_aplicado"
+
+
+class QueueWarningDTO(BaseModel):
+    """Aviso de que a fila foi montada com a análise degradada."""
+
+    codigo: QueueWarningCode
+    mensagem: str = Field(description="Explicação do aviso para exibir ao usuário")
+
+
+class SuspiciousQueueDTO(BaseModel):
+    """Fila de suspeitas com os avisos de degradação da análise (lista vazia = análise completa)."""
+
+    itens: list[SuspiciousUnitDTO]
+    avisos: list[QueueWarningDTO]
+
+
 class InspectionOrderCreateDTO(BaseModel):
     """Abertura de ordem: o kWh estimado é calculado pelo servidor, nunca aceito do cliente."""
 
