@@ -14,20 +14,33 @@ class QualityStatus(StrEnum):
 
 
 class FeederRankingDTO(BaseModel):
-    """Alimentador no ranking de uma competência, com o excesso de DEC sobre o limite."""
+    """Alimentador no ranking de uma competência.
+
+    `dec_apurado_horas` e `fec_apurado_vezes` são do mês; os limites são anuais e o status e o
+    `delta_dec_horas` (acumulado no ano menos o limite) usam o acumulado no ano.
+    """
 
     id_alimentador: str
     competencia: str
     dec_apurado_horas: float
     fec_apurado_vezes: float
+    dec_acumulado_ano_horas: float
+    fec_acumulado_ano_vezes: float
     dec_limite_horas: float | None
     fec_limite_vezes: float | None
     delta_dec_horas: float | None
     status: QualityStatus
+    conjunto_aneel: str | None
+    criterio_limite: str | None
+    ucs_atendidas: int | None
 
 
 class QualityIndicatorsDTO(BaseModel):
-    """Indicadores consolidados de uma competência (média simples entre alimentadores)."""
+    """Indicadores consolidados de uma competência (média simples entre alimentadores).
+
+    DEC e FEC médios são do acumulado no ano até a competência; a violação compara o acumulado
+    com o limite anual.
+    """
 
     competencia: str | None
     dec_medio_horas: float
@@ -38,13 +51,18 @@ class QualityIndicatorsDTO(BaseModel):
 
 
 class FeederTimeSeriesPointDTO(BaseModel):
-    """Ponto mensal da série histórica de um alimentador."""
+    """Ponto mensal da série histórica: DEC/FEC do mês, acumulado no ano e limites anuais."""
 
     competencia: str
     dec_apurado_horas: float
     fec_apurado_vezes: float
+    dec_acumulado_ano_horas: float
+    fec_acumulado_ano_vezes: float
     dec_limite_horas: float | None
     fec_limite_vezes: float | None
+    conjunto_aneel: str | None
+    criterio_limite: str | None
+    ucs_atendidas: int | None
 
 
 class FeederTimeSeriesDTO(BaseModel):

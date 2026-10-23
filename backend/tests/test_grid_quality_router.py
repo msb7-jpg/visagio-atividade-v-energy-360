@@ -39,10 +39,15 @@ RANKING_ENTRY = FeederRankingDTO(
     competencia="2000-01",
     dec_apurado_horas=12.0,
     fec_apurado_vezes=6.0,
+    dec_acumulado_ano_horas=12.0,
+    fec_acumulado_ano_vezes=6.0,
     dec_limite_horas=10.0,
     fec_limite_vezes=5.0,
     delta_dec_horas=2.0,
     status=QualityStatus.VIOLACAO,
+    conjunto_aneel="MEDIANA RMR",
+    criterio_limite="MEDIANA_RMR",
+    ucs_atendidas=200,
 )
 TIME_SERIES = FeederTimeSeriesDTO(
     id_alimentador=FEEDER_ID,
@@ -51,8 +56,13 @@ TIME_SERIES = FeederTimeSeriesDTO(
             competencia="2000-01",
             dec_apurado_horas=12.0,
             fec_apurado_vezes=6.0,
+            dec_acumulado_ano_horas=12.0,
+            fec_acumulado_ano_vezes=6.0,
             dec_limite_horas=10.0,
             fec_limite_vezes=5.0,
+            conjunto_aneel="MEDIANA RMR",
+            criterio_limite="MEDIANA_RMR",
+            ucs_atendidas=200,
         )
     ],
 )
@@ -200,3 +210,16 @@ async def test_parametros_invalidos_retornam_422(client, invalid_query):
     response = await client.get(route, params=params, headers=bearer_for_role(UserRole.DIRETOR))
 
     assert response.status_code == 422
+
+
+async def test_ranking_e_historico_expoem_os_campos_do_acumulado_no_ano(client):
+    headers = bearer_for_role(UserRole.DIRETOR)
+
+    ranking_entry = (await client.get("/quality/feeders", headers=headers)).json()[0]
+    history_point = (await client.get(f"/quality/feeders/{FEEDER_ID}/history", headers=headers)).json()["pontos"][0]
+
+    for payload in (ranking_entry, history_point):
+        assert payload["dec_acumulado_ano_horas"] == pytest.approx(12.0)
+        assert payload["fec_acumulado_ano_vezes"] == pytest.approx(6.0)
+        assert payload["criterio_limite"] == "MEDIANA_RMR"
+        assert payload["ucs_atendidas"] == 200

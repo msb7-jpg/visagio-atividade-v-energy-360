@@ -32,7 +32,7 @@ router = APIRouter(prefix="/quality", tags=["Qualidade da Rede"])
     "/indicators",
     response_model=QualityIndicatorsDTO,
     summary="Indicadores consolidados de DEC/FEC",
-    description="Média de DEC/FEC entre alimentadores e contagem de violações em uma competência.",
+    description="Média do DEC/FEC acumulado no ano entre alimentadores e violações do limite anual.",
 )
 async def get_indicators(
     service: GridQualitySvc, _user: RequireOperacao, competencia: CompetenciaQuery = None
@@ -54,7 +54,7 @@ async def get_indicators(
     "/feeders",
     response_model=list[FeederRankingDTO],
     summary="Ranking de alimentadores por excesso de DEC",
-    description="Alimentadores ordenados pelo maior excesso de DEC sobre o limite, com filtro de status.",
+    description="Alimentadores pelo maior excesso do DEC acumulado no ano sobre o limite anual, com filtro de status.",
 )
 async def list_feeders(
     service: GridQualitySvc,
@@ -80,7 +80,7 @@ async def list_feeders(
     "/feeders/{id_alimentador}/history",
     response_model=FeederTimeSeriesDTO,
     summary="Série histórica de DEC/FEC de um alimentador",
-    description="Últimas competências de DEC/FEC apurados e seus limites; 404 se o alimentador não tem dados.",
+    description="Últimas competências com DEC/FEC do mês, acumulado no ano e limites anuais; 404 se sem dados.",
 )
 async def get_feeder_history(
     id_alimentador: str,

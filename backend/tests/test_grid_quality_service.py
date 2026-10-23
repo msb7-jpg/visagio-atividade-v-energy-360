@@ -4,6 +4,7 @@ import pytest
 
 from app.features.grid_quality.rules import (
     FeederQualityRow,
+    FeederScope,
     classify_status,
     delta_dec,
     rank_feeders,
@@ -26,9 +27,27 @@ def make_row(
     dec_limit: float | None = LIMITE_DEC,
     fec_limit: float | None = LIMITE_FEC,
     competencia: str = COMPETENCIA_TESTE,
+    dec_ytd: float | None = None,
+    fec_ytd: float | None = None,
+    criterio: str | None = "CONJUNTO",
 ) -> FeederQualityRow:
-    """Monta uma apuração fictícia com limites padrão."""
-    return FeederQualityRow(id_alimentador, competencia, dec, fec, dec_limit, fec_limit)
+    """Monta uma apuração fictícia; sem acumulado informado, vale o do mês (como em janeiro)."""
+    return FeederQualityRow(
+        id_alimentador=id_alimentador,
+        competencia=competencia,
+        dec_apurado_horas=dec,
+        fec_apurado_vezes=fec,
+        dec_acumulado_ano_horas=dec if dec_ytd is None else dec_ytd,
+        fec_acumulado_ano_vezes=fec if fec_ytd is None else fec_ytd,
+        dec_limite_horas=dec_limit,
+        fec_limite_vezes=fec_limit,
+        scope=FeederScope(
+            conjunto_aneel="CONJUNTO TESTE" if criterio == "CONJUNTO" else "MEDIANA RMR",
+            criterio_limite=criterio,
+            ucs_atendidas=200,
+            ucs_interrompidas=20,
+        ),
+    )
 
 
 def ranking_ids(ranking) -> list[str]:
@@ -181,3 +200,85 @@ async def test_historico_de_alimentador_inexistente_levanta_not_found():
 
     with pytest.raises(NotFoundException, match="ALIM-TESTE-99"):
         await service.get_feeder_history("ALIM-TESTE-99")
+
+
+def test_classificacao_usa_o_acumulado_no_ano_e_nao_o_mes():
+    row = make_row(dec=10.0, fec=5.0, dec_ytd=120.0, fec_ytd=5.0)
+
+    assert classify_status(row) is QualityStatus.VIOLACAO
+    assert delta_dec(row) == pytest.approx(20.0)
+
+
+def test_acumulado_pode_cruzar_o_limite_de_fec_com_dec_dentro_do_limite():
+    row = make_row(dec=1.0, fec=1.0, dec_ytd=10.0, fec_ytd=60.0)
+
+    assert classify_status(row) is QualityStatus.VIOLACAO
+
+
+def test_alerta_a_partir_de_85_por_cento_do_acumulado():
+    assert classify_status(make_row(dec=1.0, dec_ytd=85.0)) is QualityStatus.ALERTA
+    assert classify_status(make_row(dec=1.0, dec_ytd=84.9)) is QualityStatus.CONFORME
+
+
+def test_janeiro_tem_acumulado_igual_ao_mensal():
+    row = make_row(competencia="2000-01", dec=90.0, fec=10.0)
+    entry = rank_feeders([row])[0]
+
+    assert entry.dec_acumulado_ano_horas == pytest.approx(entry.dec_apurado_horas)
+    assert entry.fec_acumulado_ano_vezes == pytest.approx(entry.fec_apurado_vezes)
+    assert entry.status is QualityStatus.ALERTA
+
+
+def test_limite_nulo_ignora_acumulado_alto():
+    row = make_row(dec=1.0, fec=1.0, dec_ytd=9999.0, fec_ytd=9999.0, dec_limit=None, fec_limit=None)
+
+    assert classify_status(row) is QualityStatus.CONFORME
+    assert delta_dec(row) is None
+
+
+def test_ranking_ordena_pelo_excesso_do_acumulado():
+    rows = [
+        make_row("ALIM-TESTE-01", dec=50.0, dec_ytd=110.0),
+        make_row("ALIM-TESTE-02", dec=99.0, dec_ytd=99.0),
+        make_row("ALIM-TESTE-03", dec=10.0, dec_ytd=130.0),
+    ]
+
+    assert ranking_ids(rank_feeders(rows)) == ["ALIM-TESTE-03", "ALIM-TESTE-01", "ALIM-TESTE-02"]
+
+
+def test_ranking_repassa_conjunto_criterio_e_ucs_atendidas():
+    conjunto_entry = rank_feeders([make_row(criterio="CONJUNTO")])[0]
+    mediana_entry = rank_feeders([make_row(criterio="MEDIANA_RMR")])[0]
+
+    assert (conjunto_entry.conjunto_aneel, conjunto_entry.criterio_limite) == ("CONJUNTO TESTE", "CONJUNTO")
+    assert (mediana_entry.conjunto_aneel, mediana_entry.criterio_limite) == ("MEDIANA RMR", "MEDIANA_RMR")
+    assert mediana_entry.ucs_atendidas == 200
+
+
+def test_resumo_usa_a_media_do_acumulado_no_ano():
+    rows = [
+        make_row("ALIM-TESTE-01", dec=10.0, fec=2.0, dec_ytd=120.0, fec_ytd=20.0),
+        make_row("ALIM-TESTE-02", dec=10.0, fec=2.0, dec_ytd=40.0, fec_ytd=10.0),
+    ]
+
+    indicators = summarize_indicators(COMPETENCIA_TESTE, rows)
+
+    assert indicators.dec_medio_horas == pytest.approx(80.0)
+    assert indicators.fec_medio_vezes == pytest.approx(15.0)
+    assert indicators.alimentadores_em_violacao == 1
+
+
+async def test_historico_na_virada_de_ano_reinicia_o_acumulado_e_mantem_o_mensal():
+    rows = [
+        make_row(competencia="2000-12", dec=30.0, dec_ytd=90.0),
+        make_row(competencia="2001-01", dec=20.0, dec_limit=120.0),
+    ]
+    service = GridQualityService(FakeQualityRepository(rows))
+
+    history = await service.get_feeder_history("ALIM-TESTE-01")
+
+    december, january = history.pontos
+    assert (december.dec_apurado_horas, december.dec_acumulado_ano_horas) == (30.0, 90.0)
+    assert (january.dec_apurado_horas, january.dec_acumulado_ano_horas) == (20.0, 20.0)
+    assert january.dec_limite_horas == pytest.approx(120.0)
+    assert january.ucs_atendidas == 200

@@ -1,6 +1,8 @@
 """Acesso a dados da qualidade da rede: lê `fato_qualidade_alimentador` com a sessão assíncrona."""
 
 import logging
+from collections.abc import Mapping
+from dataclasses import fields
 
 from sqlalchemy import Select
 from sqlalchemy.engine import Result
@@ -13,7 +15,7 @@ from app.features.grid_quality.queries import (
     feeder_history_query,
     latest_competencia_query,
 )
-from app.features.grid_quality.rules import FeederQualityRow
+from app.features.grid_quality.rules import FeederQualityRow, FeederScope
 from app.shared.exceptions import DatabaseReadError
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,13 @@ logger = logging.getLogger(__name__)
 # Tabela ausente (SQLite: OperationalError; Postgres: ProgrammingError) ou coluna fora do contrato.
 GOLD_QUERY_ERRORS = (OperationalError, ProgrammingError)
 GOLD_TABLE_ERROR_MESSAGE = f"Falha ao consultar a tabela Gold {TABLE_NAME}."
+SCOPE_COLUMNS = tuple(scope_field.name for scope_field in fields(FeederScope))
+
+
+def _to_row(record: Mapping) -> FeederQualityRow:
+    scope = FeederScope(**{column_name: record[column_name] for column_name in SCOPE_COLUMNS})
+    row_columns = {column_name: value for column_name, value in record.items() if column_name not in SCOPE_COLUMNS}
+    return FeederQualityRow(**row_columns, scope=scope)
 
 
 class GridQualityRepository:
@@ -61,7 +70,7 @@ class GridQualityRepository:
             DatabaseReadError: Se a tabela Gold estiver ausente ou fora do contrato.
         """
         result = await self._execute(competencia_rows_query(competencia))
-        return [FeederQualityRow(**row) for row in result.mappings()]
+        return [_to_row(record) for record in result.mappings()]
 
     async def fetch_history(self, id_alimentador: str, meses: int) -> list[FeederQualityRow]:
         """Busca as últimas apurações de um alimentador.
@@ -77,5 +86,5 @@ class GridQualityRepository:
             DatabaseReadError: Se a tabela Gold estiver ausente ou fora do contrato.
         """
         result = await self._execute(feeder_history_query(id_alimentador, meses))
-        latest_first_rows = [FeederQualityRow(**row) for row in result.mappings()]
+        latest_first_rows = [_to_row(record) for record in result.mappings()]
         return list(reversed(latest_first_rows))
