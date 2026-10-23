@@ -135,7 +135,7 @@ async def test_operation_profile_is_forbidden(client):
     assert response.status_code == 403
 
 
-@pytest.mark.parametrize("email", ["diretor@venergy.com", "perdas@venergy.com"])
+@pytest.mark.parametrize("email", ["diretor@venergy.com", "gerente.atendimento@venergy.com", "perdas@venergy.com"])
 async def test_director_and_losses_analyst_can_access(client, email):
     headers = await login(client, email)
     response = await client.get(f"{BASE_URL}/UC100001/summary", headers=headers)
