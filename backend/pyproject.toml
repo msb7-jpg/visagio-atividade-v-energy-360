@@ -261,6 +261,10 @@ name = "Serviços de negócio não importam frameworks HTTP (Pure Python Service
 type = "forbidden"
 source_modules = [
     "app.features.auth.service",
+    "app.features.customer360.service",
+    "app.features.customer360.consumption_analysis",
+    "app.features.customer360.yoy_totals",
+    "app.features.customer360.search_terms",
     "app.features.revenue.service",
     "app.features.revenue.decomposition",
     "app.features.revenue.kpis",
