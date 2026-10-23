@@ -60,6 +60,11 @@ class Settings(BaseSettings):
             "senha": "venergy123",
             "role": "atendente",
         },
+        "gerente.atendimento@venergy.com": {
+            "nome": "Camila Barreto (Gerente de Atendimento)",
+            "senha": "venergy123",
+            "role": "gerente_atendimento",
+        },
         "perdas@venergy.com": {
             "nome": "Rafael Coutinho (Gerente de Perdas)",
             "senha": "venergy123",

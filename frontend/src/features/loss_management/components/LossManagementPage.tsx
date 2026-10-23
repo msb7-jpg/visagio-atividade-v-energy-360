@@ -1,6 +1,4 @@
-import { ArrowLeft, ClipboardList, ShieldAlert } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
+import { ClipboardList, ShieldAlert } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InspectionOrdersTab } from '@/features/loss_management/components/InspectionOrdersTab'
 import { SuspiciousQueueTab } from '@/features/loss_management/components/SuspiciousQueueTab'
@@ -21,13 +19,6 @@ export function LossManagementPage() {
               Fila de UCs suspeitas da mais promissora para a menos promissora, com motivo e energia a recuperar.
             </p>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/dashboard">
-              <span className="flex items-center gap-1.5">
-                <ArrowLeft className="size-3.5" /> Voltar ao painel
-              </span>
-            </Link>
-          </Button>
         </div>
 
         <Tabs defaultValue="suspects">

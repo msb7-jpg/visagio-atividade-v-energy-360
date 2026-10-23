@@ -1,8 +1,5 @@
-import { LogOut, Zap, Activity, Users, FileSearch } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Zap, Activity, Users, FileSearch } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { useAuth } from '@/features/auth/hooks/useAuth'
 
 /**
  * Dashboard principal com visão geral analítica (design.md).
@@ -11,42 +8,8 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
  * @returns Elemento DashboardPage renderizado.
  */
 export function DashboardPage() {
-  const { user, logout } = useAuth()
-
   return (
-    <div className="bg-background min-h-dvh">
-      <header className="border-border bg-card/90 backdrop-blur-md border-b sticky top-0 z-40">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-xl shadow-sm">
-              <Zap className="size-5" />
-            </div>
-            <div>
-              <h1 className="text-foreground text-base font-bold">V-Energy Grid 360</h1>
-              <p className="text-muted-foreground text-xs">Portal Integrado de Operações e Inteligência</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-right">
-              <div>
-                <p className="text-foreground text-sm font-semibold">{user?.nome}</p>
-                <div className="flex items-center justify-end gap-1.5">
-                  <Badge variant="secondary">{user?.role}</Badge>
-                  <span className="text-muted-foreground text-xs">{user?.email}</span>
-                </div>
-              </div>
-            </div>
-
-            <Button variant="outline" size="sm" onClick={logout}>
-              <span className="flex items-center gap-1.5">
-                <LogOut className="size-3.5" /> Sair
-              </span>
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <div>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className="mb-6">
           <h2 className="text-foreground text-xl font-bold">Painel de Controle</h2>

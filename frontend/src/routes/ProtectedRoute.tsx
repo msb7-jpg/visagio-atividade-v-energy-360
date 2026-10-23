@@ -1,5 +1,7 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { homeRouteFor } from './homeRoute'
 
 interface ProtectedRouteProps {
   allowedRoles?: string[]
@@ -37,6 +39,9 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
         <p className="text-muted-foreground mt-2 text-sm">
           Seu perfil ({user.role}) não tem permissão para visualizar esta tela.
         </p>
+        <Button asChild className="mt-4">
+          <Link to={homeRouteFor(user.role)}>Voltar à tela inicial</Link>
+        </Button>
       </div>
     )
   }
