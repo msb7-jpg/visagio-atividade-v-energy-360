@@ -167,3 +167,17 @@
 - **Pendências:**
   - O frontend (`grid_quality/types`, textos e gráfico) ainda lê só os campos mensais; precisa passar a mostrar o acumulado no ano.
   - Merge da Gold da Fatia 02 e validação contra o `v_energy.db` real.
+
+### [2026-10-23] - Frontend ajustado ao acumulado no ano e testes da página (etapa 4)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `qualityTypes.ts` ganhou os campos do contrato novo (`dec_acumulado_ano_horas`, `fec_acumulado_ano_vezes`, `conjunto_aneel`, `criterio_limite`, `ucs_atendidas`).
+  - `FeederRankingTable` mostra DEC e FEC acumulados no ano ao lado do limite anual (o mensal saiu da tabela) e um selo "Limite aproximado" com tooltip quando `criterio_limite` é `MEDIANA_RMR` (ADR-003).
+  - `FeederTimeSeriesChart` plota o DEC acumulado no ano contra o limite anual tracejado; o valor do mês aparece no tooltip.
+  - `QualityKpiCards`: "Média do acumulado no ano até a competência" e fórmulas atualizadas. Os textos "limite de referência (suposição pendente, B1)" foram mantidos.
+  - Testes: `GridQualityPage.test.tsx` (7 casos: cards, acumulado ao lado do limite, limite aproximado só na mediana RMR, filtro de status, gaveta do histórico, vazio e erro), com mocks no contrato novo. `RbacNavigation.test.tsx` já cobria o menu e o acesso negado.
+  - Commits do frontend das etapas 1 a 3 separados em shell, páginas de outras fatias e feature `grid_quality`.
+- **Validação de Testes:**
+  - `make lint-all` aprovado; `make test-all`: 418 pytest e 86 vitest.
+- **Pendências:**
+  - Conferir a tela no navegador e contra o `v_energy.db` real; filtros de município e bairro, aba de região, causas e card de UCs expostas seguem fora do escopo.

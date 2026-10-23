@@ -102,8 +102,8 @@
 - [x] Criar pasta `frontend/src/features/grid_quality/` com componentes $\le 150$ linhas.
 - [x] Implementar layout base `AppLayout.tsx` e `SidebarNav.tsx` adaptativo por perfil de cargo.
 - [x] Configurar redirecionamento automático por cargo no login em `frontend/src/routes/AppRoutes.tsx`.
-- [ ] Criar testes no frontend com Vitest em `GridQualityPage.test.tsx` e `RbacNavigation.test.tsx`.
-- [ ] Garantir conformidade com `make lint-frontend`.
+- [x] Criar testes no frontend com Vitest em `GridQualityPage.test.tsx` e `RbacNavigation.test.tsx`.
+- [x] Garantir conformidade com `make lint-frontend`.
 
 ---
 
