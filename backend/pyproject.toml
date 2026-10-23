@@ -21,6 +21,8 @@ dependencies = [
     "langchain-google-genai>=4.4.0",
     "langchain-openai>=1.7.2",
     "langchain-groq>=1.1.3",
+    "openpyxl>=3.1.5",
+    "python-multipart>=0.0.32",
 ]
 
 [project.optional-dependencies]
@@ -259,6 +261,8 @@ name = "Serviços de negócio não importam frameworks HTTP (Pure Python Service
 type = "forbidden"
 source_modules = [
     "app.features.auth.service",
+    "app.features.loss_management.service",
+    "app.features.loss_management.scoring",
 ]
 forbidden_modules = [
     "fastapi",
