@@ -9,6 +9,7 @@ from app.features.auth.schemas import LoginRequest
 from app.features.auth.service import AuthService
 from app.shared.dependencies import (
     RequireAtendimento,
+    RequireCustomer360,
     RequireDiretoria,
     RequireOperacao,
     RequirePerdas,
@@ -28,6 +29,12 @@ ROUTE_BY_GROUP = {
     "/operacao": {UserRole.DIRETOR, UserRole.GERENTE_OPERACAO},
     "/atendimento": {UserRole.DIRETOR, UserRole.GERENTE_ATENDIMENTO, UserRole.ATENDENTE},
     "/perdas": {UserRole.DIRETOR, UserRole.GERENTE_PERDAS},
+    "/customer360": {
+        UserRole.DIRETOR,
+        UserRole.GERENTE_ATENDIMENTO,
+        UserRole.ATENDENTE,
+        UserRole.GERENTE_PERDAS,
+    },
 }
 
 
@@ -49,6 +56,10 @@ def build_app() -> FastAPI:
 
     @rbac_app.get("/perdas")
     async def perdas(user: RequirePerdas) -> dict[str, str]:
+        return {"role": user.role}
+
+    @rbac_app.get("/customer360")
+    async def customer360(user: RequireCustomer360) -> dict[str, str]:
         return {"role": user.role}
 
     return rbac_app

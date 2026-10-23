@@ -14,6 +14,7 @@ from app.features.auth.service import AuthService
 from app.shared.exceptions import ForbiddenException, UnauthorizedException
 from app.shared.role_groups import (
     ATENDIMENTO_ACCESS,
+    CUSTOMER360_ACCESS,
     DIRETORIA_ONLY,
     OPERACAO_ACCESS,
     PERDAS_ACCESS,
@@ -54,3 +55,4 @@ RequireDiretoria = Annotated[UserDTO, Depends(require_role(DIRETORIA_ONLY))]
 RequireOperacao = Annotated[UserDTO, Depends(require_role(OPERACAO_ACCESS))]
 RequireAtendimento = Annotated[UserDTO, Depends(require_role(ATENDIMENTO_ACCESS))]
 RequirePerdas = Annotated[UserDTO, Depends(require_role(PERDAS_ACCESS))]
+RequireCustomer360 = Annotated[UserDTO, Depends(require_role(CUSTOMER360_ACCESS))]
