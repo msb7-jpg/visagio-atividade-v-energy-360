@@ -9,6 +9,7 @@ from app.features.revenue.schemas import (
     BreakdownLevel,
     BreakdownQuery,
     BreakdownSortField,
+    NeighborhoodHistoryRequest,
     PeriodWindow,
     RevenueFilters,
     SortOrder,
@@ -60,8 +61,21 @@ def get_breakdown_query(
     return BreakdownQuery(nivel=nivel, ordenar_por=ordenar_por, ordem=ordem, page=page, page_size=page_size)
 
 
+def get_history_request(
+    municipio: Annotated[str, Query(description="Município do bairro")],
+    bairro: Annotated[str, Query(description="Bairro")],
+    competencia_fim: CompetenciaQuery,
+    classe_consumo: Annotated[str | None, Query(description="Filtra por classe de consumo")] = None,
+    meses: Annotated[int, Query(ge=1, le=60, description="Quantidade de competências até competencia_fim")] = 24,
+) -> NeighborhoodHistoryRequest:
+    return NeighborhoodHistoryRequest(
+        municipio=municipio, bairro=bairro, competencia_fim=competencia_fim, classe_consumo=classe_consumo, meses=meses
+    )
+
+
 RevenueSvc = Annotated[RevenueService, Depends(get_revenue_service)]
 BaseWindow = Annotated[PeriodWindow, Depends(get_base_window)]
 CurrentWindow = Annotated[PeriodWindow, Depends(get_current_window)]
 Filters = Annotated[RevenueFilters, Depends(get_filters)]
 BreakdownParams = Annotated[BreakdownQuery, Depends(get_breakdown_query)]
+HistoryRequest = Annotated[NeighborhoodHistoryRequest, Depends(get_history_request)]

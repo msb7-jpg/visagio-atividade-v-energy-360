@@ -3,11 +3,18 @@ from typing import Protocol
 
 from app.features.revenue.breakdown import build_breakdown, sort_rows
 from app.features.revenue.decomposition import SegmentTotals, decompose
-from app.features.revenue.exceptions import InvalidPeriodError, RevenueDataNotFoundError
+from app.features.revenue.exceptions import (
+    InvalidPeriodError,
+    NeighborhoodHistoryNotFoundError,
+    RevenueDataNotFoundError,
+)
+from app.features.revenue.history import MonthlyTotals, build_history, competencias_until
 from app.features.revenue.kpis import PeriodTotals, build_kpis
 from app.features.revenue.schemas import (
     BreakdownQuery,
     BreakdownRowDTO,
+    NeighborhoodHistoryDTO,
+    NeighborhoodHistoryRequest,
     PeriodWindow,
     PriceVolumeDecompositionDTO,
     RevenueFilters,
@@ -36,7 +43,15 @@ class PeriodTotalsReader(Protocol):
         ...
 
 
-class RevenueReader(SegmentTotalsReader, PeriodTotalsReader, Protocol):
+class MonthlyTotalsReader(Protocol):
+    """Contrato do repositório: volume e receita por competência."""
+
+    async def fetch_monthly_totals(self, window: PeriodWindow, filters: RevenueFilters) -> Sequence[MonthlyTotals]:
+        """Lê os totais mensais da janela, para os filtros dados."""
+        ...
+
+
+class RevenueReader(SegmentTotalsReader, PeriodTotalsReader, MonthlyTotalsReader, Protocol):
     """Tudo o que o service precisa ler do repositório."""
 
 
@@ -121,3 +136,25 @@ class RevenueService:
         rows = sort_rows(build_breakdown(segments, query.nivel), query.ordenar_por, query.ordem)
         page_items = rows[query.offset : query.offset + query.page_size]
         return PaginatedResponse.create(page_items, len(rows), query)
+
+    async def get_neighborhood_history(self, request: NeighborhoodHistoryRequest) -> NeighborhoodHistoryDTO:
+        """Monta a série mensal de volume, receita e tarifa média de um bairro.
+
+        Args:
+            request: Bairro, última competência e quantidade de meses.
+
+        Returns:
+            Série contínua; os meses sem faturamento aparecem com volume e receita zero.
+
+        Raises:
+            NeighborhoodHistoryNotFoundError: Se o bairro não tem faturamento em nenhum mês da janela.
+        """
+        competencias = competencias_until(request.competencia_fim, request.meses)
+        window = PeriodWindow(competencia_inicio=competencias[0], competencia_fim=competencias[-1])
+        filters = RevenueFilters(
+            municipio=request.municipio, bairro=request.bairro, classe_consumo=request.classe_consumo
+        )
+        totals = await self.repository.fetch_monthly_totals(window, filters)
+        if not totals:
+            raise NeighborhoodHistoryNotFoundError(request)
+        return build_history(request, totals)

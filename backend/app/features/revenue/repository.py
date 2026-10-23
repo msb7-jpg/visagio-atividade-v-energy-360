@@ -2,8 +2,9 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.revenue.decomposition import SegmentTotals
+from app.features.revenue.history import MonthlyTotals
 from app.features.revenue.kpis import PeriodTotals, WindowTotals
-from app.features.revenue.queries import period_totals_query, segment_totals_query
+from app.features.revenue.queries import monthly_totals_query, period_totals_query, segment_totals_query
 from app.features.revenue.schemas import PeriodWindow, RevenueFilters
 from app.shared.exceptions import DatabaseReadError
 
@@ -63,3 +64,22 @@ class RevenueRepository:
                 row["receita_atual_rs"], row["volume_atual_kwh"], row["faturas_atual"], row["ucs_atual"]
             ),
         )
+
+    async def fetch_monthly_totals(self, window: PeriodWindow, filters: RevenueFilters) -> list[MonthlyTotals]:
+        """Soma volume e receita por competência na janela, para os filtros dados.
+
+        Args:
+            window: Janela de competências (início e fim incluídos).
+            filters: Município, bairro e classe do recorte.
+
+        Returns:
+            Uma linha por competência que teve faturamento, da mais antiga para a mais nova.
+
+        Raises:
+            DatabaseReadError: Se as tabelas Gold não existirem ou a leitura falhar.
+        """
+        try:
+            result = await self.session.execute(monthly_totals_query(window, filters))
+        except OperationalError as error:
+            raise DatabaseReadError(f"Falha ao ler o histórico mensal de faturamento: {error.orig}") from error
+        return [MonthlyTotals(**row) for row in result.mappings()]

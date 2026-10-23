@@ -135,3 +135,33 @@ class BreakdownRowDTO(BaseModel):
     efeito_preco_rs: float
     efeito_volume_rs: float
     efeito_cruzado_rs: float
+
+
+class NeighborhoodHistoryRequest(BaseModel):
+    """Bairro e janela da série mensal de volume, receita e tarifa média."""
+
+    model_config = ConfigDict(frozen=True)
+
+    municipio: str
+    bairro: str
+    classe_consumo: str | None = None
+    competencia_fim: Competencia
+    meses: int = Field(default=24, ge=1, le=60, description="Quantidade de competências, terminando em competencia_fim")
+
+
+class MonthlyPointDTO(BaseModel):
+    """Volume, receita e tarifa média de uma competência."""
+
+    competencia: str
+    volume_kwh: float
+    receita_rs: float
+    tarifa_media_rs_kwh: float | None = None
+
+
+class NeighborhoodHistoryDTO(BaseModel):
+    """Série mensal contínua de um bairro (meses sem faturamento aparecem com volume e receita zero)."""
+
+    municipio: str
+    bairro: str
+    classe_consumo: str | None = None
+    pontos: list[MonthlyPointDTO]
