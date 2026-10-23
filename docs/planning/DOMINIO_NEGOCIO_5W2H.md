@@ -118,7 +118,7 @@ Com base nas dores acima, a solução completa é modelada na matriz 5W2H do sis
 
 | Dimensão | Detalhamento 5W2H |
 |---|---|
-| **What** | Fila inteligente de fiscalização de unidades suspeitas priorizada por **valor esperado** (risco de fraude $\times$ energia estimada a recuperar), geração de Ordens de Serviço (OS), cancelamento controlado, exportação em lote e upload de planilhas de campo com conciliação automática. |
+| **What** | Fila inteligente de fiscalização de unidades suspeitas priorizada pelo **kWh esperado** (energia estimada a recuperar x taxa histórica de acerto do sinal; o score de risco de fraude desempata), geração de Ordens de Serviço (OS), cancelamento controlado, exportação em lote e upload de planilhas de campo com conciliação automática. |
 | **Why** | A equipe de campo tem capacidade operacional fixa de realizar apenas **200 inspeções por mês**. No modelo legado sem inteligência de dados, pouco mais de 50% das vistorias encontram irregularidade. Isso significa que metade do tempo das viaturas é gasto visitando clientes honestos, gerando custo inútil de combustível e homem-hora. |
 | **Where** | Unidades consumidoras das classes B1, B2, B3 e A4 distribuídas pelos 14 municípios da RMR, com foco nas áreas de maior densidade de anomalias. |
 | **When** | Ciclo operacional mensal contínuo: geração da fila no início do mês, despacho para campo e conciliação de laudos técnicos semanalmente. |

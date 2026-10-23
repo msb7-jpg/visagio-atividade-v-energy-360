@@ -1,0 +1,105 @@
+"""Documentação OpenAPI dos endpoints de gestão de perdas."""
+
+from app.shared.docs import EndpointDoc, OpenApiResponses
+
+AUTH_ERROR_RESPONSES: OpenApiResponses = {
+    401: {"description": "Token de acesso ausente, inválido ou expirado."},
+    403: {"description": "Perfil sem permissão (apenas diretor e gerente de perdas)."},
+}
+
+list_suspicious_units_doc = EndpointDoc(
+    summary="Fila de UCs suspeitas priorizada por energia esperada a recuperar",
+    description=(
+        "Lista UCs com queda >= 50% do consumo médio das 3 últimas competências em relação às 12 anteriores, "
+        "ou com leitura zerada. Exclui UCs com geração distribuída, com ordem de inspeção ativa e as já "
+        "inspecionadas dentro da janela de análise (ordem concluída ou histórico de campo); ordem cancelada "
+        "devolve a UC à fila. Filtros por município, bairro e classe; limite padrão de 200 (capacidade mensal "
+        "da equipe de campo). Ordenação decrescente por kWh esperado, isto é, kWh estimado a recuperar vezes a "
+        "taxa histórica de acerto do sinal ('probabilidade_acerto'); o score de risco só desempata. "
+        "Se a tabela de inspeções de campo (Fatia 02) ainda não existir, a fila é montada sem excluir esse "
+        "histórico e a resposta traz o aviso 'historico_campo_nao_aplicado' em 'avisos'. Se a variável "
+        "LOSS_REFERENCE_COMPETENCIA estiver definida (demonstração), a fila é calculada com os dados até essa "
+        "competência, contando só as inspeções feitas até o fim dela, e a resposta traz o aviso "
+        "'competencia_referencia_fixada'."
+    ),
+    response_description="Fila priorizada de UCs suspeitas (`itens`) e avisos de degradação da análise (`avisos`).",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        500: {
+            "description": (
+                "Falha ao consultar tabelas Gold: cadastro ou medição ausentes ou fora do contrato, ou "
+                "inspeções de campo existentes com colunas fora do contrato (só a ausência da tabela de "
+                "inspeções é tolerada, com aviso)."
+            )
+        },
+    },
+)
+
+list_inspections_doc = EndpointDoc(
+    summary="Listar ordens de inspeção",
+    description="Lista as ordens de inspeção da mais recente para a mais antiga, com filtro opcional por status.",
+    response_description="Ordens de inspeção encontradas.",
+    responses=AUTH_ERROR_RESPONSES,
+)
+
+export_inspections_doc = EndpointDoc(
+    summary="Exportar para campo as ordens de inspeção ativas (CSV)",
+    description=(
+        "Baixa um CSV (separador ';', UTF-8 com BOM) com as ordens 'gerada' e 'pendente', que são as que vão "
+        "a campo. Traz 'id_inspecao' e as colunas de resultado em branco, para a equipe preencher e devolver "
+        "pelo upload. Textos livres que começam com '=', '+', '-' ou '@' recebem apóstrofo para não virarem fórmula."
+    ),
+    response_description="Arquivo CSV com uma linha por ordem ativa.",
+    responses=AUTH_ERROR_RESPONSES,
+)
+
+create_inspection_doc = EndpointDoc(
+    summary="Gerar ordem de inspeção para uma UC",
+    description=(
+        "Abre uma ordem com status 'gerada' e registra o usuário autenticado como autor. A UC precisa existir "
+        "no cadastro. O kWh estimado é calculado pelo servidor com a regra da fila (não é aceito no corpo); "
+        "UC fora da fila (sem suspeita ou com GD) gera ordem manual com 0 kWh."
+    ),
+    response_description="Ordem de inspeção criada.",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        404: {"description": "UC não encontrada no cadastro."},
+        409: {"description": "A UC já possui ordem de inspeção ativa (gerada ou pendente)."},
+        422: {"description": "Corpo inválido, inclusive campos não aceitos como 'kwh_estimado'."},
+        500: {"description": "Falha ao consultar tabelas Gold (cadastro ou medição)."},
+    },
+)
+
+update_inspection_doc = EndpointDoc(
+    summary="Atualizar status, registrar resultado de campo ou cancelar ordem",
+    description=(
+        "Transições permitidas: gerada -> pendente | cancelada; pendente -> concluida | cancelada. "
+        "Concluir exige 'irregularidade_constatada'; cancelar exige 'justificativa_cancelamento'."
+    ),
+    response_description="Ordem de inspeção atualizada.",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        400: {"description": "Dados obrigatórios da transição ausentes."},
+        404: {"description": "Ordem de inspeção não encontrada."},
+        409: {"description": "Transição de status inválida."},
+    },
+)
+
+upload_inspections_doc = EndpointDoc(
+    summary="Subir a planilha de retorno de campo e registrar os resultados",
+    description=(
+        "Recebe o .csv (separador ';' ou ',') ou .xlsx (todas as abas) devolvido pela equipe de campo e concilia "
+        "cada linha pelo 'id_inspecao' da planilha exportada. Ordens 'gerada' ou 'pendente' com resultado "
+        "preenchido passam a 'concluida'. Aceita as variações reais de campo: resultado ('CONFIRMADA', 'NADA "
+        "CONSTA', 'sim', 'não'), datas ('2025-08-01', '14.08.2025', '09-01-2025' como dia-mês-ano) e decimais "
+        "com vírgula. Uma linha inválida é recusada com motivo sem abortar as demais; linhas sem resultado "
+        "preenchido são contadas em 'ignoradas'. Limite de 5 MB e 10.000 linhas."
+    ),
+    response_description="Resumo da conciliação: conciliadas, ignoradas, rejeitadas com motivo e kWh total.",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        400: {"description": "Formato inválido, arquivo corrompido ou sem a coluna 'id_inspecao'."},
+        413: {"description": "Arquivo acima do limite de 5 MB."},
+        422: {"description": "Arquivo não enviado (campo multipart 'file')."},
+    },
+)
