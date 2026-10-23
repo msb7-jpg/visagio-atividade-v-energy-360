@@ -14,6 +14,14 @@ from app.features.loss_management.upload_values import is_blank, normalize_heade
 from app.shared.exceptions import BadRequestException
 
 KEY_COLUMN = "id_inspecao"
+UNIT_COLUMN = "id_uc"
+RESULT_COLUMN = "irregularidade_constatada"
+# Nomes usados pela equipe de campo (inspecoes.xlsx real) e seus equivalentes na planilha exportada pelo portal.
+COLUMN_ALIASES = {
+    "data": "data_inspecao",
+    "resultado": "irregularidade_constatada",
+    "inspetor": "fiscal_responsavel",
+}
 MAX_DATA_ROWS = 10_000
 CSV_DELIMITERS = (";", ",", "\t")
 UNSUPPORTED_TYPE_MESSAGE = "Formato não suportado: envie um arquivo .xlsx ou .csv."
@@ -26,7 +34,10 @@ XLSX_READ_ERRORS: tuple[type[Exception], ...] = (
     ValueError,
 )
 XLSX_INVALID_MESSAGE = "Arquivo .xlsx inválido ou corrompido."
-MISSING_KEY_MESSAGE = f"Coluna '{KEY_COLUMN}' não encontrada: use a planilha exportada pelo portal."
+MISSING_KEY_MESSAGE = (
+    f"Coluna '{KEY_COLUMN}' (ou '{UNIT_COLUMN}' com a coluna de resultado) não encontrada: "
+    "use a planilha exportada pelo portal."
+)
 
 
 @dataclass(frozen=True)
@@ -87,6 +98,12 @@ def rows_from_csv(content: bytes) -> Iterator[RawRow]:
     yield from rows_from_grid(None, reader)
 
 
+def sheet_rows(worksheet) -> list[RawRow]:
+    """Linhas de dados de uma aba; vazia quando ela não é uma aba de dados."""
+    worksheet.reset_dimensions()  # alguns geradores declaram a dimensão errada (ex.: A1:A1)
+    return list(rows_from_grid(worksheet.title, worksheet.iter_rows(values_only=True)))
+
+
 def rows_from_xlsx(content: bytes) -> Iterator[RawRow]:
     """Lê cada aba do XLSX; abas sem a coluna `id_inspecao` (ex.: resumos) são ignoradas."""
     try:
@@ -94,15 +111,12 @@ def rows_from_xlsx(content: bytes) -> Iterator[RawRow]:
     except XLSX_READ_ERRORS as error:
         raise BadRequestException(XLSX_INVALID_MESSAGE) from error
     try:
-        found_key_column = False
+        sheets_with_key_column: list[bool] = []
         for worksheet in workbook.worksheets:
-            worksheet.reset_dimensions()  # alguns geradores declaram a dimensão errada (ex.: A1:A1)
-            has_rows = False
-            for row in rows_from_grid(worksheet.title, worksheet.iter_rows(values_only=True)):
-                has_rows = True
-                yield row
-            found_key_column = found_key_column or has_rows or has_key_header(worksheet)
-        if not found_key_column:
+            rows = sheet_rows(worksheet)
+            yield from rows
+            sheets_with_key_column.append(bool(rows) or has_key_header(worksheet))
+        if not any(sheets_with_key_column):
             raise BadRequestException(MISSING_KEY_MESSAGE)
     except XLSX_READ_ERRORS as error:
         raise BadRequestException(XLSX_INVALID_MESSAGE) from error
@@ -111,18 +125,35 @@ def rows_from_xlsx(content: bytes) -> Iterator[RawRow]:
 
 
 def has_key_header(worksheet) -> bool:
-    """Indica se a primeira linha preenchida da aba traz a coluna `id_inspecao` (mesmo sem linhas de dados)."""
+    """Indica se a primeira linha preenchida da aba é um cabeçalho de dados (mesmo sem linhas abaixo dele)."""
     for grid_row in worksheet.iter_rows(values_only=True):
         if not all(is_blank(cell) for cell in grid_row):
-            return KEY_COLUMN in {normalize_header(cell) for cell in grid_row}
+            return is_data_header(apply_aliases([normalize_header(cell) for cell in grid_row]))
     return False
+
+
+def is_data_header(header: list[str]) -> bool:
+    """Indica se o cabeçalho é de uma aba de dados: traz `id_inspecao` ou `id_uc` junto com o resultado.
+
+    O `id_uc` sozinho não basta, para abas de resumo com uma coluna de UC não virarem linhas de dados.
+    """
+    return KEY_COLUMN in header or (UNIT_COLUMN in header and RESULT_COLUMN in header)
+
+
+def apply_aliases(header: list[str]) -> list[str]:
+    """Troca os nomes de coluna do campo pelos do portal, sem sobrescrever uma coluna que já existe no arquivo."""
+    present = set(header)
+    return [
+        COLUMN_ALIASES[name] if name in COLUMN_ALIASES and COLUMN_ALIASES[name] not in present else name
+        for name in header
+    ]
 
 
 def rows_from_grid(sheet: str | None, grid: Iterable[Iterable[object]]) -> Iterator[RawRow]:
     """Transforma uma grade (CSV ou aba) em linhas nomeadas pelo cabeçalho, pulando as vazias.
 
     Raises:
-        BadRequestException: Se for um CSV (`sheet` None) cujo cabeçalho não traz `id_inspecao`.
+        BadRequestException: Se for um CSV (`sheet` None) cujo cabeçalho não traz `id_inspecao` nem `id_uc`.
     """
     header: list[str] | None = None
     for line_number, grid_row in enumerate(grid, start=1):
@@ -130,8 +161,8 @@ def rows_from_grid(sheet: str | None, grid: Iterable[Iterable[object]]) -> Itera
         if all(is_blank(cell) for cell in values):
             continue
         if header is None:
-            header = [normalize_header(cell) for cell in values]
-            if KEY_COLUMN not in header:
+            header = apply_aliases([normalize_header(cell) for cell in values])
+            if not is_data_header(header):
                 if sheet is None:
                     raise BadRequestException(MISSING_KEY_MESSAGE)
                 return

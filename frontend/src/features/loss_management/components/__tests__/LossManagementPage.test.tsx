@@ -30,6 +30,7 @@ const suspiciousUnit: SuspiciousUnit = {
   classe_consumo: 'Industrial',
   motivos: ['queda_subita'],
   score_risco: 56.7,
+  probabilidade_acerto: 0.93,
   consumo_base_kwh: 10544.8,
   consumo_recente_kwh: 3069.3,
   kwh_estimado_recuperar: 22426.2,
@@ -99,6 +100,19 @@ describe('LossManagementPage', () => {
     expect(within(row).getByText(/22\.426,2 kWh/)).toBeInTheDocument()
   })
 
+  it('mostra a chance de a inspeção achar irregularidade ao lado da energia a recuperar', async () => {
+    mockedApi.listSuspiciousUnits.mockResolvedValue(
+      buildQueue([suspiciousUnit, { ...suspiciousUnit, id_uc: 'UC200001', probabilidade_acerto: 0.627 }])
+    )
+    renderPage()
+
+    const likelyRow = await screen.findByRole('row', { name: /UC104779/ })
+    const lessLikelyRow = await screen.findByRole('row', { name: /UC200001/ })
+
+    expect(within(likelyRow).getByText('93%')).toBeInTheDocument()
+    expect(within(lessLikelyRow).getByText('62,7%')).toBeInTheDocument()
+  })
+
   it('explica quando a fila está vazia', async () => {
     mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([]))
     renderPage()
@@ -115,6 +129,21 @@ describe('LossManagementPage', () => {
     expect(within(warning).getByText('Histórico de inspeções de campo não aplicado.')).toBeInTheDocument()
     expect(within(warning).getByText('Mensagem de aviso enviada pela API.')).toBeInTheDocument()
     expect(screen.getByRole('row', { name: /UC104779/ })).toBeInTheDocument()
+  })
+
+  it('destaca quando a fila foi calculada numa competência de referência fixada', async () => {
+    const referenceWarning: QueueWarning = {
+      codigo: 'competencia_referencia_fixada',
+      mensagem: 'Fila calculada com os dados até 2025-08.'
+    }
+    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([suspiciousUnit], [referenceWarning]))
+    renderPage()
+
+    const warning = await screen.findByRole('status')
+
+    expect(within(warning).getByText('Competência de referência fixada.')).toBeInTheDocument()
+    expect(within(warning).getByText('Fila calculada com os dados até 2025-08.')).toBeInTheDocument()
+    expect(within(warning).queryByText('Aviso sobre a fila.')).not.toBeInTheDocument()
   })
 
   it('mantém o aviso visível enquanto um novo filtro é carregado', async () => {

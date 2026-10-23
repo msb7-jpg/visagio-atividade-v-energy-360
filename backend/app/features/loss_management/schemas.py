@@ -40,7 +40,10 @@ class SuspiciousUnitDTO(BaseModel):
     bairro: str | None
     classe_consumo: str | None
     motivos: list[SuspicionReason]
-    score_risco: float = Field(ge=0, le=100, description="Probabilidade relativa de irregularidade (0-100)")
+    score_risco: float = Field(ge=0, le=100, description="Intensidade do sinal de suspeita (0-100); só desempata")
+    probabilidade_acerto: float = Field(
+        ge=0, le=1, description="Taxa histórica de inspeções que acharam irregularidade com este sinal (0-1)"
+    )
     consumo_base_kwh: float
     consumo_recente_kwh: float
     kwh_estimado_recuperar: float
@@ -51,6 +54,7 @@ class QueueWarningCode(StrEnum):
     """Avisos que a fila devolve quando precisou degradar a análise."""
 
     HISTORICO_CAMPO_NAO_APLICADO = "historico_campo_nao_aplicado"
+    COMPETENCIA_REFERENCIA_FIXADA = "competencia_referencia_fixada"
 
 
 class QueueWarningDTO(BaseModel):

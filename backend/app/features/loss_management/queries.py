@@ -5,12 +5,12 @@ As tabelas Gold pertencem ao pipeline (Fatias 01 e 02), por isso são declaradas
 """
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date
 
 from sqlalchemy import (
     Boolean,
-    CompoundSelect,
     Float,
+    Label,
     Select,
     String,
     Subquery,
@@ -18,14 +18,10 @@ from sqlalchemy import (
     case,
     column,
     func,
-    or_,
     select,
     table,
-    true,
 )
-from sqlalchemy.sql.elements import ColumnElement
 
-from app.features.loss_management.models import ACTIVE_STATUSES, InspectionOrder
 from app.features.loss_management.schemas import InspectionStatus
 
 MESES_JANELA_RECENTE = 3
@@ -59,10 +55,11 @@ fato_inspecoes_perdas = table(
 
 @dataclass(frozen=True, slots=True)
 class ConsumptionWindows:
-    """Competências ('YYYY-MM') que delimitam a janela base e a janela recente."""
+    """Competências ('YYYY-MM') que delimitam a janela base e a janela recente (inclusive nas pontas)."""
 
     inicio_base: str
     inicio_recente: str
+    fim_recente: str  # competência de referência: leituras posteriores ainda não existiam para a análise
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,7 +102,9 @@ def build_windows(ultima_competencia: str) -> ConsumptionWindows:
     meses_antes_da_ultima = MESES_JANELA_RECENTE - 1
     inicio_recente = shift_competencia(ultima_competencia, -meses_antes_da_ultima)
     inicio_base = shift_competencia(inicio_recente, -MESES_JANELA_BASE)
-    return ConsumptionWindows(inicio_base=inicio_base, inicio_recente=inicio_recente)
+    return ConsumptionWindows(
+        inicio_base=inicio_base, inicio_recente=inicio_recente, fim_recente=ultima_competencia
+    )
 
 
 def inspection_cutoff_date(windows: ConsumptionWindows) -> date:
@@ -130,8 +129,26 @@ def latest_competencia_query() -> Select[str | None]:
     return select(func.max(fato_medicao.c.competencia))
 
 
+def _consumption_aggregates(windows: ConsumptionWindows) -> list[Label]:
+    """Colunas agregadas por UC: média das duas janelas e quantidade de meses zerados na recente."""
+    competencia = fato_medicao.c.competencia
+    consumo_kwh = fato_medicao.c.consumo_kwh
+    is_base = competencia < windows.inicio_recente
+    is_recent = competencia >= windows.inicio_recente
+    is_zero_recent = and_(is_recent, consumo_kwh == 0)
+    return [
+        func.avg(case((is_base, consumo_kwh))).label("consumo_base_kwh"),
+        func.avg(case((is_recent, consumo_kwh))).label("consumo_recente_kwh"),
+        func.sum(case((is_zero_recent, 1), else_=0)).label("meses_zerados"),
+    ]
+
+
 def consumption_subquery(windows: ConsumptionWindows, id_uc: str | None = None) -> Subquery:
     """Agrega o consumo por UC nas duas janelas e conta meses zerados na recente.
+
+    Leituras com consumo negativo são inválidas (troca de medidor ou sinal invertido na origem) e ficam de
+    fora: entrariam na média e criariam uma queda súbita falsa. Na base bruta do case, 81 de 81 UCs da fila
+    tinham um consumo negativo na janela recente.
 
     Args:
         windows: Janelas base e recente.
@@ -142,21 +159,15 @@ def consumption_subquery(windows: ConsumptionWindows, id_uc: str | None = None) 
     """
     competencia = fato_medicao.c.competencia
     consumo_kwh = fato_medicao.c.consumo_kwh
-    is_base = competencia < windows.inicio_recente
-    is_recent = competencia >= windows.inicio_recente
-    is_zero_recent = and_(is_recent, consumo_kwh == 0)
-    base_consumption_kwh = case((is_base, consumo_kwh))
-    recent_consumption_kwh = case((is_recent, consumo_kwh))
-    zero_month_flag = case((is_zero_recent, 1), else_=0)
     unit_condition = [fato_medicao.c.id_uc == id_uc] if id_uc is not None else []
     return (
-        select(
-            fato_medicao.c.id_uc,
-            func.avg(base_consumption_kwh).label("consumo_base_kwh"),
-            func.avg(recent_consumption_kwh).label("consumo_recente_kwh"),
-            func.sum(zero_month_flag).label("meses_zerados"),
+        select(fato_medicao.c.id_uc, *_consumption_aggregates(windows))
+        .where(
+            competencia >= windows.inicio_base,
+            competencia <= windows.fim_recente,
+            consumo_kwh >= 0,
+            *unit_condition,
         )
-        .where(competencia >= windows.inicio_base, *unit_condition)
         .group_by(fato_medicao.c.id_uc)
         .subquery("consumo")
     )
@@ -181,85 +192,4 @@ def registered_unit_query(id_uc: str, windows: ConsumptionWindows | None) -> Sel
         select(*unit_columns, consumo.c.consumo_base_kwh, consumo.c.consumo_recente_kwh, consumo.c.meses_zerados)
         .outerjoin_from(uc, consumo, uc.c.id_uc == consumo.c.id_uc)
         .where(uc.c.id_uc == id_uc)
-    )
-
-
-def _optional_filters(filters: SuspicionFilters) -> list[ColumnElement[bool]]:
-    optional_conditions = [
-        (filters.municipio, dim_unidade_consumidora.c.municipio),
-        (filters.bairro, dim_unidade_consumidora.c.bairro),
-        (filters.classe, dim_unidade_consumidora.c.classe_consumo),
-    ]
-    return [
-        filter_column == filter_value for filter_value, filter_column in optional_conditions if filter_value is not None
-    ]
-
-
-def excluded_units_query(windows: ConsumptionWindows, *, include_field_history: bool = True) -> Select | CompoundSelect:
-    """Lista as UCs que não podem entrar na fila.
-
-    Saem da fila: UCs com ordem ativa e UCs inspecionadas dentro da janela de análise, seja por
-    ordem concluída no sistema, seja pelo histórico de campo. Ordens canceladas não excluem.
-
-    Args:
-        windows: Janelas de análise da fila.
-        include_field_history: False ignora `fato_inspecoes_perdas` (tabela ainda não exportada pela Fatia 02).
-
-    Returns:
-        `id_uc` excluídos; UNION com o histórico de campo quando ele é aplicado.
-    """
-    cutoff = inspection_cutoff_date(windows)
-    cutoff_datetime = datetime.combine(cutoff, datetime.min.time())
-    is_active = InspectionOrder.status.in_(ACTIVE_STATUSES)
-    is_recently_completed = and_(
-        InspectionOrder.status == COMPLETED_STATUS,
-        InspectionOrder.atualizado_em >= cutoff_datetime,
-    )
-    system_orders = select(InspectionOrder.id_uc).where(or_(is_active, is_recently_completed))
-    if not include_field_history:
-        return system_orders
-    # Um único id_uc NULL faria o NOT IN avaliar UNKNOWN para todas as UCs e esvaziar a fila.
-    historical_inspections = select(fato_inspecoes_perdas.c.id_uc).where(
-        fato_inspecoes_perdas.c.id_uc.is_not(None),
-        fato_inspecoes_perdas.c.data_inspecao >= cutoff.isoformat(),
-    )
-    return system_orders.union(historical_inspections)
-
-
-def suspicious_profiles_query(
-    windows: ConsumptionWindows, filters: SuspicionFilters, *, include_field_history: bool = True
-) -> Select:
-    """Monta a consulta dos perfis de consumo candidatos à fila de suspeitas.
-
-    Candidata é a UC sem GD, sem inspeção recente, com queda acima do limiar ou leitura zerada.
-
-    Args:
-        windows: Janelas base e recente.
-        filters: Limiar de queda e filtros opcionais de município, bairro e classe.
-        include_field_history: False monta a fila sem excluir as UCs do histórico de campo.
-
-    Returns:
-        SELECT com cadastro e consumo agregado das UCs candidatas.
-    """
-    consumo = consumption_subquery(windows)
-    uc = dim_unidade_consumidora
-    excluded_units = excluded_units_query(windows, include_field_history=include_field_history)
-    remaining_share = 1 - filters.limiar_queda
-    drop_ceiling_kwh = consumo.c.consumo_base_kwh * remaining_share
-    has_sudden_drop = consumo.c.consumo_recente_kwh <= drop_ceiling_kwh
-    has_zero_reading = consumo.c.meses_zerados > 0
-    return (
-        select(
-            uc.c.id_uc, uc.c.municipio, uc.c.bairro, uc.c.classe_consumo,
-            consumo.c.consumo_base_kwh, consumo.c.consumo_recente_kwh, consumo.c.meses_zerados,
-        )
-        .join_from(consumo, uc, uc.c.id_uc == consumo.c.id_uc)
-        .where(
-            uc.c.possui_gd.is_not(true()),
-            consumo.c.consumo_base_kwh > 0,
-            consumo.c.consumo_recente_kwh.is_not(None),
-            has_sudden_drop | has_zero_reading,
-            uc.c.id_uc.not_in(excluded_units),
-            *_optional_filters(filters),
-        )
     )

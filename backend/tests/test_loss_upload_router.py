@@ -58,6 +58,30 @@ async def test_upload_completes_orders_and_summarizes_the_batch(client):
     assert (await get_order(client, headers, clean_id))["irregularidade_constatada"] is False
 
 
+async def test_upload_in_the_field_team_format_matches_orders_by_unit(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    order_id = await create_order(client, headers, "UC_FRAUDE")
+    field_header = "id_inspecao;id_uc;data;inspetor;resultado;tipo_irregularidade;kwh_recuperado"
+    lines = [
+        field_header,
+        "IN0000007;UC_FRAUDE;09-25-2025;INSP-028  ;IRREGULARIDADE CONFIRMADA;BY-PASS;838,10",
+        "IN0000008;UC_SEM_ORDEM;2025-11-08;INSP-031;SEM IRREGULARIDADE;NULL;0,00",
+    ]
+    files = {"file": ("inspecoes.csv", "\r\n".join(lines).encode("utf-8-sig"), "text/csv")}
+
+    response = await client.post(UPLOAD_URL, headers=headers, files=files)
+
+    body = response.json()
+    assert response.status_code == 200
+    assert body["conciliadas"] == 1
+    assert body["kwh_recuperado_total"] == pytest.approx(838.1)
+    assert "UC_SEM_ORDEM" in body["rejeitadas"][0]["motivo"]
+    order = await get_order(client, headers, order_id)
+    assert order["status"] == "concluida"
+    assert order["fiscal_responsavel"] == "INSP-028"
+    assert order["tipo_irregularidade"] == "BY-PASS"
+
+
 async def test_upload_twice_rejects_orders_already_completed(client):
     headers = await auth_headers(client, "perdas@venergy.com")
     order_id = await create_order(client, headers, "UC_FRAUDE")

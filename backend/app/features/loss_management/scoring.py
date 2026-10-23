@@ -11,6 +11,14 @@ PESO_QUEDA_CONSUMO = 80.0
 BONUS_LEITURA_ZERADA = 20.0
 SCORE_MAXIMO = 100.0
 
+# Taxas de acerto medidas em fato_inspecoes_perdas (1.389 inspeções; ver changelog de 2026-10-20 e 2026-10-21).
+# Só a queda súbita tem taxa própria; a leitura zerada isolada ainda não foi medida e usa a taxa geral.
+TAXA_ACERTO_GERAL = 0.627
+TAXA_ACERTO_POR_MOTIVO = {
+    SuspicionReason.QUEDA_SUBITA: 0.93,
+    SuspicionReason.LEITURA_ZERADA: TAXA_ACERTO_GERAL,
+}
+
 
 @dataclass(frozen=True, slots=True)
 class ConsumptionProfile:
@@ -27,10 +35,11 @@ class ConsumptionProfile:
 
 @dataclass(frozen=True, slots=True)
 class QueueCandidates:
-    """Perfis candidatos à fila e se o histórico de campo (Fatia 02) foi usado para excluí-los."""
+    """Perfis candidatos à fila, se o histórico de campo (Fatia 02) foi usado e a competência fixada, se houver."""
 
     profiles: list[ConsumptionProfile]
     field_history_applied: bool
+    reference_competencia: str | None = None  # só preenchida quando a fila não usa a competência mais recente
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,6 +101,19 @@ def risk_score(profile: ConsumptionProfile) -> float:
     return round(capped_score, 1)
 
 
+def hit_probability(reasons: list[SuspicionReason]) -> float:
+    """Estima a chance de uma inspeção achar irregularidade a partir dos sinais da UC.
+
+    Args:
+        reasons: Motivos de suspeita detectados na UC.
+
+    Returns:
+        A maior taxa histórica de acerto entre os sinais presentes (0 a 1); 0 sem sinais.
+    """
+    rates = [TAXA_ACERTO_POR_MOTIVO[reason] for reason in reasons]
+    return max(rates, default=0.0)
+
+
 def estimated_recoverable_kwh(profile: ConsumptionProfile) -> float:
     """Estima a energia não faturada na janela de recuperação.
 
@@ -128,6 +150,7 @@ def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | No
         classe_consumo=profile.classe_consumo,
         motivos=reasons,
         score_risco=risk_score(profile),
+        probabilidade_acerto=hit_probability(reasons),
         consumo_base_kwh=round(profile.consumo_base_kwh, 1),
         consumo_recente_kwh=round(profile.consumo_recente_kwh, 1),
         kwh_estimado_recuperar=recoverable_kwh,
@@ -154,28 +177,30 @@ def order_estimated_kwh(unit: RegisteredUnit) -> float:
 def priority_key(unit: SuspiciousUnitDTO) -> tuple[float, float]:
     """Define a chave de prioridade da fila.
 
-    O kWh estimado já carrega a intensidade da queda (déficit = base * queda); multiplicá-lo
-    pelo score, que também cresce com a queda, contaria a queda duas vezes. Por isso o kWh
-    ordena a fila e o score só desempata.
+    Uma inspeção que não acha nada é um dia de equipe perdido, então "mais promissora" é o kWh
+    esperado: energia a recuperar vezes a chance de a inspeção achar irregularidade. A chance vem
+    da taxa histórica de acerto do sinal, que não cresce com a queda como o score; assim a queda
+    não é contada duas vezes (déficit = base * queda já está no kWh). O score só desempata.
 
     Args:
-        unit: Item da fila com energia estimada e score de risco.
+        unit: Item da fila com energia estimada, taxa de acerto e score de risco.
 
     Returns:
-        Par (kWh estimado a recuperar, score de risco) para ordenação decrescente.
+        Par (kWh esperado, score de risco) para ordenação decrescente.
     """
-    return unit.kwh_estimado_recuperar, unit.score_risco
+    expected_kwh = unit.kwh_estimado_recuperar * unit.probabilidade_acerto
+    return expected_kwh, unit.score_risco
 
 
 def rank_suspicious_units(profiles: list[ConsumptionProfile], limit: int) -> list[SuspiciousUnitDTO]:
-    """Monta a fila priorizada pela energia estimada a recuperar.
+    """Monta a fila priorizada pelo kWh esperado (kWh a recuperar x taxa de acerto do sinal).
 
     Args:
         profiles: Perfis de consumo candidatos.
         limit: Tamanho máximo da fila.
 
     Returns:
-        Itens suspeitos em ordem decrescente de kWh a recuperar (desempate por score), até `limit` itens.
+        Itens suspeitos em ordem decrescente de kWh esperado (desempate por score), até `limit` itens.
     """
     candidates = [unit for profile in profiles if (unit := build_suspicious_unit(profile)) is not None]
     candidates_by_id = sorted(candidates, key=lambda unit: unit.id_uc)

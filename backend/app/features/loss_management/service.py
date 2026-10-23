@@ -13,7 +13,6 @@ from app.features.loss_management.schemas import (
     InspectionStatus,
     QueueWarningCode,
     QueueWarningDTO,
-    RejectedRowDTO,
     SuspiciousQueueDTO,
     SuspiciousUnitsFilterDTO,
     UploadResultDTO,
@@ -21,7 +20,12 @@ from app.features.loss_management.schemas import (
 from app.features.loss_management.scoring import LIMIAR_QUEDA_SUBITA, order_estimated_kwh, rank_suspicious_units
 from app.features.loss_management.update_rules import ensure_fields_match_status, ensure_required_fields
 from app.features.loss_management.upload_parser import read_spreadsheet
-from app.features.loss_management.upload_reconcile import reconcile_rows, referenced_order_ids
+from app.features.loss_management.upload_reconcile import (
+    reconcile_rows,
+    referenced_order_ids,
+    referenced_unit_ids,
+    skipped_rejections,
+)
 from app.shared.exceptions import NotFoundException
 
 ALLOWED_TRANSITIONS: dict[InspectionStatus, frozenset[InspectionStatus]] = {
@@ -38,6 +42,24 @@ FIELD_HISTORY_NOT_APPLIED_WARNING = QueueWarningDTO(
         "podem aparecer na fila. Ordens concluídas no sistema continuam sendo excluídas."
     ),
 )
+
+
+def reference_competencia_warning(competencia: str) -> QueueWarningDTO:
+    """Avisa que a fila foi calculada numa competência fixada na configuração, e não na mais recente.
+
+    Args:
+        competencia: Competência fixada ('YYYY-MM').
+
+    Returns:
+        O aviso a devolver junto com a fila.
+    """
+    return QueueWarningDTO(
+        codigo=QueueWarningCode.COMPETENCIA_REFERENCIA_FIXADA,
+        mensagem=(
+            f"Fila calculada com os dados até {competencia} (competência de referência fixada na configuração), "
+            "e não com a competência mais recente. Use apenas para demonstração."
+        ),
+    )
 
 
 def validate_transition(current_status: InspectionStatus, payload: InspectionOrderUpdateDTO) -> None:
@@ -74,7 +96,8 @@ class LossService:
             queue_filter: Filtros de município, bairro e classe e o tamanho da fila.
 
         Returns:
-            UCs suspeitas em ordem decrescente de kWh a recuperar, limitadas a `queue_filter.limit`,
+            UCs suspeitas em ordem decrescente de kWh esperado (a recuperar x taxa de acerto do sinal),
+            limitadas a `queue_filter.limit`,
             e os avisos de degradação da análise (ex.: histórico de campo não aplicado).
 
         Raises:
@@ -88,8 +111,10 @@ class LossService:
         )
         candidates = await self.repository.fetch_consumption_profiles(filters)
         units = rank_suspicious_units(candidates.profiles, queue_filter.limit)
-        warnings = [] if candidates.field_history_applied else [FIELD_HISTORY_NOT_APPLIED_WARNING]
-        return SuspiciousQueueDTO(itens=units, avisos=warnings)
+        fixed_competencia = candidates.reference_competencia
+        reference_warnings = [reference_competencia_warning(fixed_competencia)] if fixed_competencia else []
+        history_warnings = [] if candidates.field_history_applied else [FIELD_HISTORY_NOT_APPLIED_WARNING]
+        return SuspiciousQueueDTO(itens=units, avisos=[*reference_warnings, *history_warnings])
 
     async def list_inspections(self, status: InspectionStatus | None) -> list[InspectionOrderDTO]:
         """Lista as ordens de inspeção, opcionalmente filtradas por status.
@@ -163,7 +188,9 @@ class LossService:
     async def upload_field_results(self, content: bytes, filename: str) -> UploadResultDTO:
         """Concilia a planilha preenchida em campo com as ordens ativas e conclui as que casam.
 
-        Linhas inválidas são recusadas com motivo, sem abortar o lote; as válidas são gravadas num único commit.
+        A linha casa pelo `id_inspecao` do portal ou, quando o id não é do portal (planilha do campo), pela ordem
+        ativa da `id_uc`. Linhas inválidas são recusadas com motivo, sem abortar o lote; as válidas são gravadas
+        num único commit.
 
         Args:
             content: Bytes do arquivo .csv ou .xlsx devolvido pela equipe de campo.
@@ -176,24 +203,15 @@ class LossService:
             BadRequestException: Se o arquivo for de formato inválido, corrompido ou sem a coluna `id_inspecao`.
         """
         rows = await asyncio.to_thread(read_spreadsheet, content, filename)
-        order_statuses = await self.repository.get_order_statuses(referenced_order_ids(rows))
-        plan = reconcile_rows(rows, order_statuses)
+        active_order_by_uc = await self.repository.get_active_order_ids_by_uc(referenced_unit_ids(rows))
+        order_ids = referenced_order_ids(rows) | set(active_order_by_uc.values())
+        order_statuses = await self.repository.get_order_statuses(order_ids)
+        plan = reconcile_rows(rows, order_statuses, active_order_by_uc)
         applied_ids = await self.repository.apply_field_results(plan.updates)
         kwh_recovered = sum(plan.updates[order_id].kwh_recuperado or 0.0 for order_id in applied_ids)
-        applied_set = set(applied_ids)
-        skipped_rejections = [
-            RejectedRowDTO(
-                aba=plan.origins[order_id].sheet,
-                linha=plan.origins[order_id].line,
-                id_inspecao=order_id,
-                motivo=f"Ordem {order_id} deixou o fluxo de campo durante o envio e não foi alterada.",
-            )
-            for order_id in plan.updates
-            if order_id not in applied_set
-        ]
         return UploadResultDTO(
             conciliadas=len(applied_ids),
             ignoradas=plan.ignored,
-            rejeitadas=[*plan.rejections, *skipped_rejections],
+            rejeitadas=[*plan.rejections, *skipped_rejections(plan, applied_ids)],
             kwh_recuperado_total=round(kwh_recovered, 2),
         )

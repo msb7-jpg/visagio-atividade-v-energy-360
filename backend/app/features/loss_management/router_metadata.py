@@ -14,9 +14,13 @@ list_suspicious_units_doc = EndpointDoc(
         "ou com leitura zerada. Exclui UCs com geração distribuída, com ordem de inspeção ativa e as já "
         "inspecionadas dentro da janela de análise (ordem concluída ou histórico de campo); ordem cancelada "
         "devolve a UC à fila. Filtros por município, bairro e classe; limite padrão de 200 (capacidade mensal "
-        "da equipe de campo). Ordenação decrescente por kWh estimado a recuperar (desempate por score de risco). "
+        "da equipe de campo). Ordenação decrescente por kWh esperado, isto é, kWh estimado a recuperar vezes a "
+        "taxa histórica de acerto do sinal ('probabilidade_acerto'); o score de risco só desempata. "
         "Se a tabela de inspeções de campo (Fatia 02) ainda não existir, a fila é montada sem excluir esse "
-        "histórico e a resposta traz o aviso 'historico_campo_nao_aplicado' em 'avisos'."
+        "histórico e a resposta traz o aviso 'historico_campo_nao_aplicado' em 'avisos'. Se a variável "
+        "LOSS_REFERENCE_COMPETENCIA estiver definida (demonstração), a fila é calculada com os dados até essa "
+        "competência, contando só as inspeções feitas até o fim dela, e a resposta traz o aviso "
+        "'competencia_referencia_fixada'."
     ),
     response_description="Fila priorizada de UCs suspeitas (`itens`) e avisos de degradação da análise (`avisos`).",
     responses={

@@ -12,6 +12,8 @@ export interface SuspiciousUnit {
   classe_consumo: string | null
   motivos: SuspicionReason[]
   score_risco: number
+  /** Taxa histórica de inspeções que acharam irregularidade com este sinal (0 a 1). */
+  probabilidade_acerto: number
   consumo_base_kwh: number
   consumo_recente_kwh: number
   kwh_estimado_recuperar: number
@@ -19,7 +21,7 @@ export interface SuspiciousUnit {
 }
 
 /** Avisos de degradação da análise devolvidos junto com a fila. */
-export type QueueWarningCode = 'historico_campo_nao_aplicado'
+export type QueueWarningCode = 'historico_campo_nao_aplicado' | 'competencia_referencia_fixada'
 
 export interface QueueWarning {
   codigo: QueueWarningCode

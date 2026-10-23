@@ -5,7 +5,9 @@ import re
 import unicodedata
 from datetime import date, datetime
 
-DATE_FORMATS = ("%Y-%m-%d", "%d.%m.%Y", "%d-%m-%Y", "%d/%m/%Y")  # "09-01-2025" é lido como dia-mês-ano (pt-BR)
+# Com hífen o campo escreve mês-dia-ano ("09-25-2025"; inspecoes.xlsx real: 33 de 46 datas têm o 2º número > 12 e
+# nenhuma tem o 1º). "%d-%m-%Y" fica por último só para as datas sem ambiguidade ("14-08-2025").
+DATE_FORMATS = ("%Y-%m-%d", "%d.%m.%Y", "%m-%d-%Y", "%d-%m-%Y", "%d/%m/%Y")
 NEGATIVE_WORDS = frozenset({"nao", "n", "nada", "sem", "improcedente", "regular"})
 POSITIVE_WORDS = frozenset({"sim", "s", "confirmada", "confirmado", "irregular", "irregularidade"})
 THOUSANDS_ONLY = re.compile(r"\d{1,3}(\.\d{3})+")
@@ -66,7 +68,9 @@ def parse_irregularity(raw: object) -> bool | None:
 
 
 def parse_field_date(raw: object) -> date | None:
-    """Interpreta a data da inspeção (`2025-08-01`, `14.08.2025`, `09-01-2025`, data do Excel).
+    """Interpreta a data da inspeção (`2025-08-01`, `14.08.2025`, `09-25-2025`, data do Excel).
+
+    Com hífen a data é mês-dia-ano; `09-01-2025` é 1º de setembro. Pontos e barras são dia-mês-ano.
 
     Args:
         raw: Valor da célula `data_inspecao`.
@@ -106,6 +110,23 @@ def to_decimal_text(cleaned: str) -> str:
     return cleaned
 
 
+def number_from_cell(raw: object) -> float:
+    """Converte a célula (número ou texto com "kWh", vírgula/ponto decimal e milhar) em `float`.
+
+    Raises:
+        InvalidValueError: Se o texto não for numérico.
+    """
+    if isinstance(raw, int | float) and not isinstance(raw, bool):
+        return float(raw)
+    cleaned = re.sub(r"kwh", "", str(raw), flags=re.IGNORECASE).replace(" ", "")
+    if not NUMERIC_TEXT.fullmatch(cleaned):
+        raise InvalidValueError(f"kwh_recuperado: valor '{raw}' não é numérico.")
+    try:
+        return float(to_decimal_text(cleaned))
+    except ValueError as error:
+        raise InvalidValueError(f"kwh_recuperado: valor '{raw}' não é numérico.") from error
+
+
 def parse_kwh(raw: object) -> float | None:
     """Interpreta a energia recuperada, com vírgula ou ponto decimal e separador de milhar.
 
@@ -120,16 +141,7 @@ def parse_kwh(raw: object) -> float | None:
     """
     if is_blank(raw):
         return None
-    if isinstance(raw, int | float) and not isinstance(raw, bool):
-        value = float(raw)
-    else:
-        cleaned = re.sub(r"kwh", "", str(raw), flags=re.IGNORECASE).replace(" ", "")
-        if not NUMERIC_TEXT.fullmatch(cleaned):
-            raise InvalidValueError(f"kwh_recuperado: valor '{raw}' não é numérico.")
-        try:
-            value = float(to_decimal_text(cleaned))
-        except ValueError as error:
-            raise InvalidValueError(f"kwh_recuperado: valor '{raw}' não é numérico.") from error
+    value = number_from_cell(raw)
     if not math.isfinite(value) or value < 0:
         raise InvalidValueError(f"kwh_recuperado: valor '{raw}' deve ser um número não negativo.")
     return value

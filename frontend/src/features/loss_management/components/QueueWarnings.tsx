@@ -3,7 +3,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { QueueWarning, QueueWarningCode } from '@/features/loss_management/types/lossTypes'
 
 const WARNING_TITLES: Record<QueueWarningCode, string> = {
-  historico_campo_nao_aplicado: 'Histórico de inspeções de campo não aplicado.'
+  historico_campo_nao_aplicado: 'Histórico de inspeções de campo não aplicado.',
+  competencia_referencia_fixada: 'Competência de referência fixada.'
 }
 
 // Código novo no backend ainda sem título no frontend: o tipo é copiado à mão, então não há garantia em runtime.

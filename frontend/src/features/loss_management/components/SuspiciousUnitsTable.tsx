@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { SuspicionReason, SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
-import { formatCurrency, formatKwh, REASON_LABELS } from '@/features/loss_management/utils/lossFormatters'
+import { formatCurrency, formatKwh, formatPercent, REASON_LABELS } from '@/features/loss_management/utils/lossFormatters'
 
 const REASON_BADGE_VARIANT: Record<SuspicionReason, 'destructive' | 'outline'> = {
   queda_subita: 'destructive',
@@ -18,7 +18,7 @@ interface SuspiciousUnitsTableProps {
  * Ranking da fila de suspeitas (ordem já priorizada pelo backend).
  *
  * @param props - UCs da fila e callback para gerar ordem.
- * @returns Tabela com motivo, score e energia a recuperar.
+ * @returns Tabela com motivo, score, chance de acerto e energia a recuperar.
  */
 export function SuspiciousUnitsTable({ units, onGenerateOrder }: SuspiciousUnitsTableProps) {
   return (
@@ -31,6 +31,7 @@ export function SuspiciousUnitsTable({ units, onGenerateOrder }: SuspiciousUnits
           <TableHead>Classe</TableHead>
           <TableHead>Motivo</TableHead>
           <TableHead>Score</TableHead>
+          <TableHead>Chance de acerto</TableHead>
           <TableHead>Energia a recuperar</TableHead>
           <TableHead>Ação</TableHead>
         </TableRow>
@@ -55,6 +56,7 @@ export function SuspiciousUnitsTable({ units, onGenerateOrder }: SuspiciousUnits
               </div>
             </TableCell>
             <TableCell><span className="font-mono">{unit.score_risco.toFixed(1)}</span></TableCell>
+            <TableCell><span className="font-mono">{formatPercent(unit.probabilidade_acerto)}</span></TableCell>
             <TableCell>
               <div className="flex flex-col">
                 <span className="text-foreground font-semibold">{formatKwh(unit.kwh_estimado_recuperar)}</span>

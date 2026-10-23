@@ -18,6 +18,7 @@ from app.features.loss_management.scoring import (
     QueueCandidates,
     RegisteredUnit,
     build_suspicious_unit,
+    hit_probability,
     order_estimated_kwh,
     rank_suspicious_units,
 )
@@ -98,6 +99,40 @@ def test_ranking_breaks_kwh_ties_by_risk_score():
     ranked = rank_suspicious_units([lower_risk, higher_risk], limit=2)
 
     assert [unit.id_uc for unit in ranked] == ["UC_RISCO_MAIOR", "UC_RISCO_MENOR"]
+
+
+def test_hit_probability_uses_the_measured_rate_of_the_sudden_drop_signal():
+    assert hit_probability([SuspicionReason.QUEDA_SUBITA]) == pytest.approx(0.93)
+
+
+def test_hit_probability_falls_back_to_the_overall_rate_for_zero_reading_alone():
+    assert hit_probability([SuspicionReason.LEITURA_ZERADA]) == pytest.approx(0.627)
+
+
+def test_hit_probability_takes_the_strongest_signal_when_both_apply():
+    both_signals = [SuspicionReason.QUEDA_SUBITA, SuspicionReason.LEITURA_ZERADA]
+
+    assert hit_probability(both_signals) == pytest.approx(0.93)
+
+
+def test_unit_exposes_the_hit_probability_of_its_signals():
+    drop_unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=100))
+    zero_unit = build_suspicious_unit(make_profile("UC2", base_kwh=150, recent_kwh=100, zero_months=1))
+
+    assert drop_unit is not None
+    assert zero_unit is not None
+    assert drop_unit.probabilidade_acerto == pytest.approx(0.93)
+    assert zero_unit.probabilidade_acerto == pytest.approx(0.627)
+
+
+def test_ranking_prefers_the_likelier_hit_over_more_recoverable_kwh():
+    more_kwh_less_likely = make_profile("UC_ZERADA_ISOLADA", base_kwh=1000, recent_kwh=700, zero_months=1)
+    less_kwh_more_likely = make_profile("UC_QUEDA_SUBITA", base_kwh=330, recent_kwh=100)
+
+    ranked = rank_suspicious_units([more_kwh_less_likely, less_kwh_more_likely], limit=2)
+
+    assert ranked[0].kwh_estimado_recuperar < ranked[1].kwh_estimado_recuperar
+    assert [unit.id_uc for unit in ranked] == ["UC_QUEDA_SUBITA", "UC_ZERADA_ISOLADA"]
 
 
 def test_ranking_is_deterministic_when_kwh_and_score_tie():
@@ -329,6 +364,17 @@ async def test_queue_warns_when_field_history_was_not_applied():
 
     assert [unit.id_uc for unit in queue.itens] == ["UC1"]
     assert [warning.codigo for warning in queue.avisos] == [QueueWarningCode.HISTORICO_CAMPO_NAO_APLICADO]
+
+
+async def test_queue_warns_when_a_fixed_reference_competencia_is_used():
+    profile = make_profile("UC1", base_kwh=300, recent_kwh=50)
+    candidates = QueueCandidates(profiles=[profile], field_history_applied=True, reference_competencia="2025-08")
+    service = LossService(repository=FakeQueueRepository(candidates))  # type: ignore[arg-type]
+
+    queue = await service.list_suspicious_units(SuspiciousUnitsFilterDTO())
+
+    assert [warning.codigo for warning in queue.avisos] == [QueueWarningCode.COMPETENCIA_REFERENCIA_FIXADA]
+    assert "2025-08" in queue.avisos[0].mensagem
 
 
 async def test_queue_has_no_warnings_when_field_history_was_applied():

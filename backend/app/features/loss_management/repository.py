@@ -1,8 +1,6 @@
 """Acesso a dados da gestão de perdas: perfis de consumo (Gold) e ordens de inspeção."""
 
 import logging
-from collections.abc import Collection, Mapping
-from itertools import batched
 
 from sqlalchemy import RowMapping, exists, inspect, select
 from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
@@ -16,8 +14,9 @@ from app.features.loss_management.queries import (
     fato_inspecoes_perdas,
     latest_competencia_query,
     registered_unit_query,
-    suspicious_profiles_query,
 )
+from app.features.loss_management.queue_query import suspicious_profiles_query
+from app.features.loss_management.reference import AnalysisReference, resolve_analysis_reference
 from app.features.loss_management.schemas import (
     InspectionOrderCreateDTO,
     InspectionOrderDTO,
@@ -25,11 +24,10 @@ from app.features.loss_management.schemas import (
     InspectionStatus,
 )
 from app.features.loss_management.scoring import ConsumptionProfile, QueueCandidates, RegisteredUnit
+from app.features.loss_management.upload_repository import FieldUploadRepositoryMixin
 from app.shared.exceptions import DatabaseReadError
 
 logger = logging.getLogger(__name__)
-
-ID_BATCH_SIZE = 500  # abaixo do limite de 999 variáveis do SQLite antigo
 
 # Tabela ausente (SQLite: OperationalError; Postgres: ProgrammingError) ou coluna fora do contrato Gold.
 GOLD_QUERY_ERRORS = (OperationalError, ProgrammingError)
@@ -72,11 +70,18 @@ def to_registered_unit(row: RowMapping) -> RegisteredUnit:
     return RegisteredUnit(profile=profile, possui_gd=bool(row["possui_gd"]), has_recent_reading=has_recent_reading)
 
 
-class LossRepository:
+class LossRepository(FieldUploadRepositoryMixin):
     """Consultas analíticas de consumo e persistência das ordens de inspeção."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, reference_competencia: str | None = None) -> None:
+        """Cria o repositório da sessão.
+
+        Args:
+            session: Sessão assíncrona do banco.
+            reference_competencia: Competência ('YYYY-MM') fixada para calcular a fila; None usa a mais recente.
+        """
         self.session = session
+        self.reference_competencia = reference_competencia
 
     async def has_field_history_table(self) -> bool:
         """Indica se `fato_inspecoes_perdas` (Fatia 02) já foi exportada para o banco Gold.
@@ -91,7 +96,8 @@ class LossRepository:
     async def fetch_consumption_profiles(self, filters: SuspicionFilters) -> QueueCandidates:
         """Busca os perfis de consumo candidatos à fila de suspeitas.
 
-        A janela de análise é ancorada na competência mais recente de `fato_medicao`. Sem a tabela
+        A janela de análise é ancorada na competência mais recente de `fato_medicao`, ou na competência fixada
+        na configuração quando ela é anterior (nesse caso só as inspeções até aquele mês contam). Sem a tabela
         `fato_inspecoes_perdas`, a fila é montada sem excluir o histórico de campo.
 
         Args:
@@ -105,17 +111,36 @@ class LossRepository:
         """
         try:
             field_history_applied = await self.has_field_history_table()
-            ultima_competencia = await self.session.scalar(latest_competencia_query())
-            if ultima_competencia is None:
-                return QueueCandidates(profiles=[], field_history_applied=field_history_applied)
-            windows = build_windows(ultima_competencia)
-            query = suspicious_profiles_query(windows, filters, include_field_history=field_history_applied)
-            result = await self.session.execute(query)
+            reference, rows = await self._read_queue_rows(filters, field_history_applied)
         except GOLD_QUERY_ERRORS as e:
             logger.exception("Falha ao consultar tabelas Gold para a fila de suspeitas.")
             raise DatabaseReadError(GOLD_TABLES_ERROR_MESSAGE) from e
-        profiles = [ConsumptionProfile(**row) for row in result.mappings()]
-        return QueueCandidates(profiles=profiles, field_history_applied=field_history_applied)
+        return QueueCandidates(
+            profiles=[ConsumptionProfile(**row) for row in rows],
+            field_history_applied=field_history_applied,
+            reference_competencia=reference.competencia if reference and reference.is_fixed_in_the_past else None,
+        )
+
+    async def _read_queue_rows(
+        self, filters: SuspicionFilters, field_history_applied: bool
+    ) -> tuple[AnalysisReference | None, list[RowMapping]]:
+        """Executa a consulta da fila na competência de referência.
+
+        Returns:
+            A referência de análise e as linhas candidatas; `(None, [])` se ainda não há medições.
+        """
+        ultima_competencia = await self.session.scalar(latest_competencia_query())
+        if ultima_competencia is None:
+            return None, []
+        reference = resolve_analysis_reference(ultima_competencia, self.reference_competencia)
+        query = suspicious_profiles_query(
+            build_windows(reference.competencia),
+            filters,
+            include_field_history=field_history_applied,
+            history_until=reference.history_until,
+        )
+        result = await self.session.execute(query)
+        return reference, list(result.mappings())
 
     async def fetch_registered_unit(self, id_uc: str) -> RegisteredUnit | None:
         """Busca a UC no cadastro com o consumo da mesma janela usada pela fila.
@@ -131,7 +156,12 @@ class LossRepository:
         """
         try:
             ultima_competencia = await self.session.scalar(latest_competencia_query())
-            windows = build_windows(ultima_competencia) if ultima_competencia else None
+            reference_competencia = (
+                resolve_analysis_reference(ultima_competencia, self.reference_competencia).competencia
+                if ultima_competencia
+                else None
+            )
+            windows = build_windows(reference_competencia) if reference_competencia else None
             result = await self.session.execute(registered_unit_query(id_uc, windows))
         except GOLD_QUERY_ERRORS as e:
             logger.exception("Falha ao consultar tabelas Gold para validar a UC %s.", id_uc)
@@ -244,43 +274,3 @@ class LossRepository:
         await self.session.commit()
         await self.session.refresh(order)
         return to_order_dto(order)
-
-    async def get_order_statuses(self, ids: Collection[int]) -> dict[int, InspectionStatus]:
-        """Busca o status atual das ordens citadas, numa única consulta.
-
-        Args:
-            ids: Identificadores das ordens.
-
-        Returns:
-            Status por identificador; ordens inexistentes ficam de fora.
-        """
-        statuses: dict[int, InspectionStatus] = {}
-        for id_batch in batched(sorted(ids), ID_BATCH_SIZE):
-            query = select(InspectionOrder.id_inspecao, InspectionOrder.status).where(
-                InspectionOrder.id_inspecao.in_(id_batch)
-            )
-            result = await self.session.execute(query)
-            statuses.update({id_inspecao: InspectionStatus(status) for id_inspecao, status in result.all()})
-        return statuses
-
-    async def apply_field_results(self, updates: Mapping[int, InspectionOrderUpdateDTO]) -> list[int]:
-        """Conclui, num único commit, as ordens que ainda estão em campo.
-
-        Args:
-            updates: Resultado de campo já validado, por identificador de ordem.
-
-        Returns:
-            Identificadores das ordens de fato atualizadas; as que deixaram o fluxo de campo entre a
-            validação e a gravação (ex.: canceladas por outro usuário) ficam intactas e de fora.
-        """
-        applied_ids: list[int] = []
-        for id_batch in batched(sorted(updates), ID_BATCH_SIZE):
-            query = select(InspectionOrder).where(
-                InspectionOrder.id_inspecao.in_(id_batch), InspectionOrder.status.in_(ACTIVE_STATUSES)
-            )
-            for order in (await self.session.scalars(query)).all():
-                for field_name, field_value in updates[order.id_inspecao].model_dump(exclude_none=True).items():
-                    setattr(order, field_name, field_value)
-                applied_ids.append(order.id_inspecao)
-        await self.session.commit()
-        return applied_ids
