@@ -49,3 +49,20 @@
   - `EXPLAIN QUERY PLAN` e contador de queries, `EndpointDoc` (quando `app/shared/docs.py` entrar na `main`) e ADR (23/10).
 - **Validação de Testes:**
   - `make lint-all` e `make test-all` passando (41 testes); `uv run pytest tests/test_revenue_seed.py`: 3 passed; `uv run pytest tests/test_revenue_service.py`: 16 passed; `uv run pytest tests/test_revenue_router.py`: 10 passed.
+
+### [2026-10-22] - Endpoints de KPIs e detalhamento da receita
+- **Autor:** Celio
+- **O que foi feito:**
+  - `backend/app/features/revenue/kpis.py`: cálculo puro de faturamento, volume, tarifa média ponderada, ticket médio e UCs ativas, com variação percentual entre a janela base e a atual.
+  - `backend/app/features/revenue/breakdown.py`: agrupamento dos segmentos por município, bairro ou classe, com efeito-preço, efeito-volume e efeito cruzado de cada linha, e ordenação do ranking.
+  - `repository.py`: nova consulta SQL com os totais gerais das duas janelas (receita, volume, faturas e UCs distintas) em uma única leitura.
+  - `service.py`, `dependencies.py` e `router.py`: rotas `GET /api/v1/revenue/kpis` e `GET /api/v1/revenue/breakdown` (paginada com `PaginatedResponse`), restritas à Diretoria.
+  - `backend/tests/test_revenue_kpis_breakdown.py` (23 testes) e `test_revenue_router.py` (22 testes): cálculo puro, ranking, paginação, 401, 403, 404, 400 e 422.
+- **Dificuldades / Desafios:**
+  - Decisão: o ranking soma os efeitos de cada segmento (classe x município x bairro), então a soma de todas as linhas é a variação total de receita, em qualquer nível.
+  - Decisão: ticket médio = receita / número de faturas, assumindo uma fatura por UC por competência (a confirmar com Dados).
+  - Pendente: penetração de GD (kWp) por bairro, que a tabela do plano pede, depende de confirmar `potencia_gd_kw` na Gold.
+- **Próximos Passos:**
+  - Histórico mensal por bairro, `EXPLAIN QUERY PLAN` com contador de queries, `EndpointDoc` e ADR (23/10).
+- **Validação de Testes:**
+  - `make lint-all` e `make test-all` passando (76 testes no backend).
