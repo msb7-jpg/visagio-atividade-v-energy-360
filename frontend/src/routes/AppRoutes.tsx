@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/features/auth/components/LoginPage'
 import { DashboardPage } from '@/features/auth/components/DashboardPage'
 import { LossManagementPage } from '@/features/loss_management/components/LossManagementPage'
+import { GridQualityPage } from '@/features/grid_quality/components/GridQualityPage'
 import { Customer360Page } from '@/features/customer360/components/Customer360Page'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -11,6 +12,7 @@ import { homeRouteFor } from './homeRoute'
 // Mesmo RBAC do backend (`LOSS_ROLES` em loss_management/router.py).
 const DASHBOARD_ROLES = ['diretor', 'gerente_operacao', 'gerente_perdas']
 const LOSS_ROLES = ['diretor', 'gerente_perdas']
+const QUALITY_ROLES = ['diretor', 'gerente_operacao']
 const CUSTOMER360_ROLES = ['diretor', 'gerente_atendimento', 'atendente', 'gerente_perdas']
 
 /** Leva o usuário logado à tela inicial do cargo; sem sessão, o ProtectedRoute da rota destino manda ao login. */
@@ -38,6 +40,9 @@ export function AppRoutes() {
             </Route>
             <Route element={<ProtectedRoute allowedRoles={LOSS_ROLES} />}>
               <Route path="/losses" element={<LossManagementPage />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={QUALITY_ROLES} />}>
+              <Route path="/quality" element={<GridQualityPage />} />
             </Route>
             <Route element={<ProtectedRoute allowedRoles={CUSTOMER360_ROLES} />}>
               <Route path="/customers" element={<Customer360Page />} />
