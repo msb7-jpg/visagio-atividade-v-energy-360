@@ -261,6 +261,8 @@ source_modules = [
     "app.features.auth.service",
     "app.features.revenue.service",
     "app.features.revenue.decomposition",
+    "app.features.revenue.kpis",
+    "app.features.revenue.breakdown",
 ]
 forbidden_modules = [
     "fastapi",
