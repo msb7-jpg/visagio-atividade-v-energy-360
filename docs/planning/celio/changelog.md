@@ -58,6 +58,7 @@
   - `repository.py`: nova consulta SQL com os totais gerais das duas janelas (receita, volume, faturas e UCs distintas) em uma única leitura.
   - `service.py`, `dependencies.py` e `router.py`: rotas `GET /api/v1/revenue/kpis` e `GET /api/v1/revenue/breakdown` (paginada com `PaginatedResponse`), restritas à Diretoria.
   - `backend/tests/test_revenue_kpis_breakdown.py` (23 testes) e `test_revenue_router.py` (22 testes): cálculo puro, ranking, paginação, 401, 403, 404, 400 e 422.
+  - `queries.py`: consultas de faturamento migradas de SQL bruto (`text()`) para SQLAlchemy Core (`table()`/`column()`), com filtros opcionais aplicados só quando preenchidos (portável para PostgreSQL), conforme revisão do Adrian. `test_revenue_queries.py`: 2 testes.
 - **Dificuldades / Desafios:**
   - Decisão: o ranking soma os efeitos de cada segmento (classe x município x bairro), então a soma de todas as linhas é a variação total de receita, em qualquer nível.
   - Decisão: ticket médio = receita / número de faturas, assumindo uma fatura por UC por competência (a confirmar com Dados).
