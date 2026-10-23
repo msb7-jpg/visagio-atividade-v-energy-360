@@ -1,8 +1,6 @@
-import { ArrowLeft, CloudOff, SearchX, UserSearch } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { CloudOff, SearchX, UserSearch } from 'lucide-react'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { LoadingSkeleton } from '@/components/feedback/LoadingSkeleton'
-import { Button } from '@/components/ui/button'
 import { Customer360Details } from '@/features/customer360/components/Customer360Details'
 import { CustomerOverviewCard } from '@/features/customer360/components/CustomerOverviewCard'
 import { CustomerSearchBar } from '@/features/customer360/components/CustomerSearchBar'
@@ -68,13 +66,6 @@ export function Customer360Page() {
               Cadastro, consumo comparado ao ano anterior, faturas, interrupções e chamados numa tela só.
             </p>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/dashboard">
-              <span className="flex items-center gap-1.5">
-                <ArrowLeft className="size-3.5" /> Voltar ao painel
-              </span>
-            </Link>
-          </Button>
         </div>
         <div className="flex flex-col gap-3">
           <CustomerSearchBar key={result.searchedId} initialText={result.searchedId} onSubmit={submitSearch} isSearching={isSearching} />
