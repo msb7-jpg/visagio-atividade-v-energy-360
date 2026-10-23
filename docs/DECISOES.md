@@ -1,9 +1,6 @@
-aq vamos documentar as decisões que tomamos no formato adr
+ferramenta de testes
 
-qual decisao
+backend -> pytest
+frontend -> vitest
 
-impacto
-
-como garantir confirmidade
-
-etc etc...
+regras de negocio da ferramenta

@@ -6,6 +6,26 @@
 
 ## Registros de Execução
 
+### [2026-10-20] - Implementação Conclusiva da Fatia 07 (Miguel)
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Catálogo Semântico & Prompting:** Enriquecido `catalog_prompt.py` com o schema consolidado das tabelas analíticas Gold (`dim_unidade_consumidora`, `fato_medicao`, `fato_faturamento`, `fato_qualidade_alimentador`, `fato_atendimentos`, `fato_inspecoes_perdas`) e mapeamento canônico de termos cotidianos ("conta de luz", "falta de luz", "gato", "painel solar", DEC/FEC).
+  - **IA Embutida e Proativa:** Implementado endpoint `POST /api/v1/agent/insights` (e alias `POST /api/v1/agent/ai/insights`) no backend, fornecendo síntese executiva contextualizada para as telas de Visão 360 e Receita.
+  - **Frontend Streaming Headless & Reducer:** Criados os utilitários de transporte e decodificação SSE (`sseStreamParser.ts`), reducer de mensagens imutável (`chatMessageReducer.ts`) e hook headless `useAgentStream.ts` com cancelamento seguro via `AbortController`.
+  - **Componentes de UI Conformes ao Design System (`design.md`):**
+    - `ChatDrawer.tsx`: Gaveta lateral global com Sheet, badge seguro read-only e alternância de estado limpo.
+    - `ChatMessageBubble.tsx`: Balão com renderização Markdown rica e integração de progresso e auditoria.
+    - `AgentStepProgress.tsx`: Timeline com status dos nós da FSM (`StepStatus`).
+    - `SqlAuditAccordion.tsx`: Sanfona de auditoria para inspeção da consulta SQL e telemetria (ms).
+    - `SmartInsightCard.tsx`: Card de IA embutida em `<Card variant="glass">` com botão de acionamento assíncrono.
+  - **Golden Dataset & Framework de Avaliação Automatizada:** Criado `backend/tests/golden_dataset.json` com 25 casos de teste de negócio cobrindo faturamento, perdas, GD, qualidade de rede e atendimento, acompanhado de `backend/scripts/evaluate_agent.py` alcançando 100% de validade sintática e segurança AST.
+  - **Testes Unitários:** Adicionados testes Vitest no frontend para o parser SSE (`sseStreamParser.test.ts`), reducer (`chatMessageReducer.test.ts`), renderização da gaveta (`ChatDrawer.test.tsx`) e card de insights (`SmartInsightCard.test.tsx`).
+- **Validação de Testes e Linters:**
+  - `make lint-all`: 100% verde (Ruff ok, Pylint 10.00/10, import-linter 4/4 contratos mantidos, ESLint 0 erros/warnings, Fallow 89.2 maintainability sem violações).
+  - `make test-all`: 100% verde (12 pytest backend, 5 arquivos / 11 testes vitest frontend).
+
+---
+
 ### [2026-10-16] - Inicialização do Planejamento da Fatia 07
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

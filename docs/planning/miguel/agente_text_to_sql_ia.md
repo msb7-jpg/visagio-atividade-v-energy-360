@@ -71,15 +71,15 @@
 
 - [x] Grafo base do LangGraph FSM e nós essenciais em `backend/app/agent/`.
 - [x] Validador sintático AST e execução somente-leitura (`mode=ro`).
-- [ ] Enriquecer o catálogo semântico (`catalog_prompt.py`) com sinônimos cotidianos e schemas finais da Gold.
-- [ ] Implementar suporte conversacional a follow-up no `AgentState`.
-- [ ] Implementar endpoint `POST /api/v1/ai/insights` no backend.
-- [ ] Criar testes unitários em `backend/tests/test_agent_graph.py`, `test_agent_security.py` e `test_agent_stream.py`.
-- [ ] Construir o framework de benchmark em `backend/scripts/evaluate_agent.py` e `backend/tests/golden_dataset.json`.
-- [ ] Criar componentes do chat em `frontend/src/features/chat/` ($\le 150$ linhas por componente).
-- [ ] Implementar `SmartInsightCard.tsx` e plugar na Visão 360 e no Dashboard de Receita.
-- [ ] Criar testes no frontend com Vitest em `ChatDrawer.test.tsx`.
-- [ ] Garantir 100% verde em `make lint-all` e `make test-all`.
+- [x] Enriquecer o catálogo semântico (`catalog_prompt.py`) com sinônimos cotidianos e schemas finais da Gold.
+- [x] Implementar suporte conversacional a follow-up no `AgentState`.
+- [x] Implementar endpoint `POST /api/v1/ai/insights` no backend.
+- [x] Criar testes unitários em `backend/tests/test_agent_graph.py`, `test_agent_security.py` e `test_agent_stream.py`.
+- [x] Construir o framework de benchmark em `backend/scripts/evaluate_agent.py` e `backend/tests/golden_dataset.json`.
+- [x] Criar componentes do chat em `frontend/src/features/chat/` (<= 150 linhas por componente).
+- [x] Implementar `SmartInsightCard.tsx` e plugar na Visão 360 e no Dashboard de Receita.
+- [x] Criar testes no frontend com Vitest em `ChatDrawer.test.tsx`.
+- [x] Garantir 100% verde em `make lint-all` e `make test-all`.
 
 ---
 

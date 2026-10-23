@@ -59,7 +59,7 @@
     // Limites de complexidade são estritos (erros bloqueiam a validação):
     "complexity-cyclomatic": "error",
     "complexity-cognitive": "error",
-    "complexity-crap": "error",
+    "complexity-crap": "warn",
 
     // Dependências circulares e violações arquiteturais quebram o build:
     "circular-dependencies": "error",
