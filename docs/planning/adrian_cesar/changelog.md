@@ -228,3 +228,100 @@
   - Correções da revisão: limite de 10.000 linhas aplicado durante a leitura; erros de aba corrompida viram 400; `reset_dimensions()` contra dimensão declarada errada; consultas por ids em lotes de 500; `NADA CONSTA` aceita 0 kWh e tipo/TOI preenchidos (descartados); ids `15.0`/`15,0` aceitos.
 - **Validação de Testes:**
   - Backend: 83 testes novos, `pytest` 182 passed; Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. Frontend: 7 testes novos, `vitest` 33 passed; ESLint OK, `tsc -b` sem erros, Fallow 0 acima do limite. `make` não existe neste shell; os mesmos comandos foram rodados diretamente.
+
+### [2026-10-23] - Fase 2.1: fila priorizada pela chance de a inspeção achar irregularidade
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - A fala do Gerente de Perdas (`atividade.pdf`, pág. 6) pede a fila "da mais promissora para a menos promissora" e lembra que "cada inspeção que não encontra nada é um dia de equipe perdido". Ordenar só por kWh ignorava a chance de a inspeção achar algo.
+  - `priority_key` passou a ordenar por **kWh esperado** = kWh a recuperar × `probabilidade_acerto`; o score de risco continua só desempatando. A taxa não cresce com a queda, então a queda não volta a ser contada duas vezes.
+  - Nova função `hit_probability(reasons)` em `scoring.py`: devolve a maior taxa histórica de acerto entre os sinais da UC. Taxas: queda súbita **0,93**; leitura zerada isolada usa a taxa geral **0,627**.
+  - `SuspiciousUnitDTO` ganhou `probabilidade_acerto` (0 a 1). Frontend: coluna "Chance de acerto" na fila (`formatPercent`), para o gerente ver por que a UC está na posição.
+  - Texto do OpenAPI, docstrings e `DOMINIO_NEGOCIO_5W2H.md` atualizados.
+- **Decisões e limitações:**
+  - As taxas 0,93 e 0,627 são as medidas nos dados de desenvolvimento locais (seed provisório, 1.389 inspeções) e registradas neste diário. O seed não está mais disponível nesta máquina, então **não foram remedidas** nesta entrega; devem ser conferidas contra a Gold real na Fase 7.
+  - A taxa de **leitura zerada isolada não foi medida**: usa a taxa geral como suposição. As taxas são constantes no código, não calculadas da Gold.
+  - Efeito prático modesto: toda UC da fila tem queda >= 50% ou leitura zerada, então a reordenação só rebaixa quem entra apenas por leitura zerada (0,627 contra 0,93). Uma taxa por faixa de queda ou por classe exigiria cruzar o sinal da época da inspeção com `fato_inspecoes_perdas`.
+  - A tarifa real de `fato_faturamento` segue pendente (aguarda Ryei).
+- **Próximos Passos:**
+  - Fase 7: remedir as taxas na Gold real; se houver sinais com taxas distintas, trocar as constantes por cálculo a partir do histórico.
+  - Fase 8: documentar as suposições (taxas, limiar de 50%, fórmula do kWh).
+- **Validação de Testes:**
+  - RED confirmado antes da implementação (`ImportError` de `hit_probability` no backend e 1 teste falhando no frontend). Backend: 5 testes novos, `pytest` 187 passed; Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. Frontend: 1 teste novo, `vitest` 34 passed; ESLint OK, `tsc -b` sem erros, Fallow 0 acima do limite. `make` não existe neste shell; os mesmos comandos foram rodados diretamente.
+
+### [2026-10-23] - Teste com as bases brutas do case: consumo negativo na fila e datas do upload
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Carreguei as bases brutas (`base_dados_1.zip` e `base_dados_2.zip`, só local e ignoradas pelo git) em dois SQLite de simulação fora do repositório: um bruto, só com as colunas renomeadas ao contrato, e um com tratamento mínimo. Rodei o código real da fila e do upload contra eles.
+  - **Fila:** `consumption_subquery` passou a ignorar leituras com `consumo_kwh < 0`. No banco bruto a fila tinha 83 linhas (77 UCs distintas) e **todas as 81 UCs candidatas tinham consumo negativo na janela recente**: o UC104779, consumo estável de 10 a 11 mil kWh/mês, aparece com `-11065` em 2026-06, o que derruba a média recente e simula a queda. Depois da correção a fila sobre o mesmo banco bruto tem 0 linhas.
+  - **Upload:** `09-01-2025` agora é lido como 1º de setembro. Com hífen a data do campo é mês-dia-ano (33 das 46 datas `NN-NN-AAAA` do `inspecoes.xlsx` real têm o 2º número > 12 e nenhuma tem o 1º). Antes, 33 dessas linhas eram rejeitadas e 12 aceitas com a data errada. `%d-%m-%Y` ficou como último formato, só para datas sem ambiguidade (`14-08-2025`). Isto **corrige** o registro da Fase 6 deste diário, que dizia o contrário.
+- **Achados das bases brutas (sem alteração de código):**
+  - Os 8.016 consumos negativos únicos não se recuperam com `abs()`: 1.334 têm o sinal trocado, 6.215 são leituras que retrocederam (provável troca de medidor) e 378 não seguem padrão; o valor negativo típico é cerca de 188 vezes a mediana da UC. O tratamento correto é descartar a linha.
+  - Há 21.523 leituras duplicadas exatas, mais 8.609 pares (UC, mês) repetidos com id `LTX...` e outro medidor, 24.667 `leitura_anterior` ausentes e 900 UCs duplicadas no cadastro (mais uma linha de cabeçalho repetida dentro do arquivo). Isso é trabalho da Silver (Renan); a fila só se defende dos negativos.
+  - Taxas de acerto reconstruídas nas 1.385 inspeções com histórico: geral 62,7%; queda >= 50% sem GD 92,6% (770 casos); queda < 50% 26,4%; UCs com GD 3,2% (31 casos). Isso confirma as constantes 0,93 e 0,627 do item anterior. Nenhuma leitura tem consumo zero, então a taxa de "leitura zerada" segue sem medição.
+  - Com dados tratados a fila da competência mais recente (2026-06) fica **vazia**: a onda de quedas foi em meados de 2025 e já foi inspecionada. Como mostrar a fila na demonstração é uma decisão em aberto.
+  - O `inspecoes.xlsx` real não é aceito pelo upload: `id_inspecao` é `IN0000000` (não inteiro) e as colunas são `data`, `resultado` e `inspetor`. O resultado e o kWh são normalizados corretamente (871 irregulares, 518 regulares, 0 kWh ilegível), mas 0 das 1.389 linhas são conciliadas. Decisão em aberto.
+- **Validação de Testes:**
+  - RED confirmado (3 testes falhando antes: 2 de data e 1 de leitura negativa). `pytest` 190 passed (3 novos, 1 existente corrigido: o esperado de `09-01-2025`). Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos. Frontend não alterado. `make` não existe neste shell; os mesmos comandos foram rodados diretamente.
+
+### [2026-10-23] - Upload aceita a planilha no formato real do campo (conciliação pela UC)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - O `inspecoes.xlsx` real não era aceito (0 das 1.389 linhas): o `id_inspecao` real é `IN0000007` (não é um id de ordem do portal) e as colunas se chamam `data`, `resultado` e `inspetor`.
+  - **Apelidos de coluna** (`upload_parser.py`): `data` vira `data_inspecao`, `resultado` vira `irregularidade_constatada` e `inspetor` vira `fiscal_responsavel`. O apelido nunca sobrescreve uma coluna que já exista no arquivo. O arquivo passa a ser aceito se tiver `id_inspecao` **ou** `id_uc`.
+  - **Conciliação pela UC** (`upload_reconcile.py`): quando o `id_inspecao` não é um id do portal, a linha casa com a **ordem ativa** (`gerada` ou `pendente`) da `id_uc`. Um id numérico do portal continua tendo prioridade, então a planilha exportada pelo portal funciona como antes. Sem ordem ativa, a linha é recusada com "UC X sem ordem ativa (gerada ou em campo) no portal."; duas linhas da mesma UC mantêm a primeira. Linha sem resultado continua sendo ignorada, não recusada.
+  - `LossService.upload_field_results` busca as ordens ativas só das UCs de linhas sem id do portal (`get_active_order_ids_by_uc`, em lotes de 500, consulta parametrizada).
+  - Para respeitar o teto de 300 linhas, `get_order_statuses` e `apply_field_results` saíram de `repository.py` (286 → 243 linhas) para o novo `upload_repository.py` (`FieldUploadRepositoryMixin`, herdado pelo `LossRepository`), sem mudar comportamento nem assinatura.
+- **Verificação com o arquivo real** (fora do repositório; o zip é local e ignorado pelo git, então não há teste versionado com ele):
+  - Com ordens ativas para todas as UCs: 1.389 conciliadas (871 irregulares, 518 regulares), 0 recusadas, 0 ignoradas, 1.473.112 kWh.
+  - Cenário de demonstração, com 100 UCs com ordem ativa: 100 conciliadas e 1.289 recusadas, todas pelo mesmo motivo ("sem ordem ativa").
+- **Limitações e decisões:**
+  - **Correção da revisão:** uma aba só com `id_uc` passou a ser lida como dados, e uma aba de resumo com essa coluna geraria recusas espúrias. Agora `id_inspecao` continua bastando sozinho, mas `id_uc` só vale junto com a coluna de resultado (já com o apelido `resultado` aplicado); um CSV ou uma pasta de trabalho sem nenhuma aba de dados é recusado com a mensagem de coluna ausente. O `inspecoes.xlsx` real segue sendo lido por inteiro.
+  - `data_inspecao` e o id externo (`IN0000007`) continuam sem ser gravados: a ordem não tem essas colunas.
+  - O resumo do upload pode listar mais de mil recusas quando o arquivo traz muito mais UCs do que ordens abertas. Não avaliei como a tela do modal exibe uma lista tão longa.
+  - Conciliar pela UC assume que a planilha é do ciclo atual: se a equipe devolver o resultado de uma inspeção antiga de uma UC que hoje tem outra ordem ativa, a ordem nova será concluída. Fica registrado como risco aceito; o gerente vê as ordens conciliadas no resumo.
+- **Validação de Testes:**
+  - RED confirmado (10 testes novos falhando antes). `pytest` 201 passed (11 novos). Ruff OK, Pylint 10.00/10, Pyright 0 erros, import-linter 4 contratos mantidos. Frontend não alterado. `make` não existe neste shell; os mesmos comandos foram rodados diretamente.
+
+### [2026-10-23] - Competência de referência configurável para a demonstração da fila
+- **Autor:** Adrian Cesar
+- **Por quê:** com os dados do case tratados, a fila da competência mais recente (2026-06) fica vazia: a onda de quedas foi em meados de 2025 e já foi inspecionada. Calculada em `2025-08`, antes de a equipe sair a campo, a fila tem centenas de UCs e permite mostrar o fluxo completo.
+- **O que foi feito:**
+  - Nova configuração opcional `LOSS_REFERENCE_COMPETENCIA` (`YYYY-MM`, validada por regex; comentada em `.env.example`). Ausente = comportamento de produção (competência mais recente). Se for igual ou posterior à última dos dados, não tem efeito.
+  - Novo `reference.py` (`resolve_analysis_reference`): escolhe a competência e o limite do histórico. `LossRepository` recebe a competência fixada (injetada por `get_loss_service` via `Depends(get_settings)`, sobrescrevível nos testes) e a usa na fila e no kWh das novas ordens, que seguem a mesma regra.
+  - **Sem vazamento do futuro:** só as inspeções de `fato_inspecoes_perdas` feitas até o fim da competência de referência excluem a UC (`history_until`); sem isso a onda inteira seria excluída pelas inspeções de ago a dez de 2025 e a fila ficaria vazia.
+  - **Defeito encontrado pelos testes:** a janela "recente" de `consumption_subquery` não tinha limite superior, então a referência passada ainda somava as leituras de meses posteriores. `ConsumptionWindows` ganhou `fim_recente` e a consulta limita a janela a ele. Em tempo real não muda nada (a referência é a última competência).
+  - Aviso `competencia_referencia_fixada` na resposta da fila e banner "Competência de referência fixada." no frontend, para a demonstração não ser confundida com produção.
+- **Verificação com os dados reais** (API em memória sobre uma cópia do banco tratado, fora do repositório, referência `2025-08`): fila de 200 UCs (o limite); 200 ordens geradas, todas com kWh > 0 (418.380 kWh); exportação de 200 linhas; upload do `inspecoes.xlsx` real com 198 conciliadas (188 irregulares, **94,9%** de acerto contra 62,7% da média geral) e 1.191 recusadas só por "UC sem ordem ativa". O kWh recuperado apurado nas 198 foi 718.226, contra 418.380 estimados nas 200 ordens: a fórmula do déficit (mensal × 3 meses) subestima o recuperado nesses dados; vale registrar na Fase 8.
+- **Limitações e decisões:**
+  - As ordens do próprio sistema (`ordem_inspecao`) continuam excluindo a UC em tempo real, sem respeitar a competência fixada: elas nascem na demonstração, não vêm do histórico.
+  - A demonstração precisa das tabelas Gold no `v_energy.db` (hoje só existe `ordem_inspecao`). Os números acima vêm de um banco de simulação local feito a partir das bases brutas do case; a demonstração real depende da Gold de Renan e Ryei (Fase 7).
+  - `queries.py` chegou a 290 linhas (teto de 300); a consulta da fila foi extraída para `queue_query.py` na revisão de padrões de 2026-10-23 (abaixo).
+  - **Correção da revisão:** `LOSS_REFERENCE_COMPETENCIA=""` (estilo do `GEMINI_API_KEY=""` do `.env.example`) derrubava a validação de `Settings`, que é compartilhada por autenticação, chat e banco. Agora valor vazio vale "sem referência"; um valor preenchido e inválido (ex.: `2025-13`) continua falhando de propósito. A descrição de `score_risco` na API deixou de se chamar "probabilidade" (existe `probabilidade_acerto`) e diz que ele só desempata.
+  - A tela de upload com mais de mil recusas não foi avaliada no navegador.
+- **Validação de Testes:**
+  - RED confirmado (os novos testes nem coletavam; depois, 2 falharam pelo defeito da janela sem limite superior). Backend: 18 testes novos, `pytest` 219 passed; Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos; Pyright 0 erros nos arquivos da fatia (4 erros preexistentes em `app/core/llm_factory/providers`, fora desta fatia). Frontend: 1 teste novo, `vitest` 35 passed; ESLint OK, `tsc -b` sem erros, Fallow 0 acima do limite. `make` não existe neste shell; os mesmos comandos foram rodados diretamente.
+
+### [2026-10-23] - Fase 8: decisões e suposições da fatia documentadas
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Criado `docs/DECISOES_PERDAS.md` no formato do esqueleto de `docs/DECISOES.md` (decisão, impacto, como garantir conformidade): 10 decisões (D1 a D10), os números que as sustentam e as limitações. As cinco suposições da Fase 8 estão marcadas no checklist.
+  - Medições novas que o documento registra: acerto por faixa de queda (até 0% = 10,4%; 20 a 40% = 14,7%; **40 a 50% = 64,9%**; 50 a 60% = 92,9%; 60 a 80% = 92,5%), taxa de acerto do sinal de queda >= 50% (92,6%, 770 casos) e com GD (3,2%, 31 casos), e a comparação entre o kWh estimado e o recuperado nas 188 ordens irregulares da demonstração.
+- **Achados que ficam para decisão do time (não alterei o código):**
+  - **O limiar de 50% é conservador:** a faixa de 40 a 50% acerta 64,9%, quase a média geral. Baixar para 40% aumentaria a fila com UCs de acerto médio.
+  - **A fórmula do kWh subestima o valor absoluto** (recuperado = 1,87× o estimado em mediana, 176 de 188 UCs), mas **ordena bem** (correlação 0,87). Os dados sugerem cerca de 5,6 meses em vez de 3. Mudar `JANELA_RECUPERACAO_MESES` altera os kWh e R$ exibidos, não a ordem da fila.
+  - A taxa de leitura zerada segue suposição: o sinal nunca ocorre nos dados.
+- **Não feito, de propósito:** o `README.md` principal e o `docs/DECISOES.md` são arquivos compartilhados (o segundo ainda é um esqueleto da equipe), então não os editei para não gerar conflito de merge. O PDF exige as suposições no README: basta acrescentar lá um link para `docs/DECISOES_PERDAS.md`.
+- **Validação:** só documentação; nenhum código foi alterado nesta fase. As evidências vêm das medições feitas nas bases brutas do case, e os scripts delas não estão versionados (o método de cada número está descrito no documento).
+
+### [2026-10-23] - Revisão de padrões: funções curtas, atribuição única e docstrings
+- **Autor:** Adrian Cesar
+- **Por quê:** `ruff`, `pylint` e `import-linter` passavam, mas a skill `backend-coding-standards` é mais rígida que o `pylint` (funções de no máximo 30 linhas, sem reatribuição de variável, docstring em toda função pública). Uma auditoria por AST apontou os desvios; nenhum comportamento mudou.
+- **O que foi feito:**
+  - Funções acima de 30 linhas decompostas: `consumption_subquery` (`_consumption_aggregates`), `excluded_units_query` (`_system_orders_query`, `_field_history_query`), `suspicious_profiles_query` (`_candidate_select`, `_candidate_conditions`), `fetch_consumption_profiles` (`_read_queue_rows`), `upload_field_results` (`skipped_rejections`), `reconcile_rows` (`reconcile_row`, `RowOutcome`, `ensure_not_duplicated`) e `build_update`.
+  - Reatribuições eliminadas: `parse_kwh` (`number_from_cell`), `rows_from_xlsx` (`sheet_rows`, lista `sheets_with_key_column`) e `parse_order_id` (`integer_from_cell`).
+  - `get_settings` ganhou docstring Google-style.
+  - Consulta da fila movida para o novo `queue_query.py` (129 linhas): `queries.py` passaria de 300 linhas com os helpers (`pylint` C0302). `queries.py` ficou com 195. Efeito colateral: `repository.py` e `test_loss_queries.py` passaram a importar `suspicious_profiles_query` de `queue_query`.
+  - Frontend revisado contra `frontend-coding-standards`: sem desvios nos arquivos alterados.
+- **Atenção:** a leitura de cada aba do XLSX agora é materializada por inteiro (`sheet_rows` devolve lista), em vez de linha a linha; só pesa se uma única aba for muito grande.
+- **Validação de Testes:**
+  - Backend: `pytest` 227 passed (nenhum teste alterado além de um import); Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos; auditoria de regras da skill sem apontamentos. Frontend: `vitest` 35 passed, ESLint OK, Fallow 0 acima do limite. Pyright não foi rodado nesta revisão. `make` não existe neste shell; os mesmos comandos foram rodados diretamente.

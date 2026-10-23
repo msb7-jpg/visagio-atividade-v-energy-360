@@ -59,7 +59,7 @@
 ## 3. Checklist Operacional de Execução
 
 - [x] Criar pasta `backend/app/features/loss_management/` com schemas, repositório, serviço e rotas CRUD.
-- [ ] Implementar endpoint de exportação de dados em CSV/XLSX.
+- [x] Implementar endpoint de exportação de dados em CSV/XLSX. (somente CSV, Fase 5; o `atividade.pdf` não define o formato e o XLSX não foi implementado)
 - [x] Implementar endpoint multipart de upload de planilha com validação e conciliação no banco.
 - [x] Registrar rotas em `backend/app/api/v1/router.py`.
 - [x] Criar testes unitários e de integração em `backend/tests/test_loss_management_service.py` e `test_loss_router.py`.
@@ -103,7 +103,10 @@
 - [x] Fila funciona sem `fato_inspecoes_perdas` (sem excluir o histórico de campo), avisando que o histórico não foi aplicado. (resposta passou a ser o envelope `{itens, avisos}`; banner na aba da fila)
 - [x] Remover a dupla contagem da queda na prioridade (`score × kWh` ≈ queda² × base). (fila ordena por kWh a recuperar; score só desempata)
 - [x] Ordens fora do `v_energy.db` (ou garantia do pipeline de que a exportação não recria o arquivo). (Decisão: `ordem_inspecao` fica no `v_energy.db`; o padrão de exportação da skill `medallion-lakehouse-pipeline` §5 grava cada tabela Gold com `if_exists="replace"` e não recria o arquivo. Confirmar a premissa com Renan e Ryei na Fase 0.)
-- [ ] Tarifa real de `fato_faturamento` no valor a recuperar (aguarda Ryei) e prioridade pela taxa histórica de acerto.
+- [x] Prioridade pela taxa histórica de acerto: a fila ordena por kWh esperado (kWh a recuperar × taxa de acerto do sinal) e o score só desempata. (taxas 0,93 para queda súbita e 0,627 geral para leitura zerada isolada; a de leitura zerada ainda não foi medida)
+- [x] Consumo negativo ignorado na fila: leituras com `consumo_kwh < 0` (troca de medidor ou sinal invertido na origem) não entram nas médias. Na base bruta, 81 de 81 UCs da fila vinham dessas leituras.
+- [x] Competência de referência configurável para a demonstração (`LOSS_REFERENCE_COMPETENCIA`, formato `YYYY-MM`; ausente = competência mais recente): a fila e o kWh das novas ordens usam os dados até essa competência, só as inspeções feitas até o fim dela excluem a UC, e a tela mostra o aviso "Competência de referência fixada". Com `2025-08` nos dados do case, a fila tem 200 UCs e o top 200 acertou 94,9% (198 conciliadas, 188 irregulares).
+- [ ] Tarifa real de `fato_faturamento` no valor a recuperar (aguarda Ryei).
 
 ### Fase 3 — Conformidade com `backend-coding-standards`
 - [x] Docstrings Google-style nos métodos públicos (repositório, serviço, rotas, fábrica de DI). Também em `queries.py` e `scoring.py`.
@@ -127,16 +130,20 @@
 - [x] Normalizar a bagunça real de campo (ref. `inspecoes.xlsx`): variações de `resultado` ("CONFIRMADA", "irregularidade confirmada", "NADA CONSTA"), datas (`2025-08-01`, `14.08.2025`, `09-01-2025`), decimais com vírgula, múltiplas abas.
 - [x] Retornar `UploadResultDTO` (conciliadas, rejeitadas com motivo, kWh total) sem abortar o lote por uma linha inválida.
 - [x] Modal drag-and-drop no frontend.
+- [x] Correção: datas com hífen (`NN-NN-AAAA`) são mês-dia-ano, como no `inspecoes.xlsx` real (46 datas lidas corretamente; antes 33 eram rejeitadas e 12 viravam a data errada).
+- [x] Upload aceita o formato real do campo (`inspecoes.xlsx`): apelidos `data`, `resultado` e `inspetor`; quando o `id_inspecao` não é um id do portal (ex.: `IN0000007`), a linha casa pela ordem ativa da `id_uc`. Com ordens ativas, as 1.389 linhas reais são conciliadas.
 
 ### Fase 7 — Troca do provisório pela Gold real
 - [ ] Quando Renan/Ryei exportarem a Gold: **apagar** o seed local da Fase 1 e as tabelas geradas por ele, rodar a fila contra os dados reais e conferir os números.
 
 ### Fase 8 — Documentação e suposições (README / changelog)
-- [ ] Taxa real de acerto das inspeções nos dados: **62,7%** (a fala cita "pouco mais da metade").
-- [ ] Limiar de queda ≥ 50%: **93%** de acerto nas inspeções históricas com esse sinal.
-- [ ] Exclusão de UCs com GD: **3%** de acerto nas 31 inspeções em UCs com painel solar.
-- [ ] Fila quase vazia na competência mais recente (2026-06) é esperada: a onda de quedas de meados de 2025 já foi inspecionada.
-- [ ] Fórmula da energia estimada a recuperar (déficit mensal × 3 meses) como suposição.
+> Tudo abaixo está documentado em [`docs/DECISOES_PERDAS.md`](../../DECISOES_PERDAS.md) (decisão, impacto e conformidade).
+
+- [x] Taxa real de acerto das inspeções nos dados: **62,7%** (a fala cita "pouco mais da metade"). (§1 do documento)
+- [x] Limiar de queda ≥ 50%: **92,6%** de acerto nas inspeções históricas com esse sinal (770 casos); a faixa de 40 a 50% já acerta 64,9%, então o limiar é conservador. (D2)
+- [x] Exclusão de UCs com GD: **3,2%** de acerto nas 31 inspeções em UCs com painel solar. (D3)
+- [x] Fila quase vazia na competência mais recente (2026-06) é esperada: a onda de quedas de meados de 2025 já foi inspecionada. (D9)
+- [x] Fórmula da energia estimada a recuperar (déficit mensal × 3 meses) como suposição. Medido: o recuperado foi 1,87× o estimado (mediana), com correlação de 0,87. (D7)
 
 ---
 
