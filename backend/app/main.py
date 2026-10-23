@@ -11,6 +11,7 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.core.profiler import QueryProfilerMiddleware
 from app.db.session import engine
+from app.features.loss_management.models import InspectionOrder
 from app.shared.error_handlers import register_exception_handlers
 
 configure_logging()
@@ -21,6 +22,9 @@ settings = get_settings()
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Gerencia ciclo de vida dos recursos assíncronos e encerramento do pool."""
     del app
+    # Tabelas operacionais escritas pela API (as tabelas Gold vêm do pipeline)
+    async with engine.begin() as connection:
+        await connection.run_sync(InspectionOrder.metadata.create_all)
     try:
         yield
     finally:
