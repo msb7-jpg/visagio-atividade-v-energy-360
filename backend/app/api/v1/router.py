@@ -12,10 +12,8 @@ from app.features.revenue.router import router as revenue_router
 api_router = APIRouter()
 api_router.include_router(auth_router)
 api_router.include_router(agent_router)
+api_router.include_router(customer360_router)
 api_router.include_router(grid_quality_router)
-api_router.include_router(revenue_router)
 api_router.include_router(loss_router)
-api_router.include_router(customer360_router)
-api_router.include_router(customer360_router)
 api_router.include_router(revenue_router)
-api_router.include_router(loss_router)
+
