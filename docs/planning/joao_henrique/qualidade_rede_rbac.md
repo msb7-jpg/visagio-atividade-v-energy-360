@@ -35,11 +35,23 @@
 
 - Os valores de DEC e FEC são simplificados: servem para comparar alimentadores e períodos entre si, não com os limites regulatórios reais.
 - Cada registro de ocorrência corresponde a uma UC interrompida.
-- **DEC** = soma das durações das interrupções (horas) ÷ UCs do alimentador (fixo ou mensal: pendente, B2).
-- **FEC** = nº de ocorrências ÷ UCs do alimentador (fixo ou mensal: pendente, B2); cada linha da base é uma UC.
+- **DEC** = soma das durações das interrupções (horas) ÷ UCs atendidas do alimentador; **FEC** = UCs interrompidas ÷ UCs atendidas. Denominador **fixo** (UCs por alimentador), conforme ADR-003 e a Gold da Fatia 02 (Ryei, branch ainda sem merge). B2 respondida.
+- **Grade completa de 48 meses:** meses sem interrupção têm DEC = FEC = 0. A coluna `ucs_atingidas` foi substituída por `ucs_atendidas` e `ucs_interrompidas`.
+- **Limite anual e acumulado no ano (ADR-003):** a ANEEL fixa limite anual por conjunto elétrico. A Gold traz DEC/FEC do mês **e** `dec_acumulado_ano_horas` / `fec_acumulado_ano_vezes`; a violação é apurada sobre o acumulado no ano. O backend classifica pelo acumulado (VIOLACAO acima do limite, ALERTA a partir de 85%) e recalcula em Python, sem ler `violou_meta`. B1 informada pelo ADR-003: limite por conjunto (`criterio_limite = CONJUNTO`) e mediana dos 10 conjuntos mapeados para Recife, Paulista, Abreu e Lima e Araçoiaba (`MEDIANA_RMR`).
 - **Pendente:** quais tipos de ocorrência contam como interrupção (hoje a fórmula conta todas as linhas da base).
 - **Observação:** números calculados sobre os dados BRUTOS, antes do pipeline; podem mudar após o Silver/Gold.
-- **Pendente (B1):** os textos de tela usam "limite de referência (suposição pendente, B1)"; os nomes de coluna do contrato do Ryei (`dec_limite_aneel`, `fec_limite_aneel`) permanecem.
+- **Decisão pendente do grupo (tensão ADR-003 × pág. 4 do case):** o ADR-003 usa limites reais da ANEEL (anuais, por conjunto), enquanto a pág. 4 do case diz que os valores são simplificados e não comparáveis com limites reais. Até o grupo decidir, os textos de tela seguem como "limite de referência (suposição pendente, B1)"; os nomes de coluna do contrato (`dec_limite_aneel`, `fec_limite_aneel`) permanecem.
+
+### Contrato real de `fato_qualidade_alimentador` (Gold da Fatia 02, conferido em `origin/feat/fatia-02-faturamento`, commit `65ad127`)
+
+`id_alimentador`, `competencia` (`YYYY-MM`), `conjunto_aneel`, `criterio_limite` (`CONJUNTO` ou `MEDIANA_RMR`), `ucs_atendidas`, `ucs_interrompidas`, `dec_apurado_horas`, `fec_apurado_vezes` (do mês), `dec_acumulado_ano_horas`, `fec_acumulado_ano_vezes`, `dec_limite_aneel`, `fec_limite_aneel` (anuais), `violou_dec`, `violou_fec`, `violou_meta`.
+
+### Respostas do Bernardo (Fatia 03, issue #27)
+
+- RBAC da Visão 360: grupo `CUSTOMER360_ACCESS` (`diretor`, `gerente_atendimento`, `atendente`, `gerente_perdas`) e alias `RequireCustomer360`, criados em `role_groups.py` e `dependencies.py`.
+- Usuário seed `gerente.atendimento@venergy.com` criado por ele no PR dele; esta fatia não cria usuários.
+- Rota do frontend: `/customers`.
+- Tabela de ocorrências ainda **pendente** (Ryei): `id_ocorrencia`, `id_uc`, `alimentador`, `tipo`, `causa`, `data_abertura`, `data_encerramento`, `duracao_min`, com índices em `id_uc` e `alimentador`; 100% das ocorrências são de UCs do mesmo alimentador.
 
 ---
 
@@ -48,10 +60,10 @@
 ### Backend (`backend/app/features/grid_quality/` & `backend/app/features/auth/`):
 - `grid_quality` (rotas registradas em `api/v1/router.py`):
   - `schemas.py`: Schemas Pydantic (`QualityStatus`, `FeederRankingDTO`, `QualityIndicatorsDTO`, `FeederTimeSeriesPointDTO`, `FeederTimeSeriesDTO`).
-  - `rules.py`: Regras puras, sem FastAPI e sem SQLAlchemy: `classify_status` (VIOLACAO, ALERTA a partir de 85% do limite, CONFORME), `delta_dec`, `rank_feeders` e `summarize_indicators` (média simples entre alimentadores; a ponderada por UCs depende da pergunta B2 do grupo).
+  - `rules.py`: Regras puras, sem FastAPI e sem SQLAlchemy: `classify_status` (sobre o acumulado no ano: VIOLACAO acima do limite anual, ALERTA a partir de 85%, CONFORME), `delta_dec` (acumulado menos o limite), `rank_feeders` e `summarize_indicators` (média simples do acumulado no ano entre alimentadores; o denominador já é fixo por alimentador, ADR-003). `FeederScope` guarda conjunto, critério do limite e UCs.
   - `queries.py`: Consultas SQLAlchemy Core sobre `fato_qualidade_alimentador`; único módulo que conhece o nome da tabela e das colunas do contrato.
   - `repository.py`: `GridQualityRepository` sobre `AsyncSession`; falha de tabela ou coluna vira `DatabaseReadError`.
-  - `service.py`: `GridQualityService` com indicadores, ranking e histórico. O limite é lido da coluna do contrato; a origem dele segue em aberto (pergunta B1).
+  - `service.py`: `GridQualityService` com indicadores, ranking e histórico. O limite é lido da coluna do contrato (anual, por conjunto ou mediana RMR, ADR-003); a decisão do grupo entre o ADR-003 e a pág. 4 do case segue pendente (B1).
   - `dependencies.py`: Fábrica `get_grid_quality_service` e alias `GridQualitySvc`.
   - `router.py`: Rotas `GET /quality/indicators` (`competencia`), `/quality/feeders` (`competencia`, `status`) e `/quality/feeders/{id_alimentador}/history` (`meses`, de 1 a 48, padrão 48), sob `/api/v1`, protegidas com `RequireOperacao`.
 - `auth/rbac`:
@@ -87,9 +99,9 @@
 - [x] Registrar rotas em `backend/app/api/v1/router.py`. (também incluídos `grid_quality.service` e `grid_quality.rules` no contrato 1 do import-linter em `backend/pyproject.toml`)
 - [x] Criar testes unitários em `backend/tests/test_grid_quality_service.py` e `test_rbac.py` (garantindo bloqueio 403 para rotas não autorizadas). Também: `test_grid_quality_repository.py`, `test_grid_quality_router.py` e `test_grid_quality_imports.py`.
 - [x] Garantir conformidade com `make lint-backend`.
-- [ ] Criar pasta `frontend/src/features/grid_quality/` com componentes $\le 150$ linhas.
-- [ ] Implementar layout base `AppLayout.tsx` e `SidebarNav.tsx` adaptativo por perfil de cargo.
-- [ ] Configurar redirecionamento automático por cargo no login em `frontend/src/routes/AppRoutes.tsx`.
+- [x] Criar pasta `frontend/src/features/grid_quality/` com componentes $\le 150$ linhas.
+- [x] Implementar layout base `AppLayout.tsx` e `SidebarNav.tsx` adaptativo por perfil de cargo.
+- [x] Configurar redirecionamento automático por cargo no login em `frontend/src/routes/AppRoutes.tsx`.
 - [ ] Criar testes no frontend com Vitest em `GridQualityPage.test.tsx` e `RbacNavigation.test.tsx`.
 - [ ] Garantir conformidade com `make lint-frontend`.
 
@@ -142,8 +154,8 @@
   - Mecanismo de rota protegida `ProtectedRoute.tsx` em `frontend/src/routes/`.
 - **O que João Henrique RECEBE dos outros colegas:**
   - **De Ryei Estevan (Fatia 02):** Consome a tabela `fato_qualidade_alimentador` no SQLite `v_energy.db` para alimentar os cards e o ranking.
-    - **Dependência pendente:** tabela de ocorrências com causa (CLIMATICA, VEGETACAO, TERCEIROS, FALHA DE EQUIPAMENTO, SOBRECARGA, NAO IDENTIFICADA). O contrato atual de `fato_qualidade_alimentador` não tem causa.
-  - **De Renan (Fatia 01):** Consome `dim_unidade_consumidora` para contabilizar o número de UCs ativas ligadas a cada circuito elétrico, usadas como denominador do DEC e do FEC (UCs do alimentador: fixo ou mensal, pendente, B2). Provável origem do bairro: `dim_unidade_consumidora` (Renan), a confirmar.
+    - **Dependência pendente:** tabela de ocorrências com causa (CLIMATICA, VEGETACAO, TERCEIROS, FALHA DE EQUIPAMENTO, SOBRECARGA, NAO IDENTIFICADA), com colunas `id_ocorrencia`, `id_uc`, `alimentador`, `tipo`, `causa`, `data_abertura`, `data_encerramento`, `duracao_min` e índices em `id_uc` e `alimentador`. O contrato de `fato_qualidade_alimentador` não tem causa.
+  - **De Renan (Fatia 01):** Consome `dim_unidade_consumidora` para contabilizar o número de UCs ativas ligadas a cada circuito elétrico, usadas como denominador do DEC e do FEC (fixo por alimentador, ADR-003; a Gold da Fatia 02 já traz `ucs_atendidas`). Provável origem do bairro: `dim_unidade_consumidora` (Renan), a confirmar.
   - **De Miguel (Fatia 07):**
     - Importa o componente `<ChatDrawer />` e insere o botão de disparo no cabeçalho (*Header*) global do `AppLayout.tsx`.
   - **De Bernardo, Célio e Adrian:** Recebe as rotas e títulos de suas páginas para compor as entradas autorizadas no menu dinâmico do `SidebarNav.tsx`.

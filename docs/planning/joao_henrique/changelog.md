@@ -113,3 +113,57 @@
 - **Pendências:**
   - Conflitos esperados em `router.py` e `pyproject.toml` com as Fatias 03, 04 e 05: resolver na reunião com o grupo, mantendo as linhas de todas as fatias.
   - As demais pendências das entradas anteriores continuam abertas (B1 a B10, frontend da fatia, `v_energy.db` real, tabela de ocorrências com causa).
+
+### [2026-10-23] - Shell RBAC no frontend: `AppLayout`, `SidebarNav` e `navItems`
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Criado `frontend/src/components/layout/`: `navItems.ts` (lista única de telas com os papéis permitidos, espelho de `role_groups.py`, e `navItemsFor(role)`), `SidebarNav.tsx` (links filtrados por `user.role`) e `AppLayout.tsx` (menu lateral, cabeçalho com usuário, papel e logout, `<Outlet />` e ponto de encaixe do `ChatDrawer` da Fatia 07).
+  - `components/layout/__tests__/RbacNavigation.test.tsx`: matriz papel x itens do menu e ocultação de Qualidade e Perdas para `atendente`.
+  - Atendimento (`atendente`, `gerente_atendimento`) vê só "Visão 360 da UC". Atalho do Chat ainda não existe (depende da Fatia 07).
+- **Validação de Testes:**
+  - `make lint-all` e `make test-all` aprovados (398 pytest, 75 vitest).
+- **Pendências:**
+  - `AppLayout` ainda **não está ligado** em `AppRoutes.tsx` (etapa 2); as páginas atuais têm cabeçalho próprio e vão duplicar ao ligar.
+
+### [2026-10-23] - Rotas sob o `AppLayout`, redirecionamento por cargo e acesso negado com retorno
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `frontend/src/routes/AppRoutes.tsx`: rotas protegidas agora ficam dentro de `<AppLayout />`; `/dashboard` passou a exigir `diretor`, `gerente_operacao` ou `gerente_perdas`; o fallback `*` usa `HomeRedirect` (tela inicial do cargo, ou `/login` sem sessão).
+  - `frontend/src/routes/homeRoute.ts`: `homeRouteFor(role)` devolve a primeira tela do menu permitida ao papel. `LoginPage` navega para ela após o login.
+  - `ProtectedRoute`: a tela "Acesso Restrito" ganhou o botão "Voltar à tela inicial".
+  - Arquivos de outras fatias, com autorização do grupo para esta integração: removido o cabeçalho próprio de `DashboardPage` e os botões "Voltar ao painel" de `LossManagementPage` e `Customer360Page`, que o shell passou a cobrir.
+  - `RbacNavigation.test.tsx` estendido: `homeRouteFor` por papel e acesso negado com botão de retorno.
+- **Validação de Testes:**
+  - `make lint-all` e `make test-all` aprovados.
+- **Pendências:**
+  - O item "Qualidade da Rede" do menu ainda aponta para `/quality`, que só ganha rota na etapa 3. `gerente_operacao` abre hoje em `/dashboard` (primeiro item do menu).
+
+### [2026-10-23] - Frontend da Fatia 06: tela `/quality` (DEC/FEC por alimentador)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Criado `frontend/src/features/grid_quality/` no padrão de `loss_management`: `types`, `api/qualityApi.ts`, `queries/qualityQueries.ts` (cache de 5 min; histórico só consulta com alimentador selecionado), `hooks/useGridQualityController.ts` (filtro de status e alimentador aberto), `utils/qualityFormatters.ts` e `components/`.
+  - Componentes (todos abaixo de 150 linhas): `GridQualityPage`, `QualityKpiCards` (DEC médio, FEC médio, alimentadores em violação, com tooltip das fórmulas), `FeederRankingTable`, `QualityStatusBadge`, `FeederHistorySheet` (gaveta lateral) e `FeederTimeSeriesChart` (DEC contra o limite, 48 meses).
+  - Rota `/quality` em `AppRoutes.tsx` para `diretor` e `gerente_operacao`.
+- **Fora do escopo (dependem de decisão ou dado de outro membro):** filtros de município e bairro, aba de região, lista de causas, card de UCs expostas e retorno da manutenção preventiva.
+- **Validação de Testes:**
+  - `make lint-all` e `make test-all` aprovados (398 pytest, 79 vitest). Sem testes da página ainda (etapa 4); tela não conferida no navegador nem contra o `v_energy.db` real.
+- **Pendências:**
+  - Testes Vitest de `GridQualityPage` e conferência manual com o backend.
+
+### [2026-10-23] - Backend alinhado ao ADR-003 (limite anual, acumulado no ano) e RBAC da Visão 360
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Contrato de `fato_qualidade_alimentador` conferido em `origin/feat/fatia-02-faturamento` (Gold e ADR-002/ADR-003): as 15 colunas batem com o esperado; sem divergência.
+  - Commit `ce2e5b5`: `CUSTOMER360_ACCESS` em `role_groups.py`, alias `RequireCustomer360` e matriz em `test_rbac.py` (200 para os 4 papéis, 403 para `gerente_operacao`); `navItems.ts` ganhou o ícone `UserSearch` no item da Visão 360 (os 4 papéis já estavam lá).
+  - Commit `e656d69`: `grid_quality` classifica pelo **acumulado no ano** contra o limite anual. `queries.py` lê acumulados, conjunto, critério e UCs (apuração sem acumulado fica fora); `rules.py` recalcula status e `delta_dec` (acumulado menos o limite) sem ler `violou_meta`; indicadores usam a média do acumulado até a competência. Campos novos nos DTOs de ranking e série: `dec_acumulado_ano_horas`, `fec_acumulado_ano_vezes`, `conjunto_aneel`, `criterio_limite`, `ucs_atendidas`. Nenhum campo existente foi renomeado ou removido.
+  - Novo `FeederScope` em `rules.py` agrupa conjunto, critério e UCs (limite de 10 atributos do Pylint).
+  - Testes: acumulado cruzando o limite, janeiro (acumulado = mensal), virada de ano, limite nulo, `MEDIANA_RMR`, repasse dos campos novos na rota.
+- **Respostas e decisões registradas:**
+  - B1 e B2 informadas pelo ADR-003 e pela Gold do Ryei (branch sem merge): limite anual por conjunto, mediana RMR para Recife, Paulista, Abreu e Lima e Araçoiaba, denominador fixo, grade de 48 meses, `ucs_atingidas` substituída por `ucs_atendidas` e `ucs_interrompidas`.
+  - **Decisão pendente do grupo:** seguir o ADR-003 (limites reais) ou a pág. 4 do case (valores simplificados, não comparáveis com limites reais). Textos de tela mantidos como "limite de referência (suposição pendente, B1)".
+  - Bernardo (issue #27): `CUSTOMER360_ACCESS`, usuário `gerente.atendimento@venergy.com`, rota `/customers` e tabela de ocorrências ainda pendente (colunas e índices em `qualidade_rede_rbac.md`).
+- **Validação de Testes:**
+  - `make lint-all` aprovado (Ruff, Pylint 10/10, import-linter, ESLint, Fallow) e `make test-all`: 418 pytest e 79 vitest.
+- **Pendências:**
+  - O frontend (`grid_quality/types`, textos e gráfico) ainda lê só os campos mensais; precisa passar a mostrar o acumulado no ano.
+  - Merge da Gold da Fatia 02 e validação contra o `v_energy.db` real.
