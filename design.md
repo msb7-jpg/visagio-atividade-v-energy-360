@@ -88,6 +88,7 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 | **Bordas Estruturais** | `#E2E8F0` / `rgba(255,255,255,0.12)` | `border-border` | Divisores, bordas de tabela e contornos de cards |
 | **Bordas de Formulário** | `#E2E8F0` / `rgba(255,255,255,0.14)` | `border-input` | Contorno de inputs e caixas de seleção |
 | **Destrutivo / Alerta** | `oklch(0.58 0.22 25)` | `bg-destructive text-destructive-foreground` | Botões de exclusão, badges de erro e alertas |
+| **Atenção / Warning** | `oklch(0.80 0.16 80)` (Dark) / `oklch(0.52 0.14 65)` (Light) | `text-warning border-warning/50 bg-warning/10` (ou `<Alert variant="warning">`) | Avisos que não bloqueiam o uso, como dados parcialmente indisponíveis |
 | **Gradiente Institucional** | `#0F172A` $\to$ `#1E40AF` | `glass-gradient` | Fundo da tela de login e banners hero |
 
 ---

@@ -21,6 +21,8 @@ dependencies = [
     "langchain-google-genai>=4.4.0",
     "langchain-openai>=1.7.2",
     "langchain-groq>=1.1.3",
+    "openpyxl>=3.1.5",
+    "python-multipart>=0.0.32",
 ]
 
 [project.optional-dependencies]
@@ -263,6 +265,12 @@ source_modules = [
     "app.features.customer360.consumption_analysis",
     "app.features.customer360.yoy_totals",
     "app.features.customer360.search_terms",
+    "app.features.revenue.service",
+    "app.features.revenue.decomposition",
+    "app.features.revenue.kpis",
+    "app.features.revenue.breakdown",
+    "app.features.loss_management.service",
+    "app.features.loss_management.scoring",
 ]
 forbidden_modules = [
     "fastapi",
