@@ -3,11 +3,21 @@ import { LoginPage } from '@/features/auth/components/LoginPage'
 import { DashboardPage } from '@/features/auth/components/DashboardPage'
 import { LossManagementPage } from '@/features/loss_management/components/LossManagementPage'
 import { Customer360Page } from '@/features/customer360/components/Customer360Page'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from './ProtectedRoute'
+import { homeRouteFor } from './homeRoute'
 
 // Mesmo RBAC do backend (`LOSS_ROLES` em loss_management/router.py).
+const DASHBOARD_ROLES = ['diretor', 'gerente_operacao', 'gerente_perdas']
 const LOSS_ROLES = ['diretor', 'gerente_perdas']
 const CUSTOMER360_ROLES = ['diretor', 'gerente_atendimento', 'atendente', 'gerente_perdas']
+
+/** Leva o usuário logado à tela inicial do cargo; sem sessão, o ProtectedRoute da rota destino manda ao login. */
+function HomeRedirect() {
+  const { user } = useAuth()
+  return <Navigate to={user ? homeRouteFor(user.role) : '/login'} replace />
+}
 
 /**
  * Definição central de roteamento da aplicação com separação entre rotas públicas e protegidas.
@@ -20,19 +30,23 @@ export function AppRoutes() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Rotas Protegidas */}
+        {/* Rotas Protegidas: shell comum, acesso por cargo em cada rota */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-        </Route>
-        <Route element={<ProtectedRoute allowedRoles={LOSS_ROLES} />}>
-          <Route path="/losses" element={<LossManagementPage />} />
-        </Route>
-        <Route element={<ProtectedRoute allowedRoles={CUSTOMER360_ROLES} />}>
-          <Route path="/customers" element={<Customer360Page />} />
+          <Route element={<AppLayout />}>
+            <Route element={<ProtectedRoute allowedRoles={DASHBOARD_ROLES} />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={LOSS_ROLES} />}>
+              <Route path="/losses" element={<LossManagementPage />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={CUSTOMER360_ROLES} />}>
+              <Route path="/customers" element={<Customer360Page />} />
+            </Route>
+          </Route>
         </Route>
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<HomeRedirect />} />
       </Routes>
     </BrowserRouter>
   )

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { homeRouteFor } from '@/routes/homeRoute'
 
 /**
  * Página de login com design corporativo SaaS Enterprise Analytics (design.md).
@@ -26,8 +27,8 @@ export function LoginPage() {
     submitEvent.preventDefault()
     setErrorMsg(null)
     try {
-      await login({ email, senha })
-      navigate('/dashboard')
+      const { user } = await login({ email, senha })
+      navigate(homeRouteFor(user.role))
     } catch (err: unknown) {
       if (err instanceof Error) {
         setErrorMsg(err.message)
