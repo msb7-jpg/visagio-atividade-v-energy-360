@@ -1,7 +1,7 @@
 # ⚡ Fatia 02: Faturamento, Rede & Atendimento (Ponta a Ponta)
 
 > **Dono Único:** Ryei Estevan  
-> **Status:** Não Iniciado  
+> **Status:** Em andamento (Fases 1, 2 e 3 concluídas; Fase 4 a iniciar)  
 > **Skill de Referência:** [`.agents/skills/medallion-lakehouse-pipeline/SKILL.md`](.agents/skills/medallion-lakehouse-pipeline/SKILL.md)  
 > **Log Individual:** [`changelog.md`](changelog.md)
 
@@ -37,30 +37,30 @@
 ## 3. Checklist Operacional de Execução
 
 ### Fase 1: Ingestão na Camada Bronze
-- [ ] Ingestão de `faturas.csv` e `ocorrencias_rede.csv` sem alterações de valores.
-- [ ] Leitura e parsing de `atendimentos.json` preservando a estrutura original em colunas Struct/Array do Delta.
-- [ ] Leitura das 3 abas da planilha `inspecoes.xlsx`.
-- [ ] Adicionar metadados `_ingested_at` e `_source_file` em todas as tabelas.
-- [ ] Gravar tabelas Delta Bronze:
+- [x] Ingestão de `faturas.csv` e `ocorrencias_rede.csv` sem alterações de valores.
+- [x] Leitura e parsing de `atendimentos.json` preservando a estrutura original em colunas Struct/Array do Delta.
+- [x] Leitura das 3 abas da planilha `inspecoes.xlsx`.
+- [x] Adicionar metadados `_ingested_at` e `_source_file` em todas as tabelas.
+- [x] Gravar tabelas Delta Bronze:
   - `bronze_faturas`
   - `bronze_ocorrencias_rede`
   - `bronze_atendimentos`
   - `bronze_inspecoes`
 
 ### Fase 2: Higienização e Padronização na Camada Silver
-- [ ] **Faturas:** Padronizar bandeiras tarifárias (verde, amarela, vermelha 1 e 2), converter valores em R$ para `DecimalType(18, 4)` e calcular status de adimplência.
-- [ ] **Ocorrências de Rede:** Tipar início e fim da interrupção como `TimestampType`, calcular duração em horas e normalizar códigos de causa (acidental, programada, emergência).
-- [ ] **Atendimentos:** Explodir/normalizar array de tratativas mantendo rastreabilidade do protocolo, motivo do chamado e nota CSAT (0 a 10).
-- [ ] **Inspeções:** Unificar as 3 abas da planilha Excel, padronizando motivos de suspeita, irregularidade constatada (sim/não) e energia recuperada em kWh.
+- [x] **Faturas:** Padronizar bandeiras tarifárias (verde, amarela, vermelha 1 e 2), converter valores em R$ para `DecimalType(18, 4)` e calcular status de adimplência.
+- [x] **Ocorrências de Rede:** Tipar início e fim da interrupção como `TimestampType`, calcular duração em horas e normalizar códigos de causa (acidental, programada, emergência).
+- [x] **Atendimentos:** Explodir/normalizar array de tratativas mantendo rastreabilidade do protocolo, motivo do chamado e nota CSAT (0 a 10).
+- [x] **Inspeções:** Unificar as 3 abas da planilha Excel, padronizando motivos de suspeita, irregularidade constatada (sim/não) e energia recuperada em kWh.
 
 ### Fase 3: Camada Gold & Cálculo Regulatório ANEEL
-- [ ] Construir a tabela de fatos `fato_faturamento`:
+- [x] Construir a tabela de fatos `fato_faturamento`:
   - `id_fatura`, `id_uc`, `competencia`, `valor_total_rs`, `consumo_faturado_kwh`, `bandeira_tarifaria`, `tarifa_aplicada_rs_kwh`, `data_vencimento`, `data_pagamento`, `status_pagamento`.
-- [ ] **Cálculo Oficial do DEC e FEC ANEEL:**
+- [x] **Cálculo Oficial do DEC e FEC ANEEL:**
   - Implementar fórmula por alimentador e competência:
     $$\text{DEC} = \frac{\sum (t \times C_{\text{int}})}{C_{\text{total}}}, \quad \text{FEC} = \frac{\sum C_{\text{int}}}{C_{\text{total}}}$$
   - Gerar tabela `fato_qualidade_alimentador` contendo `id_alimentador`, `competencia`, `dec_apurado_horas`, `fec_apurado_vezes`, `dec_limite_aneel`, `fec_limite_aneel` e status de estouro de meta.
-- [ ] Construir `fato_inspecoes_perdas` e `fato_atendimentos`.
+- [x] Construir `fato_inspecoes_perdas` e `fato_atendimentos`.
 
 ### Fase 4: Orquestração no Databricks & Exportação SQLite
 - [ ] Atualizar e validar o Workflow em `data-engineering/job.yaml` orquestrando o DAG completo.
@@ -73,8 +73,8 @@
 - [ ] Escrever o Dicionário de Dados oficial em `docs/DATA_DICTIONARY.md`.
 
 ### Fase 5: Testes Automatizados de Qualidade
-- [ ] Implementar asserções PySpark para:
-  - Consistência contábil das faturas (valor total = consumo $\times$ tarifa + encargos).
+- [x] Implementar asserções PySpark para (`data-engineering/notebooks/fatia02_testes_qualidade.py`):
+  - Consistência contábil das faturas (valor total = valor da energia + tributos; ver changelog 2026-10-23).
   - DEC $\ge 0$ e FEC $\ge 0$ em todos os alimentadores.
   - Ausência de registros órfãos entre faturas e cadastro.
 
