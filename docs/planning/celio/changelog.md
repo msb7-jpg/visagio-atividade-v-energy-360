@@ -67,3 +67,16 @@
   - Histórico mensal por bairro, `EXPLAIN QUERY PLAN` com contador de queries, `EndpointDoc` e ADR (23/10).
 - **Validação de Testes:**
   - `make lint-all` e `make test-all` passando (76 testes no backend).
+
+### [2026-10-23] - Histórico mensal por bairro
+- **Autor:** Celio
+- **O que foi feito:**
+  - `backend/app/features/revenue/history.py`: cálculo puro da série mensal contínua de volume, receita e tarifa média, preenchendo com zero os meses sem faturamento.
+  - `queries.py`, `repository.py`, `service.py`, `dependencies.py` e `router.py`: rota `GET /api/v1/revenue/history` (bairro, `competencia_fim`, `meses`, `classe_consumo`), restrita à Diretoria.
+  - `backend/tests/test_revenue_history.py` (7 testes) e `test_revenue_router.py` (+6 testes de integração).
+- **Dificuldades / Desafios:**
+  - Pendente: confirmar com Dados se a receita usa `valor_total_rs` (com tributos) ou `valor_energia_rs`, e validar contra os números do diretor com dados reais.
+- **Próximos Passos:**
+  - Base real (script ou banco do Bernardo), `EXPLAIN QUERY PLAN`, ADR e `EndpointDoc`; depois o frontend `/revenue`.
+- **Validação de Testes:**
+  - `make test-all`: 310 testes no backend passando; lint sem erros novos (o `unsorted-imports` em `api/v1/router.py` vem da `main` e é corrigido no PR de integração do João).

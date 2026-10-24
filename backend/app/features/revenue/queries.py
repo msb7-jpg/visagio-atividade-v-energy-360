@@ -92,3 +92,19 @@ def period_totals_query(base: PeriodWindow, current: PeriodWindow, filters: Reve
         .select_from(faturas_com_cadastro)
         .where(or_(in_window(base), in_window(current)), *optional_conditions(filters))
     )
+
+
+def monthly_totals_query(window: PeriodWindow, filters: RevenueFilters) -> Select:
+    """Volume e receita por competência na janela, já filtrados por município, bairro e classe."""
+    competencia = fato_faturamento.c.competencia
+    return (
+        select(
+            competencia,
+            func.coalesce(func.sum(fato_faturamento.c.consumo_faturado_kwh), 0).label("volume_kwh"),
+            func.coalesce(func.sum(fato_faturamento.c.valor_total_rs), 0).label("receita_rs"),
+        )
+        .select_from(faturas_com_cadastro)
+        .where(in_window(window), *optional_conditions(filters))
+        .group_by(competencia)
+        .order_by(competencia)
+    )

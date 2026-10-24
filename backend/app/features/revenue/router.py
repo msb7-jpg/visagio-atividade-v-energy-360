@@ -1,7 +1,19 @@
 from fastapi import APIRouter
 
-from app.features.revenue.dependencies import BaseWindow, BreakdownParams, CurrentWindow, Filters, RevenueSvc
-from app.features.revenue.schemas import BreakdownRowDTO, PriceVolumeDecompositionDTO, RevenueKpisDTO
+from app.features.revenue.dependencies import (
+    BaseWindow,
+    BreakdownParams,
+    CurrentWindow,
+    Filters,
+    HistoryRequest,
+    RevenueSvc,
+)
+from app.features.revenue.schemas import (
+    BreakdownRowDTO,
+    NeighborhoodHistoryDTO,
+    PriceVolumeDecompositionDTO,
+    RevenueKpisDTO,
+)
 from app.shared.dependencies import RequireDiretoria
 from app.shared.pagination import PaginatedResponse
 
@@ -73,3 +85,20 @@ async def get_breakdown(
 ) -> PaginatedResponse[BreakdownRowDTO]:
     """Acesso restrito ao perfil diretor (`RequireDiretoria`)."""
     return await service.get_breakdown(base, current, filters, query)
+
+
+@router.get(
+    "/history",
+    response_model=NeighborhoodHistoryDTO,
+    summary="Histórico mensal de volume, receita e tarifa média de um bairro",
+    description=(
+        "Série mensal contínua dos últimos `meses` (padrão 24) até `competencia_fim`, para o bairro escolhido no "
+        "ranking. Meses sem faturamento aparecem com volume e receita zero e sem tarifa média."
+    ),
+    responses={404: {"description": "Sem faturamento do bairro na janela pedida"}},
+)
+async def get_neighborhood_history(
+    _diretoria: RequireDiretoria, request: HistoryRequest, service: RevenueSvc
+) -> NeighborhoodHistoryDTO:
+    """Acesso restrito ao perfil diretor (`RequireDiretoria`)."""
+    return await service.get_neighborhood_history(request)

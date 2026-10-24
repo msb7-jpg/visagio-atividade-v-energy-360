@@ -6,6 +6,8 @@ from tests.revenue_seed import seeded_client
 URL = "/api/v1/revenue/decomposition"
 KPIS_URL = "/api/v1/revenue/kpis"
 BREAKDOWN_URL = "/api/v1/revenue/breakdown"
+HISTORY_URL = "/api/v1/revenue/history"
+HISTORY_PARAMS = {"municipio": "RECIFE", "bairro": "BOA VIAGEM", "competencia_fim": "2026-06"}
 WINDOWS = {"base_inicio": "2022-07", "base_fim": "2023-06", "atual_inicio": "2025-07", "atual_fim": "2026-06"}
 DIRECTOR_EMAIL = "diretor@venergy.com"
 
@@ -176,3 +178,60 @@ async def test_breakdown_returns_400_when_windows_overlap(client, director_heade
     response = await client.get(BREAKDOWN_URL, params=params, headers=director_headers)
 
     assert response.status_code == 400
+
+
+async def test_history_returns_continuous_monthly_series_with_gaps_filled(client, director_headers):
+    response = await client.get(HISTORY_URL, params=HISTORY_PARAMS, headers=director_headers)
+
+    assert response.status_code == 200
+    points = response.json()["pontos"]
+    assert len(points) == 24
+    assert points[0]["competencia"] == "2024-07"
+    assert points[0]["volume_kwh"] == pytest.approx(0.0)
+    assert points[0]["tarifa_media_rs_kwh"] is None
+    assert points[-1]["competencia"] == "2026-06"
+    assert points[-1]["volume_kwh"] == pytest.approx(1400.0)
+    assert points[-1]["receita_rs"] == pytest.approx(1232.0)
+    assert points[-1]["tarifa_media_rs_kwh"] == pytest.approx(0.88)
+
+
+async def test_history_respects_months_and_class_filter(client, director_headers):
+    params = {**HISTORY_PARAMS, "meses": 12, "classe_consumo": "Residencial"}
+
+    response = await client.get(HISTORY_URL, params=params, headers=director_headers)
+
+    body = response.json()
+    assert response.status_code == 200
+    assert len(body["pontos"]) == 12
+    assert body["classe_consumo"] == "Residencial"
+
+
+async def test_history_returns_404_for_unknown_neighborhood(client, director_headers):
+    params = {**HISTORY_PARAMS, "bairro": "BAIRRO INEXISTENTE"}
+
+    response = await client.get(HISTORY_URL, params=params, headers=director_headers)
+
+    assert response.status_code == 404
+
+
+async def test_history_requires_director(client):
+    assert (await client.get(HISTORY_URL, params=HISTORY_PARAMS)).status_code == 401
+    operacao_headers = await login(client, "operacao@venergy.com")
+    assert (await client.get(HISTORY_URL, params=HISTORY_PARAMS, headers=operacao_headers)).status_code == 403
+
+
+@pytest.mark.parametrize(
+    "extra", [{"meses": 0}, {"meses": 61}, {"competencia_fim": "2026-6"}]
+)
+async def test_history_returns_422_for_invalid_query(client, director_headers, extra):
+    response = await client.get(HISTORY_URL, params={**HISTORY_PARAMS, **extra}, headers=director_headers)
+
+    assert response.status_code == 422
+
+
+async def test_history_returns_422_without_neighborhood(client, director_headers):
+    params = {"competencia_fim": "2026-06"}
+
+    response = await client.get(HISTORY_URL, params=params, headers=director_headers)
+
+    assert response.status_code == 422
