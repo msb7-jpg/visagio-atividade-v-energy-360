@@ -325,3 +325,85 @@
 - **Atenção:** a leitura de cada aba do XLSX agora é materializada por inteiro (`sheet_rows` devolve lista), em vez de linha a linha; só pesa se uma única aba for muito grande.
 - **Validação de Testes:**
   - Backend: `pytest` 227 passed (nenhum teste alterado além de um import); Ruff OK, Pylint 10.00/10, import-linter 4 contratos mantidos; auditoria de regras da skill sem apontamentos. Frontend: `vitest` 35 passed, ESLint OK, Fallow 0 acima do limite. Pyright não foi rodado nesta revisão. `make` não existe neste shell; os mesmos comandos foram rodados diretamente.
+
+### [2026-10-24] - Fase 9.1: contrato de backend da nova tela Fila de Inspeção
+- **Autor:** Adrian César (Fatia 05)
+- **Referência:** `docs/planning/adrian_cesar/assets/fila-inspecao-escuro.png` e `fila-inspecao-claro.png`; branch `feat/fatia-05-fila-inspecao-nova-tela`.
+- **O que foi feito (TDD: RED confirmado, depois GREEN):**
+  - `SuspiciousUnitDTO` ganhou `score` (inteiro de 0 a 100: kWh esperado da UC relativo ao topo da fila, calculado antes dos filtros para não mudar quando um filtro esconde o topo), `situacao` (`na_fila`, `ordem_gerada`, `em_campo`), `kwh_mes_recuperavel` (déficit mensal) e `valor_ano_rs`.
+  - UCs com ordem ativa **permanecem na fila** com a situação da ordem (antes eram excluídas). Ordens concluídas na janela e o histórico de campo continuam excluindo.
+  - Filtros novos em `GET /losses/suspicious-units`: `motivo` e `score_minimo`; o `limit` passa a valer depois dos filtros.
+  - `GET /losses/queue-summary?ucs=...`: capacidade programada contra 200, energia e valor anual das selecionadas (ignora as que já têm ordem), retorno esperado (energia x taxa histórica) e taxa histórica (`fato_inspecoes_perdas`: total, confirmadas, período).
+  - `GET /losses/queue-filters`: municípios e classes do cadastro.
+  - `ucs` do resumo limitado a 400 itens de até 20 caracteres (422 acima disso); `rank_suspicious_units` aceita `limit=None`.
+  - Módulos novos `queue_summary.py` (regras puras, no contrato do import-linter) e `queue_repository.py` (mixin), para manter `repository.py` e `scoring.py` abaixo de 300 linhas.
+- **Mudanças de comportamento a conferir com o time:**
+  - **Tarifa de referência 0,85 para 0,714 R$/kWh**, valor do desenho; todo R$ exibido na fila cai cerca de 16%. A tarifa real de `fato_faturamento` (Fatia 02) segue pendente.
+  - O desenho usa o `kWh/mês` como déficit mensal; o campo antigo `kwh_estimado_recuperar` (déficit x 3 meses) foi mantido para não quebrar a tela atual.
+  - "Programadas" no cartão de capacidade = ordens ativas (geradas ou em campo), sem recorte por mês.
+- **Fora desta fase (decisão em aberto):** os 3 motivos novos do desenho (abaixo dos vizinhos, leituras estimadas, irregularidade confirmada antes), `Ver acerto por inspetor` (Fatia 07) e distribuição por inspetor. O filtro de motivo cobre os 2 motivos existentes.
+- **Validação de Testes:**
+  - `pytest`: 535 passed (24 novos em `test_loss_queue_design.py`; 3 testes antigos ajustados para a tarifa e para a UC com ordem ativa permanecer na fila). Ruff OK, Pylint 10,00/10, Pyright 0 erros em `loss_management`, import-linter 4 contratos mantidos. `make` não existe neste shell; os mesmos comandos foram rodados diretamente. Frontend não foi tocado nesta fase.
+
+### [2026-10-24] - Fase 9.2: camada de dados do frontend da nova tela Fila de Inspeção
+- **Autor:** Adrian César (Fatia 05)
+- **O que foi feito (TDD: RED confirmado com 11 testes falhando, depois GREEN):**
+  - `lossTypes.ts`: `QueueSituation`, campos novos de `SuspiciousUnit` (`score`, `situacao`, `kwh_mes_recuperavel`, `valor_ano_rs`), filtros `motivo` e `score_minimo`, e os tipos `QueueSummary`, `HitRate`, `QueueFilterOptions` e `BatchResult`.
+  - `lossApi`: `getQueueSummary` (envia `ucs=UC1&ucs=UC2` com `paramsSerializer: { indexes: null }`, porque o axios usaria `ucs[]=` e o FastAPI não leria a lista) e `getQueueFilters`.
+  - `lossQueries`: `queueSummaryQueryOptions` (ids ordenados na chave de cache, então a ordem da seleção não gera consultas repetidas; `keepPreviousData` para o cartão não piscar a cada clique) e `queueFiltersQueryOptions` (cache de 10 min). `compactFilters` passou a aceitar números e descarta `score_minimo` igual a zero.
+  - `useQueueSummaryQuery` e `useQueueFiltersQuery`.
+  - `useQueueSelection` (hook headless): só UCs `na_fila` são selecionáveis, `selectTop(n)` pula UCs com ordem, `toggleAll` e `clear`; a seleção acompanha a lista, e UCs que saem dela por filtro deixam de contar.
+  - `useCreateInspectionsBatchMutation`: gera as ordens em blocos sequenciais de 5 UCs (`Promise.allSettled` por bloco, para não abrir dezenas de POSTs de uma vez contra o SQLite), devolve `{ created, failed }` sem abortar o lote por uma UC e invalida as listas em qualquer desfecho.
+- **Decisão:** não há endpoint de lote no backend; o lote é feito no cliente, uma requisição por UC. A unicidade de ordem ativa por UC continua garantida pelo banco, então uma UC já ordenada por outra aba cai em `failed` com a mensagem da API.
+- **Validação de Testes:**
+  - Frontend: `vitest` 108 passed (22 novos); `tsc -b` 0 erros; ESLint OK; Fallow 0 acima do limite. Backend não foi alterado nesta fase. `make` não existe neste shell; os mesmos comandos foram rodados diretamente.
+- **Revisão de código (typescript-reviewer, sem CRITICAL):** corrigidos o lote sem limite de concorrência e o `isSelected` quadrático (agora usa `Set`). A seleção que volta marcada quando o filtro é removido foi mantida de propósito, documentada e travada por teste.
+- **Anotado para a Fase 9.3 (UI):** usar `isPlaceholderData` do resumo para indicar números em atualização; limitar a seleção ao teto de 400 UCs do endpoint; a mensagem de falha por UC é genérica quando o erro não traz `detail` em texto (ex.: rede ou 422).
+
+### [2026-10-24] - Fase 9.3: UI da nova tela Fila de Inspeção
+- **Autor:** Adrian César (Fatia 05)
+- **Referência:** `assets/fila-inspecao-escuro.png` e `fila-inspecao-claro.png`.
+- **O que foi feito (testes escritos antes da UI):**
+  - **Backend:** `GET /losses/suspicious-units` passou a devolver `total` (UCs que passam nos filtros antes do corte do `limit`), necessário para "Fila priorizada (1.248)" e "Mostrando 20 de 1.248". 2 testes novos.
+  - **Página e abas:** título "Fila de Inspeção" e abas "Fila priorizada (N)" e "Ordens de inspeção (M)" com contador. O estado dos filtros e da seleção fica na página (`useSuspiciousQueueController`) e sobrevive à troca de aba.
+  - **Cartões do topo:** capacidade do mês (programadas + selecionadas, barra e "ainda cabem N" ou "passa da capacidade em N" em vermelho), energia recuperável das selecionadas, retorno esperado e taxa de acerto histórica (com "como calculamos"). Os cartões ficam esmaecidos e `aria-busy` enquanto o resumo da nova seleção carrega.
+  - **Filtros** em select (motivo, município, classe, score mínimo), aplicados ao mudar. Município e classe vêm de `GET /losses/queue-filters`.
+  - **Ações:** "Exportar fila (CSV)", "Selecionar top 10" e "Gerar N ordens" (desligado sem seleção).
+  - **Tabela priorizada:** checkbox por linha e no cabeçalho, UC como link para a Visão 360 (`/customers?uc=`), barra de score por faixa, motivos, kWh/mês, R$/ano e situação (Na fila, Ordem gerada, Em campo). UCs com ordem não podem ser marcadas.
+  - **Geração em lote:** diálogo de confirmação com o resumo; se alguma UC falhar, o diálogo continua aberto listando quais e quantas foram geradas.
+  - **Design system:** novo `components/ui/checkbox.tsx` (Radix), porque `<input>` nativo é proibido fora de `ui/`. Barras dimensionadas por variável CSS (`w-(--bar-width)`), como o lint do projeto exige.
+  - Removidos `SuspiciousUnitsTable`, `QueueFiltersForm`, `CreateInspectionDialog` e `useCreateInspectionMutation` (substituídos pelo fluxo em lote).
+- **Mudanças de rótulo a conferir:** os motivos passaram a usar os textos do desenho ("Queda abrupta de consumo" e "Consumo zero com medidor ativo"); eles também vão no campo `motivo` das ordens novas. O filtro por bairro saiu da tela (o desenho não tem), mas a API ainda o aceita.
+- **Diferenças em relação ao desenho:** a coluna Classe mostra só a classe (a tensão B1/B3/A4 não existe nos dados); "Exportar fila (CSV)" exporta as ordens geradas e em campo, que é o que o backend entrega; "Ver acerto por inspetor, por mês e kWh por tipo" não foi incluído (Fatia 07).
+- **Validação de Testes:**
+  - Backend: `pytest` 537 passed; Ruff, Pylint 10,00/10, Pyright e import-linter OK.
+  - Frontend: `vitest` 114 passed (15 novos em `SuspiciousQueueTab.test.tsx` e `CapacityCard.test.tsx`; 12 cenários da fila antiga saíram do `LossManagementPage.test.tsx`, que mantém os das ordens em campo); `tsc -b`, ESLint e Fallow OK.
+  - **Não conferido no navegador:** a comparação visual contra as imagens fica para a Fase 9.5. `make` não existe neste shell; os mesmos comandos foram rodados diretamente.
+- **Revisão de código (react-reviewer, sem CRITICAL):** corrigidos, com teste antes (RED confirmado em 5 cenários), os 3 achados HIGH do diálogo de lote: a seleção é congelada ao abrir (depois do lote a fila recarrega e a contagem encolhia para "2 de 1 ordens"), o diálogo não fecha com o lote em andamento (Esc, clique fora e "Voltar" ficam desligados) e uma falha geral do lote agora mostra mensagem. Também: cartão de capacidade sem `NaN%` quando o total é zero e com plural ("1 programada"), cabeçalho da tabela em estado parcial (`mixed`) e desligado sem UC livre, esqueleto do resumo com 4 cartões e filtros sem string vazia no estado.
+- **Anotado para a Fase 9.5:** o resumo não tem estado de erro (com falha da API o esqueleto permanece); as dicas "como calculamos" não são alcançáveis por teclado; a seleção de UCs fora do filtro atual continua guardada de propósito (vide Fase 9.2), sem indicador na tela.
+
+### [2026-10-24] - Fase 9.4: testes Vitest da nova tela Fila de Inspeção
+- **Autor:** Adrian César (Fatia 05)
+- **O que foi feito:** a cobertura foi medida antes de escrever (a base já estava perto de 90%) e os testes novos miraram os ramos que faltavam. Estes testes cobrem comportamento já implementado nas fases 9.1 a 9.3, então passaram de primeira; os que falharam (2) foram por expectativa errada do teste, não por defeito do código, e foram corrigidos no teste.
+  - `QueueSummaryCards.test.tsx`: energia e valor anual com a tarifa, retorno esperado com a taxa histórica, esqueleto sem resumo, `aria-busy` na atualização, período no mesmo ano e atravessando a virada, e o aviso de taxa geral sem histórico de campo.
+  - `PrioritizedQueueTable.test.tsx`: linha de total ("Mostrando 2 de 1.248"), cabeçalho que marca e limpa as UCs livres, estado parcial (`mixed`), cabeçalho desligado sem UC livre, traço para campos vazios, chips de motivo, link com id codificado, formatação de kWh/mês e R$/ano, e as 3 faixas de cor do `ScoreBar`.
+  - `lossFormatters.test.ts`: valores compactos (R$ 535, R$ 15,8 mil, R$ 1,2 mi), períodos, inteiros, taxa, plural e textos dos motivos.
+  - `lossApiRequests.test.ts`: filtros como query params e `signal`, listagem com e sem status, criação, atualização e upload multipart.
+  - `SuspiciousQueueTab.test.tsx` (+8): voltar a "Todos os motivos" restaura a fila, cancelar a geração mantém a seleção sem criar ordens, o lote concluído fecha o diálogo e limpa a seleção, o resumo dentro do diálogo, a seleção sobrevive à troca de aba, taxa geral sem histórico e a exportação ligada ou desligada conforme as ordens programadas.
+- **Validação de Testes:**
+  - Frontend: `vitest` 158 passed em 21 arquivos; `tsc -b`, ESLint e Fallow OK. Cobertura de `features/loss_management` + `ui/checkbox.tsx`: 94,5% das instruções, 87,4% dos ramos e 94,4% das funções (meta: 80%). A cobertura foi medida com `@vitest/coverage-v8` instalado só localmente (`--no-save`); ele não está no `package.json`, então `make test-all` não mede cobertura.
+  - Backend não foi alterado nesta fase (537 passed na última execução).
+
+### [2026-10-24] - Fase 9.5: validação da nova tela Fila de Inspeção
+- **Autor:** Adrian César (Fatia 05)
+- **Conferência no app real (backend e frontend rodando):** banco **sintético**, gerado fora do repositório com a forma das tabelas Gold (400 UCs, 1.389 inspeções de histórico com 871 irregulares, 58 ordens ativas). Não é a Gold real: os números da tela refletem esses dados de teste.
+  - A API respondeu como esperado: 284 UCs na fila (200 exibidas), 58 programadas, taxa de 62,7%, filtros de município e classe.
+  - Na tela, no tema escuro: cartões, filtros, tabela com barra de score, link da UC, "Selecionar top 10" (cartões foram a 68 de 200 e 51.911 kWh/mês), diálogo de confirmação, geração das 10 ordens (linhas passaram a "Ordem gerada" com checkbox desligado, seleção limpa, contador da aba foi a 68). Sem erros no console.
+  - Tema claro (classe `.light` do `index.css`, o app não tem botão de troca): layout e contraste coerentes com a imagem clara; faixas do score em vermelho (85 ou mais), âmbar (65 a 84) e cinza (abaixo de 65).
+  - O desenho foi comparado por inspeção visual das capturas, não por diff de pixels.
+- **Achado e correção:** a dica "como calculamos" cortava a última linha do texto (`Tooltip` animava até uma altura medida antes de o texto quebrar na largura final). Passou a animar para `height: 'auto'`.
+- **Pendências da revisão resolvidas (testes antes, RED confirmado):** o resumo ganhou estado de erro ("Não foi possível carregar o resumo…", a fila continua visível) e as dicas ficam acessíveis por teclado (gatilhos viraram `Button variant="link"` e o `Tooltip` abre com foco).
+- **Validação (equivalente a `make lint-all` e `make test-all`, rodados direto porque `make` não existe neste shell):**
+  - Backend: Ruff OK, Pylint 10,00/10, import-linter 4 contratos mantidos, Pyright 0 erros na fatia, `pytest` 537 passed.
+  - Frontend: ESLint OK, Fallow 0 acima do limite, `tsc -b` OK, `vitest` 160 passed em 21 arquivos.
+- **Diferenças conhecidas em relação ao desenho:** sem tensão (B1, B3, A4) na coluna Classe; sem "Ver acerto por inspetor" (Fatia 07); motivos novos do desenho ainda não existem no backend (só queda abrupta e consumo zero); título e abas usam os componentes do design system, com tamanho um pouco menor que o desenho.
