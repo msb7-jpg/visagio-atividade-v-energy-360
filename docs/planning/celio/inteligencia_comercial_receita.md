@@ -56,9 +56,9 @@
 
 ## 3. Checklist Operacional de Execução
 
-- [- Em andamento por Celio - 2026-10-19] Criar pasta `backend/app/features/revenue/` com `schemas.py`, `repository.py`, `service.py` e `router.py`.
-- [ ] Registrar rotas em `backend/app/api/v1/router.py`.
-- [ ] Criar testes unitários em `backend/tests/test_revenue_service.py` validando os cálculos de decomposição com números reais.
+- [x] Criar pasta `backend/app/features/revenue/` com `schemas.py`, `repository.py`, `service.py` e `router.py`.
+- [x] Registrar rotas em `backend/app/api/v1/router.py`.
+- [x] Criar testes unitários em `backend/tests/test_revenue_service.py` validando os cálculos de decomposição com números reais.
 - [ ] Garantir conformidade com `make lint-backend`.
 - [ ] Criar pasta `frontend/src/features/revenue/` com componentes atômicos $\le 150$ linhas.
 - [ ] Adicionar rota `/revenue` em `frontend/src/routes/AppRoutes.tsx`.
