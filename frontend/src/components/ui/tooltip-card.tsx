@@ -1,7 +1,7 @@
 'use client'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'motion/react'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 interface Position {
@@ -65,16 +65,9 @@ export function Tooltip({
   tooltipClassName
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false)
-  const [height, setHeight] = useState(0)
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 })
   const contentRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (isVisible && contentRef.current) {
-      setHeight(contentRef.current.scrollHeight)
-    }
-  }, [isVisible, content])
 
   const updatePosition = (clientX: number, clientY: number) => {
     const dimensions = getElementDimensions(contentRef.current)
@@ -94,6 +87,12 @@ export function Tooltip({
     if (isVisible) {
       updatePosition(event.clientX, event.clientY)
     }
+  }
+
+  const handleFocus = () => {
+    const bounds = containerRef.current?.getBoundingClientRect()
+    if (bounds) updatePosition(bounds.left, bounds.bottom)
+    setIsVisible(true)
   }
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -121,6 +120,8 @@ export function Tooltip({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
+      onFocus={handleFocus}
+      onBlur={handleMouseLeave}
       onTouchStart={handleTouchStart}
       onClick={handleClick}
     >
@@ -131,7 +132,7 @@ export function Tooltip({
             {isVisible ? (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
-                animate={{ height, opacity: 1 }}
+                animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                 className={cn(

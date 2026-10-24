@@ -1,40 +1,58 @@
-import { useState } from 'react'
 import { AsyncState } from '@/components/feedback/AsyncState'
-import { CreateInspectionDialog } from '@/features/loss_management/components/CreateInspectionDialog'
-import { QueueFiltersForm } from '@/features/loss_management/components/QueueFiltersForm'
+import { Card } from '@/components/ui/card'
+import { GenerateOrdersDialog } from '@/features/loss_management/components/GenerateOrdersDialog'
+import { PrioritizedQueueTable } from '@/features/loss_management/components/PrioritizedQueueTable'
+import { QueueActionsBar, TOP_SELECTION_COUNT } from '@/features/loss_management/components/QueueActionsBar'
+import { QueueFilters } from '@/features/loss_management/components/QueueFilters'
+import { QueueSummaryCards } from '@/features/loss_management/components/QueueSummaryCards'
 import { QueueWarnings } from '@/features/loss_management/components/QueueWarnings'
-import { SuspiciousUnitsTable } from '@/features/loss_management/components/SuspiciousUnitsTable'
-import { useSuspiciousUnitsQuery } from '@/features/loss_management/hooks/useLossQueries'
-import type { SuspiciousUnit, SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
+import type { SuspiciousQueueController } from '@/features/loss_management/hooks/useSuspiciousQueueController'
+
+interface SuspiciousQueueTabProps {
+  queue: SuspiciousQueueController
+}
 
 /**
- * Aba da fila de suspeitas: filtros, ranking e geração de ordem.
+ * Aba da fila priorizada: cartões do topo, filtros, ações em massa, ranking e geração de ordens.
  *
- * @returns Conteúdo da aba "Fila de Suspeitas".
+ * @param props - Controlador da fila, mantido na página para sobreviver à troca de aba.
+ * @returns Conteúdo da aba "Fila priorizada".
  */
-export function SuspiciousQueueTab() {
-  const [filters, setFilters] = useState<SuspiciousUnitsFilter>({})
-  const [selectedUnit, setSelectedUnit] = useState<SuspiciousUnit | null>(null)
-  const { data: queue, isLoading, isError } = useSuspiciousUnitsQuery(filters)
-  const units = queue?.itens ?? []
-  const warnings = queue?.avisos ?? []
+export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
+  const { units, selection, summary } = queue
 
   return (
     <div className="flex flex-col gap-4">
-      <QueueFiltersForm onApply={setFilters} />
-      <QueueWarnings warnings={warnings} />
+      <QueueSummaryCards summary={summary} isUpdating={queue.isSummaryUpdating} isError={queue.isSummaryError} />
+      <Card className="flex flex-col gap-3 p-4">
+        <QueueFilters filters={queue.filters} options={queue.filterOptions} onChange={queue.setFilters} />
+        <QueueActionsBar
+          selectedCount={selection.selectedIds.length}
+          hasOrdersToExport={(summary?.capacidade_programada ?? 0) > 0}
+          onSelectTop={() => selection.selectTop(TOP_SELECTION_COUNT)}
+          onGenerate={queue.openDialog}
+        />
+      </Card>
+      <QueueWarnings warnings={queue.warnings} />
       <AsyncState
-        isLoading={isLoading}
-        isError={isError}
+        isLoading={queue.isLoading}
+        isError={queue.isError}
         isEmpty={units.length === 0}
         errorTitle="Não foi possível carregar a fila"
         errorDescription="Verifique a conexão com a API e se as tabelas Gold de cadastro e medição estão disponíveis."
         emptyTitle="Nenhuma UC suspeita na fila"
-        emptyDescription="Nenhuma UC atende aos critérios. UCs com geração distribuída, com ordem ativa ou já inspecionadas na janela de análise ficam fora da fila."
+        emptyDescription="Nenhuma UC atende aos critérios. UCs com geração distribuída ou já inspecionadas na janela de análise ficam fora da fila."
       >
-        <SuspiciousUnitsTable units={units} onGenerateOrder={setSelectedUnit} />
+        <PrioritizedQueueTable units={units} total={queue.total ?? units.length} selection={selection} />
       </AsyncState>
-      {selectedUnit ? <CreateInspectionDialog unit={selectedUnit} onClose={() => setSelectedUnit(null)} /> : null}
+      {queue.isDialogOpen ? (
+        <GenerateOrdersDialog
+          units={queue.selectedUnits}
+          summary={summary}
+          onClose={queue.closeDialog}
+          onDone={queue.finishGeneration}
+        />
+      ) : null}
     </div>
   )
 }
