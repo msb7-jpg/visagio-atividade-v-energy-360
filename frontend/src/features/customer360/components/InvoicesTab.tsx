@@ -1,8 +1,8 @@
-import { FileSearch, Wallet } from 'lucide-react'
+import { CalendarCheck, FileSearch, Wallet } from 'lucide-react'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { CustomerHistory, Invoice } from '@/features/customer360/types/customer360Types'
+import { Table, TableBody, TableCell, TableColumns, TableRow } from '@/components/ui/table'
+import type { CustomerHistory, Invoice, PaymentPunctuality } from '@/features/customer360/types/customer360Types'
 import {
   formatCompetencia,
   formatCount,
@@ -12,6 +12,8 @@ import {
   formatMoney,
   PAYMENT_STATUS
 } from '@/features/customer360/utils/customer360Formatters'
+
+const COLUMNS = ['Competência', 'Situação', 'Valor', 'Vencimento', 'Consumo', 'Bandeira'] as const
 
 function PaymentStatusBadge({ status }: { status: string | null }) {
   const statusStyle = status ? PAYMENT_STATUS[status] : undefined
@@ -28,6 +30,26 @@ function OpenInvoicesSummary({ openInvoices, openAmount }: { openInvoices: Invoi
           ? `${formatCount(openInvoices.length, 'fatura', 'faturas')} em aberto, total de ${formatMoney(openAmount)}.`
           : 'Nenhuma fatura em aberto.'}
       </span>
+    </div>
+  )
+}
+
+function describePunctuality(punctuality: PaymentPunctuality): string {
+  const lateDetail = punctuality.atraso_medio_dias === null
+    ? ''
+    : ` (atraso médio de ${formatCount(punctuality.atraso_medio_dias, 'dia', 'dias')})`
+  const overdueDetail = punctuality.vencidas_em_aberto > 0
+    ? ` e ${formatCount(punctuality.vencidas_em_aberto, 'vencida', 'vencidas')} em aberto`
+    : ''
+  return `Últimas ${punctuality.faturas_avaliadas} contas: ${punctuality.pagas_em_dia} pagas em dia, `
+    + `${punctuality.pagas_com_atraso} com atraso${lateDetail}${overdueDetail}.`
+}
+
+function PunctualitySummary({ punctuality }: { punctuality: PaymentPunctuality }) {
+  return (
+    <div className="bg-muted flex items-center gap-3 rounded-xl p-3">
+      <CalendarCheck className="text-primary size-5" />
+      <span className="text-foreground text-sm">{describePunctuality(punctuality)}</span>
     </div>
   )
 }
@@ -55,18 +77,10 @@ export function InvoicesTab({ history }: InvoicesTabProps) {
   return (
     <div className="flex flex-col gap-3">
       <OpenInvoicesSummary openInvoices={history.faturas_em_aberto} openAmount={history.valor_em_aberto_rs} />
+      {history.pontualidade ? <PunctualitySummary punctuality={history.pontualidade} /> : null}
       <div className="max-h-96 min-w-0 overflow-auto">
         <Table aria-label="Faturas da unidade consumidora">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Competência</TableHead>
-              <TableHead>Situação</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Vencimento</TableHead>
-              <TableHead>Consumo</TableHead>
-              <TableHead>Bandeira</TableHead>
-            </TableRow>
-          </TableHeader>
+          <TableColumns columns={COLUMNS} />
           <TableBody>
             {history.faturas.map((invoice) => (
               <TableRow key={invoice.id_fatura}>

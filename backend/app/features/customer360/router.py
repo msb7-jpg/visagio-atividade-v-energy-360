@@ -4,7 +4,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.constants import UserRole
 from app.features.customer360.dependencies import Customer360Svc
 from app.features.customer360.schemas import (
     CustomerEventTimelineDTO,
@@ -13,13 +12,12 @@ from app.features.customer360.schemas import (
     CustomerSummaryDTO,
 )
 from app.shared.dependencies import require_role
-
-CUSTOMER360_ROLES = [UserRole.DIRETOR, UserRole.GERENTE_ATENDIMENTO, UserRole.ATENDENTE, UserRole.GERENTE_PERDAS]
+from app.shared.role_groups import CUSTOMER360_ACCESS
 
 router = APIRouter(
     prefix="/customers",
     tags=["Visão 360 da UC"],
-    dependencies=[Depends(require_role(CUSTOMER360_ROLES))],
+    dependencies=[Depends(require_role(CUSTOMER360_ACCESS))],
 )
 
 
