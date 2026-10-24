@@ -1,13 +1,25 @@
+import { Suspense } from 'react'
 import { LogOut, Zap } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
+import { LoadingSkeleton } from '@/components/feedback/LoadingSkeleton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarNav } from '@/components/layout/SidebarNav'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 
+function PageLoading() {
+  return (
+    <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 sm:px-6">
+      <LoadingSkeleton count={4} className="h-24" />
+    </div>
+  )
+}
+
 /**
  * Shell do portal: cabeçalho com usuário e logout, menu lateral por cargo e a tela ativa.
+ *
+ * As telas são carregadas sob demanda; enquanto o arquivo da tela chega, o shell continua visível com um esqueleto.
  *
  * @returns Layout com `<Outlet />` para as rotas protegidas.
  */
@@ -41,7 +53,9 @@ export function AppLayout() {
           </Button>
         </header>
         <div className="min-w-0 flex-1">
-          <Outlet />
+          <Suspense fallback={<PageLoading />}>
+            <Outlet />
+          </Suspense>
         </div>
       </div>
     </div>

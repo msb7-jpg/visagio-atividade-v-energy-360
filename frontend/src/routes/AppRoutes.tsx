@@ -1,13 +1,15 @@
+import { lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/features/auth/components/LoginPage'
-import { DashboardPage } from '@/features/auth/components/DashboardPage'
-import { LossManagementPage } from '@/features/loss_management/components/LossManagementPage'
-import { GridQualityPage } from '@/features/grid_quality/components/GridQualityPage'
-import { Customer360Page } from '@/features/customer360/components/Customer360Page'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from './ProtectedRoute'
 import { homeRouteFor } from './homeRoute'
+
+const DashboardPage = lazy(() => import('@/features/auth/components/DashboardPage').then((module) => ({ default: module.DashboardPage })))
+const LossManagementPage = lazy(() => import('@/features/loss_management/components/LossManagementPage').then((module) => ({ default: module.LossManagementPage })))
+const GridQualityPage = lazy(() => import('@/features/grid_quality/components/GridQualityPage').then((module) => ({ default: module.GridQualityPage })))
+const Customer360Page = lazy(() => import('@/features/customer360/components/Customer360Page').then((module) => ({ default: module.Customer360Page })))
 
 // Mesmo RBAC do backend (`LOSS_ROLES` em loss_management/router.py).
 const DASHBOARD_ROLES = ['diretor', 'gerente_operacao', 'gerente_perdas']
