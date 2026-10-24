@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (Ruff, Pylint, import-linter, pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar uv e Python 3.12
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Instalar dependências (lock congelado)
+        run: uv sync --all-extras --frozen
+
+      - name: Ruff
+        run: uv run ruff check . --output-format github
+
+      - name: Pylint
+        run: uv run pylint app
+
+      - name: import-linter
+        run: uv run lint-imports
+
+      - name: pytest
+        run: uv run pytest -q
+
+  frontend:
+    name: Frontend (ESLint, Fallow, TypeScript, Vitest, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+
+      - name: Instalar dependências (lock congelado)
+        run: bun install --frozen-lockfile
+
+      - name: ESLint
+        run: bun run lint
+
+      - name: Fallow
+        run: bun run lint:fallow
+
+      - name: TypeScript
+        run: bunx tsc -b
+
+      - name: Vitest
+        run: bun run test
+
+      - name: Build de produção
+        run: bun run build
