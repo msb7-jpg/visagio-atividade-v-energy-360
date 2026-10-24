@@ -22,6 +22,14 @@ class SuspicionReason(StrEnum):
     LEITURA_ZERADA = "leitura_zerada"
 
 
+class QueueSituation(StrEnum):
+    """Situação da UC na fila: livre para ordem, com ordem gerada ou já em campo."""
+
+    NA_FILA = "na_fila"
+    ORDEM_GERADA = "ordem_gerada"
+    EM_CAMPO = "em_campo"
+
+
 FILA_CAPACIDADE_MENSAL = 200  # "mais de 200 inspeções por mês" (Gerente de Perdas, atividade.pdf)
 
 
@@ -31,6 +39,8 @@ class SuspiciousUnitsFilterDTO(BaseModel):
     municipio: str | None = None
     bairro: str | None = None
     classe: str | None = None
+    motivo: SuspicionReason | None = None
+    score_minimo: int = Field(default=0, ge=0, le=100, description="Só UCs com score a partir deste valor")
     limit: int = Field(default=FILA_CAPACIDADE_MENSAL, ge=1, le=500)
 
 
@@ -41,6 +51,13 @@ class SuspiciousUnitDTO(BaseModel):
     classe_consumo: str | None
     motivos: list[SuspicionReason]
     score_risco: float = Field(ge=0, le=100, description="Intensidade do sinal de suspeita (0-100); só desempata")
+    score: int = Field(
+        default=0,
+        ge=0,
+        le=100,
+        description="Prioridade (0-100): kWh esperado da UC relativo ao topo da fila (chance x energia recuperável)",
+    )
+    situacao: QueueSituation = QueueSituation.NA_FILA
     probabilidade_acerto: float = Field(
         ge=0, le=1, description="Taxa histórica de inspeções que acharam irregularidade com este sinal (0-1)"
     )
@@ -48,6 +65,8 @@ class SuspiciousUnitDTO(BaseModel):
     consumo_recente_kwh: float
     kwh_estimado_recuperar: float
     valor_estimado_recuperar_rs: float
+    kwh_mes_recuperavel: float = Field(description="Déficit mensal de consumo (base - recente), em kWh/mês")
+    valor_ano_rs: float = Field(description="kWh/mês recuperável x 12 x tarifa de referência")
 
 
 class QueueWarningCode(StrEnum):
@@ -68,6 +87,7 @@ class SuspiciousQueueDTO(BaseModel):
     """Fila de suspeitas com os avisos de degradação da análise (lista vazia = análise completa)."""
 
     itens: list[SuspiciousUnitDTO]
+    total: int = Field(description="UCs que passam nos filtros, antes de cortar a fila no `limit`")
     avisos: list[QueueWarningDTO]
 
 
@@ -126,3 +146,33 @@ class UploadResultDTO(BaseModel):
     ignoradas: int = Field(description="Linhas sem resultado preenchido (ainda em campo)")
     rejeitadas: list[RejectedRowDTO]
     kwh_recuperado_total: float = Field(description="Soma do kWh recuperado das ordens conciliadas")
+
+
+class HitRateDTO(BaseModel):
+    """Taxa histórica de inspeções que confirmaram irregularidade (`fato_inspecoes_perdas`)."""
+
+    inspecoes_total: int | None = Field(description="Inspeções no histórico; vazio se a tabela não foi exportada")
+    irregularidades_confirmadas: int | None
+    taxa: float = Field(ge=0, le=1, description="Confirmadas / total; sem histórico usa a taxa geral já medida")
+    periodo_inicio: str | None = Field(description="Primeira competência do histórico ('YYYY-MM')")
+    periodo_fim: str | None = Field(description="Última competência do histórico ('YYYY-MM')")
+
+
+class QueueSummaryDTO(BaseModel):
+    """Cartões do topo da tela: capacidade do mês, energia das selecionadas, retorno esperado e taxa histórica."""
+
+    capacidade_total: int = Field(description="Inspeções que a equipe faz por mês")
+    capacidade_programada: int = Field(description="Ordens ativas (geradas ou em campo)")
+    selecionadas: int = Field(description="UCs selecionadas que ainda estão na fila, sem ordem")
+    kwh_mes_selecionadas: float
+    valor_ano_selecionadas_rs: float
+    tarifa_rs_kwh: float
+    retorno_esperado_kwh_mes: float = Field(description="Energia das selecionadas x taxa histórica de acerto")
+    taxa_acerto: HitRateDTO
+
+
+class QueueFiltersDTO(BaseModel):
+    """Opções dos filtros da tela, vindas do cadastro de UCs."""
+
+    municipios: list[str]
+    classes: list[str]

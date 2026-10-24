@@ -3,7 +3,7 @@
 import logging
 
 from sqlalchemy import RowMapping, exists, inspect, select
-from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.loss_management.exceptions import ActiveOrderConflictError
@@ -16,6 +16,11 @@ from app.features.loss_management.queries import (
     registered_unit_query,
 )
 from app.features.loss_management.queue_query import suspicious_profiles_query
+from app.features.loss_management.queue_repository import (
+    GOLD_QUERY_ERRORS,
+    GOLD_TABLES_ERROR_MESSAGE,
+    QueueSummaryRepositoryMixin,
+)
 from app.features.loss_management.reference import AnalysisReference, resolve_analysis_reference
 from app.features.loss_management.schemas import (
     InspectionOrderCreateDTO,
@@ -28,12 +33,6 @@ from app.features.loss_management.upload_repository import FieldUploadRepository
 from app.shared.exceptions import DatabaseReadError
 
 logger = logging.getLogger(__name__)
-
-# Tabela ausente (SQLite: OperationalError; Postgres: ProgrammingError) ou coluna fora do contrato Gold.
-GOLD_QUERY_ERRORS = (OperationalError, ProgrammingError)
-GOLD_TABLES_ERROR_MESSAGE = (
-    "Falha ao consultar tabelas Gold (dim_unidade_consumidora/fato_medicao/fato_inspecoes_perdas)."
-)
 
 
 def to_order_dto(order: InspectionOrder) -> InspectionOrderDTO:
@@ -70,7 +69,7 @@ def to_registered_unit(row: RowMapping) -> RegisteredUnit:
     return RegisteredUnit(profile=profile, possui_gd=bool(row["possui_gd"]), has_recent_reading=has_recent_reading)
 
 
-class LossRepository(FieldUploadRepositoryMixin):
+class LossRepository(FieldUploadRepositoryMixin, QueueSummaryRepositoryMixin):
     """Consultas analíticas de consumo e persistência das ordens de inspeção."""
 
     def __init__(self, session: AsyncSession, reference_competencia: str | None = None) -> None:
@@ -119,6 +118,7 @@ class LossRepository(FieldUploadRepositoryMixin):
             profiles=[ConsumptionProfile(**row) for row in rows],
             field_history_applied=field_history_applied,
             reference_competencia=reference.competencia if reference and reference.is_fixed_in_the_past else None,
+            active_orders=await self.fetch_active_order_statuses(),
         )
 
     async def _read_queue_rows(

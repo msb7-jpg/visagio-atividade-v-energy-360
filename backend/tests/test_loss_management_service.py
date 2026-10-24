@@ -49,7 +49,7 @@ def test_sudden_drop_is_flagged_with_recoverable_energy():
     assert unit is not None
     assert unit.motivos == [SuspicionReason.QUEDA_SUBITA]
     assert unit.kwh_estimado_recuperar == pytest.approx(750.0)
-    assert unit.valor_estimado_recuperar_rs == pytest.approx(637.5)
+    assert unit.valor_estimado_recuperar_rs == pytest.approx(535.5)
     assert unit.score_risco == pytest.approx(66.7)
 
 
