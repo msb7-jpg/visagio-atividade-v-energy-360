@@ -267,6 +267,7 @@ source_modules = [
     "app.features.customer360.consumption_analysis",
     "app.features.customer360.yoy_totals",
     "app.features.customer360.search_terms",
+    "app.features.customer360.payment_behavior",
     "app.features.revenue.service",
     "app.features.revenue.decomposition",
     "app.features.revenue.kpis",

@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { AsyncState } from '@/components/feedback/AsyncState'
 import { EmptyState } from '@/components/feedback/EmptyState'
-import { LoadingSkeleton } from '@/components/feedback/LoadingSkeleton'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { FeederHistorySheet } from '@/features/grid_quality/components/FeederHistorySheet'
@@ -53,14 +53,16 @@ export function GridQualityPage() {
         </Select>
       </div>
 
-      {feeders.isLoading ? <LoadingSkeleton count={4} className="h-8" /> : null}
-      {feeders.isError ? (
-        <EmptyState title="Não foi possível carregar os alimentadores" icon={<AlertTriangle className="size-10" />} />
-      ) : null}
-      {feeders.isSuccess && rankedFeeders.length === 0 ? (
-        <EmptyState title="Nenhum alimentador neste filtro" icon={<CheckCircle2 className="size-10" />} />
-      ) : null}
-      {rankedFeeders.length > 0 ? <FeederRankingTable feeders={rankedFeeders} onSelect={openFeeder} /> : null}
+      <AsyncState
+        isLoading={feeders.isLoading}
+        isError={feeders.isError}
+        isEmpty={rankedFeeders.length === 0}
+        errorTitle="Não foi possível carregar os alimentadores"
+        emptyTitle="Nenhum alimentador neste filtro"
+        emptyIcon={<CheckCircle2 className="size-10" />}
+      >
+        <FeederRankingTable feeders={rankedFeeders} onSelect={openFeeder} />
+      </AsyncState>
 
       <FeederHistorySheet
         feederId={selectedFeederId}

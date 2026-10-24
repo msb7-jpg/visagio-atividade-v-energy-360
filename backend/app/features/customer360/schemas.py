@@ -128,6 +128,16 @@ class YearOverYearTotalsDTO(BaseModel):
     variacao_valor_pct: float | None = None
 
 
+class PaymentPunctualityDTO(BaseModel):
+    """Como a UC pagou as últimas faturas: em dia, com atraso e vencidas em aberto."""
+
+    faturas_avaliadas: int
+    pagas_em_dia: int
+    pagas_com_atraso: int
+    atraso_medio_dias: float | None = None
+    vencidas_em_aberto: int
+
+
 class CustomerHistoryDTO(BaseModel):
     """Histórico de consumo YoY, faturas e diagnóstico de conta alta da UC."""
 
@@ -139,6 +149,7 @@ class CustomerHistoryDTO(BaseModel):
     faturas: list[InvoiceDTO]
     faturas_em_aberto: list[InvoiceDTO]
     valor_em_aberto_rs: float
+    pontualidade: PaymentPunctualityDTO | None = None
 
 
 class FeederQualityMonthDTO(GoldRowModel):

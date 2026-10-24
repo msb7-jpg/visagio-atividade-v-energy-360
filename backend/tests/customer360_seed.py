@@ -82,6 +82,11 @@ INVOICE_OVERRIDES = {
     ("UC100003", "2026-06"): ("VERDE", "ABERTA"),
 }
 
+PAYMENT_DATE_OVERRIDES = {
+    ("UC100004", "2026-04"): "2026-04-27",
+    ("UC100004", "2026-03"): "2026-03-25",
+}
+
 SERVICE_TICKETS = (
     ("AT000000001", "UC100001", "PRT-2026-0001", "FALTA DE ENERGIA", "2026-03-12 10:00:00", "ENCERRADO", 8),
     ("AT000000002", "UC100001", "PRT-2026-0002", "FATURA", "2026-05-02 14:30:00", "EM ANDAMENTO", None),
@@ -147,7 +152,9 @@ def invoice_rows() -> list[dict[str, object]]:
                 "valor_total_rs": round(consumption * tariff, 2), "consumo_faturado_kwh": consumption,
                 "bandeira_tarifaria": flag, "tarifa_aplicada_rs_kwh": round(tariff, 4),
                 "data_vencimento": f"{competencia}-20",
-                "data_pagamento": f"{competencia}-18" if status == "PAGA" else None, "status_pagamento": status,
+                "data_pagamento": PAYMENT_DATE_OVERRIDES.get((unit.id_uc, competencia), f"{competencia}-18")
+                if status == "PAGA" else None,
+                "status_pagamento": status,
             })
     return rows
 

@@ -205,3 +205,13 @@ async def test_digits_only_number_opens_the_unit(client, attendant_headers):
 
     assert response.status_code == 200
     assert response.json()["id_uc"] == "UC100004"
+
+
+async def test_history_reports_payment_punctuality(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/UC100004/history", headers=attendant_headers)
+
+    punctuality = response.json()["pontualidade"]
+    assert punctuality["faturas_avaliadas"] == 11
+    assert (punctuality["pagas_em_dia"], punctuality["pagas_com_atraso"]) == (8, 2)
+    assert punctuality["atraso_medio_dias"] == pytest.approx(6.0)
+    assert punctuality["vencidas_em_aberto"] == 1

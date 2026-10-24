@@ -9,6 +9,7 @@ from app.features.customer360.consumption_analysis import (
     latest_competencia,
 )
 from app.features.customer360.exceptions import CustomerNotFoundError
+from app.features.customer360.payment_behavior import summarize_punctuality
 from app.features.customer360.schemas import (
     CustomerEventTimelineDTO,
     CustomerHistoryDTO,
@@ -118,6 +119,7 @@ class Customer360Service:
             faturas=invoices,
             faturas_em_aberto=open_invoices,
             valor_em_aberto_rs=round(open_amount, 2),
+            pontualidade=summarize_punctuality(invoices),
         )
 
     async def get_events(self, id_uc: str) -> CustomerEventTimelineDTO:

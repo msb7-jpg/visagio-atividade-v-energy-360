@@ -1,10 +1,12 @@
 import { ZapOff } from 'lucide-react'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableColumns, TableRow } from '@/components/ui/table'
 import type { FeederQualityMonth } from '@/features/customer360/types/customer360Types'
 import { formatCompetencia, formatCount, formatHours } from '@/features/customer360/utils/customer360Formatters'
 import { analyzeOutages, type OutageOverview } from '@/features/customer360/utils/outageAnalysis'
+
+const COLUMNS = ['Mês', 'Horas sem energia', 'Interrupções', 'Situação'] as const
 
 function describeOutages(feeder: string | null, overview: OutageOverview): string {
   const feederName = feeder ?? 'da região'
@@ -42,14 +44,7 @@ export function FeederOutagesList({ feeder, months }: FeederOutagesListProps) {
     <div className="flex flex-col gap-3">
       <p className="text-muted-foreground text-sm">{describeOutages(feeder, overview)}</p>
       <Table aria-label="Interrupções no alimentador">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Mês</TableHead>
-            <TableHead>Horas sem energia</TableHead>
-            <TableHead>Interrupções</TableHead>
-            <TableHead>Situação</TableHead>
-          </TableRow>
-        </TableHeader>
+        <TableColumns columns={COLUMNS} />
         <TableBody>
           {months.map((month) => (
             <TableRow key={month.competencia}>

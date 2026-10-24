@@ -88,6 +88,14 @@ export interface YearOverYearTotals {
   variacao_valor_pct: number | null
 }
 
+export interface PaymentPunctuality {
+  faturas_avaliadas: number
+  pagas_em_dia: number
+  pagas_com_atraso: number
+  atraso_medio_dias: number | null
+  vencidas_em_aberto: number
+}
+
 export interface CustomerHistory {
   id_uc: string
   competencia_referencia: string | null
@@ -97,6 +105,7 @@ export interface CustomerHistory {
   faturas: Invoice[]
   faturas_em_aberto: Invoice[]
   valor_em_aberto_rs: number
+  pontualidade: PaymentPunctuality | null
 }
 
 export interface FeederQualityMonth {

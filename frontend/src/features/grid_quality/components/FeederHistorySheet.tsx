@@ -1,6 +1,4 @@
-import { AlertTriangle } from 'lucide-react'
-import { EmptyState } from '@/components/feedback/EmptyState'
-import { LoadingSkeleton } from '@/components/feedback/LoadingSkeleton'
+import { AsyncState } from '@/components/feedback/AsyncState'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { FeederTimeSeriesChart } from '@/features/grid_quality/components/FeederTimeSeriesChart'
 import type { FeederHistory } from '@/features/grid_quality/types/qualityTypes'
@@ -28,12 +26,15 @@ export function FeederHistorySheet({ feederId, history, isLoading, isError, onCl
           <SheetTitle>Alimentador {feederId}</SheetTitle>
           <SheetDescription>DEC acumulado no ano contra o limite anual de referência (suposição pendente, B1); o valor do mês aparece ao passar o mouse.</SheetDescription>
         </SheetHeader>
-        {isLoading ? <LoadingSkeleton count={4} className="h-8" /> : null}
-        {isError ? (
-          <EmptyState title="Não foi possível carregar o histórico" icon={<AlertTriangle className="size-10" />} />
-        ) : null}
-        {!isLoading && !isError && points.length === 0 ? <EmptyState title="Sem histórico para este alimentador" /> : null}
-        {points.length > 0 ? <FeederTimeSeriesChart points={points} /> : null}
+        <AsyncState
+          isLoading={isLoading}
+          isError={isError}
+          isEmpty={points.length === 0}
+          errorTitle="Não foi possível carregar o histórico"
+          emptyTitle="Sem histórico para este alimentador"
+        >
+          <FeederTimeSeriesChart points={points} />
+        </AsyncState>
       </SheetContent>
     </Sheet>
   )

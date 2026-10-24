@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AsyncListState } from '@/features/loss_management/components/AsyncListState'
+import { AsyncState } from '@/components/feedback/AsyncState'
 import { CancelOrderDialog } from '@/features/loss_management/components/CancelOrderDialog'
 import { DispatchOrderDialog } from '@/features/loss_management/components/DispatchOrderDialog'
 import { ExportOrdersButton } from '@/features/loss_management/components/ExportOrdersButton'
@@ -38,7 +38,7 @@ export function InspectionOrdersTab() {
         </Button>
         <ExportOrdersButton disabled={!hasOrdersToDispatch} />
       </div>
-      <AsyncListState
+      <AsyncState
         isLoading={isLoading}
         isError={isError}
         isEmpty={orders.length === 0}
@@ -48,7 +48,7 @@ export function InspectionOrdersTab() {
         emptyDescription="Gere ordens a partir da Fila de Suspeitas para acompanhá-las aqui."
       >
         <InspectionOrdersTable orders={orders} onAction={(kind, order) => setPendingAction({ kind, order })} />
-      </AsyncListState>
+      </AsyncState>
       {isUploadOpen ? <InspectionUploadModal onClose={() => setIsUploadOpen(false)} /> : null}
       {pendingAction && actionKind === 'dispatch' ? <DispatchOrderDialog order={pendingAction.order} onClose={closeAction} /> : null}
       {pendingAction && actionKind === 'result' ? <RegisterResultDialog order={pendingAction.order} onClose={closeAction} /> : null}

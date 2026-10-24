@@ -1,10 +1,12 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip-card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableColumns, TableRow } from '@/components/ui/table'
 import { QualityStatusBadge } from '@/features/grid_quality/components/QualityStatusBadge'
 import { formatDecimal } from '@/features/grid_quality/utils/qualityFormatters'
 import type { FeederRanking } from '@/features/grid_quality/types/qualityTypes'
+
+const COLUMNS = ['Alimentador', 'DEC acumulado (h)', 'Limite anual DEC (h)', 'Excesso DEC (h)', 'FEC acumulado (vezes)', 'Limite anual FEC', 'Status'] as const
 
 const APPROXIMATE_LIMIT_HINT =
   'Limite aproximado: mediana dos conjuntos mapeados da RMR, usada onde não há conjunto próprio (ADR-003).'
@@ -37,17 +39,7 @@ export function FeederRankingTable({ feeders, onSelect }: FeederRankingTableProp
   // shortcut: sem paginação, a base tem ~100 alimentadores; paginar se passar de algumas centenas.
   return (
     <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Alimentador</TableHead>
-          <TableHead>DEC acumulado (h)</TableHead>
-          <TableHead>Limite anual DEC (h)</TableHead>
-          <TableHead>Excesso DEC (h)</TableHead>
-          <TableHead>FEC acumulado (vezes)</TableHead>
-          <TableHead>Limite anual FEC</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
+      <TableColumns columns={COLUMNS} />
       <TableBody>
         {feeders.map((feeder) => (
           <TableRow key={feeder.id_alimentador}>

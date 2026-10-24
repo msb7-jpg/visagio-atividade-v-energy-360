@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { ActionDialog } from '@/features/loss_management/components/ActionDialog'
 import { ActionDialogFooter } from '@/features/loss_management/components/ActionDialogFooter'
 import { useCreateInspectionMutation } from '@/features/loss_management/hooks/useLossMutations'
 import type { SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
@@ -28,28 +28,22 @@ export function CreateInspectionDialog({ unit, onClose }: CreateInspectionDialog
   }
 
   return (
-    <Dialog open onOpenChange={(isOpen) => (isOpen ? undefined : onClose())}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Gerar ordem de inspeção</DialogTitle>
-          <DialogDescription>A UC sai da fila e passa para a aba Ordens em Campo.</DialogDescription>
-        </DialogHeader>
-        <dl className="grid grid-cols-2 gap-2 text-sm">
-          <dt className="text-muted-foreground">UC</dt>
-          <dd className="font-mono">{unit.id_uc}</dd>
-          <dt className="text-muted-foreground">Motivo</dt>
-          <dd>{motivo}</dd>
-          <dt className="text-muted-foreground">Energia a recuperar</dt>
-          <dd>{formatKwh(unit.kwh_estimado_recuperar)}</dd>
-        </dl>
-        <ActionDialogFooter
-          confirmLabel="Confirmar ordem"
-          isPending={createMutation.isPending}
-          errorMessage={createMutation.isError ? getApiErrorMessage(createMutation.error) : null}
-          onCancel={onClose}
-          onConfirm={handleConfirm}
-        />
-      </DialogContent>
-    </Dialog>
+    <ActionDialog title="Gerar ordem de inspeção" description="A UC sai da fila e passa para a aba Ordens em Campo." onClose={onClose}>
+      <dl className="grid grid-cols-2 gap-2 text-sm">
+        <dt className="text-muted-foreground">UC</dt>
+        <dd className="font-mono">{unit.id_uc}</dd>
+        <dt className="text-muted-foreground">Motivo</dt>
+        <dd>{motivo}</dd>
+        <dt className="text-muted-foreground">Energia a recuperar</dt>
+        <dd>{formatKwh(unit.kwh_estimado_recuperar)}</dd>
+      </dl>
+      <ActionDialogFooter
+        confirmLabel="Confirmar ordem"
+        isPending={createMutation.isPending}
+        errorMessage={createMutation.isError ? getApiErrorMessage(createMutation.error) : null}
+        onCancel={onClose}
+        onConfirm={handleConfirm}
+      />
+    </ActionDialog>
   )
 }

@@ -1,8 +1,8 @@
 import { useState, type ChangeEvent } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { ActionDialog } from '@/features/loss_management/components/ActionDialog'
 import { ActionDialogFooter } from '@/features/loss_management/components/ActionDialogFooter'
 import { useUpdateInspectionMutation } from '@/features/loss_management/hooks/useLossMutations'
 import type { InspectionOrder, InspectionOrderUpdate } from '@/features/loss_management/types/lossTypes'
@@ -60,61 +60,55 @@ export function RegisterResultDialog({ order, onClose }: RegisterResultDialogPro
   }
 
   return (
-    <Dialog open onOpenChange={(isOpen) => (isOpen ? undefined : onClose())}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Registrar resultado da ordem #{order.id_inspecao}</DialogTitle>
-          <DialogDescription>UC {order.id_uc} · a ordem será concluída.</DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="irregularidade" required>Irregularidade constatada?</Label>
-            <Select id="irregularidade" value={form.irregularidade} onChange={updateField('irregularidade')}>
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="tipo-irregularidade">Tipo de irregularidade</Label>
-            <Select
-              id="tipo-irregularidade"
-              value={form.tipo}
-              onChange={updateField('tipo')}
-              disabled={form.irregularidade !== 'sim'}
-            >
-              <option value="">Não informado</option>
-              {IRREGULARITY_TYPES.map((irregularityType) => (
-                <option key={irregularityType} value={irregularityType}>{irregularityType}</option>
-              ))}
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="kwh-recuperado">kWh recuperado</Label>
-            <Input
-              id="kwh-recuperado"
-              type="number"
-              min={0}
-              step="0.1"
-              value={form.kwh}
-              onChange={updateField('kwh')}
-              disabled={form.irregularidade !== 'sim'}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="numero-toi">Número do TOI</Label>
-            <Input id="numero-toi" value={form.toi} onChange={updateField('toi')} disabled={form.irregularidade !== 'sim'} />
-          </div>
+    <ActionDialog title={`Registrar resultado da ordem #${order.id_inspecao}`} description={`UC ${order.id_uc} · a ordem será concluída.`} onClose={onClose}>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="irregularidade" required>Irregularidade constatada?</Label>
+          <Select id="irregularidade" value={form.irregularidade} onChange={updateField('irregularidade')}>
+            <option value="">Selecione</option>
+            <option value="sim">Sim</option>
+            <option value="nao">Não</option>
+          </Select>
         </div>
-        <ActionDialogFooter
-          confirmLabel="Salvar resultado"
-          isPending={updateMutation.isPending}
-          isConfirmDisabled={form.irregularidade === ''}
-          errorMessage={updateMutation.isError ? getApiErrorMessage(updateMutation.error) : null}
-          onCancel={onClose}
-          onConfirm={handleConfirm}
-        />
-      </DialogContent>
-    </Dialog>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="tipo-irregularidade">Tipo de irregularidade</Label>
+          <Select
+            id="tipo-irregularidade"
+            value={form.tipo}
+            onChange={updateField('tipo')}
+            disabled={form.irregularidade !== 'sim'}
+          >
+            <option value="">Não informado</option>
+            {IRREGULARITY_TYPES.map((irregularityType) => (
+              <option key={irregularityType} value={irregularityType}>{irregularityType}</option>
+            ))}
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="kwh-recuperado">kWh recuperado</Label>
+          <Input
+            id="kwh-recuperado"
+            type="number"
+            min={0}
+            step="0.1"
+            value={form.kwh}
+            onChange={updateField('kwh')}
+            disabled={form.irregularidade !== 'sim'}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="numero-toi">Número do TOI</Label>
+          <Input id="numero-toi" value={form.toi} onChange={updateField('toi')} disabled={form.irregularidade !== 'sim'} />
+        </div>
+      </div>
+      <ActionDialogFooter
+        confirmLabel="Salvar resultado"
+        isPending={updateMutation.isPending}
+        isConfirmDisabled={form.irregularidade === ''}
+        errorMessage={updateMutation.isError ? getApiErrorMessage(updateMutation.error) : null}
+        onCancel={onClose}
+        onConfirm={handleConfirm}
+      />
+    </ActionDialog>
   )
 }
