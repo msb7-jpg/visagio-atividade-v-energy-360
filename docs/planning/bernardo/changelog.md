@@ -111,3 +111,15 @@
   - As datas de leitura do bruto geram intervalos de 19 a 47 dias; a confiabilidade da média por dia depende do `dias_faturamento` da Fatia 01.
 - **Validação de Testes:**
   - Frontend: ESLint, Fallow, `tsc -b` e Vitest (34) aprovados.
+
+### [2026-10-24] - Refinamentos do portal: componentes compartilhados, carregamento sob demanda e pontualidade
+- **Autor:** Bernardo H
+- **Branch:** `chore/refinamentos-portal`
+- **O que foi feito:**
+  - Componentes compartilhados para eliminar repetição entre as telas: `components/feedback/AsyncState.tsx` (carregando, erro, vazio ou conteúdo; substitui `AsyncListState` da Fatia 05, `QuerySection` da Fatia 03 e os blocos manuais da Fatia 06), `TableColumns` em `components/ui/table.tsx` (cabeçalho de tabela a partir da lista de colunas, usado em 5 tabelas) e `ActionDialog` na Fatia 05 (moldura dos 3 diálogos de ordem). Fallow: de 0,9% de duplicação para 0%.
+  - Telas carregadas sob demanda (`React.lazy` no `AppRoutes` e `Suspense` no `AppLayout`): arquivo inicial de 1.103 kB para 274 kB.
+  - Visão 360 passa a usar o grupo central `CUSTOMER360_ACCESS` (Fatia 06) no lugar da lista local de perfis.
+  - Pontualidade de pagamento nas últimas 12 faturas (pagas em dia, com atraso, atraso médio e vencidas em aberto), na aba Faturas.
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter e pytest (510) aprovados.
+  - Frontend: ESLint, Fallow (0% de duplicação), `tsc -b`, Vitest (86) e build aprovados.

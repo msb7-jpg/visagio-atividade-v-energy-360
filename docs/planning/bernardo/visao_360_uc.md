@@ -130,7 +130,7 @@
 - [ ] **Ryei (Fatia 02), baixa prioridade:** criar `CREATE INDEX idx_fato_atend_uc ON fato_atendimentos(id_uc)`. Medido com o volume real (319 mil chamados): ~11 ms por busca sem índice, então não bloqueia.
 - [ ] **Ryei + João Henrique:** `dec_limite_aneel` / `violou_meta` contradizem o glossário do case (*"não para comparar com os limites regulatórios reais"*). Definir se a Visão 360 mostra badge de meta ANEEL.
 - [ ] **João Henrique + Adrian:** confirmar a inclusão do `gerente_perdas` no acesso à Visão 360 (case, seção 3: *"o atendente, o analista de perdas e o diretor comercial"*). Atualizar a matriz RBAC do `ROADMAP.md` (linha 125).
-- [ ] **João Henrique:** criar um grupo `CUSTOMER360_ACCESS` em `app/shared/role_groups.py` (incluindo `GERENTE_PERDAS`) e trocar a lista local `CUSTOMER360_ROLES` do meu router por ele, quando a branch do RBAC for mergeada.
+- [x] **João Henrique:** criar um grupo `CUSTOMER360_ACCESS` em `app/shared/role_groups.py` (incluindo `GERENTE_PERDAS`) e trocar a lista local `CUSTOMER360_ROLES` do meu router por ele, quando a branch do RBAC for mergeada. (feito em 2026-10-24)
 
 ### 5.2 Corrigir / decidir na minha fatia
 - [ ] Decidir com o time o limiar de ±10% de variação de consumo (`LIMIAR_VARIACAO_CONSUMO_PCT`).
@@ -142,14 +142,14 @@
 - [ ] Trocar a seed pelo `v_energy.db` real e conferir os tipos/valores; ajustar `tests/customer360_seed.py` se o schema divergir.
 
 - [ ] Sugestão: mostrar o histórico de inspeções de perdas da UC (`fato_inspecoes_perdas`), completando a visão do analista de perdas.
-- [ ] Sugestão: mostrar a pontualidade de pagamento (pagas após o vencimento) a partir de `data_pagamento` e `data_vencimento`.
+- [x] Sugestão: mostrar a pontualidade de pagamento (pagas após o vencimento) a partir de `data_pagamento` e `data_vencimento`. (feito em 2026-10-24)
 
 ### 5.3 Frontend e integração
 - [x] Instalar `bun` no ambiente local. `make` segue ausente (comandos do Makefile rodados manualmente).
 - [ ] Instalar `make` no Windows para rodar `make lint-all` / `make test-all` direto.
 - [x] Biblioteca de gráfico: chart no padrão shadcn (`components/ui/chart.tsx`) sobre Recharts 2.15. Avisar o time para reutilizarem.
 - [x] Implementar o frontend (checklist da seção 3).
-- [ ] Propor ao time carregar as páginas sob demanda (`React.lazy`) no `AppRoutes.tsx`: o bundle passou de 500 kB.
+- [x] Propor ao time carregar as páginas sob demanda (`React.lazy`) no `AppRoutes.tsx`: o bundle passou de 500 kB. (feito em 2026-10-24: 1.103 kB → 274 kB)
 - [ ] No merge com a Fatia 05, resolver o conflito esperado em `AppRoutes.tsx` mantendo as rotas `/losses` e `/customers` (simulado em 2026-10-21: ESLint, Fallow, tsc, build e 25 testes verdes).
 - [ ] Propor ao João um `PageHeader` compartilhado junto do `AppLayout`: o cabeçalho com "Voltar ao painel" é igual ao da Fatia 05 (Fallow: 20 linhas duplicadas, dentro do limite de 5%).
 - [ ] Adicionar acesso à `/customers` no menu (`SidebarNav` do João) ou no `DashboardPage`; hoje a rota só é acessada digitando a URL.
