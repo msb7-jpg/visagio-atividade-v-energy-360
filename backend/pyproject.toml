@@ -271,6 +271,7 @@ source_modules = [
     "app.features.revenue.decomposition",
     "app.features.revenue.kpis",
     "app.features.revenue.breakdown",
+    "app.features.revenue.history",
     "app.features.loss_management.service",
     "app.features.loss_management.scoring",
 ]
