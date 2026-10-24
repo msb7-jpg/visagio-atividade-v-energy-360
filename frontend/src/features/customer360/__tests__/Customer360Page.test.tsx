@@ -112,7 +112,7 @@ function buildHistory(diagnosis: HighBillDiagnosis): CustomerHistory {
     faturas: [...openInvoices, buildInvoice('2026-04', 'PAGA', 176)],
     faturas_em_aberto: openInvoices,
     valor_em_aberto_rs: 380,
-    pontualidade: { faturas_avaliadas: 12, pagas_em_dia: 8, pagas_com_atraso: 2, atraso_medio_dias: 6, vencidas_em_aberto: 1 }
+    pontualidade: { faturas_avaliadas: 11, pagas_em_dia: 8, pagas_com_atraso: 2, atraso_medio_dias: 6, vencidas_em_aberto: 1 }
   }
 }
 
@@ -256,7 +256,7 @@ describe('Customer360Page', () => {
     fireEvent.click(await screen.findByRole('tab', { name: /Faturas.*2 em aberto/ }))
 
     expect(await screen.findByText(/2 faturas em aberto, total de R\$\s380,00/)).toBeInTheDocument()
-    expect(screen.getByText('Últimas 12 contas: 8 pagas em dia, 2 com atraso (atraso médio de 6 dias) e 1 vencida em aberto.')).toBeInTheDocument()
+    expect(screen.getByText('Últimas 11 contas: 8 pagas em dia, 2 com atraso (atraso médio de 6 dias) e 1 vencida em aberto.')).toBeInTheDocument()
     const table = screen.getByRole('table', { name: 'Faturas da unidade consumidora' })
     expect(within(table).getByText('Vencida')).toBeInTheDocument()
     expect(within(table).getByText('Aberta')).toBeInTheDocument()

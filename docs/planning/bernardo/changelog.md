@@ -123,3 +123,14 @@
 - **Validação de Testes:**
   - Backend: Ruff, Pylint 10/10, import-linter e pytest (510) aprovados.
   - Frontend: ESLint, Fallow (0% de duplicação), `tsc -b`, Vitest (86) e build aprovados.
+
+### [2026-10-24] - Correção da contagem de faturas na pontualidade de pagamento
+- **Autor:** Bernardo H
+- **Branch:** `chore/refinamentos-portal`
+- **O que foi feito:**
+  - `faturas_avaliadas` passa a contar só as faturas com desfecho conhecido (pagas com datas válidas ou vencidas), de modo que é sempre a soma de pagas em dia, com atraso e vencidas em aberto. Antes, faturas ainda a vencer ou pagas sem data entravam no total e a frase da aba Faturas podia somar menos do que o número exibido.
+  - Sem nenhuma fatura avaliável, `pontualidade` volta `None` e a frase não aparece.
+  - Testes ajustados (unitário, router e Customer360Page) e novo teste para o caso sem faturas avaliáveis.
+- **Validação de Testes:**
+  - Backend: Ruff e pytest (511) aprovados.
+  - Frontend: ESLint, Fallow e Vitest (86) aprovados.

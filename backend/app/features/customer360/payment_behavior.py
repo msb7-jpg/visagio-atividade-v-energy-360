@@ -48,7 +48,9 @@ def summarize_punctuality(invoices: list[InvoiceDTO]) -> PaymentPunctualityDTO |
         invoices: Faturas da UC, da competência mais recente para a mais antiga.
 
     Returns:
-        Contagem de faturas pagas em dia e com atraso, atraso médio e vencidas em aberto; None sem faturas.
+        Contagem de faturas pagas em dia e com atraso, atraso médio e vencidas em aberto; None sem faturas avaliáveis.
+        `faturas_avaliadas` conta só as faturas com desfecho conhecido (pagas com datas válidas ou vencidas),
+        então é sempre a soma de em dia, com atraso e vencidas; faturas ainda a vencer ficam de fora.
     """
     recent_invoices = invoices[:FATURAS_AVALIADAS]
     if not recent_invoices:
@@ -56,9 +58,11 @@ def summarize_punctuality(invoices: list[InvoiceDTO]) -> PaymentPunctualityDTO |
     delays = [delay for invoice in recent_invoices if (delay := days_late(invoice)) is not None]
     late_delays = [delay for delay in delays if delay > 0]
     overdue_count = sum(1 for invoice in recent_invoices if invoice.status_pagamento == STATUS_VENCIDA)
+    if not delays and overdue_count == 0:
+        return None
     average_delay = round(sum(late_delays) / len(late_delays), 1) if late_delays else None
     return PaymentPunctualityDTO(
-        faturas_avaliadas=len(recent_invoices),
+        faturas_avaliadas=len(delays) + overdue_count,
         pagas_em_dia=len(delays) - len(late_delays),
         pagas_com_atraso=len(late_delays),
         atraso_medio_dias=average_delay,

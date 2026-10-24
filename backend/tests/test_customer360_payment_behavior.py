@@ -40,7 +40,7 @@ def test_punctuality_counts_on_time_late_and_overdue():
     punctuality = summarize_punctuality(invoices)
 
     assert punctuality is not None
-    assert punctuality.faturas_avaliadas == 5
+    assert punctuality.faturas_avaliadas == 4
     assert (punctuality.pagas_em_dia, punctuality.pagas_com_atraso) == (1, 2)
     assert punctuality.atraso_medio_dias == pytest.approx(6.0)
     assert punctuality.vencidas_em_aberto == 1
@@ -59,3 +59,12 @@ def test_punctuality_uses_only_the_last_twelve_invoices():
 
 def test_punctuality_without_invoices_is_none():
     assert summarize_punctuality([]) is None
+
+
+def test_punctuality_ignores_invoices_not_yet_due_or_paid_without_date():
+    invoices = [
+        invoice("2026-06", "2026-06-20", None, status="ABERTA"),
+        invoice("2026-05", "2026-05-20", None, status="PAGA"),
+    ]
+
+    assert summarize_punctuality(invoices) is None
