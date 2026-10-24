@@ -1,8 +1,10 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableColumns, TableRow } from '@/components/ui/table'
 import type { SuspicionReason, SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
 import { formatCurrency, formatKwh, formatPercent, REASON_LABELS } from '@/features/loss_management/utils/lossFormatters'
+
+const COLUMNS = ['#', 'UC', 'Município / Bairro', 'Classe', 'Motivo', 'Score', 'Chance de acerto', 'Energia a recuperar', 'Ação'] as const
 
 const REASON_BADGE_VARIANT: Record<SuspicionReason, 'destructive' | 'outline'> = {
   queda_subita: 'destructive',
@@ -23,19 +25,7 @@ interface SuspiciousUnitsTableProps {
 export function SuspiciousUnitsTable({ units, onGenerateOrder }: SuspiciousUnitsTableProps) {
   return (
     <Table aria-label="Fila de UCs suspeitas">
-      <TableHeader>
-        <TableRow>
-          <TableHead>#</TableHead>
-          <TableHead>UC</TableHead>
-          <TableHead>Município / Bairro</TableHead>
-          <TableHead>Classe</TableHead>
-          <TableHead>Motivo</TableHead>
-          <TableHead>Score</TableHead>
-          <TableHead>Chance de acerto</TableHead>
-          <TableHead>Energia a recuperar</TableHead>
-          <TableHead>Ação</TableHead>
-        </TableRow>
-      </TableHeader>
+      <TableColumns columns={COLUMNS} />
       <TableBody>
         {units.map((unit, rankIndex) => (
           <TableRow key={unit.id_uc}>

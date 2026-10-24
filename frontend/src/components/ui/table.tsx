@@ -130,8 +130,30 @@ function TableCaption({ className, ...props }: React.ComponentProps<'caption'>) 
   )
 }
 
+interface TableColumnsProps {
+  columns: readonly string[]
+}
+
+/**
+ * Cabeçalho completo da tabela a partir da lista de títulos das colunas.
+ * Evita repetir TableHeader, TableRow e TableHead em cada tabela do portal.
+ *
+ * @param props - Títulos das colunas, na ordem em que aparecem.
+ * @returns Elemento thead com uma linha de cabeçalho.
+ */
+function TableColumns({ columns }: TableColumnsProps) {
+  return (
+    <TableHeader>
+      <TableRow>
+        {columns.map((column) => <TableHead key={column}>{column}</TableHead>)}
+      </TableRow>
+    </TableHeader>
+  )
+}
+
 export {
   Table,
+  TableColumns,
   TableHeader,
   TableBody,
   TableFooter,

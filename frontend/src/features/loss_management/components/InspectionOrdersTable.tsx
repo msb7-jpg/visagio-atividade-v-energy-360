@@ -1,8 +1,10 @@
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableColumns, TableRow } from '@/components/ui/table'
 import { InspectionStatusBadge } from '@/features/loss_management/components/InspectionStatusBadge'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { formatDate, formatKwh } from '@/features/loss_management/utils/lossFormatters'
+
+const COLUMNS = ['OS', 'UC', 'Aberta em', 'Fiscal', 'Status', 'Resultado de campo', 'Ações'] as const
 
 export type OrderActionKind = 'dispatch' | 'result' | 'cancel'
 
@@ -64,17 +66,7 @@ function OrderActions({ order, onAction }: OrderActionsProps) {
 export function InspectionOrdersTable({ orders, onAction }: InspectionOrdersTableProps) {
   return (
     <Table aria-label="Ordens de inspeção">
-      <TableHeader>
-        <TableRow>
-          <TableHead>OS</TableHead>
-          <TableHead>UC</TableHead>
-          <TableHead>Aberta em</TableHead>
-          <TableHead>Fiscal</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Resultado de campo</TableHead>
-          <TableHead>Ações</TableHead>
-        </TableRow>
-      </TableHeader>
+      <TableColumns columns={COLUMNS} />
       <TableBody>
         {orders.map((order) => (
           <TableRow key={order.id_inspecao}>
