@@ -19,8 +19,6 @@ export interface ChatMessageProps {
   message: ChatMessageType
   /** Callback para nova tentativa de envio. */
   onRetry?: () => void
-  /** Callback para acionar a geração de gráfico a partir dos dados da mensagem. */
-  onGenerateChart?: () => void
   /** Indica se o streaming está ativo para desabilitar ações. */
   isStreaming?: boolean
   /** Classes CSS adicionais. */
@@ -67,7 +65,6 @@ function UserChatMessage({ message, className }: { message: ChatMessageType; cla
 function AssistantChatMessage({
   message,
   onRetry,
-  onGenerateChart,
   isStreaming = false,
   className
 }: ChatMessageProps) {
@@ -88,7 +85,7 @@ function AssistantChatMessage({
         {message.sql ? <SqlCodeBlock query={message.sql} /> : null}
 
         {message.content ? (
-          <MarkdownRenderer content={message.content} chart={message.chart} />
+          <MarkdownRenderer content={message.content} />
         ) : null}
 
         {message.error ? (
@@ -99,8 +96,6 @@ function AssistantChatMessage({
           <ChatMessageActions
             content={message.content}
             onRetry={onRetry}
-            onGenerateChart={onGenerateChart}
-            hasChart={Boolean(message.chart)}
             isStreaming={isStreaming}
           />
         ) : null}

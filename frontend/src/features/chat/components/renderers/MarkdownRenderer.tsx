@@ -2,9 +2,7 @@ import type { JSX } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { CommandBadge } from '@/features/chat/components/feed/CommandBadge'
-import { InteractiveChartCard } from '@/features/chat/components/InteractiveChartCard'
 import { TableRenderer } from '@/features/chat/components/renderers/TableRenderer'
-import type { ChartSpec } from '@/features/chat/types/chat.types'
 import { cn } from '@/lib/utils'
 
 /**
@@ -13,19 +11,17 @@ import { cn } from '@/lib/utils'
 export interface MarkdownRendererProps {
   /** Texto puro em Markdown formatado. */
   content: string
-  /** Configuração declarativa opcional para renderização de gráfico embutido. */
-  chart?: ChartSpec | null
   /** Classes CSS adicionais. */
   className?: string
 }
 
 /**
- * Renderizador de Markdown enriquecido com suporte a tabelas analíticas interativas e gráficos.
+ * Renderizador de Markdown enriquecido com suporte a tabelas analíticas e comandos.
  *
- * @param props - Propriedades com conteúdo textual e gráficos opcionais.
+ * @param props - Propriedades com conteúdo textual e estilização.
  * @returns Elemento JSX contendo o Markdown processado e estilizado.
  */
-export function MarkdownRenderer({ content, chart, className }: MarkdownRendererProps): JSX.Element {
+export function MarkdownRenderer({ content, className }: MarkdownRendererProps): JSX.Element {
   return (
     <div
       className={cn(
@@ -74,12 +70,6 @@ export function MarkdownRenderer({ content, chart, className }: MarkdownRenderer
       >
         {content}
       </ReactMarkdown>
-
-      {chart ? (
-        <div className="not-prose mt-3">
-          <InteractiveChartCard chart={chart} />
-        </div>
-      ) : null}
     </div>
   )
 }

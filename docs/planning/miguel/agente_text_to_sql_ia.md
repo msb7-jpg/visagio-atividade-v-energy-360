@@ -36,10 +36,10 @@
 ### Backend (`backend/app/agent/` & `backend/app/features/chat/`):
 - **Motor LangGraph FSM (`app/agent/`):**
   - Catálogo semântico com mapeamento de jargões ("conta de luz" $\to$ faturas, "falta de luz" $\to$ interrupções, "gato" $\to$ perdas/inspeções).
-  - Nós da FSM: `router_node`, `sql_generator_node`, `sql_validator_node` (AST read-only sqlparse), `sql_executor_node` (`mode=ro`), `corrector.py` (auto-correção self-healing até 3 tentativas), `chart_generator.py` (`ChartJsConfigDTO`), `synthesizer.py` (anti-alucinação estrita).
+  - Nós da FSM: `router_node`, `sql_generator_node`, `sql_validator_node` (AST read-only sqlparse), `sql_executor_node` (`mode=ro`), `corrector.py` (auto-correção self-healing até 3 tentativas), `synthesizer.py` (anti-alucinação estrita).
   - Suporte a **Follow-up** com preservação de contexto e resolução de anáforas.
 - **Despacho SSE & IA Embutida (`app/features/chat/`):**
-  - `POST /api/v1/chat/stream`: Server-Sent Events transmitindo passos de raciocínio, pensamento, SQL gerado e gráficos.
+  - `POST /api/v1/chat/stream`: Server-Sent Events transmitindo passos de raciocínio, pensamento, SQL gerado e dados tabulares.
   - `POST /api/v1/ai/insights`: Endpoint contextual para geração dos Smart Insights em telas.
 
 ### Frontend (`frontend/src/features/chat/` & `frontend/src/features/insights/`):
@@ -48,7 +48,6 @@
 - `components/ChatMessageBubble.tsx`: Balão de mensagem em Markdown.
 - `components/AgentStepProgress.tsx`: Indicador de progresso ("Classificando intenção", "Escrevendo SQL", etc.).
 - `components/SqlAuditAccordion.tsx`: Sanfona para auditoria de SQL e telemetria em ms.
-- `components/InteractiveChartCard.tsx`: Renderizador de gráficos Chart.js interativos.
 - `components/SmartInsightCard.tsx`: Card de IA embutida integrado na Visão 360 e no Dashboard de Receita.
 
 #### 🧩 Componentes do Design System Recomendados (`@/components/ui/` & `@/components/feedback/`):
@@ -79,7 +78,7 @@
 - [x] Adaptar componentes ricos do chat (fidelidade visual ao ai-assistant, botão circular flutuante no canto inferior direito, expansão fluida e modo tela cheia, conformidade com design.md e fallow <= 150 linhas).
 - [x] Implementar `SmartInsightCard.tsx` e plugar na Visão 360 e no Dashboard de Receita.
 - [x] Criar testes no frontend com Vitest em `ChatDrawer.test.tsx`.
-- [x] Expor `<ChatDrawer />` globalmente nas telas ativas, corrigir autenticação JWT do streaming/insights, adicionar `InteractiveChartCard.tsx`, follow-up multi-turno com `MemorySaver` e métricas completas em `evaluate_agent.py`.
+- [x] Expor `<ChatDrawer />` globalmente nas telas ativas, corrigir autenticação JWT do streaming/insights, follow-up multi-turno com `MemorySaver` e métricas completas em `evaluate_agent.py`.
 - [x] Garantir 100% verde em `make lint-all` e `make test-all`.
 
 ---

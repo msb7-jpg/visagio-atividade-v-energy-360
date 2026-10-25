@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
  * Propriedades do indicador de comando de barra ativo.
  */
 export interface CommandPillProps {
-  /** Nome identificador do comando (ex: /chart). */
+  /** Nome identificador do comando (ex: /sql). */
   command: string
   /** Callback acionado ao remover o comando ativo. */
   onRemove: () => void

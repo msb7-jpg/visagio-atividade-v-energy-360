@@ -86,7 +86,7 @@ O backend é estruturado em **Fatias Verticais (*Vertical Slices*)** e adota os 
 ### 2. Frontend (React 19, TypeScript, Vite, Bun)
 - **Design System Shadcn & Radix UI:** Componentes modulares padronizados em `src/components/ui/`.
 - **Governança de Estado Assíncrono com TanStack Query v5:** Consultas otimizadas com cancelamento automático de requisições obsoletas (`signal`).
-- **Streaming em Tempo Real:** Renderização progressiva dos passos de raciocínio do agente e montagem interativa de gráficos Chart.js.
+- **Streaming em Tempo Real:** Renderização progressiva dos passos de raciocínio do agente, código SQL e respostas executivas estruturadas.
 
 ---
 

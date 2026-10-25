@@ -12,7 +12,6 @@ class SlashCommandInfo(TypedDict, total=False):
 
 KNOWN_COMMANDS: dict[str, str] = {
     "sql": "Força rota e execução direta de consulta Text-to-SQL relacional",
-    "chart": "Força geração de gráfico visual (opções: bar, line, pie, doughnut)",
     "direct": "Força resposta direta/institucional sem consulta ao banco",
     "explain": "Explica a metodologia analítica, métricas ou consulta executada",
     "clear": "Limpeza do contexto conversacional",

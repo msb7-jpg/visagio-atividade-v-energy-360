@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
  * Propriedades para renderização do CommandBadge.
  */
 export interface CommandBadgeProps {
-  /** Nome ou token do comando (ex: '/chart', '/sql'). */
+  /** Nome ou token do comando (ex: '/sql', '/explain'). */
   command: string
   /** Argumentos complementares opcionais após o comando. */
   args?: string

@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
@@ -85,7 +85,6 @@ class AgentState(TypedDict):
     error_count: int
     last_error: str | None
     error_category: SqlErrorCategory | None
-    chart_spec: dict[str, Any] | None
     steps: Annotated[list[AgentStepInfo], append_steps]
     command: SlashCommandInfo | None
 
@@ -101,6 +100,5 @@ class AgentStateUpdate(TypedDict, total=False):
     error_count: int
     last_error: str | None
     error_category: SqlErrorCategory | None
-    chart_spec: dict[str, Any] | None
     steps: list[AgentStepInfo]
     command: SlashCommandInfo | None

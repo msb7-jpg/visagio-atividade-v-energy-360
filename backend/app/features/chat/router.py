@@ -43,7 +43,7 @@ async def chat_stream(
 ) -> EventSourceResponse:
     """
     Processa a pergunta do usuário através da máquina de estados do LangGraph
-    e transmite os eventos via SSE: session -> step_end -> thought -> sql -> chart -> data -> answer -> done.
+    e transmite os eventos via SSE: session -> step_end -> thought -> sql -> data -> answer -> done.
     """
     del db
     thread_id = request.thread_id or str(uuid.uuid4())
@@ -65,7 +65,6 @@ async def chat_stream(
             "error_count": 0,
             "last_error": None,
             "error_category": None,
-            "chart_spec": None,
             "steps": [],
             "command": None,
         }

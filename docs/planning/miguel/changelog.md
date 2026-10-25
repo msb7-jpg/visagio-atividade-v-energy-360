@@ -6,6 +6,29 @@
 
 ## Registros de Execução
 
+### [2026-10-25] - Remoção Completa da Geração de Gráficos na Fatia 07 (Miguel)
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Simplificação Arquitetural da FSM do LangGraph (`backend/app/agent/`):**
+    - Removido o nó `chart_generator_node` do fluxo executivo do agente.
+    - Na transição pós-execução SQL (`check_sql_execution`), execuções bem-sucedidas agora direcionam diretamente para `synthesizer_node`.
+    - Excluídos módulos e ferramentas de suporte a gráficos: `nodes/chart_generator.py`, `tools/chart_builder.py`, `schemas/chart_schema.py` e `prompts/chart_prompt.py`.
+    - Movido `TABLE_PRESENT_PROMPT` para `prompts/synthesizer_prompt.py`, priorizando respostas analíticas tabulares limpas em Markdown.
+    - Removido o slash command `/chart` de `KNOWN_COMMANDS` e do roteador `router_node`.
+    - Removido o campo `chart_spec` de `AgentState`, `AgentStateUpdate` e do despacho SSE em `event_dispatcher.py`.
+    - Removidos enums `AgentNode.CHART_GENERATOR`, `SSEEventType.CHART` e `ChartType` em `constants.py`.
+  - **Limpeza no Frontend do Chat (`frontend/src/features/chat/`):**
+    - Removido o componente `InteractiveChartCard.tsx`.
+    - Removido suporte ao evento SSE `chart` e à especificação `ChartSpec` de `chatMessageReducer.ts` e `types/chat.types.ts`.
+    - Removido o botão "Gerar Gráfico" (`onGenerateChart` / `hasChart`) em `ChatMessageActions.tsx`, `ChatMessage.tsx` e `ChatContainer.tsx`.
+    - Atualizados `MarkdownRenderer.tsx` e testes unitários (`chatMessageReducer.test.ts`, `test_agent_graph.py`).
+  - **Atualização da Documentação:**
+    - Atualizados `docs/STATE_MACHINE.md`, `ROADMAP.md`, `README.md` e `agente_text_to_sql_ia.md`.
+- **Validação de Testes e Linters:**
+  - `make lint-all` e `make test-all`.
+
+---
+
 ### [2026-10-25] - Encaixe do ChatDrawer Global no AppLayout, SmartInsightCard no Dashboard e Carga SQLite (Miguel)
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

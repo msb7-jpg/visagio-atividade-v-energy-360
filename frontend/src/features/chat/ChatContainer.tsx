@@ -76,7 +76,6 @@ export function ChatContainer({
                 message={msg}
                 isStreaming={isStreaming}
                 onRetry={handleRetryLast}
-                onGenerateChart={() => handleSend('/chart Gere uma visualização para a análise acima')}
               />
             ))
           )}

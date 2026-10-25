@@ -21,23 +21,6 @@ export interface AgentStepItem {
   duration_ms?: number
 }
 
-export interface ChartDataset {
-  label: string
-  data: number[]
-}
-
-export interface ChartDataPayload {
-  labels: string[]
-  datasets: ChartDataset[]
-}
-
-export interface ChartSpec {
-  chart_type: 'bar' | 'line' | 'pie' | 'doughnut'
-  title: string
-  description?: string
-  data: ChartDataPayload
-}
-
 export interface SlashCommandDefinition {
   name: string
   label: string
@@ -51,7 +34,6 @@ export interface ChatMessage {
   thought?: string | null
   sql?: string | null
   data?: Record<string, unknown>[] | null
-  chart?: ChartSpec | null
   error?: string | null
   steps?: AgentStepItem[]
   duration_ms?: number

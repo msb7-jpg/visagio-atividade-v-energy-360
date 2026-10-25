@@ -1,7 +1,6 @@
 import {
   STEP_STATUS,
   type AgentStepItem,
-  type ChartSpec,
   type ChatMessage
 } from '@/features/chat/types/chat.types'
 
@@ -50,31 +49,6 @@ function handleSqlEvent(currentMessage: ChatMessage, payload: PayloadMap): ChatM
   }
 }
 
-function resolveChartData(innerChart: PayloadMap): ChartSpec['data'] {
-  const nestedData = innerChart.data as ChartSpec['data'] | undefined
-  if (nestedData && Array.isArray(nestedData.labels)) {
-    return nestedData
-  }
-  const labels = Array.isArray(innerChart.labels) ? (innerChart.labels as string[]) : []
-  const datasets = Array.isArray(innerChart.datasets)
-    ? (innerChart.datasets as ChartSpec['data']['datasets'])
-    : []
-  return { labels, datasets }
-}
-
-function handleChartEvent(currentMessage: ChatMessage, payload: PayloadMap): ChatMessage {
-  const innerChart = (payload.chart as PayloadMap | undefined) ?? payload
-  const rawType = (innerChart.chart_type ?? innerChart.type ?? 'bar') as ChartSpec['chart_type']
-
-  const spec: ChartSpec = {
-    chart_type: rawType,
-    title: String(innerChart.title || 'Visualização Gráfica'),
-    description: innerChart.description ? String(innerChart.description) : undefined,
-    data: resolveChartData(innerChart)
-  }
-  return { ...currentMessage, chart: spec }
-}
-
 function resolveRowCount(payload: PayloadMap, rows: Record<string, unknown>[] | null): number | undefined {
   if (typeof payload.total === 'number') {
     return payload.total
@@ -113,7 +87,6 @@ const EVENT_HANDLERS: Record<string, (msg: ChatMessage, payload: PayloadMap) => 
   thought: handleThoughtEvent,
   sql: handleSqlEvent,
   data: handleDataEvent,
-  chart: handleChartEvent,
   token: (msg, payload) => ({ ...msg, content: msg.content + String(payload.token || payload.text || '') }),
   answer: (msg, payload) => ({ ...msg, content: String(payload.answer || payload.content || '') }),
   error: handleErrorEvent
