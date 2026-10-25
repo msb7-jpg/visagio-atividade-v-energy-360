@@ -27,13 +27,13 @@ function TabsList({ className, ...props }: TabsPrimitive.List.Props): React.JSX.
   )
 }
 
-/** Botão seletor de aba individual com estado ativo em card surface (design.md). */
+/** Botão seletor de aba individual com estado ativo destacado na cor primária. */
 function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props): React.JSX.Element {
   return (
     <TabsPrimitive.Tab
       data-slot="tabs-trigger"
       className={cn(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[selected]:bg-card data-[selected]:text-foreground data-[selected]:shadow-sm cursor-pointer',
+        'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-primary data-[active]:text-primary-foreground data-[active]:shadow-sm cursor-pointer',
         className
       )}
       {...props}
