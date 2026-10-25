@@ -28,14 +28,20 @@ export function ChatWidgetTrigger({
     >
       <div className="relative">
         {isStreaming ? (
-          <span className="absolute -inset-1 animate-ping rounded-full bg-primary/40 opacity-75" />
+          <span className="pointer-events-none absolute -inset-1 animate-ping rounded-full bg-primary/40 opacity-75" />
         ) : null}
-        <div className="flex size-14 items-center justify-center rounded-full border border-primary/40 bg-primary text-primary-foreground shadow-2xl transition-transform hover:scale-105 active:scale-95">
+        <div
+          onClick={onOpen}
+          className="flex size-14 cursor-pointer items-center justify-center rounded-full border border-primary/40 bg-primary text-primary-foreground shadow-2xl transition-transform hover:scale-105 active:scale-95"
+        >
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            onClick={onOpen}
+            onClick={event => {
+              event.stopPropagation()
+              onOpen()
+            }}
             aria-label="Abrir Assistente V-Energy IA"
             title="Abrir Assistente V-Energy IA"
           >

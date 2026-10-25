@@ -74,6 +74,7 @@ export function ChatWidget({
       <AnimatePresence>
         {!isOpen ? (
           <ChatWidgetTrigger
+            key="chat-trigger"
             isStreaming={isStreaming}
             positionClass={positionClass}
             onOpen={() => setIsOpen(true)}
