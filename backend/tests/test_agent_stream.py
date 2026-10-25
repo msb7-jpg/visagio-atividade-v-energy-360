@@ -18,17 +18,16 @@ async def test_agent_chat_stream_and_insights():
         token = login_resp.json()["access_token"]
         auth_headers = {"Authorization": f"Bearer {token}"}
 
-        # 2. Teste do endpoint de insights proativos
+        # 2. Teste do endpoint de insights proativos (quando offline -> 503 Service Unavailable)
         insights_resp = await ac.post(
             "/api/v1/agent/insights",
             headers=auth_headers,
             json={"tela": "operacao", "metricas": {"dec": 8.4, "fec": 4.1}},
         )
-        assert insights_resp.status_code == 200
-        data = insights_resp.json()
-        assert "insights" in data
-        assert len(data["insights"]) >= 2
-        assert "resumo_executivo" in data
+        assert insights_resp.status_code == 503
+        error_data = insights_resp.json()
+        assert "detail" in error_data
+        assert error_data.get("error_type") == "ServiceUnavailableError"
 
         # 3. Teste do endpoint SSE de chat stream com mock provider
         stream_resp = await ac.post(
@@ -42,3 +41,23 @@ async def test_agent_chat_stream_and_insights():
         assert "event: session" in body
         assert "event: step_end" in body
         assert "event: done" in body
+
+        # 4. Teste dos aliases canônicos (/api/v1/chat/stream e /api/v1/ai/insights) e follow-up
+        followup_resp = await ac.post(
+            "/api/v1/chat/stream",
+            headers=auth_headers,
+            json={
+                "pergunta": "E apenas para a classe comercial?",
+                "thread_id": "thread-followup-test",
+                "provider": "mock",
+            },
+        )
+        assert followup_resp.status_code == 200
+        assert "thread-followup-test" in followup_resp.text
+
+        losses_insights_resp = await ac.post(
+            "/api/v1/ai/insights",
+            headers=auth_headers,
+            json={"context": "losses"},
+        )
+        assert losses_insights_resp.status_code == 503

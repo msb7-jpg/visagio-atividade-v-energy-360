@@ -92,4 +92,27 @@ describe('chatMessageReducer', () => {
     expect(updated.error).toBe('Comando DROP não permitido')
     expect(updated.steps?.every(stepItem => stepItem.status === STEP_STATUS.ERROR)).toBe(true)
   })
+
+  it('deve processar evento chart aninhado e evento data com contagem de registros', () => {
+    const chartPayload = JSON.stringify({
+      chart: {
+        type: 'bar',
+        title: 'Consumo por Classe',
+        labels: ['B1', 'B3'],
+        datasets: [{ label: 'kWh', data: [1200, 3400] }]
+      }
+    })
+    const withChart = handleSseEvent(baseMessage, 'chart', chartPayload)
+    expect(withChart.chart?.title).toBe('Consumo por Classe')
+    expect(withChart.chart?.chart_type).toBe('bar')
+    expect(withChart.chart?.data.labels).toEqual(['B1', 'B3'])
+
+    const dataPayload = JSON.stringify({
+      results: [{ classe: 'B1', kwh: 1200 }],
+      total: 14
+    })
+    const withData = handleSseEvent(withChart, 'data', dataPayload)
+    expect(withData.row_count).toBe(14)
+    expect(withData.data).toHaveLength(1)
+  })
 })

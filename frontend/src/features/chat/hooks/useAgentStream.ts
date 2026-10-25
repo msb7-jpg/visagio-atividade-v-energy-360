@@ -1,7 +1,13 @@
 import { useCallback, useRef, useState } from 'react'
+import {
+  applyStreamError,
+  buildStreamHeaders,
+  createTurnMessages,
+  parseSessionThreadId
+} from '@/features/chat/hooks/streamUtils'
 import { handleSseEvent } from '@/features/chat/lib/chatMessageReducer'
 import { parseSseStream } from '@/features/chat/lib/sseStreamParser'
-import { MESSAGE_ROLE, type ChatMessage } from '@/features/chat/types/chat.types'
+import type { ChatMessage } from '@/features/chat/types/chat.types'
 
 /**
  * Hook headless responsável pelo gerenciamento de streaming do chat analítico.
@@ -12,6 +18,7 @@ export function useAgentStream() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const threadIdRef = useRef<string | null>(null)
 
   const stopStreaming = useCallback(() => {
     if (abortControllerRef.current) {
@@ -19,7 +26,33 @@ export function useAgentStream() {
       abortControllerRef.current = null
     }
     setIsStreaming(false)
+    setMessages(prev =>
+      prev.map(msg => (msg.isStreaming ? { ...msg, isStreaming: false } : msg))
+    )
   }, [])
+
+  const processStreamEvents = useCallback(
+    async (response: Response, assistantId: string, signal: AbortSignal) => {
+      for await (const sseEvent of parseSseStream(response, signal)) {
+        if (sseEvent.event === 'session') {
+          threadIdRef.current = parseSessionThreadId(sseEvent.data) ?? threadIdRef.current
+          continue
+        }
+        if (sseEvent.event === 'done') {
+          setMessages(prev =>
+            prev.map(msg => (msg.id === assistantId ? { ...msg, isStreaming: false } : msg))
+          )
+          break
+        }
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === assistantId ? handleSseEvent(msg, sseEvent.event, sseEvent.data) : msg
+          )
+        )
+      }
+    },
+    []
+  )
 
   const sendMessage = useCallback(
     async (questionText: string) => {
@@ -27,23 +60,7 @@ export function useAgentStream() {
       if (!trimmed || isStreaming) return
 
       stopStreaming()
-
-      const userMessage: ChatMessage = {
-        id: `user-${Date.now()}`,
-        role: MESSAGE_ROLE.USER,
-        content: trimmed,
-        timestamp: new Date().toISOString()
-      }
-
-      const assistantMessageId = `asst-${Date.now()}`
-      const assistantMessage: ChatMessage = {
-        id: assistantMessageId,
-        role: MESSAGE_ROLE.ASSISTANT,
-        content: '',
-        steps: [],
-        timestamp: new Date().toISOString()
-      }
-
+      const { userMessage, assistantMessage } = createTurnMessages(trimmed)
       setMessages(prev => [...prev, userMessage, assistantMessage])
       setIsStreaming(true)
 
@@ -51,57 +68,32 @@ export function useAgentStream() {
       abortControllerRef.current = abortController
 
       try {
-        const token = localStorage.getItem('auth_token')
-        const headers: HeadersInit = {
-          'Content-Type': 'application/json'
-        }
-        if (token) {
-          headers.Authorization = `Bearer ${token}`
-        }
-
         const response = await fetch('/api/v1/agent/chat/stream', {
           method: 'POST',
-          headers,
-          body: JSON.stringify({ pergunta: trimmed }),
+          headers: buildStreamHeaders(),
+          body: JSON.stringify({ pergunta: trimmed, thread_id: threadIdRef.current }),
           signal: abortController.signal
         })
 
         if (!response.ok) {
-          throw new Error(`Falha no servidor: ${response.status}`)
+          throw new Error(`Falha no servidor: ${String(response.status)}`)
         }
 
-        for await (const sseEvent of parseSseStream(response, abortController.signal)) {
-          if (sseEvent.event === 'done') {
-            break
-          }
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === assistantMessageId
-                ? handleSseEvent(msg, sseEvent.event, sseEvent.data)
-                : msg
-            )
-          )
-        }
+        await processStreamEvents(response, assistantMessage.id, abortController.signal)
       } catch (err: unknown) {
-        if (err instanceof DOMException && err.name === 'AbortError') {
-          return
-        }
-        const errorMsg = err instanceof Error ? err.message : 'Erro ao processar consulta'
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === assistantMessageId ? { ...msg, error: errorMsg } : msg
-          )
-        )
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setMessages(prev => applyStreamError(prev, assistantMessage.id, err))
       } finally {
         setIsStreaming(false)
         abortControllerRef.current = null
       }
     },
-    [isStreaming, stopStreaming]
+    [isStreaming, processStreamEvents, stopStreaming]
   )
 
   const clearMessages = useCallback(() => {
     stopStreaming()
+    threadIdRef.current = null
     setMessages([])
   }, [stopStreaming])
 

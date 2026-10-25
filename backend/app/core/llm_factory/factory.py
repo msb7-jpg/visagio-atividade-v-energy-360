@@ -35,20 +35,24 @@ def get_chat_model(
     Fábrica extensível para instanciar instâncias de BaseChatModel consultando o Provider Registry.
 
     Se provider não for informado:
+    - Se settings.ai_provider estiver configurado, utiliza o provedor configurado.
     - Se GEMINI_API_KEY estiver configurado, usa 'google'.
     - Caso contrário, usa fallback para 'mock'.
     """
     settings = get_settings()
 
-    resolved_provider = provider
+    resolved_provider = provider or settings.ai_provider
     if not resolved_provider:
         resolved_provider = LLMProvider.GOOGLE.value if settings.gemini_api_key else LLMProvider.MOCK.value
 
+    resolved_base_url = base_url or settings.ai_base_url
+    resolved_model = model or settings.ai_model_name
+
     strategy = provider_registry.get(resolved_provider)
     return strategy.create_model(
-        model=model,
+        model=resolved_model,
         api_key=api_key,
-        base_url=base_url,
+        base_url=resolved_base_url,
         temperature=temperature,
         timeout_seconds=timeout_seconds,
         **kwargs,

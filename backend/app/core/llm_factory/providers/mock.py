@@ -59,7 +59,21 @@ class GroundedMockChatModel(SimpleChatModel):
                 '"datasets": [{"label": "Consumo kWh", "data": [12000, 13000]}]}'
             )
 
-        # 5. Síntese final
+        # 5. Geração de Insights Proativos
+        if "insights executivos de alto impacto" in all_text or "diagnóstico executivo em json" in all_text:
+            return (
+                "```json\n"
+                "{\n"
+                '  "resumo_executivo": "Identificamos oportunidade imediata de recuperação de receita neste painel.",\n'
+                '  "insights": [\n'
+                '    "Queda brusca de volume correlacionada à expansão de GD solar no subgrupo B1.",\n'
+                '    "Indicadores de qualidade DEC/FEC operando com margem de segurança de 15%."\n'
+                "  ]\n"
+                "}\n"
+                "```"
+            )
+
+        # 6. Síntese final
         return (
             "### Análise Operacional e Executiva\n\n"
             "Com base nas informações consolidadas no banco de dados, os indicadores operacionais "

@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { RotateCw, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useProactiveInsights } from '@/features/insights/queries/useProactiveInsights'
 
 interface SmartInsightCardProps {
   context: 'customer360' | 'revenue' | 'losses' | 'quality'
@@ -10,72 +11,88 @@ interface SmartInsightCardProps {
 }
 
 /**
- * Card de IA contextual embutido nas telas operacionais e analíticas.
+ * Card de IA contextual e proativo ("thought you might wanna know this...").
+ * Se o provedor de IA estiver indisponível ou ocorrer erro, o card não se renderiza
+ * para evitar poluir a interface do usuário.
  *
  * @param props - Contexto da tela, filtros e métricas ativas.
- * @returns Componente Card exibindo síntese e lista de insights.
+ * @returns Componente Card exibindo síntese e lista de insights, ou null se indisponível.
  */
 export function SmartInsightCard({ context, filters, metrics }: SmartInsightCardProps) {
-  const [insights, setInsights] = useState<string[]>([])
-  const [summary, setSummary] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const { data, isLoading, isError, refetch, isFetching } = useProactiveInsights({
+    context,
+    filtros: filters,
+    metricas: metrics
+  })
 
-  const fetchInsights = async () => {
-    setIsLoading(true)
-    try {
-      const token = localStorage.getItem('auth_token')
-      const headers: HeadersInit = { 'Content-Type': 'application/json' }
-      if (token) headers.Authorization = `Bearer ${token}`
+  // Se houver erro ou o serviço de IA estiver indisponível (ex: 503), não polui a UI
+  if (isError) {
+    return null
+  }
 
-      const res = await fetch('/api/v1/agent/insights', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ context, filtros: filters || {}, metricas: metrics || {} })
-      })
+  // Durante o carregamento inicial proativo
+  if (isLoading) {
+    return (
+      <Card variant="glass" className="my-4">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="flex items-center gap-2">
+            <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Sparkles className="size-4 animate-pulse" />
+            </div>
+            <CardTitle>Smart Insights IA</CardTitle>
+            <Badge variant="secondary">{context.toUpperCase()}</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-2">
+            <div className="h-4 w-3/4 animate-pulse rounded bg-muted/60" />
+            <div className="h-3 w-5/6 animate-pulse rounded bg-muted/40" />
+            <div className="h-3 w-2/3 animate-pulse rounded bg-muted/40" />
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
-      if (res.ok) {
-        const data = await res.json()
-        setInsights(data.insights || [])
-        setSummary(data.resumo_executivo || null)
-      }
-    } finally {
-      setIsLoading(false)
-    }
+  if (!data || !data.resumo_executivo) {
+    return null
   }
 
   return (
     <Card variant="glass" className="my-4">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2">
+          <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Sparkles className="size-4" />
+          </div>
           <CardTitle>Smart Insights IA</CardTitle>
-          <Badge variant="secondary">
-            {context.toUpperCase()}
-          </Badge>
+          <Badge variant="secondary">{context.toUpperCase()}</Badge>
         </div>
         <Button
-          variant="outline"
-          size="sm"
-          disabled={isLoading}
-          onClick={fetchInsights}
+          variant="ghost"
+          size="icon"
+          disabled={isFetching}
+          title="Atualizar análise da IA"
+          onClick={() => {
+            void refetch()
+          }}
         >
-          {isLoading ? 'Analisando...' : 'Gerar Insights'}
+          <RotateCw className={`size-3.5 ${isFetching ? 'animate-spin' : ''}`} />
         </Button>
       </CardHeader>
 
       <CardContent>
-        {summary ? <p className="text-xs font-medium text-foreground mb-2">{summary}</p> : null}
+        <p className="mb-2 text-xs font-medium text-foreground">
+          {data.resumo_executivo}
+        </p>
 
-        {insights.length > 0 ? (
-          <ul className="list-disc pl-4 space-y-1 text-xs text-muted-foreground">
-            {insights.map(item => (
+        {data.insights.length > 0 ? (
+          <ul className="flex list-disc flex-col gap-1 pl-4 text-xs text-muted-foreground">
+            {data.insights.map(item => (
               <li key={item}>{item}</li>
             ))}
           </ul>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Clique em &quot;Gerar Insights&quot; para acionar a análise contextual proativa deste painel.
-          </p>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   )

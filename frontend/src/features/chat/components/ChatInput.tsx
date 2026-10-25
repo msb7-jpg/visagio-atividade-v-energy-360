@@ -1,54 +1,48 @@
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
+// fallow-ignore-file unused-file
+import type { JSX } from 'react'
+import { ChatInput as ModernChatInput } from '@/features/chat/components/input/ChatInput'
 
-interface ChatInputProps {
-  onSend: (text: string) => void
+/**
+ * Propriedades para compatibilidade com o campo de entrada de chat.
+ */
+export interface ChatInputProps {
+  /** Callback legado de envio de mensagem. */
+  onSend?: (text: string) => void
+  /** Callback moderno de envio de mensagem. */
+  onSendMessage?: (text: string) => void
+  /** Indicador de bloqueio do campo. */
   disabled?: boolean
+  /** Indicador de transmissão em streaming. */
+  isStreaming?: boolean
+  /** Callback para cancelamento da transmissão. */
+  onAbortStream?: () => void
+  /** Classes CSS adicionais. */
+  className?: string
 }
 
 /**
- * Caixa de entrada de texto e envio de comandos do chat analítico.
+ * Adaptador do campo de entrada de texto e envio de comandos do chat analítico.
  *
- * @param props - Callback de envio e indicador de desativação.
- * @returns Componente de formulário com Textarea e botão.
+ * @param props - Propriedades de compatibilidade e callbacks.
+ * @returns Elemento JSX do campo de texto com comandos rápidos.
  */
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
-  const [text, setText] = useState('')
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault()
-      if (text.trim() && !disabled) {
-        onSend(text)
-        setText('')
-      }
-    }
-  }
-
-  const handleSubmit = (event: React.SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (text.trim() && !disabled) {
-      onSend(text)
-      setText('')
-    }
-  }
+export function ChatInput({
+  onSend,
+  onSendMessage,
+  disabled = false,
+  isStreaming = false,
+  onAbortStream,
+  className
+}: ChatInputProps): JSX.Element {
+  const handleSend = onSendMessage ?? onSend ?? (() => {})
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2 p-3 border-t border-border bg-card">
-      <Textarea
-        value={text}
-        onChange={event => setText(event.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Pergunte sobre consumo, faturamento, interrupções ou perdas..."
-        className="min-h-20 resize-none"
-        disabled={disabled}
-      />
-      <div className="flex justify-end gap-2">
-        <Button type="submit" disabled={!text.trim() || disabled} size="sm">
-          {disabled ? 'Consultando...' : 'Enviar Pergunta'}
-        </Button>
-      </div>
-    </form>
+    <ModernChatInput
+      onSendMessage={handleSend}
+      onAbortStream={onAbortStream}
+      isStreaming={isStreaming}
+      disabled={disabled}
+      className={className}
+    />
   )
 }

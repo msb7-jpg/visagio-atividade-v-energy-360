@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme inline {
   --color-background: var(--background);
@@ -19,6 +20,8 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -61,6 +64,9 @@
 
   --destructive: oklch(0.58 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
+
+  --success: oklch(0.65 0.20 150);
+  --success-foreground: oklch(0.985 0.002 247.839);
 
   --warning: oklch(0.80 0.16 80);                /* Amber 400: atenção que não bloqueia */
   --warning-foreground: oklch(0.208 0.042 265.755);
@@ -110,6 +116,9 @@
 
   --destructive: oklch(0.58 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
+
+  --success: oklch(0.55 0.20 150);
+  --success-foreground: oklch(1 0 0);
 
   --warning: oklch(0.52 0.14 65);                /* Amber 700: contraste AA sobre fundo claro */
   --warning-foreground: oklch(1 0 0);
@@ -170,4 +179,58 @@ body {
   );
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite ease-in-out;
+}
+
+.venergy-ambient-glow {
+  background-image: radial-gradient(
+    circle,
+    oklch(0.623 0.214 259.815 / 0.16) 0%,
+    oklch(0.623 0.214 259.815 / 0.03) 50%,
+    transparent 70%
+  );
+}
+
+.chat-widget-panel {
+  width: 28rem;
+  max-width: calc(100vw - 2rem);
+  height: 42rem;
+  max-height: calc(100dvh - 5rem);
+}
+
+.chat-widget-resizable {
+  width: var(--widget-w, 28rem);
+  height: var(--widget-h, 42rem);
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 2rem);
+}
+
+.chat-embedded-input input {
+  border-width: 0 !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+.chat-embedded-input input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-chat-scroll-container]::-webkit-scrollbar {
+  width: 6px;
+}
+
+[data-chat-scroll-container]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-chat-scroll-container]::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 9999px;
+}
+
+[data-chat-scroll-container]::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
 }

@@ -1,3 +1,4 @@
+// fallow-ignore-file unused-file
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'

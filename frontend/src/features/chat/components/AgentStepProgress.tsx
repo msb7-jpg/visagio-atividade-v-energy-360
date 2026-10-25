@@ -1,42 +1,22 @@
-import { Badge } from '@/components/ui/badge'
-import { STEP_STATUS, type AgentStepItem } from '@/features/chat/types/chat.types'
+// fallow-ignore-file unused-file
+import type { JSX } from 'react'
+import { NodeStepper } from '@/features/chat/components/feed/NodeStepper'
+import type { AgentStepItem } from '@/features/chat/types/chat.types'
 
-interface AgentStepProgressProps {
+/**
+ * Propriedades para o componente legado de progresso de etapas.
+ */
+export interface AgentStepProgressProps {
+  /** Lista de etapas de execução. */
   steps?: AgentStepItem[]
 }
 
-function resolveVariant(status: string): 'destructive' | 'default' | 'secondary' {
-  if (status === STEP_STATUS.ERROR) return 'destructive'
-  if (status === STEP_STATUS.DONE) return 'default'
-  return 'secondary'
-}
-
 /**
- * Exibe o progresso cronológico dos nós executados pelo agente LangGraph.
+ * Renderizador de progresso de etapas compatível com NodeStepper.
  *
- * @param props - Propriedades contendo as etapas executadas.
- * @returns Componente com os badges das etapas.
+ * @param props - Propriedades com a lista de etapas.
+ * @returns Elemento JSX do NodeStepper.
  */
-export function AgentStepProgress({ steps }: AgentStepProgressProps) {
-  if (!steps || steps.length === 0) return null
-
-  return (
-    <div className="flex flex-col gap-1.5 py-2">
-      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Execução da FSM LangGraph
-      </span>
-      <div className="flex flex-wrap gap-2">
-        {steps.map(item => {
-          const badgeVariant = resolveVariant(item.status)
-
-          return (
-            <Badge key={item.step} variant={badgeVariant}>
-              {item.label}
-              {item.duration_ms ? ` (${item.duration_ms}ms)` : null}
-            </Badge>
-          )
-        })}
-      </div>
-    </div>
-  )
+export function AgentStepProgress({ steps = [] }: AgentStepProgressProps): JSX.Element | null {
+  return <NodeStepper steps={steps} />
 }

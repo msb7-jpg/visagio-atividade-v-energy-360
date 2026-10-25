@@ -76,9 +76,10 @@
 - [x] Implementar endpoint `POST /api/v1/ai/insights` no backend.
 - [x] Criar testes unitários em `backend/tests/test_agent_graph.py`, `test_agent_security.py` e `test_agent_stream.py`.
 - [x] Construir o framework de benchmark em `backend/scripts/evaluate_agent.py` e `backend/tests/golden_dataset.json`.
-- [x] Criar componentes do chat em `frontend/src/features/chat/` (<= 150 linhas por componente).
+- [x] Adaptar componentes ricos do chat (fidelidade visual ao ai-assistant, botão circular flutuante no canto inferior direito, expansão fluida e modo tela cheia, conformidade com design.md e fallow <= 150 linhas).
 - [x] Implementar `SmartInsightCard.tsx` e plugar na Visão 360 e no Dashboard de Receita.
 - [x] Criar testes no frontend com Vitest em `ChatDrawer.test.tsx`.
+- [x] Expor `<ChatDrawer />` globalmente nas telas ativas, corrigir autenticação JWT do streaming/insights, adicionar `InteractiveChartCard.tsx`, follow-up multi-turno com `MemorySaver` e métricas completas em `evaluate_agent.py`.
 - [x] Garantir 100% verde em `make lint-all` e `make test-all`.
 
 ---

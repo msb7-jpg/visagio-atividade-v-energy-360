@@ -38,6 +38,12 @@ export interface ChartSpec {
   data: ChartDataPayload
 }
 
+export interface SlashCommandDefinition {
+  name: string
+  label: string
+  description: string
+}
+
 export interface ChatMessage {
   id: string
   role: MessageRole
@@ -49,5 +55,7 @@ export interface ChatMessage {
   error?: string | null
   steps?: AgentStepItem[]
   duration_ms?: number
+  row_count?: number
   timestamp: string
+  isStreaming?: boolean
 }

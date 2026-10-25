@@ -6,61 +6,64 @@ Sua missão é responder perguntas com consultas SQL precisas, otimizadas e comp
 SCHEMA DAS TABELAS ANALÍTICAS (GOLD NO SQLITE):
 
 1. dim_unidade_consumidora
-   - codigo_uc (INTEGER, PK): Código identificador único da UC (ex: 10001 a 55000).
+   - id_uc / codigo_uc (TEXT / INTEGER, PK): Identificador único da UC (ex: 'UC-00001' ou 10001 a 55000).
    - municipio (TEXT): Município da concessão (Recife, Olinda, Jaboatão dos Guararapes, Paulista, etc.).
    - bairro (TEXT): Bairro de atendimento (Boa Viagem, Casa Forte, Pina, etc.).
    - classe_consumo (TEXT): B1 (Residencial), B2 (Rural), B3 (Comercial), A4 (Industrial/Alta Tensão).
    - subgrupo_tarifario (TEXT): B1, B2, B3, A4.
    - possui_gd (BOOLEAN / INTEGER): 1 se possui Geração Distribuída (solar), 0 caso contrário.
-   - capacidade_instalada_kw (REAL): Potência do sistema solar em kW (quando possui_gd = 1).
-   - codigo_alimentador (TEXT): Identificador do alimentador elétrico ao qual a UC está conectada.
-   - data_adesao_gd (TEXT): Data em que a UC aderiu ao sistema de compensação solar.
+   - potencia_gd_kw / capacidade_instalada_kw (REAL): Potência do sistema solar em kW (quando possui_gd = 1).
+   - alimentador / codigo_alimentador (TEXT): Identificador do alimentador elétrico conectado.
+   - subestacao (TEXT): Subestação elétrica de origem.
 
 2. fato_medicao
    - id_medicao (INTEGER, PK): Identificador do registro de leitura.
-   - codigo_uc (INTEGER): Referência a dim_unidade_consumidora(codigo_uc).
-   - mes_ano (TEXT): Competência contábil no formato 'YYYY-MM' ou 'YYYY-MM-DD'.
+   - id_uc / codigo_uc (TEXT / INTEGER): Referência a dim_unidade_consumidora.
+   - competencia / mes_ano (TEXT): Competência contábil no formato 'YYYY-MM'.
    - consumo_kwh (REAL): Volume físico consumido em kWh no período.
    - geracao_injetada_kwh (REAL): Energia excedente injetada na rede pelo painel solar em kWh.
-   - dias_leitura (INTEGER): Quantidade de dias no ciclo de medição (normalmente 30).
+   - dias_faturamento / dias_leitura (INTEGER): Quantidade de dias no ciclo de medição (normalmente 30).
 
 3. fato_faturamento
    - id_fatura (INTEGER, PK): Identificador da conta/fatura.
-   - codigo_uc (INTEGER): Referência a dim_unidade_consumidora(codigo_uc).
-   - mes_ano (TEXT): Competência faturada ('YYYY-MM').
-   - valor_faturado_reais (REAL): Valor final em Reais (R$) da conta de luz.
-   - tarifa_aplicada_reais_kwh (REAL): Valor unitário homologado por kWh.
-   - bandeira_tarifaria (TEXT): 'Verde', 'Amarela', 'Vermelha P1', 'Vermelha P2'.
-   - status_pagamento (TEXT): 'Pago', 'Pendente', 'Em Atraso'.
+   - id_uc / codigo_uc (TEXT / INTEGER): Referência a dim_unidade_consumidora.
+   - competencia / mes_ano (TEXT): Competência faturada ('YYYY-MM').
+   - valor_total_rs / valor_faturado_reais (REAL): Valor final em Reais (R$) da conta de luz.
+   - consumo_faturado_kwh (REAL): Volume faturado em kWh na competência.
+   - tarifa_aplicada_rs_kwh / tarifa_aplicada_reais_kwh (REAL): Valor unitário homologado por kWh.
+   - bandeira_tarifaria (TEXT): 'VERDE', 'AMARELA', 'VERMELHA_P1', 'VERMELHA_P2'.
+   - status_pagamento (TEXT): 'PAGA', 'ABERTA', 'VENCIDA' (ou 'Pago', 'Pendente', 'Em Atraso').
    - data_vencimento (TEXT): Data de vencimento da fatura.
 
 4. fato_qualidade_alimentador
    - id_qualidade (INTEGER, PK): Identificador da apuração.
-   - codigo_alimentador (TEXT): Código do alimentador elétrico.
-   - mes_ano (TEXT): Competência apurada ('YYYY-MM').
-   - dec_apurado (REAL): Duração Equivalente de Interrupção por Unidade Consumidora (horas).
+   - id_alimentador / codigo_alimentador (TEXT): Código do alimentador elétrico.
+   - competencia / mes_ano (TEXT): Competência apurada ('YYYY-MM').
+   - dec_apurado_horas / dec_apurado (REAL): Duração Equivalente de Interrupção por UC (horas).
    - dec_limite_aneel (REAL): Meta regulatória da ANEEL para DEC (horas).
-   - fec_apurado (REAL): Frequência Equivalente de Interrupção por Unidade Consumidora (vezes).
+   - fec_apurado_vezes / fec_apurado (REAL): Frequência Equivalente de Interrupção por UC (vezes).
    - fec_limite_aneel (REAL): Meta regulatória da ANEEL para FEC (vezes).
-   - estourou_limite (BOOLEAN / INTEGER): 1 se DEC > dec_limite ou FEC > fec_limite, 0 se conforme.
+   - violou_meta / estourou_limite (BOOLEAN / INTEGER): 1 se DEC > dec_limite ou FEC > fec_limite, 0 se conforme.
 
 5. fato_atendimentos
-   - id_chamado (INTEGER, PK): Protocolo do atendimento.
-   - codigo_uc (INTEGER): Referência a dim_unidade_consumidora(codigo_uc).
+   - id_atendimento / id_chamado (INTEGER, PK): Protocolo do atendimento.
+   - id_uc / codigo_uc (TEXT / INTEGER): Referência a dim_unidade_consumidora.
    - data_abertura (TEXT): Data/hora do chamado.
    - motivo_chamado (TEXT): 'Conta Alta', 'Falta de Luz', 'Oscilação de Tensão', 'Reclamação Tarifa'.
    - canal_atendimento (TEXT): 'Call Center', 'App Mobile', 'Agência Presencial'.
    - status_chamado (TEXT): 'Resolvido', 'Aberto', 'Cancelado'.
    - tempo_atendimento_segundos (INTEGER): Duração do atendimento.
+   - nota_csat (INTEGER): Nota de satisfação de 0 a 10.
 
-6. fato_inspecoes_perdas
+6. fato_inspecoes_perdas e ordem_inspecao
    - id_inspecao (INTEGER, PK): Ordem de fiscalização.
-   - codigo_uc (INTEGER): Referência a dim_unidade_consumidora(codigo_uc).
-   - data_inspecao (TEXT): Data da vistoria técnica de campo.
-   - tipo_fraude (TEXT): 'Gato Direto', 'Bypass no Medidor', 'Medidor Adulterado', 'Nenhuma Fraude'.
-   - energia_recuperada_kwh (REAL): Volume recuperado através de TOI em kWh.
+   - id_uc / codigo_uc (TEXT / INTEGER): Referência a dim_unidade_consumidora.
+   - data_inspecao / criado_em (TEXT): Data da vistoria técnica de campo.
+   - irregularidade_constatada (BOOLEAN): 1 se houve fraude confirmada, 0 caso contrário.
+   - tipo_irregularidade / tipo_fraude (TEXT): 'Gato Direto', 'Bypass no Medidor', 'Medidor Adulterado'.
+   - kwh_recuperado / energia_recuperada_kwh (REAL): Volume recuperado através de TOI em kWh.
    - valor_cobrado_toi_reais (REAL): Valor autuado e cobrado pelo Termo de Ocorrência e Inspeção.
-   - status_inspecao (TEXT): 'Procedente', 'Improcedente'.
+   - status / status_inspecao (TEXT): 'gerada', 'pendente', 'concluida', 'cancelada' (ou 'Procedente', 'Improcedente').
 
 MAPEAMENTO DE JARGÕES E TERMOS COTIDIANOS:
 - "conta de luz" ou "fatura" -> fato_faturamento (valor_faturado_reais, status_pagamento).

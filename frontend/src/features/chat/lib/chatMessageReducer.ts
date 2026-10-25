@@ -50,14 +50,49 @@ function handleSqlEvent(currentMessage: ChatMessage, payload: PayloadMap): ChatM
   }
 }
 
+function resolveChartData(innerChart: PayloadMap): ChartSpec['data'] {
+  const nestedData = innerChart.data as ChartSpec['data'] | undefined
+  if (nestedData && Array.isArray(nestedData.labels)) {
+    return nestedData
+  }
+  const labels = Array.isArray(innerChart.labels) ? (innerChart.labels as string[]) : []
+  const datasets = Array.isArray(innerChart.datasets)
+    ? (innerChart.datasets as ChartSpec['data']['datasets'])
+    : []
+  return { labels, datasets }
+}
+
 function handleChartEvent(currentMessage: ChatMessage, payload: PayloadMap): ChatMessage {
+  const innerChart = (payload.chart as PayloadMap | undefined) ?? payload
+  const rawType = (innerChart.chart_type ?? innerChart.type ?? 'bar') as ChartSpec['chart_type']
+
   const spec: ChartSpec = {
-    chart_type: (payload.chart_type as ChartSpec['chart_type']) || 'bar',
-    title: String(payload.title || 'Visualização Gráfica'),
-    description: payload.description ? String(payload.description) : undefined,
-    data: (payload.data as ChartSpec['data']) || { labels: [], datasets: [] }
+    chart_type: rawType,
+    title: String(innerChart.title || 'Visualização Gráfica'),
+    description: innerChart.description ? String(innerChart.description) : undefined,
+    data: resolveChartData(innerChart)
   }
   return { ...currentMessage, chart: spec }
+}
+
+function resolveRowCount(payload: PayloadMap, rows: Record<string, unknown>[] | null): number | undefined {
+  if (typeof payload.total === 'number') {
+    return payload.total
+  }
+  if (Array.isArray(rows)) {
+    return rows.length
+  }
+  return undefined
+}
+
+function handleDataEvent(currentMessage: ChatMessage, payload: PayloadMap): ChatMessage {
+  const rows = (payload.results || payload.data || null) as Record<string, unknown>[] | null
+  const totalRows = resolveRowCount(payload, rows)
+  return {
+    ...currentMessage,
+    data: rows,
+    row_count: totalRows
+  }
 }
 
 function handleErrorEvent(currentMessage: ChatMessage, payload: PayloadMap): ChatMessage {
@@ -77,7 +112,7 @@ const EVENT_HANDLERS: Record<string, (msg: ChatMessage, payload: PayloadMap) => 
   step_end: handleStepEndEvent,
   thought: handleThoughtEvent,
   sql: handleSqlEvent,
-  data: (msg, payload) => ({ ...msg, data: (payload.data as Record<string, unknown>[]) || null }),
+  data: handleDataEvent,
   chart: handleChartEvent,
   token: (msg, payload) => ({ ...msg, content: msg.content + String(payload.token || payload.text || '') }),
   answer: (msg, payload) => ({ ...msg, content: String(payload.answer || payload.content || '') }),

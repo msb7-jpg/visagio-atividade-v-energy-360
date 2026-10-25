@@ -6,6 +6,52 @@
 
 ## Registros de Execução
 
+### [2026-10-25] - Transformação Proativa do SmartInsightCard & Resiliência de IA (Miguel)
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Experiência Proativa ("Thought you might wanna know this..."):**
+    - Refatorado `SmartInsightCard.tsx` para carregar insights contextuais proativamente via TanStack Query v5 sem demandar clique do usuário.
+    - Criados `frontend/src/features/insights/api/insightsApi.ts` e `frontend/src/features/insights/queries/useProactiveInsights.ts` com cache `staleTime: 5 min` e cancelamento seguro com `AbortSignal`.
+    - Adicionado suporte a estado limpo e não intrusivo: se o provedor de IA estiver indisponível ou retornar erro (ex: 503), o componente não renderiza nada (`return null`), evitando poluição visual.
+    - Exibe Skeleton suave durante o carregamento inicial e botão minimalista `RotateCw` para refresh sob demanda.
+  - **Serviço de Insights no Backend Conectado ao LLM Real:**
+    - Criado serviço Pure Python `backend/app/features/chat/insights_service.py` isolado e desacoplado de frameworks HTTP, respeitando os contratos do `import-linter`.
+    - Conectado ao `get_chat_model()` com prompt de especialista do setor elétrico brasileiro (V-Energy), gerando síntese de impacto regulatório/financeiro em JSON puro (`resumo_executivo` e `insights`).
+    - Lança `ServiceUnavailableError` caso não haja provedor de IA online configurado, instruindo a UI a ocultar o card de maneira elegante.
+    - Adicionado suporte a mock de insights determinístico em `GroundedMockStrategy` para testes e cenários offline.
+  - **Testes Unitários:**
+    - Atualizado `SmartInsightCard.test.tsx` com cenários de ausência de renderização em erro/503, exibição de skeleton em loading e renderização correta de dados recebidos.
+    - Atualizado `test_agent_stream.py` cobrindo o novo comportamento do endpoint.
+- **Validação de Testes e Linters:**
+  - `make lint-all`: 100% verde (Ruff, Pylint 10.00/10, import-linter 4/4 contratos mantidos, ESLint, Fallow).
+  - `make test-all`: 100% verde (293 testes backend pytest + 50 testes frontend vitest).
+
+---
+
+### [2026-10-23] - Exposição Global do Chat, Correção de Auth JWT, Gráficos Interativos e Memória Follow-up (Miguel)
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Exposição Global do `<ChatDrawer />` e `<SmartInsightCard />`:**
+    - Integrado `<ChatDrawer />` nos cabeçalhos de `DashboardPage.tsx` e `LossManagementPage.tsx` (Fatia 05), permitindo acesso ao Assistente Text-to-SQL em todas as rotas autenticadas ativas.
+    - Integrado `<SmartInsightCard context="revenue" />` na tela principal do `DashboardPage.tsx` e adicionado link de navegação direta do card "Fila de Perdas" para `/losses`.
+    - Aprimorado `ChatDrawer.tsx` com `<EmptyState />` e 3 botões de sugestões rápidas clicáveis para demonstração imediata.
+  - **Correção de Autenticação JWT no Streaming SSE e Insights:**
+    - Atualizados `useAgentStream.ts` e `SmartInsightCard.tsx` para ler o token via `getStoredToken()` (`venergy_access_token`) de `@/features/auth/utils/token`, eliminando falhas `401 Unauthorized`.
+  - **Suporte Real a Follow-up Conversacional (`thread_id` + `MemorySaver`):**
+    - Em `backend/app/features/chat/router.py`, configurado `MemorySaver` no `create_agent_graph(checkpointer=memory_checkpointer)` e adicionados os aliases de rota canônicos `/api/v1/chat/stream` e `/api/v1/ai/insights` (com suporte também ao contexto `losses`).
+    - Em `useAgentStream.ts`, capturado o `thread_id` emitido no evento SSE `session` e reenviado nas mensagens seguintes da mesma sessão (resetando ao limpar o histórico).
+  - **Renderizador de Gráficos (`InteractiveChartCard.tsx`) & Auditoria SQL Completa:**
+    - Criado `InteractiveChartCard.tsx` com barras proporcionais em classes semânticas Tailwind (sem inline styles), integrado em `ChatMessageBubble.tsx`.
+    - Normalizado `handleChartEvent` e `handleDataEvent` em `chatMessageReducer.ts` para suportar o formato `ChartJsConfigDTO` e contabilizar `row_count`, exibido ao lado de `durationMs` em `SqlAuditAccordion.tsx`.
+  - **Alinhamento do Catálogo Semântico & Avaliação Completa (`evaluate_agent.py`):**
+    - Sincronizado `catalog_prompt.py` com os nomes reais de colunas das Fatias 01, 02, 04 e 05 (`id_uc`, `competencia`, `valor_total_rs`, `consumo_faturado_kwh`, `ordem_inspecao`).
+    - Evoluído `backend/scripts/evaluate_agent.py` para executar o grafo FSM sobre os 25 casos do `golden_dataset.json`, reportando `syntactic_validity_pct` (100%), `execution_accuracy_pct` (100%) e `average_latency_ms`.
+- **Validação de Testes e Linters:**
+  - `make lint-all`: 100% verde (Ruff ok, Pylint 10.00/10, import-linter 4/4 kept, ESLint 0 erros/0 warnings, Fallow maintainability 91.6 com 0 erros).
+  - `make test-all`: 100% verde (pytest backend + vitest frontend).
+
+---
+
 ### [2026-10-20] - Implementação Conclusiva da Fatia 07 (Miguel)
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**
@@ -149,6 +195,24 @@
   - Aplicação de **51 grifos semânticos e notas nativas do PDF (`/Highlight` e `/Text` Sticky Notes)** nas páginas 2 a 10, cobrindo 100% das User Stories, falas de executivos, camadas de dados e entregáveis, com orientações técnicas e contratos de integração.
 - **Validação de Testes e Linters:**
   - Execução de `make lint-all` e `make test-all`.
+
+### [2026-10-25] - Adaptação Completa do Chat IA, Botão Circular Flutuante & Modo Tela Cheia
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - Migração e adaptação visual dos componentes de chat de `/home/miguelsb/workspace/visagio-monorepo/ai-assistant/frontend` para o padrão corporativo V-Energy (`design.md` Corporate Blue & Dark Navy).
+  - Implementação do botão disparador circular flutuante no canto inferior direito (`fixed bottom-6 right-6 z-50`) com animação e beacon luminoso ao gerar respostas (`ChatWidget.tsx`).
+  - Implementação de expansão dinâmica para card flutuante translúcido (`chat-widget-panel`) e alternância instantânea para **modo tela cheia (*Fullscreen*)** (`fixed inset-0 w-screen h-screen min-h-dvh`).
+  - Adição de animações com física de mola via `motion/react`: `AmbientGlow` (aura azul corporativa), `CollapsibleMotion` (sanfonas suaves) e `StaggerList` (etapas em cascata).
+  - Criação do pipeline de visualização em tempo real das etapas da FSM: `NodeStepper` com `StepItem` exibindo status animado (loader, check verde, erro), latência em ms e linha vertical conectora.
+  - Implementação do inspetor de pensamento cognitivo (`ThoughtInspector`) com ícone `Brain`.
+  - Implementação do bloco de código SQL com syntax highlighting via Shiki (`SqlCodeBlock`) e botão funcional de cópia.
+  - Renderização rica de Markdown (`MarkdownRenderer` via `react-markdown` + `remark-gfm`) com suporte a tabelas analíticas (`TableRenderer`) com ordenação por coluna, paginação e exportação CSV/TSV.
+  - Redesenho do campo de entrada (`ChatInput`) com suporte a slash commands (`/chart`, `/sql`, `/perdas`, `/dec`, `/clear`), menu popover navegável por teclado, command pills e botão `Pause` para aborto de streaming via `AbortController`.
+  - Pílulas categorizadas de sugestões rápidas do setor elétrico (`SuggestionsExplorer`).
+  - Conformidade estrita com todos os linters do monorepo: Fallow mantendo $\le 150$ linhas por arquivo, manutenibilidade em 92.4% e 0% de arquivos mortos; ESLint e `@shadcn/lint` sem erros; pytest e vitest 100% verdes.
+- **Validação:**
+  - `make lint-all`: Ruff OK, Pylint 10.00/10, import-linter 4/4 contratos mantidos, ESLint e Fallow 100% aprovados.
+  - `make test-all`: 293 testes backend e 48 testes frontend aprovados.
 
 
 
