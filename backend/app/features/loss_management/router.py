@@ -3,6 +3,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
+from pydantic import StringConstraints
 
 from app.core.constants import UserRole
 from app.features.loss_management.dependencies import LossSvc
@@ -12,14 +13,19 @@ from app.features.loss_management.router_metadata import (
     export_inspections_doc,
     list_inspections_doc,
     list_suspicious_units_doc,
+    queue_filters_doc,
+    queue_summary_doc,
     update_inspection_doc,
     upload_inspections_doc,
 )
 from app.features.loss_management.schemas import (
+    FILA_CAPACIDADE_MENSAL,
     InspectionOrderCreateDTO,
     InspectionOrderDTO,
     InspectionOrderUpdateDTO,
     InspectionStatus,
+    QueueFiltersDTO,
+    QueueSummaryDTO,
     SuspiciousQueueDTO,
     SuspiciousUnitsFilterDTO,
     UploadResultDTO,
@@ -29,6 +35,8 @@ from app.shared.dependencies import CurrentUser, require_role
 LOSS_ROLES = [UserRole.DIRETOR.value, UserRole.GERENTE_PERDAS.value]
 EXPORT_FILENAME = "ordens_inspecao_campo.csv"
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+MAX_SELECTED_UNITS = FILA_CAPACIDADE_MENSAL * 2
+UnitId = Annotated[str, StringConstraints(min_length=1, max_length=20)]
 
 router = APIRouter(
     prefix="/losses",
@@ -47,6 +55,21 @@ async def list_suspicious_units(
 ) -> SuspiciousQueueDTO:
     """Devolve a fila de UCs suspeitas priorizada."""
     return await service.list_suspicious_units(queue_filter)
+
+
+@router.get("/queue-summary", response_model=QueueSummaryDTO, **queue_summary_doc.to_dict())
+async def queue_summary(
+    service: LossSvc,
+    selected_units: Annotated[list[UnitId], Query(alias="ucs", default_factory=list, max_length=MAX_SELECTED_UNITS)],
+) -> QueueSummaryDTO:
+    """Devolve os cartões do topo da Fila de Inspeção para as UCs selecionadas."""
+    return await service.summarize_queue(selected_units)
+
+
+@router.get("/queue-filters", response_model=QueueFiltersDTO, **queue_filters_doc.to_dict())
+async def queue_filters(service: LossSvc) -> QueueFiltersDTO:
+    """Devolve as opções dos filtros de município e classe."""
+    return await service.list_queue_filters()
 
 
 @router.get(

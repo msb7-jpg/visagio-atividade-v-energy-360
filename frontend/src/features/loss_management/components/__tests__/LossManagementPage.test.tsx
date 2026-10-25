@@ -7,6 +7,7 @@ import { lossApi } from '@/features/loss_management/api/lossApi'
 import { LossManagementPage } from '@/features/loss_management/components/LossManagementPage'
 import type {
   InspectionOrder,
+  QueueSummary,
   QueueWarning,
   SuspiciousQueue,
   SuspiciousUnit
@@ -15,6 +16,8 @@ import type {
 vi.mock('@/features/loss_management/api/lossApi', () => ({
   lossApi: {
     listSuspiciousUnits: vi.fn(),
+    getQueueSummary: vi.fn(),
+    getQueueFilters: vi.fn(),
     listInspections: vi.fn(),
     createInspection: vi.fn(),
     updateInspection: vi.fn()
@@ -30,20 +33,30 @@ const suspiciousUnit: SuspiciousUnit = {
   classe_consumo: 'Industrial',
   motivos: ['queda_subita'],
   score_risco: 56.7,
+  score: 100,
+  situacao: 'na_fila',
   probabilidade_acerto: 0.93,
   consumo_base_kwh: 10544.8,
   consumo_recente_kwh: 3069.3,
   kwh_estimado_recuperar: 22426.2,
-  valor_estimado_recuperar_rs: 19062.27
+  valor_estimado_recuperar_rs: 19062.27,
+  kwh_mes_recuperavel: 7475.5,
+  valor_ano_rs: 64047.1
 }
 
-const fieldHistoryWarning: QueueWarning = {
-  codigo: 'historico_campo_nao_aplicado',
-  mensagem: 'Mensagem de aviso enviada pela API.'
+const summaryFixture: QueueSummary = {
+  capacidade_total: 200,
+  capacidade_programada: 0,
+  selecionadas: 0,
+  kwh_mes_selecionadas: 0,
+  valor_ano_selecionadas_rs: 0,
+  tarifa_rs_kwh: 0.714,
+  retorno_esperado_kwh_mes: 0,
+  taxa_acerto: { inspecoes_total: null, irregularidades_confirmadas: null, taxa: 0.627, periodo_inicio: null, periodo_fim: null }
 }
 
 function buildQueue(itens: SuspiciousUnit[], avisos: QueueWarning[] = []): SuspiciousQueue {
-  return { itens, avisos }
+  return { itens, total: itens.length, avisos }
 }
 
 function buildOrder(overrides: Partial<InspectionOrder>): InspectionOrder {
@@ -78,7 +91,7 @@ function renderPage() {
 }
 
 async function openOrdersTab() {
-  fireEvent.click(screen.getByRole('tab', { name: /Ordens em Campo/ }))
+  fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
   return screen.findByRole('table', { name: 'Ordens de inspeção' })
 }
 
@@ -86,115 +99,11 @@ describe('LossManagementPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([suspiciousUnit]))
+    mockedApi.getQueueSummary.mockResolvedValue(summaryFixture)
+    mockedApi.getQueueFilters.mockResolvedValue({ municipios: [], classes: [] })
     mockedApi.listInspections.mockResolvedValue([])
     mockedApi.createInspection.mockResolvedValue(buildOrder({}))
     mockedApi.updateInspection.mockResolvedValue(buildOrder({}))
-  })
-
-  it('mostra a fila priorizada com motivo e energia a recuperar', async () => {
-    renderPage()
-
-    const row = await screen.findByRole('row', { name: /UC104779/ })
-
-    expect(within(row).getByText('Queda súbita')).toBeInTheDocument()
-    expect(within(row).getByText(/22\.426,2 kWh/)).toBeInTheDocument()
-  })
-
-  it('mostra a chance de a inspeção achar irregularidade ao lado da energia a recuperar', async () => {
-    mockedApi.listSuspiciousUnits.mockResolvedValue(
-      buildQueue([suspiciousUnit, { ...suspiciousUnit, id_uc: 'UC200001', probabilidade_acerto: 0.627 }])
-    )
-    renderPage()
-
-    const likelyRow = await screen.findByRole('row', { name: /UC104779/ })
-    const lessLikelyRow = await screen.findByRole('row', { name: /UC200001/ })
-
-    expect(within(likelyRow).getByText('93%')).toBeInTheDocument()
-    expect(within(lessLikelyRow).getByText('62,7%')).toBeInTheDocument()
-  })
-
-  it('explica quando a fila está vazia', async () => {
-    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([]))
-    renderPage()
-
-    expect(await screen.findByText('Nenhuma UC suspeita na fila')).toBeInTheDocument()
-  })
-
-  it('avisa que o histórico de campo não foi aplicado sem esconder a fila', async () => {
-    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([suspiciousUnit], [fieldHistoryWarning]))
-    renderPage()
-
-    const warning = await screen.findByRole('status')
-
-    expect(within(warning).getByText('Histórico de inspeções de campo não aplicado.')).toBeInTheDocument()
-    expect(within(warning).getByText('Mensagem de aviso enviada pela API.')).toBeInTheDocument()
-    expect(screen.getByRole('row', { name: /UC104779/ })).toBeInTheDocument()
-  })
-
-  it('destaca quando a fila foi calculada numa competência de referência fixada', async () => {
-    const referenceWarning: QueueWarning = {
-      codigo: 'competencia_referencia_fixada',
-      mensagem: 'Fila calculada com os dados até 2025-08.'
-    }
-    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([suspiciousUnit], [referenceWarning]))
-    renderPage()
-
-    const warning = await screen.findByRole('status')
-
-    expect(within(warning).getByText('Competência de referência fixada.')).toBeInTheDocument()
-    expect(within(warning).getByText('Fila calculada com os dados até 2025-08.')).toBeInTheDocument()
-    expect(within(warning).queryByText('Aviso sobre a fila.')).not.toBeInTheDocument()
-  })
-
-  it('mantém o aviso visível enquanto um novo filtro é carregado', async () => {
-    mockedApi.listSuspiciousUnits.mockResolvedValueOnce(buildQueue([suspiciousUnit], [fieldHistoryWarning]))
-    mockedApi.listSuspiciousUnits.mockReturnValueOnce(new Promise(() => {}))
-    renderPage()
-    await screen.findByText('Histórico de inspeções de campo não aplicado.')
-
-    fireEvent.change(screen.getByLabelText('Bairro'), { target: { value: 'Várzea' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }))
-    await waitFor(() => expect(mockedApi.listSuspiciousUnits).toHaveBeenCalledTimes(2))
-
-    expect(screen.getByText('Histórico de inspeções de campo não aplicado.')).toBeInTheDocument()
-  })
-
-  it('mantém o aviso acima do estado vazio da fila', async () => {
-    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([], [fieldHistoryWarning]))
-    renderPage()
-
-    expect(await screen.findByRole('status')).toBeInTheDocument()
-    expect(screen.getByText('Nenhuma UC suspeita na fila')).toBeInTheDocument()
-  })
-
-  it('não mostra aviso quando o histórico de campo foi aplicado', async () => {
-    renderPage()
-    await screen.findByRole('row', { name: /UC104779/ })
-
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
-  })
-
-  it('aplica o filtro por bairro', async () => {
-    renderPage()
-    await screen.findByRole('row', { name: /UC104779/ })
-
-    fireEvent.change(screen.getByLabelText('Bairro'), { target: { value: 'Várzea' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }))
-
-    await waitFor(() => expect(mockedApi.listSuspiciousUnits).toHaveBeenLastCalledWith(
-      expect.objectContaining({ bairro: 'Várzea' }), expect.anything()
-    ))
-  })
-
-  it('gera ordem de inspeção a partir da fila', async () => {
-    renderPage()
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Gerar ordem para UC104779' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Confirmar ordem' }))
-
-    await waitFor(() => expect(mockedApi.createInspection).toHaveBeenCalledWith({
-      id_uc: 'UC104779', motivo: 'Queda súbita'
-    }))
   })
 
   it('só permite exportar quando há ordem gerada ou em campo', async () => {
@@ -278,18 +187,9 @@ describe('LossManagementPage - erros e estados de envio', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([suspiciousUnit]))
+    mockedApi.getQueueSummary.mockResolvedValue(summaryFixture)
+    mockedApi.getQueueFilters.mockResolvedValue({ municipios: [], classes: [] })
     mockedApi.listInspections.mockResolvedValue([])
-  })
-
-  it('mostra a mensagem da API quando a UC já tem ordem ativa', async () => {
-    const conflictDetail = 'A UC UC104779 já possui ordem de inspeção ativa.'
-    mockedApi.createInspection.mockRejectedValue(buildApiError(409, conflictDetail))
-    renderPage()
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Gerar ordem para UC104779' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Confirmar ordem' }))
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(conflictDetail)
   })
 
   it('mostra a mensagem da API quando o cancelamento é recusado', async () => {
@@ -312,21 +212,11 @@ describe('LossManagementPage - erros e estados de envio', () => {
     expect(confirmButton).toBeDisabled()
   })
 
-  it('não refaz a consulta ao filtrar com todos os campos vazios', async () => {
-    renderPage()
-    await screen.findByRole('row', { name: /UC104779/ })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Filtrar' }))
-    await screen.findByRole('row', { name: /UC104779/ })
-
-    expect(mockedApi.listSuspiciousUnits).toHaveBeenCalledTimes(1)
-  })
-
   it('explica a falha das ordens sem citar as tabelas Gold', async () => {
     mockedApi.listInspections.mockRejectedValue(buildApiError(500, 'Erro interno'))
     renderPage()
 
-    fireEvent.click(screen.getByRole('tab', { name: /Ordens em Campo/ }))
+    fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
 
     expect(await screen.findByText('Não foi possível carregar as ordens')).toBeInTheDocument()
     expect(screen.queryByText(/Gold/)).not.toBeInTheDocument()

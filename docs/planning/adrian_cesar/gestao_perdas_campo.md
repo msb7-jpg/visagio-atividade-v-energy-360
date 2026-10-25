@@ -145,6 +145,16 @@
 - [x] Fila quase vazia na competência mais recente (2026-06) é esperada: a onda de quedas de meados de 2025 já foi inspecionada. (D9)
 - [x] Fórmula da energia estimada a recuperar (déficit mensal × 3 meses) como suposição. Medido: o recuperado foi 1,87× o estimado (mediana), com correlação de 0,87. (D7)
 
+### Fase 9 — Nova tela "Fila de Inspeção" (desenho de 2026-10-24)
+> Referência visual: [`assets/fila-inspecao-escuro.png`](assets/fila-inspecao-escuro.png) e [`assets/fila-inspecao-claro.png`](assets/fila-inspecao-claro.png) (mesmo layout, temas escuro e claro). Branch: `feat/fatia-05-fila-inspecao-nova-tela`.
+- [x] **Fase 9.0:** mover as imagens para `assets/` e abrir esta seção.
+- [x] **Fase 9.1 — Backend (TDD):** contrato da fila (`score` 0 a 100, `kwh_mes_recuperavel`, `valor_ano_rs`, `situacao`), UCs com ordem ativa na fila como `ordem_gerada`/`em_campo`, filtros `motivo` e `score_minimo`, `GET /losses/queue-summary` (capacidade, energia das selecionadas, retorno esperado, taxa histórica) e `GET /losses/queue-filters`.
+- [x] **Fase 9.2 — Frontend, dados:** tipos, `lossApi`, query options, `useQueueSelection` e geração de ordens em lote.
+- [x] **Fase 9.3 — Frontend, UI:** cards de resumo, filtros em select, barra de ações, tabela priorizada (barra de score, chips de motivo, situação) e abas com contadores.
+- [x] **Fase 9.4 — Testes Vitest** da nova tela.
+- [x] **Fase 9.5 — Validação:** `make lint-all`, `make test-all`, conferência visual contra as imagens e registro no changelog.
+- Fora desta entrega (decisão em aberto): motivos novos do desenho (abaixo dos vizinhos, leituras estimadas, irregularidade confirmada antes), "Ver acerto por inspetor" (Fatia 07) e distribuição por inspetor.
+
 ---
 
 ## 4. Telas Concretas, Comportamentos & Contratos de Integração (Fatia 05)

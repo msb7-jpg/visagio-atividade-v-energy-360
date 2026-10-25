@@ -275,6 +275,7 @@ source_modules = [
     "app.features.revenue.history",
     "app.features.loss_management.service",
     "app.features.loss_management.scoring",
+    "app.features.loss_management.queue_summary",
 ]
 forbidden_modules = [
     "fastapi",

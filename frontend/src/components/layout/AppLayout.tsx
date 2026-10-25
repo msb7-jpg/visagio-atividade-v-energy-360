@@ -17,7 +17,7 @@ function PageLoading() {
 }
 
 /**
- * Shell do portal: cabeçalho com usuário e logout, menu lateral por cargo e a tela ativa.
+ * Shell do portal: cabeçalho com usuário e logout, menu lateral fixo por cargo e a tela ativa.
  *
  * As telas são carregadas sob demanda; enquanto o arquivo da tela chega, o shell continua visível com um esqueleto.
  *
@@ -28,7 +28,7 @@ export function AppLayout() {
 
   return (
     <div className="bg-background flex min-h-dvh">
-      <aside className="border-border bg-card hidden w-60 shrink-0 flex-col gap-4 border-r p-4 md:flex">
+      <aside className="border-border bg-card sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-4 self-start overflow-y-auto border-r p-4 md:flex">
         <div className="flex items-center gap-2">
           <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-xl">
             <Zap className="size-5" />

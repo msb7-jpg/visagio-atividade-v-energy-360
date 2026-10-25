@@ -1,12 +1,13 @@
 """Regras puras de detecção e priorização de UCs suspeitas de perda não técnica."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from app.features.loss_management.schemas import SuspicionReason, SuspiciousUnitDTO
+from app.features.loss_management.schemas import InspectionStatus, SuspicionReason, SuspiciousUnitDTO
 
 LIMIAR_QUEDA_SUBITA = 0.5
 JANELA_RECUPERACAO_MESES = 3
-TARIFA_MEDIA_RS_KWH = 0.85
+TARIFA_MEDIA_RS_KWH = 0.714  # tarifa de referência do desenho da tela; a real virá de fato_faturamento (Fatia 02)
+MESES_POR_ANO = 12
 PESO_QUEDA_CONSUMO = 80.0
 BONUS_LEITURA_ZERADA = 20.0
 SCORE_MAXIMO = 100.0
@@ -40,6 +41,7 @@ class QueueCandidates:
     profiles: list[ConsumptionProfile]
     field_history_applied: bool
     reference_competencia: str | None = None  # só preenchida quando a fila não usa a competência mais recente
+    active_orders: dict[str, InspectionStatus] = field(default_factory=dict)  # status da ordem ativa por id_uc
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,6 +116,19 @@ def hit_probability(reasons: list[SuspicionReason]) -> float:
     return max(rates, default=0.0)
 
 
+def monthly_deficit_kwh(profile: ConsumptionProfile) -> float:
+    """Calcula o déficit mensal de consumo da UC.
+
+    Args:
+        profile: Consumo médio da UC nas janelas base e recente.
+
+    Returns:
+        Consumo base menos consumo recente, em kWh/mês (mínimo 0).
+    """
+    consumption_gap_kwh = profile.consumo_base_kwh - profile.consumo_recente_kwh
+    return max(0.0, consumption_gap_kwh)
+
+
 def estimated_recoverable_kwh(profile: ConsumptionProfile) -> float:
     """Estima a energia não faturada na janela de recuperação.
 
@@ -123,9 +138,7 @@ def estimated_recoverable_kwh(profile: ConsumptionProfile) -> float:
     Returns:
         Déficit mensal (base - recente, mínimo 0) multiplicado pelos meses de recuperação.
     """
-    consumption_gap_kwh = profile.consumo_base_kwh - profile.consumo_recente_kwh
-    monthly_deficit_kwh = max(0.0, consumption_gap_kwh)
-    recoverable_kwh = monthly_deficit_kwh * JANELA_RECUPERACAO_MESES
+    recoverable_kwh = monthly_deficit_kwh(profile) * JANELA_RECUPERACAO_MESES
     return round(recoverable_kwh, 1)
 
 
@@ -143,6 +156,8 @@ def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | No
         return None
     recoverable_kwh = estimated_recoverable_kwh(profile)
     recoverable_value_rs = recoverable_kwh * TARIFA_MEDIA_RS_KWH
+    monthly_kwh = monthly_deficit_kwh(profile)
+    annual_value_rs = monthly_kwh * MESES_POR_ANO * TARIFA_MEDIA_RS_KWH
     return SuspiciousUnitDTO(
         id_uc=profile.id_uc,
         municipio=profile.municipio,
@@ -155,6 +170,8 @@ def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | No
         consumo_recente_kwh=round(profile.consumo_recente_kwh, 1),
         kwh_estimado_recuperar=recoverable_kwh,
         valor_estimado_recuperar_rs=round(recoverable_value_rs, 2),
+        kwh_mes_recuperavel=round(monthly_kwh, 1),
+        valor_ano_rs=round(annual_value_rs, 2),
     )
 
 
@@ -192,17 +209,49 @@ def priority_key(unit: SuspiciousUnitDTO) -> tuple[float, float]:
     return expected_kwh, unit.score_risco
 
 
-def rank_suspicious_units(profiles: list[ConsumptionProfile], limit: int) -> list[SuspiciousUnitDTO]:
+def priority_score(unit: SuspiciousUnitDTO, top_expected_kwh: float) -> int:
+    """Normaliza o kWh esperado da UC pelo topo da fila para a escala de 0 a 100 exibida na tela.
+
+    Args:
+        unit: Item da fila.
+        top_expected_kwh: Maior kWh esperado entre todas as UCs candidatas (não só as visíveis).
+
+    Returns:
+        Score inteiro de 0 a 100; 0 quando a fila não tem energia esperada.
+    """
+    if top_expected_kwh <= 0:
+        return 0
+    expected_kwh, _ = priority_key(unit)
+    return round(expected_kwh / top_expected_kwh * SCORE_MAXIMO)
+
+
+def rank_suspicious_units(
+    profiles: list[ConsumptionProfile],
+    limit: int | None,
+    *,
+    reason: SuspicionReason | None = None,
+    min_score: int = 0,
+) -> list[SuspiciousUnitDTO]:
     """Monta a fila priorizada pelo kWh esperado (kWh a recuperar x taxa de acerto do sinal).
+
+    O score de 0 a 100 é calculado sobre todas as candidatas, antes dos filtros, para não mudar
+    quando um filtro esconde a UC do topo. O limite vale depois dos filtros.
 
     Args:
         profiles: Perfis de consumo candidatos.
-        limit: Tamanho máximo da fila.
+        limit: Tamanho máximo da fila; None devolve todas as que passam nos filtros.
+        reason: Mantém só as UCs com este motivo; None não filtra.
+        min_score: Mantém só as UCs com score a partir deste valor.
 
     Returns:
-        Itens suspeitos em ordem decrescente de kWh esperado (desempate por score), até `limit` itens.
+        Itens suspeitos em ordem decrescente de kWh esperado (desempate por score de risco), até `limit` itens.
     """
     candidates = [unit for profile in profiles if (unit := build_suspicious_unit(profile)) is not None]
     candidates_by_id = sorted(candidates, key=lambda unit: unit.id_uc)
     ranked = sorted(candidates_by_id, key=priority_key, reverse=True)
-    return ranked[:limit]
+    top_expected_kwh = priority_key(ranked[0])[0] if ranked else 0.0
+    scored = [unit.model_copy(update={"score": priority_score(unit, top_expected_kwh)}) for unit in ranked]
+    visible = [
+        unit for unit in scored if unit.score >= min_score and (reason is None or reason in unit.motivos)
+    ]
+    return visible if limit is None else visible[:limit]

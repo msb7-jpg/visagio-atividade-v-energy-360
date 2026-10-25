@@ -137,7 +137,8 @@ async def test_inspection_lifecycle(client):
     assert duplicated.status_code == 409
 
     queue = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
-    assert "UC_FRAUDE" not in [unit["id_uc"] for unit in queue.json()["itens"]]
+    queued_unit = next(unit for unit in queue.json()["itens"] if unit["id_uc"] == "UC_FRAUDE")
+    assert queued_unit["situacao"] == "ordem_gerada"
 
     order_url = f"{BASE_URL}/inspections/{order['id_inspecao']}"
     skipped = await client.patch(order_url, headers=headers, json={"status": "concluida"})
@@ -277,7 +278,7 @@ async def test_queue_works_without_field_history_table_and_warns():
     assert "Ordens concluídas no sistema continuam sendo excluídas" in body["avisos"][0]["mensagem"]
 
 
-async def test_queue_without_field_history_still_excludes_units_with_system_orders():
+async def test_queue_without_field_history_still_marks_units_with_system_orders():
     engine, http_client = await open_client(with_gold_tables=True, with_field_history=False)
     async with http_client:
         headers = await auth_headers(http_client, "perdas@venergy.com")
@@ -287,7 +288,8 @@ async def test_queue_without_field_history_still_excludes_units_with_system_orde
     await engine.dispose()
 
     assert response.status_code == 200
-    assert "UC_FRAUDE" not in [unit["id_uc"] for unit in response.json()["itens"]]
+    situations = {unit["id_uc"]: unit["situacao"] for unit in response.json()["itens"]}
+    assert situations["UC_FRAUDE"] == "ordem_gerada"
 
 
 async def test_missing_gold_tables_returns_clear_error():

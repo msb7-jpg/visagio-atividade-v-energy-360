@@ -2,10 +2,10 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import CompoundSelect, Select, Subquery, and_, or_, select, true
+from sqlalchemy import CompoundSelect, Select, Subquery, select, true
 from sqlalchemy.sql.elements import ColumnElement
 
-from app.features.loss_management.models import ACTIVE_STATUSES, InspectionOrder
+from app.features.loss_management.models import InspectionOrder
 from app.features.loss_management.queries import (
     COMPLETED_STATUS,
     ConsumptionWindows,
@@ -29,14 +29,15 @@ def _optional_filters(filters: SuspicionFilters) -> list[ColumnElement[bool]]:
 
 
 def _system_orders_query(cutoff: date) -> Select:
-    """UCs com ordem ativa ou concluída desde `cutoff` no sistema (ordens canceladas não excluem)."""
+    """UCs com ordem concluída desde `cutoff` no sistema.
+
+    Ordens ativas não excluem: a UC segue na fila, marcada com a situação da ordem. Canceladas não excluem.
+    """
     cutoff_datetime = datetime.combine(cutoff, datetime.min.time())
-    is_active = InspectionOrder.status.in_(ACTIVE_STATUSES)
-    is_recently_completed = and_(
+    return select(InspectionOrder.id_uc).where(
         InspectionOrder.status == COMPLETED_STATUS,
         InspectionOrder.atualizado_em >= cutoff_datetime,
     )
-    return select(InspectionOrder.id_uc).where(or_(is_active, is_recently_completed))
 
 
 def _field_history_query(cutoff: date, history_until: date | None) -> Select:
@@ -55,8 +56,8 @@ def excluded_units_query(
 ) -> Select | CompoundSelect:
     """Lista as UCs que não podem entrar na fila.
 
-    Saem da fila: UCs com ordem ativa e UCs inspecionadas dentro da janela de análise, seja por
-    ordem concluída no sistema, seja pelo histórico de campo. Ordens canceladas não excluem.
+    Saem da fila: UCs inspecionadas dentro da janela de análise, seja por ordem concluída no
+    sistema, seja pelo histórico de campo. Ordens ativas e canceladas não excluem.
 
     Args:
         windows: Janelas de análise da fila.
@@ -112,6 +113,7 @@ def suspicious_profiles_query(
     """Monta a consulta dos perfis de consumo candidatos à fila de suspeitas.
 
     Candidata é a UC sem GD, sem inspeção recente, com queda acima do limiar ou leitura zerada.
+    Ter ordem ativa não a tira da fila.
 
     Args:
         windows: Janelas base e recente.

@@ -6,6 +6,7 @@ interface ActionDialogFooterProps {
   confirmLabel: string
   isPending: boolean
   isConfirmDisabled?: boolean
+  isCancelDisabled?: boolean
   errorMessage: string | null
   onCancel: () => void
   onConfirm: () => void
@@ -21,6 +22,7 @@ export function ActionDialogFooter({
   confirmLabel,
   isPending,
   isConfirmDisabled = false,
+  isCancelDisabled = false,
   errorMessage,
   onCancel,
   onConfirm
@@ -29,7 +31,7 @@ export function ActionDialogFooter({
     <div className="flex flex-col gap-3">
       {errorMessage ? <p className="text-destructive text-sm" role="alert">{errorMessage}</p> : null}
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel}>Voltar</Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isCancelDisabled}>Voltar</Button>
         <Button type="button" onClick={onConfirm} disabled={isPending || isConfirmDisabled} aria-busy={isPending}>
           {isPending ? <Spinner className="size-4" /> : null}
           {confirmLabel}

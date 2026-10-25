@@ -5,6 +5,8 @@ import type {
   InspectionOrderCreate,
   InspectionOrderUpdate,
   InspectionStatus,
+  QueueFilterOptions,
+  QueueSummary,
   SuspiciousQueue,
   SuspiciousUnitsFilter,
   UploadResult
@@ -16,6 +18,21 @@ export const lossApi = {
       params: filters,
       signal
     })
+    return data
+  },
+
+  async getQueueSummary(selectedIds: string[], signal?: AbortSignal): Promise<QueueSummary> {
+    // `indexes: null` envia `ucs=UC1&ucs=UC2`, formato que o FastAPI lê como lista (sem os colchetes do axios).
+    const { data } = await apiClient.get<QueueSummary>('/losses/queue-summary', {
+      params: { ucs: selectedIds },
+      paramsSerializer: { indexes: null },
+      signal
+    })
+    return data
+  },
+
+  async getQueueFilters(signal?: AbortSignal): Promise<QueueFilterOptions> {
+    const { data } = await apiClient.get<QueueFilterOptions>('/losses/queue-filters', { signal })
     return data
   },
 

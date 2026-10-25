@@ -11,10 +11,12 @@ list_suspicious_units_doc = EndpointDoc(
     summary="Fila de UCs suspeitas priorizada por energia esperada a recuperar",
     description=(
         "Lista UCs com queda >= 50% do consumo médio das 3 últimas competências em relação às 12 anteriores, "
-        "ou com leitura zerada. Exclui UCs com geração distribuída, com ordem de inspeção ativa e as já "
-        "inspecionadas dentro da janela de análise (ordem concluída ou histórico de campo); ordem cancelada "
-        "devolve a UC à fila. Filtros por município, bairro e classe; limite padrão de 200 (capacidade mensal "
-        "da equipe de campo). Ordenação decrescente por kWh esperado, isto é, kWh estimado a recuperar vezes a "
+        "ou com leitura zerada. Exclui UCs com geração distribuída e as já inspecionadas dentro da janela "
+        "de análise (ordem concluída ou histórico de campo); ordem cancelada devolve a UC à fila. UCs com ordem "
+        "ativa seguem na lista, com `situacao` ordem_gerada ou em_campo. Cada UC traz `score` de 0 a 100 (kWh "
+        "esperado relativo ao topo da fila). Filtros por município, bairro, classe, motivo e score mínimo; "
+        "limite padrão de 200 (capacidade mensal da equipe de campo). "
+        "Ordenação decrescente por kWh esperado, isto é, kWh estimado a recuperar vezes a "
         "taxa histórica de acerto do sinal ('probabilidade_acerto'); o score de risco só desempata. "
         "Se a tabela de inspeções de campo (Fatia 02) ainda não existir, a fila é montada sem excluir esse "
         "histórico e a resposta traz o aviso 'historico_campo_nao_aplicado' em 'avisos'. Se a variável "
@@ -32,6 +34,31 @@ list_suspicious_units_doc = EndpointDoc(
                 "inspeções é tolerada, com aviso)."
             )
         },
+    },
+)
+
+queue_summary_doc = EndpointDoc(
+    summary="Cartões do topo da Fila de Inspeção",
+    description=(
+        "Resume a capacidade do mês (ordens ativas contra as 200 inspeções que a equipe faz), a energia recuperável "
+        "das UCs selecionadas (`ucs`, repetível), o retorno esperado (energia x taxa histórica de acerto) e a taxa "
+        "histórica de inspeções com irregularidade confirmada. UCs que já têm ordem ativa ou que saíram da fila "
+        "não contam como selecionadas. A tarifa de referência vem em `tarifa_rs_kwh`."
+    ),
+    response_description="Capacidade, energia e valor das selecionadas, retorno esperado e taxa de acerto.",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        500: {"description": "Falha ao consultar tabelas Gold."},
+    },
+)
+
+queue_filters_doc = EndpointDoc(
+    summary="Opções dos filtros da Fila de Inspeção",
+    description="Lista os municípios e as classes de consumo presentes no cadastro de UCs, em ordem alfabética.",
+    response_description="Municípios e classes disponíveis para filtrar a fila.",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        500: {"description": "Falha ao consultar o cadastro de UCs."},
     },
 )
 

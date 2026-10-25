@@ -50,6 +50,7 @@ fato_inspecoes_perdas = table(
     "fato_inspecoes_perdas",
     column("id_uc", String),
     column("data_inspecao", String),
+    column("irregularidade_constatada", Boolean),
 )
 
 
