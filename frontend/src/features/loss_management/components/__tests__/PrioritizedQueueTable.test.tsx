@@ -40,14 +40,65 @@ function renderTable(units: SuspiciousUnit[], total?: number) {
   )
 }
 
-const headerCheckbox = () => screen.getByRole('checkbox', { name: 'Selecionar todas as UCs livres' })
+const headerCheckbox = () => screen.getByRole('checkbox', { name: 'Selecionar as UCs livres da página' })
 const lockedUnit = (situacao: QueueSituation) => buildUnit('UC9', { situacao })
 
 describe('PrioritizedQueueTable', () => {
   it('informa quantas UCs aparecem e quantas existem na fila', () => {
     renderTable([buildUnit('UC1'), buildUnit('UC2')], 1248)
 
-    expect(screen.getByText(/Mostrando 2 de 1\.248 UCs \(top 2 por score\)/)).toBeInTheDocument()
+    expect(screen.getByText(/Mostrando 1–2 de 2 UCs carregadas \(1\.248 na fila\)/)).toBeInTheDocument()
+  })
+
+  it('mostra 25 UCs por página e navega para as seguintes', () => {
+    const units = Array.from({ length: 30 }, (_, index) => buildUnit(`UC${index + 1}`))
+    renderTable(units)
+
+    expect(screen.getByText('Página 1 de 2')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'UC25' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'UC26' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Página anterior' })).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
+
+    expect(screen.getByText('Página 2 de 2')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'UC26' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'UC25' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Próxima página' })).toBeDisabled()
+  })
+
+  it('marca pelo cabeçalho só as UCs da página visível', () => {
+    const units = Array.from({ length: 30 }, (_, index) => buildUnit(`UC${index + 1}`))
+    renderTable(units)
+
+    fireEvent.click(headerCheckbox())
+    expect(screen.getByRole('checkbox', { name: 'Selecionar UC25' })).toBeChecked()
+    expect(headerCheckbox()).toBeChecked()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
+    expect(screen.getByRole('checkbox', { name: 'Selecionar UC26' })).not.toBeChecked()
+    expect(headerCheckbox()).not.toBeChecked()
+  })
+
+  it('desmarca pelo cabeçalho só a página visível, preservando as outras páginas', () => {
+    const units = Array.from({ length: 30 }, (_, index) => buildUnit(`UC${index + 1}`))
+    renderTable(units)
+    fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
+    fireEvent.click(headerCheckbox())
+    fireEvent.click(screen.getByRole('button', { name: 'Página anterior' }))
+    fireEvent.click(headerCheckbox())
+
+    fireEvent.click(headerCheckbox())
+
+    expect(screen.getByRole('checkbox', { name: 'Selecionar UC1' })).not.toBeChecked()
+    fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
+    expect(screen.getByRole('checkbox', { name: 'Selecionar UC26' })).toBeChecked()
+  })
+
+  it('não mostra a paginação quando tudo cabe em uma página', () => {
+    renderTable([buildUnit('UC1')])
+
+    expect(screen.queryByRole('navigation', { name: 'Paginação da fila' })).not.toBeInTheDocument()
   })
 
   it('marca todas as UCs livres pelo cabeçalho e limpa no segundo clique', () => {

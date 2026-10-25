@@ -10,13 +10,12 @@ const isSelectable = (unit: SuspiciousUnit) => unit.situacao === 'na_fila'
  * Se voltarem à lista ao remover o filtro, voltam marcadas: a escolha do gerente não se perde por filtrar.
  *
  * @param units - UCs visíveis na fila, já priorizadas.
- * @returns Seleção atual (na ordem da fila) e ações de marcar, desmarcar, topo e todas.
+ * @returns Seleção atual (na ordem da fila) e ações de marcar, desmarcar, topo e grupo.
  */
 export function useQueueSelection(units: SuspiciousUnit[]) {
   const [pickedIds, setPickedIds] = useState<ReadonlySet<string>>(() => new Set())
   const selectableIds = useMemo(() => units.filter(isSelectable).map((unit) => unit.id_uc), [units])
   const selectedIds = useMemo(() => selectableIds.filter((idUc) => pickedIds.has(idUc)), [selectableIds, pickedIds])
-  const allSelected = selectableIds.length > 0 && selectedIds.length === selectableIds.length
 
   const toggle = useCallback(
     (idUc: string) => {
@@ -31,14 +30,28 @@ export function useQueueSelection(units: SuspiciousUnit[]) {
     [selectableIds]
   )
 
-  const selectTop = useCallback((count: number) => setPickedIds(new Set(selectableIds.slice(0, count))), [selectableIds])
+  const selectTop = useCallback(
+    (count: number) => setPickedIds(new Set(selectableIds.slice(0, count))),
+    [selectableIds]
+  )
   const clear = useCallback(() => setPickedIds(new Set()), [])
-  const toggleAll = useCallback(
-    () => setPickedIds(allSelected ? new Set() : new Set(selectableIds)),
-    [allSelected, selectableIds]
+  const toggleMany = useCallback(
+    (idUcs: readonly string[]) => {
+      const groupIds = idUcs.filter((idUc) => selectableIds.includes(idUc))
+      setPickedIds((currentIds) => {
+        const isGroupPicked = groupIds.length > 0 && groupIds.every((idUc) => currentIds.has(idUc))
+        const nextIds = new Set(currentIds)
+        for (const idUc of groupIds) {
+          if (isGroupPicked) nextIds.delete(idUc)
+          else nextIds.add(idUc)
+        }
+        return nextIds
+      })
+    },
+    [selectableIds]
   )
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds])
   const isSelected = useCallback((idUc: string) => selectedIdSet.has(idUc), [selectedIdSet])
 
-  return { selectedIds, allSelected, isSelected, isSelectable, toggle, selectTop, toggleAll, clear }
+  return { selectedIds, isSelected, isSelectable, toggle, selectTop, toggleMany, clear }
 }

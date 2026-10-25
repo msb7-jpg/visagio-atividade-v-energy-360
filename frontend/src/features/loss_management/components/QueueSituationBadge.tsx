@@ -7,9 +7,9 @@ const SITUATION_LABELS: Record<QueueSituation, string> = {
   em_campo: 'Em campo'
 }
 
-const SITUATION_VARIANTS: Record<QueueSituation, 'outline' | 'secondary' | 'default'> = {
-  na_fila: 'outline',
-  ordem_gerada: 'secondary',
+const SITUATION_VARIANTS: Record<QueueSituation, 'secondary' | 'warning' | 'default'> = {
+  na_fila: 'secondary',
+  ordem_gerada: 'warning',
   em_campo: 'default'
 }
 

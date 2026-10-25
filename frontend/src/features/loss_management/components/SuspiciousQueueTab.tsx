@@ -43,7 +43,12 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
         emptyTitle="Nenhuma UC suspeita na fila"
         emptyDescription="Nenhuma UC atende aos critérios. UCs com geração distribuída ou já inspecionadas na janela de análise ficam fora da fila."
       >
-        <PrioritizedQueueTable units={units} total={queue.total ?? units.length} selection={selection} />
+        <PrioritizedQueueTable
+          key={JSON.stringify(queue.filters)}
+          units={units}
+          total={queue.total ?? units.length}
+          selection={selection}
+        />
       </AsyncState>
       {queue.isDialogOpen ? (
         <GenerateOrdersDialog

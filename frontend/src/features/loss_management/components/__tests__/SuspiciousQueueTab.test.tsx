@@ -241,7 +241,7 @@ describe('Fila de Inspeção', () => {
 
     fireEvent.click(within(await rowOf('UC100002')).getByRole('checkbox'))
 
-    expect(screen.getByRole('checkbox', { name: 'Selecionar todas as UCs livres' })).toHaveAttribute('aria-checked', 'mixed')
+    expect(screen.getByRole('checkbox', { name: 'Selecionar as UCs livres da página' })).toHaveAttribute('aria-checked', 'mixed')
   })
 
   it('filtra por motivo, município, classe e score mínimo', async () => {
@@ -257,6 +257,19 @@ describe('Fila de Inspeção', () => {
       { motivo: 'queda_subita', municipio: 'Recife', classe: 'Comercial', score_minimo: 70 },
       expect.anything()
     ))
+  })
+
+  it('volta para a primeira página ao mudar os filtros', async () => {
+    const manyUnits = Array.from({ length: 30 }, (_, index) => buildUnit(`UC2${String(index).padStart(5, '0')}`, 80))
+    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue(manyUnits))
+    renderPage()
+    await rowOf('UC200000')
+    fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
+    expect(screen.getByText('Página 2 de 2')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'queda_subita' } })
+
+    expect(await screen.findByText('Página 1 de 2')).toBeInTheDocument()
   })
 
   it('mostra a fila inteira de novo ao voltar para "Todos os motivos"', async () => {

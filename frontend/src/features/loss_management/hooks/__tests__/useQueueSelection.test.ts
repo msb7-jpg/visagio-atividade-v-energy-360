@@ -37,7 +37,6 @@ describe('useQueueSelection', () => {
     const { result } = renderHook(() => useQueueSelection(QUEUE))
 
     expect(result.current.selectedIds).toEqual([])
-    expect(result.current.allSelected).toBe(false)
   })
 
   it('marca e desmarca uma UC livre', () => {
@@ -79,22 +78,48 @@ describe('useQueueSelection', () => {
     expect(result.current.selectedIds).toEqual(['UC2'])
   })
 
-  it('seleciona todas as livres e, no segundo acionamento, limpa a seleção', () => {
+  it('mantém o topo marcado ao acioná-lo de novo, sem desmarcar', () => {
+    const { result } = renderHook(() => useQueueSelection(QUEUE))
+    act(() => result.current.selectTop(3))
+
+    act(() => result.current.selectTop(3))
+
+    expect(result.current.selectedIds).toEqual(['UC2', 'UC3', 'UC5'])
+  })
+
+  it('marca um grupo de UCs livres e, no segundo acionamento, desmarca só esse grupo', () => {
+    const { result } = renderHook(() => useQueueSelection(QUEUE))
+    act(() => result.current.toggle('UC6'))
+
+    act(() => result.current.toggleMany(['UC2', 'UC3']))
+    expect(result.current.selectedIds).toEqual(['UC2', 'UC3', 'UC6'])
+
+    act(() => result.current.toggleMany(['UC2', 'UC3']))
+    expect(result.current.selectedIds).toEqual(['UC6'])
+  })
+
+  it('completa o grupo quando só parte dele está marcada', () => {
+    const { result } = renderHook(() => useQueueSelection(QUEUE))
+    act(() => result.current.toggle('UC2'))
+
+    act(() => result.current.toggleMany(['UC2', 'UC3']))
+
+    expect(result.current.selectedIds).toEqual(['UC2', 'UC3'])
+  })
+
+  it('ignora UCs com ordem gerada ou em campo ao marcar um grupo', () => {
     const { result } = renderHook(() => useQueueSelection(QUEUE))
 
-    act(() => result.current.toggleAll())
-    expect(result.current.selectedIds).toEqual(['UC2', 'UC3', 'UC5', 'UC6'])
-    expect(result.current.allSelected).toBe(true)
+    act(() => result.current.toggleMany(['UC1', 'UC2', 'UC4']))
 
-    act(() => result.current.toggleAll())
-    expect(result.current.selectedIds).toEqual([])
+    expect(result.current.selectedIds).toEqual(['UC2'])
   })
 
   it('descarta da seleção as UCs que saíram da lista depois de um filtro', () => {
     const { result, rerender } = renderHook(({ units }) => useQueueSelection(units), {
       initialProps: { units: QUEUE }
     })
-    act(() => result.current.toggleAll())
+    act(() => result.current.toggleMany(['UC2', 'UC3', 'UC5', 'UC6']))
 
     rerender({ units: [QUEUE[1], QUEUE[2]] })
 
@@ -105,7 +130,7 @@ describe('useQueueSelection', () => {
     const { result, rerender } = renderHook(({ units }) => useQueueSelection(units), {
       initialProps: { units: QUEUE }
     })
-    act(() => result.current.toggleAll())
+    act(() => result.current.toggleMany(['UC2', 'UC3', 'UC5', 'UC6']))
     rerender({ units: [QUEUE[1]] })
     expect(result.current.selectedIds).toEqual(['UC2'])
 
@@ -116,16 +141,10 @@ describe('useQueueSelection', () => {
 
   it('limpa a seleção', () => {
     const { result } = renderHook(() => useQueueSelection(QUEUE))
-    act(() => result.current.toggleAll())
+    act(() => result.current.toggleMany(['UC2', 'UC3', 'UC5', 'UC6']))
 
     act(() => result.current.clear())
 
     expect(result.current.selectedIds).toEqual([])
-  })
-
-  it('não considera tudo selecionado quando a lista não tem UC livre', () => {
-    const { result } = renderHook(() => useQueueSelection([makeUnit('UC1', 'em_campo')]))
-
-    expect(result.current.allSelected).toBe(false)
   })
 })
