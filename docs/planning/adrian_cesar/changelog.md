@@ -407,3 +407,17 @@
   - Backend: Ruff OK, Pylint 10,00/10, import-linter 4 contratos mantidos, Pyright 0 erros na fatia, `pytest` 537 passed.
   - Frontend: ESLint OK, Fallow 0 acima do limite, `tsc -b` OK, `vitest` 160 passed em 21 arquivos.
 - **Diferenças conhecidas em relação ao desenho:** sem tensão (B1, B3, A4) na coluna Classe; sem "Ver acerto por inspetor" (Fatia 07); motivos novos do desenho ainda não existem no backend (só queda abrupta e consumo zero); título e abas usam os componentes do design system, com tamanho um pouco menor que o desenho.
+
+### [2026-10-25] - Sidebar do portal fixa durante a rolagem
+- **Autor:** Adrian César (Fatia 05)
+- **O que foi feito:** o menu lateral do `AppLayout` deixou de rolar junto com a página. O `<aside>` ganhou `sticky top-0 h-dvh self-start overflow-y-auto`: fica preso ao topo da tela, só o conteúdo ao lado rola e, se o menu passar da altura da tela, ele rola dentro da própria sidebar. Só classes com tokens do Tailwind (sem valores arbitrários), conforme `design.md`. Abaixo do breakpoint `md` a sidebar continua oculta. Mudança transversal (`design-system`), restrita a `frontend/src/components/layout/AppLayout.tsx`.
+- **Validação (equivalente a `make lint-all` e `make test-all`, rodados direto porque `make` não existe neste shell):**
+  - Backend: Ruff OK, Pylint 10,00/10, import-linter 4 contratos mantidos, `pytest` 537 passed.
+  - Frontend: ESLint OK, Fallow 0 acima do limite, `vitest` 163 passed em 21 arquivos.
+  - **Não conferido no navegador:** o comportamento fixo foi validado pelo CSS, não numa tela real.
+- **Correções da revisão de código (testes antes, RED confirmado em 10 cenários):**
+  - O checkbox do cabeçalho passou a agir só nas UCs livres da página visível (`toggleMany` no `useQueueSelection`, rótulo "Selecionar as UCs livres da página"); antes marcava as até 200 UCs carregadas, inclusive as não exibidas.
+  - "Selecionar top N" voltou a só selecionar (não desmarca mais ao repetir).
+  - A tabela remonta com `key` dos filtros, então a paginação volta à página 1 ao mudar filtros.
+  - Validação: `vitest` e `tsc -b`, ESLint e Fallow OK (rodados no frontend; backend não foi alterado).
+
