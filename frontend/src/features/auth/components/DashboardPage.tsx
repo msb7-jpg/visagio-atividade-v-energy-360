@@ -1,5 +1,6 @@
 import { Zap, Activity, Users, FileSearch } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { SmartInsightCard } from '@/features/insights/SmartInsightCard'
 
 /**
  * Dashboard principal com visão geral analítica (design.md).
@@ -17,6 +18,17 @@ export function DashboardPage() {
             Ambiente inicial conectado com sucesso. Módulos analíticos prontos para consumo dos dados Gold.
           </p>
         </div>
+
+        <SmartInsightCard
+          context="revenue"
+          metrics={{
+            faturamento_total_rs: 85200000,
+            volume_faturado_mwh: 98400,
+            penetracao_gd_mwp: 14.8,
+            dec: 4.8,
+            fec: 2.1
+          }}
+        />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card variant="interactive">

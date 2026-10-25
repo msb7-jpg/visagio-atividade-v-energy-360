@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarNav } from '@/components/layout/SidebarNav'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { ChatDrawer } from '@/features/chat/ChatDrawer'
 
 function PageLoading() {
   return (
@@ -41,7 +42,7 @@ export function AppLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="border-border bg-card/90 sticky top-0 z-40 flex items-center justify-end gap-3 border-b px-4 py-3 backdrop-blur-md">
-          {/* Ponto de encaixe do botão do ChatDrawer (Fatia 07). */}
+          <ChatDrawer />
           <div className="text-right">
             <p className="text-foreground text-sm font-semibold">{user?.nome}</p>
             <Badge variant="secondary">{user?.role}</Badge>

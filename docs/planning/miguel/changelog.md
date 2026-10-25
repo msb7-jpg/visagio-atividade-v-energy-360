@@ -6,6 +6,27 @@
 
 ## Registros de Execução
 
+### [2026-10-25] - Encaixe do ChatDrawer Global no AppLayout, SmartInsightCard no Dashboard e Carga SQLite (Miguel)
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Encaixe do `<ChatDrawer />` no Layout Global (`AppLayout.tsx`):**
+    - Com a introdução do novo shell compartilhado `AppLayout.tsx` (Fatia 06), o botão do ChatDrawer agora reside no cabeçalho fixo global superior, ficando disponível de forma consistente em todas as telas da plataforma (`/dashboard`, `/revenue`, `/losses`, `/quality`, `/customers`).
+  - **Inserção Proativa do `<SmartInsightCard />` no Dashboard:**
+    - Reincorporado `<SmartInsightCard context="revenue" metrics={{...}} />` no topo do `DashboardPage.tsx` com métricas analíticas operacionais completas, gerando diagnósticos com suporte ao provedor ativo ou mock local.
+  - **Script de População SQLite Automatizado (`scripts/populate_sqlite_from_landing.py`):**
+    - Desenvolvido e executado script de ingestão a partir dos arquivos CSV descompactados de `data/landing/` para o banco SQLite local (`backend/v_energy.db`):
+      - `dim_unidade_consumidora`: 46.461 UCs reais populadas.
+      - `fato_faturamento`: 100.000 faturas detalhadas populadas.
+      - `fato_qualidade_alimentador`: 5.856 registros mensais contendo o schema completo de 15 colunas com DEC/FEC apurados e acumulados ano (DEC/FEC YTD), sanando o erro 500 em `GET /api/v1/quality/indicators`.
+      - `fato_atendimentos`: 50.000 chamados populados com tempos de atendimento.
+  - **Sincronização com `origin/main` (Rebase):**
+    - Integrados 74 commits da equipe principal com resolução limpa de conflitos em rotas, dependências e interfaces.
+- **Validação de Testes e Linters:**
+  - `make lint-all`: 100% verde (Ruff, Pylint 10.00/10, import-linter 4/4 contratos mantidos, ESLint, Fallow com maintainability 91.9).
+  - `make test-all`: 100% verde (537 testes backend pytest + 182 testes frontend vitest).
+
+---
+
 ### [2026-10-25] - Transformação Proativa do SmartInsightCard & Resiliência de IA (Miguel)
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

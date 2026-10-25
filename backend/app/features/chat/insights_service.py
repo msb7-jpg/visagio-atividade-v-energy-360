@@ -32,6 +32,8 @@ def _is_provider_configured() -> bool:
     """Verifica se há um provedor de LLM configurado e disponível."""
     settings = get_settings()
     configured_provider = settings.ai_provider
+    if configured_provider == "mock":
+        return True
     if configured_provider in ("google", None) and settings.gemini_api_key:
         return True
     return configured_provider in ("groq", "openrouter", "local")
