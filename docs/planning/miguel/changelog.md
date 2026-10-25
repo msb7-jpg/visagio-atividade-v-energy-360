@@ -258,6 +258,22 @@
   - `make lint-all`: Ruff OK, Pylint 10.00/10, import-linter 4/4 contratos mantidos, ESLint e Fallow 100% aprovados.
   - `make test-all`: 293 testes backend e 48 testes frontend aprovados.
 
+### [2026-10-25] - Correção da Abertura do Chat Widget Flutuante durante Streaming
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - Identificada e corrigida a causa raiz pela qual o botão flutuante minimizado não permitia reabrir a janela de chat durante a geração de resposta (streaming ativo):
+    - O elemento indicador de pulso (`span className="animate-ping"`) ocupava a área absoluta do disparador sem a propriedade `pointer-events-none`, interceptando todos os eventos de clique do usuário e descartando-os sem chamar `onOpen`.
+    - O container circular externo (`size-14`) não capturava cliques fora da área central do botão menor de 36px (`size="icon"`).
+    - O componente `ChatWidgetTrigger` não continha a chave `key="chat-trigger"` no chaveamento condicional do `AnimatePresence`.
+  - Adicionado `pointer-events-none` ao beacon `animate-ping` em `ChatWidgetTrigger.tsx`.
+  - Configurado manipulador `onClick={onOpen}` no container circular com `event.stopPropagation()` no botão interno.
+  - Adicionada chave `key="chat-trigger"` no `ChatWidget.tsx` para transição determinística no `AnimatePresence`.
+  - Criada suíte de testes unitários dedicada `ChatWidgetTrigger.test.tsx` com 3 cenários cobrindo o acionamento em repouso e durante streaming ativo.
+- **Validação:**
+  - `make lint-all`: Ruff OK, Pylint 10.00/10, import-linter 4/4 mantidos, ESLint e Fallow 100% aprovados.
+  - `make test-all`: 537 testes backend e 185 testes frontend aprovados (total 722 testes verdes).
+
+
 
 
 
