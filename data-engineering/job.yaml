@@ -1,44 +1,82 @@
-name: v_energy_grid_360_lakehouse_pipeline
-schedule:
-  quartz_cron_expression: 0 0 4 1 * ?
-  timezone_id: America/Recife
-  pause_status: UNPAUSED
-tasks:
-  - task_key: Task_Landing_to_Bronze
-    notebook_task:
-      notebook_path: /Workspace/V_Energy_Analytics/Landing_to_Bronze
-      source: WORKSPACE
-    timeout_seconds: 3600
-    max_retries: 2
-    min_retry_interval_millis: 60000
-    retry_on_timeout: true
-  - task_key: Task_Bronze_to_Silver
-    depends_on:
-      - task_key: Task_Landing_to_Bronze
-    notebook_task:
-      notebook_path: /Workspace/V_Energy_Analytics/Bronze_to_Silver
-      source: WORKSPACE
-    timeout_seconds: 3600
-    max_retries: 2
-    min_retry_interval_millis: 60000
-    retry_on_timeout: true
-  - task_key: Task_Silver_to_Gold
-    depends_on:
-      - task_key: Task_Bronze_to_Silver
-    notebook_task:
-      notebook_path: /Workspace/V_Energy_Analytics/Silver_to_Gold
-      source: WORKSPACE
-    timeout_seconds: 3600
-    max_retries: 2
-    min_retry_interval_millis: 60000
-    retry_on_timeout: true
-  - task_key: Task_Export_Gold_to_SQLite
-    depends_on:
-      - task_key: Task_Silver_to_Gold
-    notebook_task:
-      notebook_path: /Workspace/V_Energy_Analytics/Export_Gold_to_SQLite
-      source: WORKSPACE
-    timeout_seconds: 1800
-    max_retries: 1
-format: MULTI_TASK
-max_concurrent_runs: 1
+# Workflow do Lakehouse V-Energy Grid 360 (formato Databricks Asset Bundle).
+# Nomes de tarefas e notebooks da Fatia 01 seguem o padrão do Renan (ADR-004);
+# as tarefas fatia02_* são da Fatia 02 (Ryei Estevan).
+#
+# Ordem: Bronze -> Silver -> Gold -> testes de qualidade -> exportação SQLite.
+# A exportação da Fatia 02 só roda depois que os testes das duas fatias passam e
+# acrescenta suas tabelas ao v_energy.db criado pelo Silver_to_Gold.
+#
+# Todos os notebooks ficam na mesma pasta do workspace (variável notebooks_dir).
+# Para rodar em outro workspace: --var="notebooks_dir=/Workspace/<pasta>".
+variables:
+  notebooks_dir:
+    description: Pasta do workspace com os notebooks das fatias
+    default: /Workspace/Users/renandccavalcanti113@gmail.com/visagio-atividade-v-energy-360
+
+resources:
+  jobs:
+    Job_Energy:
+      name: Job Energy
+      schedule:
+        quartz_cron_expression: 0 0 4 1 * ?
+        timezone_id: America/Recife
+        pause_status: UNPAUSED
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: Landing_to_Bronze
+          notebook_task:
+            notebook_path: ${var.notebooks_dir}/Landing_to_Bronze
+            source: WORKSPACE
+        - task_key: fatia02_bronze
+          depends_on:
+            - task_key: Landing_to_Bronze
+          notebook_task:
+            notebook_path: ${var.notebooks_dir}/fatia02_bronze
+            source: WORKSPACE
+        - task_key: Bronze_to_Silver
+          depends_on:
+            - task_key: Landing_to_Bronze
+          notebook_task:
+            notebook_path: ${var.notebooks_dir}/Bronze_to_Silver
+            source: WORKSPACE
+        - task_key: fatia02_silver
+          depends_on:
+            - task_key: fatia02_bronze
+            - task_key: Bronze_to_Silver
+          notebook_task:
+            notebook_path: ${var.notebooks_dir}/fatia02_silver
+            source: WORKSPACE
+        - task_key: Silver_to_Gold
+          depends_on:
+            - task_key: Bronze_to_Silver
+          notebook_task:
+            notebook_path: ${var.notebooks_dir}/Silver_to_Gold
+            source: WORKSPACE
+        - task_key: fatia02_gold
+          depends_on:
+            - task_key: fatia02_silver
+          notebook_task:
+            notebook_path: ${var.notebooks_dir}/fatia02_gold
+            source: WORKSPACE
+        - task_key: Testes
+          depends_on:
+            - task_key: Silver_to_Gold
+          notebook_task:
+            notebook_path: ${var.notebooks_dir}/Gold_Quality_Tests
+            source: WORKSPACE
+        - task_key: fatia02_testes_qualidade
+          depends_on:
+            - task_key: fatia02_gold
+          notebook_task:
+            notebook_path: ${var.notebooks_dir}/fatia02_testes_qualidade
+            source: WORKSPACE
+        - task_key: fatia02_export_sqlite
+          depends_on:
+            - task_key: Testes
+            - task_key: fatia02_testes_qualidade
+          notebook_task:
+            notebook_path: ${var.notebooks_dir}/fatia02_export_sqlite
+            source: WORKSPACE
+      queue:
+        enabled: true
+      performance_target: PERFORMANCE_OPTIMIZED
