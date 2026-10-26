@@ -11,8 +11,12 @@
 
 ### Fala da Executiva (`atividade.pdf`, pág. 2):
 > **Patrícia Lins · Diretora de Tecnologia:**  
-> *"Cada diretoria tem seu próprio sistema. A Medição exporta relatórios mensais em arquivos de texto com separador ponto-e-vírgula. O Faturamento roda num mainframe legado que só gera arquivos posicionais. O Atendimento registra chamados numa ferramenta SaaS recente que tem API REST, mas ninguém integrou com nada — a gente extrai dumps em JSON toda semana. E a Operação da rede mantém o cadastro dos alimentadores e transformadores numa planilha Excel que fica na rede interna e é atualizada manualmente.*  
-> *Quando a diretoria pede um cruzamento de dados — tipo 'qual o faturamento das UCs atendidas pelo alimentador que mais teve interrupções no mês passado?' —, alguém precisa baixar os quatro arquivos, abrir no Excel ou rodar scripts em Python na própria máquina, cruzar pelo código da UC e rezar para os dados baterem. Na última reunião de conselho, a Área Comercial apresentou um número de faturamento e a Área de Operações apresentou outro. A diferença era de R$ 4,2 milhões. Ninguém sabia qual estava certo."*
+> *"Cada sistema exporta de um jeito. O faturamento sai em CSV com ponto e vírgula, o call center manda JSONs, as inspeções chegam em Excel preenchido à mão. Cada área tem um número diferente para a mesma coisa. Antes de qualquer dashboard, precisamos de engenharia de dados séria. Depois, quero que qualquer pessoa da empresa faça uma pergunta em português e receba a resposta na hora, sem abrir chamado para o meu time."*
+
+> Citação corrigida em 2026-10-26: a versão anterior (mainframe, R$ 4,2 milhões) não consta no PDF do case (apontado pelo João Henrique na issue #23).
+
+### Glossário do case sobre DEC e FEC (`atividade.pdf`, pág. 3):
+> *"Nos dados deste case, cada registro de ocorrência corresponde a uma unidade consumidora interrompida, e os valores absolutos são simplificados: servem para comparar alimentadores e períodos entre si, não para comparar com os limites regulatórios reais."*
 
 ### User Stories do Case (`atividade.pdf`, pág. 8):
 > - *"• Como engenheiro de dados, quero modelar a camada Gold a partir das perguntas de negócio das lideranças, para que o portal e a IA consumam métricas consolidadas."*
@@ -71,9 +75,12 @@
   - `CREATE INDEX IF NOT EXISTS idx_fato_qualidade_alim ON fato_qualidade_alimentador(id_alimentador);`
   - `CREATE INDEX IF NOT EXISTS idx_fato_inspecoes_uc ON fato_inspecoes_perdas(id_uc);`
 - [x] Escrever o Dicionário de Dados oficial em `docs/DATA_DICTIONARY.md` (seção da Fatia 02).
+- [x] Exportar as tabelas Gold também em CSV (Volume `gold/exports`), como pede o case (pág. 4).
+- [x] Publicar `fato_ocorrencias_rede` (ocorrências individuais com causa) para as Fatias 03 e 06 (issues #7 e #23).
+- [x] Versionar os notebooks em `.ipynb`, como pede a estrutura de repositório do case (pág. 7).
 
 ### Fase 5: Testes Automatizados de Qualidade
-- [x] Implementar asserções PySpark para (`data-engineering/notebooks/fatia02_testes_qualidade.py`):
+- [x] Implementar asserções PySpark para (`data-engineering/notebooks/fatia02_testes_qualidade.ipynb`):
   - Consistência contábil das faturas (valor total = valor da energia + tributos; ver changelog 2026-10-23).
   - DEC $\ge 0$ e FEC $\ge 0$ em todos os alimentadores.
   - Ausência de registros órfãos entre faturas e cadastro.

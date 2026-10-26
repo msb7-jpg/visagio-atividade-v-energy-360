@@ -29,7 +29,7 @@ etc etc...
 
 ## ADR-003 — Limites regulatórios de DEC/FEC: fonte ANEEL, mapeamento alimentador → conjunto e apuração acumulada no ano
 
-- **Data:** 2026-10-22 · **Fatia:** 02 (Ryei Estevan) · **Status:** Aceita
+- **Data:** 2026-10-22 · **Fatia:** 02 (Ryei Estevan) · **Status:** Revisada em 2026-10-26 — limites passam a ser apenas referência (ver atualização no fim)
 - **Contexto:** Os arquivos do case não trazem limites de DEC/FEC. A ANEEL (PRODIST Módulo 8) fixa limites **anuais** por **conjunto elétrico** (grupo de UCs, em geral um município ou um bairro), não por alimentador. Os alimentadores do case são fictícios, mas o código do meio indica o município (`ALM-REC-046` = Recife) e o cadastro de UCs confirma 14 municípios da Região Metropolitana do Recife, área da Neoenergia Pernambuco.
 - **Decisão:**
   1. **Fonte:** arquivo oficial `indicadores-continuidade-coletivos-limite.csv` do [Portal de Dados Abertos da ANEEL](https://dadosabertos.aneel.gov.br/dataset/indicadores-coletivos-de-continuidade-dec-e-fec) (gerado em 2026-10-05), ingerido na Bronze como `bronze_aneel_limites` e filtrado para o agente `Neoenergia PE` na Silver.
@@ -39,6 +39,10 @@ etc etc...
 - **Impacto:** `fato_qualidade_alimentador` ganha `conjunto_aneel`, `criterio_limite` (`CONJUNTO` ou `MEDIANA_RMR`), `dec_acumulado_ano_horas` e `fec_acumulado_ano_vezes`. Limites de Recife, Paulista, Abreu e Lima e Araçoiaba são aproximações e devem ser apresentados como tal no portal.
 - **Alternativas descartadas:** limite fixo arbitrário (sem base regulatória); dividir o limite anual por 12 (a ANEEL não define limite mensal para indicadores coletivos neste arquivo).
 - **Conformidade:** teste na Gold: todo alimentador tem limite DEC e FEC não nulo para cada ano apurado; `dec_apurado_horas >= 0` e `fec_apurado_vezes >= 0`.
+- **Atualização (2026-10-26):** o glossário do case (`case-rocket-lab-2026-venergy.pdf`, pág. 3, verbete "DEC e FEC") diz que *"os valores absolutos são simplificados: servem para comparar alimentadores e períodos entre si, não para comparar com os limites regulatórios reais"*, e as user stories pedem *"acompanhar DEC e FEC por alimentador ao longo do tempo e identificar os piores"*, sem exigir limite. Decisão revisada:
+  1. O sinal principal da qualidade da rede é a **comparação entre alimentadores e períodos** (ranking pelo DEC/FEC acumulado no ano).
+  2. As colunas `dec_limite_aneel`, `fec_limite_aneel`, `violou_dec`, `violou_fec` e `violou_meta` são mantidas (o backend da Fatia 06 já as consome), mas passam a ser **limite de referência**: o portal não deve apresentá-las como violação regulatória real nem como risco de multa.
+  - **Impacto:** nenhuma mudança de dados ou de contrato; mudam os textos de tela e a interpretação. Decisão a confirmar com o time na issue #20.
 
 ## ADR-004 — Catálogo único do Lakehouse no padrão da Fatia 01
 
@@ -46,3 +50,11 @@ etc etc...
 - **Contexto:** A Fatia 01 gravava em `visagio_atividade_v_energy_360` (schemas `bronze`/`silver`/`gold`) e a Fatia 02 em `workspace.v_energy`. O `job.yaml` precisa de um único padrão para encadear todas as fatias.
 - **Decisão:** Todas as fatias usam o catálogo `visagio_atividade_v_energy_360`, um schema por camada (`bronze`, `silver`, `gold`), tabelas com o prefixo da camada (`bronze_*`, `silver_*`) ou `fato_*`/`dim_*` na Gold, e arquivos brutos no Volume `bronze.landing`.
 - **Impacto:** Notebooks da Fatia 02 atualizados; o schema `workspace.v_energy` fica obsoleto.
+
+## ADR-005 — Ocorrências de rede datadas antes da ligação da UC
+
+- **Data:** 2026-10-26 · **Fatia:** 02 (Ryei Estevan) · **Status:** Aceita
+- **Contexto:** 595 das 180.000 ocorrências (0,33%, em 94 alimentadores) têm início antes de `data_ligacao` da UC interrompida, de 3 dias a 3,5 anos antes (mediana de 381 dias). O case não orienta esse caso.
+- **Decisão:** as ocorrências **continuam no DEC/FEC**: a interrupção aconteceu no alimentador, e o erro mais provável está na data de ligação do cadastro. A nova tabela `fato_ocorrencias_rede` traz `fl_anterior_ligacao = true` nessas linhas, para auditoria e para o portal poder filtrá-las.
+- **Alternativa descartada:** excluir do cálculo, o que reduziria o DEC de 94 alimentadores com base numa data de cadastro de qualidade incerta.
+- **Conformidade:** teste na Gold: `fato_ocorrencias_rede` tem as mesmas 180.000 linhas da Silver, e a contagem por alimentador e mês bate com `ucs_interrompidas` de `fato_qualidade_alimentador`.

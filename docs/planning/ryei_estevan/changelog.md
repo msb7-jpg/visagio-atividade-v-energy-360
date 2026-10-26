@@ -114,3 +114,18 @@
   - `v_energy.db` final: 8 tabelas, `journal_mode=wal`, `integrity_check=ok`, 0 violações de FK; copiado para `backend/v_energy.db`.
   - `make lint-all` e `make test-all`: 100% aprovados.
 - **Observação para o Renan:** no `Bronze_to_Silver`, a auditoria de leituras órfãs é gravada com `append` e logo depois a tabela `auditoria_qualidade` é sobrescrita (`Overwrite`) pela contagem de anomalias, apagando o registro de órfãs.
+
+### [2026-10-26] - Ajustes após a leitura do PDF do case e a issue #23 (João Henrique)
+- **Autor:** Ryei Estevan (com apoio do Claude Code)
+- **Contexto:** perguntas da Fatia 06 na issue #23, conferidas contra `case-rocket-lab-2026-venergy.pdf`.
+- **O que foi feito:**
+  - Nova tabela Gold `fato_ocorrencias_rede` (180.000 linhas, 1 UC interrompida por linha, com tipo, causa e duração), exportada no SQLite com índices em `id_uc`, `id_alimentador` e `competencia`. Atende a lista de causas da Fatia 06 e as interrupções da Visão 360 (Fatia 03), pendentes nas issues #7 e #23.
+  - 595 ocorrências anteriores à ligação da UC mantidas no DEC/FEC e marcadas com `fl_anterior_ligacao` (ADR-005).
+  - ADR-003 revisado: pelo glossário do case (pág. 3), DEC/FEC servem para comparar alimentadores e períodos entre si; o limite ANEEL e as colunas `violou_*` passam a ser apenas referência. Contrato inalterado.
+  - `fatia02_export_sqlite` passou a exportar as 5 tabelas Gold da Fatia 02 também em CSV no Volume `gold/exports` (exigência da pág. 4 do case).
+  - Notebooks convertidos de `.py` (formato fonte do Databricks) para `.ipynb`, como pede a estrutura de repositório do case (pág. 7). Código conferido idêntico antes e depois.
+  - Citação da Patrícia no plano corrigida: a versão anterior (mainframe, R$ 4,2 mi) não consta no PDF.
+  - `docs/DATA_DICTIONARY.md` atualizado (nova tabela, limite de referência, CSV, 24 testes).
+- **Validação de Testes:**
+  - 5 testes novos em `fatia02_testes_qualidade` (24 no total), incluindo a soma das ocorrências por alimentador e mês contra `ucs_interrompidas`: todos aprovados.
+  - `v_energy.db`: 9 tabelas, `integrity_check=ok`, 0 violações de FK.

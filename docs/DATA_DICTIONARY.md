@@ -1,6 +1,6 @@
 # Dicionário de Dados — Camada Gold (`v_energy.db`)
 
-Este dicionário descreve as tabelas que o pipeline Databricks publica no SQLite `backend/v_energy.db`, consumido pelo backend e pelo agente de IA. Cada métrica traz a regra de cálculo e as decisões de limpeza que a afetam, para que os números possam ser auditados.
+Este dicionário descreve as tabelas que o pipeline Databricks publica em CSV (Volume `gold/exports`, um arquivo `<tabela>.csv` por tabela) e no SQLite `backend/v_energy.db`, consumido pelo backend e pelo agente de IA. Cada métrica traz a regra de cálculo e as decisões de limpeza que a afetam, para que os números possam ser auditados.
 
 **Convenções do SQLite**
 
@@ -24,7 +24,7 @@ Tabelas `dim_unidade_consumidora`, `dim_tempo`, `fato_medicao` e `fato_anomalia_
 
 ## Fatia 02 — Faturamento, Rede & Atendimento (Ryei Estevan)
 
-Notebooks: `fatia02_bronze`, `fatia02_silver`, `fatia02_gold`, `fatia02_testes_qualidade` e `fatia02_export_sqlite` em [`data-engineering/notebooks/`](../data-engineering/notebooks/). Decisões: [`DECISOES.md`](DECISOES.md) (ADR-001 a ADR-004).
+Notebooks: `fatia02_bronze`, `fatia02_silver`, `fatia02_gold`, `fatia02_testes_qualidade` e `fatia02_export_sqlite` em [`data-engineering/notebooks/`](../data-engineering/notebooks/). Decisões: [`DECISOES.md`](DECISOES.md) (ADR-001 a ADR-005).
 
 ### `fato_faturamento`
 
@@ -64,7 +64,7 @@ Notebooks: `fatia02_bronze`, `fatia02_silver`, `fatia02_gold`, `fatia02_testes_q
 |---|---|---|
 | `id_alimentador` | TEXT | Alimentador. O código do meio indica o município (`ALM-JAB-016` = Jaboatão). |
 | `competencia` | TEXT | Mês apurado (`yyyy-MM`). |
-| `conjunto_aneel` | TEXT | Conjunto elétrico ANEEL usado para o limite, ou `MEDIANA RMR`. |
+| `conjunto_aneel` | TEXT | Conjunto elétrico ANEEL usado para o limite de referência, ou `MEDIANA RMR`. |
 | `criterio_limite` | TEXT | `CONJUNTO` (limite do próprio município) ou `MEDIANA_RMR` (Recife, Paulista, Abreu e Lima e Araçoiaba: mediana dos 10 conjuntos mapeados — aproximação). |
 | `ucs_atendidas` | INTEGER | `C_total`: UCs do cadastro ligadas ao alimentador. |
 | `ucs_interrompidas` | INTEGER | UCs interrompidas no mês (cada linha de ocorrência é 1 UC). |
@@ -72,18 +72,39 @@ Notebooks: `fatia02_bronze`, `fatia02_silver`, `fatia02_gold`, `fatia02_testes_q
 | `fec_apurado_vezes` | REAL | FEC do mês = UCs interrompidas / `C_total`. |
 | `dec_acumulado_ano_horas` | REAL | Soma do DEC de janeiro até a competência, no mesmo ano. |
 | `fec_acumulado_ano_vezes` | REAL | Soma do FEC de janeiro até a competência, no mesmo ano. |
-| `dec_limite_aneel` | REAL | Limite **anual** de DEC do conjunto (horas). |
-| `fec_limite_aneel` | REAL | Limite **anual** de FEC do conjunto (vezes). |
-| `violou_dec` | BOOLEAN | `dec_acumulado_ano_horas > dec_limite_aneel`. |
-| `violou_fec` | BOOLEAN | `fec_acumulado_ano_vezes > fec_limite_aneel`. |
-| `violou_meta` | BOOLEAN | `violou_dec OR violou_fec`. |
+| `dec_limite_aneel` | REAL | Limite **anual** de DEC do conjunto (horas). Apenas **referência** (ver abaixo). |
+| `fec_limite_aneel` | REAL | Limite **anual** de FEC do conjunto (vezes). Apenas **referência**. |
+| `violou_dec` | BOOLEAN | `dec_acumulado_ano_horas > dec_limite_aneel` (referência, não violação regulatória real). |
+| `violou_fec` | BOOLEAN | `fec_acumulado_ano_vezes > fec_limite_aneel` (referência). |
+| `violou_meta` | BOOLEAN | `violou_dec OR violou_fec` (referência). |
 
 **Decisões que afetam a tabela**
 
-- O limite da ANEEL é anual, então a comparação usa sempre o **acumulado no ano**, nunca o valor de um mês (ADR-003).
+- O case avisa que os valores de DEC/FEC são simplificados e servem para **comparar alimentadores e períodos entre si**, não com limites regulatórios reais. Por isso o uso principal é o ranking entre alimentadores; o limite ANEEL e as colunas `violou_*` são apenas referência e não devem ser apresentados como multa ou violação real (ADR-003, revisão de 2026-10-26).
+- O limite da ANEEL é anual, então a comparação com ele usa sempre o **acumulado no ano**, nunca o valor de um mês.
 - Causas vazias (`-`, `N/A`, `NULL`) viram `NAO INFORMADA`; duração com sufixo (`74 min`) é normalizada.
 - 2022 (a partir de julho) e 2026 (até junho) são anos incompletos: o acumulado desses anos não é comparável a um ano cheio.
 - Alimentadores com poucas UCs têm DEC/FEC altos com poucas interrupções. A média da empresa deve ser ponderada por `ucs_atendidas`.
+
+### `fato_ocorrencias_rede`
+
+- **Grão:** 1 UC interrompida por ocorrência (como na origem). **Chave:** `id_ocorrencia`. **FK:** `id_uc` → `dim_unidade_consumidora`.
+- **Origem:** `ocorrencias_rede.csv`. **Linhas:** 180.000. **Índices:** `idx_fato_ocorr_uc` (`id_uc`), `idx_fato_ocorr_alim` (`id_alimentador`), `idx_fato_ocorr_comp` (`competencia`).
+- **Uso:** lista de causas na Qualidade da Rede e interrupções do alimentador da UC na Visão 360. Contar linhas por alimentador e mês dá o `ucs_interrompidas` de `fato_qualidade_alimentador` (testado).
+
+| Coluna | Tipo | Descrição e regra |
+|---|---|---|
+| `id_ocorrencia` | TEXT | Identificador da ocorrência. |
+| `id_uc` | TEXT | UC interrompida. Sempre existe no cadastro e pertence ao mesmo alimentador (testado). |
+| `id_alimentador` | TEXT | Alimentador onde ocorreu a interrupção. |
+| `tipo_ocorrencia` | TEXT | `FALTA DE ENERGIA`, `OSCILACAO`, `SOBRECARGA`, `FIO PARTIDO` ou `DANO EM EQUIPAMENTO`. Todos contam no DEC/FEC (pelo case, cada registro é uma UC interrompida). |
+| `causa` | TEXT | `CLIMATICA`, `VEGETACAO`, `TERCEIROS`, `FALHA DE EQUIPAMENTO`, `SOBRECARGA`, `NAO IDENTIFICADA` (valor da origem) ou `NAO INFORMADA` (causa vazia, `-`, `N/A` ou `NULL` na origem: 5.400 linhas). |
+| `inicio_interrupcao` | TEXT | Data e hora de início. |
+| `fim_interrupcao` | TEXT | Data e hora de fim. |
+| `duracao_min` | INTEGER | Duração em minutos (16.200 valores como `217 min` normalizados). |
+| `duracao_horas` | REAL | `duracao_min / 60`; é a parcela desta UC no numerador do DEC. |
+| `competencia` | TEXT | Mês de início da interrupção (`yyyy-MM`). |
+| `fl_anterior_ligacao` | BOOLEAN | `1` quando a interrupção começou antes da data de ligação da UC (595 linhas). Mantidas no DEC/FEC (ADR-005). |
 
 ### `fato_atendimentos`
 
@@ -122,4 +143,4 @@ Notebooks: `fatia02_bronze`, `fatia02_silver`, `fatia02_gold`, `fatia02_testes_q
 
 ### Testes de qualidade da Fatia 02
 
-O notebook `fatia02_testes_qualidade` roda antes da exportação e interrompe o job se qualquer regra falhar (19 testes): totais das faturas, ausência de órfãs, chaves únicas, DEC/FEC ≥ 0, limites ANEEL preenchidos, grade alimentador × mês completa, CSAT entre 1 e 5, datas das inspeções na campanha e contagens iguais às da Silver. O `fatia02_export_sqlite` confere ainda contagens SQLite = Gold, chaves estrangeiras e `PRAGMA integrity_check`.
+O notebook `fatia02_testes_qualidade` roda antes da exportação e interrompe o job se qualquer regra falhar (24 testes): totais das faturas, ausência de órfãs, chaves únicas, DEC/FEC ≥ 0, limites ANEEL preenchidos, grade alimentador × mês completa, CSAT entre 1 e 5, datas das inspeções na campanha e contagens iguais às da Silver. Os 5 testes de `fato_ocorrencias_rede` conferem chave única, contagem igual à Silver, UC no cadastro e no mesmo alimentador, campos obrigatórios e a soma por alimentador e mês contra `fato_qualidade_alimentador`. O `fatia02_export_sqlite` confere ainda contagens SQLite = Gold, chaves estrangeiras e `PRAGMA integrity_check`.
