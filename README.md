@@ -6,14 +6,15 @@ Plataforma inteligente de análise de dados e indicadores regulatórios do setor
 
 ## 🚀 Como Rodar o Projeto (Guia Rápido)
 
-O projeto é gerenciado via [`Makefile`](Makefile) na raiz do repositório:
+O projeto é gerenciado via [`Makefile`](Makefile) (Linux/macOS) ou via [`scripts/dev.ps1`](scripts/dev.ps1) (Windows, sem precisar do `make`).
 
 ### Pré-requisitos
-- [uv](https://docs.astral.sh/uv/) (gerenciador rápido para Python 3.12+)
-- [bun](https://bun.sh/) (runtime e gerenciador de pacotes para JavaScript/TypeScript)
-- `make`
+- [uv](https://docs.astral.sh/uv/) (gerenciador rápido para Python 3.12+); no Windows, `pip install --user uv` também funciona
+- [bun](https://bun.sh/) (runtime e gerenciador de pacotes para JavaScript/TypeScript); no Windows, `npm install -g bun` também funciona
+- `make` (apenas Linux/macOS)
+- Os arquivos `base_dados_1.zip` e `base_dados_2.zip` na raiz do projeto (fora do git)
 
-### Passo a Passo
+### Passo a Passo (Linux/macOS)
 
 ```bash
 # 1. Configurar dependências e ambientes virtuais (backend + frontend)
@@ -28,6 +29,25 @@ make run-backend
 # 4. Iniciar o Frontend React 19 (:5173) em http://localhost:5173
 make run-frontend
 ```
+
+### Passo a Passo (Windows / PowerShell)
+
+```powershell
+# 1. Instalar dependências do backend e do frontend
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1 setup
+
+# 2. Descompactar as bases para data\landing
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1 data
+
+# 3. Subir backend (:8000, em outra janela) e frontend (:5173) juntos
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1 dev
+
+# Para usar outro banco SQLite (ex: o de testes gerado com o comando "seed"):
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1 seed
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1 dev -Database backend\v_energy_dev.db
+```
+
+Demais comandos: `backend`, `frontend`, `lint`, `test` e `check` (lint, testes, TypeScript e build). `scripts\dev.ps1 help` lista todos.
 
 ---
 
@@ -46,6 +66,15 @@ make test-all
 Se preferir validar apenas um dos módulos:
 - **Backend:** `make lint-backend` e `cd backend && uv run pytest`
 - **Frontend:** `make lint-frontend` e `cd frontend && bun run test`
+- **Windows:** `scripts\dev.ps1 lint`, `scripts\dev.ps1 test` ou `scripts\dev.ps1 check` (tudo, igual ao CI)
+
+### Integração Contínua (GitHub Actions)
+
+Todo pull request e todo push na `main` rodam o workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml), em dois jobs paralelos:
+- **Backend:** Ruff, Pylint, import-linter e pytest, com as dependências instaladas pelo `uv.lock` congelado.
+- **Frontend:** ESLint, Fallow, TypeScript, Vitest e build de produção, com o `bun.lock` congelado.
+
+Um PR com qualquer etapa vermelha não deve ser mergeado.
 
 ---
 

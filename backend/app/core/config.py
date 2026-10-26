@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     ]
     log_level: str = "INFO"
 
+    # Gestão de perdas: fixa a competência ('YYYY-MM') em que a fila de suspeitas é calculada, para demonstrar a fila
+    # como ela estava num mês passado. Ausente = competência mais recente dos dados (comportamento de produção).
+    loss_reference_competencia: str | None = Field(default=None, pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+
     # Autenticação e Segurança (JWT)
     jwt_secret_key: str = "v-energy-grid-360-jwt-secret-key-2026-visagio-super-secure"  # ruff: ignore[hardcoded-password-string]
     jwt_algorithm: str = "HS256"
@@ -56,6 +60,11 @@ class Settings(BaseSettings):
             "senha": "venergy123",
             "role": "atendente",
         },
+        "gerente.atendimento@venergy.com": {
+            "nome": "Camila Barreto (Gerente de Atendimento)",
+            "senha": "venergy123",
+            "role": "gerente_atendimento",
+        },
         "perdas@venergy.com": {
             "nome": "Rafael Coutinho (Gerente de Perdas)",
             "senha": "venergy123",
@@ -63,7 +72,20 @@ class Settings(BaseSettings):
         },
     }
 
+    @field_validator("loss_reference_competencia", mode="before")
+    @classmethod
+    def blank_reference_means_none(cls, value: object) -> object:
+        """Trata `LOSS_REFERENCE_COMPETENCIA=""` como ausente, para uma variável opcional vazia não derrubar a app."""
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
 
 @lru_cache
 def get_settings() -> Settings:
+    """Devolve as configurações da aplicação, lidas do ambiente uma única vez (cache).
+
+    Returns:
+        Instância compartilhada de `Settings`.
+    """
     return Settings()
