@@ -1,7 +1,7 @@
 # ⚡ Fatia 02: Faturamento, Rede & Atendimento (Ponta a Ponta)
 
 > **Dono Único:** Ryei Estevan  
-> **Status:** Em andamento (Fases 1, 2 e 3 concluídas; Fase 4 a iniciar)  
+> **Status:** Concluída (Fases 1 a 5)  
 > **Skill de Referência:** [`.agents/skills/medallion-lakehouse-pipeline/SKILL.md`](.agents/skills/medallion-lakehouse-pipeline/SKILL.md)  
 > **Log Individual:** [`changelog.md`](changelog.md)
 
@@ -63,14 +63,14 @@
 - [x] Construir `fato_inspecoes_perdas` e `fato_atendimentos`.
 
 ### Fase 4: Orquestração no Databricks & Exportação SQLite
-- [ ] Atualizar e validar o Workflow em `data-engineering/job.yaml` orquestrando o DAG completo.
-- [ ] Exportar tabelas Gold do domínio para o SQLite local `backend/v_energy.db`.
-- [ ] Criar índices analíticos:
+- [x] Atualizar e validar o Workflow em `data-engineering/job.yaml` orquestrando o DAG completo.
+- [x] Exportar tabelas Gold do domínio para o SQLite local `backend/v_energy.db` (`fatia02_export_sqlite`).
+- [x] Criar índices analíticos:
   - `CREATE INDEX IF NOT EXISTS idx_fato_fat_uc ON fato_faturamento(id_uc);`
   - `CREATE INDEX IF NOT EXISTS idx_fato_fat_comp ON fato_faturamento(competencia);`
   - `CREATE INDEX IF NOT EXISTS idx_fato_qualidade_alim ON fato_qualidade_alimentador(id_alimentador);`
   - `CREATE INDEX IF NOT EXISTS idx_fato_inspecoes_uc ON fato_inspecoes_perdas(id_uc);`
-- [ ] Escrever o Dicionário de Dados oficial em `docs/DATA_DICTIONARY.md`.
+- [x] Escrever o Dicionário de Dados oficial em `docs/DATA_DICTIONARY.md` (seção da Fatia 02).
 
 ### Fase 5: Testes Automatizados de Qualidade
 - [x] Implementar asserções PySpark para (`data-engineering/notebooks/fatia02_testes_qualidade.py`):

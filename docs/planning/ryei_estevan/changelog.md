@@ -99,3 +99,18 @@
   - Teste negativo: a mesma regra de órfãs aplicada à Silver (que ainda contém as faturas `FTX*`) encontra 32.285 violações, confirmando que o teste detecta falhas.
   - `make lint-all` e `make test-all`: 100% aprovados.
 - **Próximos Passos:** incluir a tarefa de testes no `job.yaml` entre a Gold e a exportação SQLite (aguardando o job final do Renan).
+
+### [2026-10-26] - Fase 4: Job completo, exportação SQLite e dicionário de dados
+- **Autor:** Ryei Estevan (com apoio do Claude Code)
+- **Integração com a versão final da Fatia 01 (Renan):** notebooks `Landing_to_Bronze`, `Bronze_to_Silver`, `Silver_to_Gold` e `Gold_Quality_Tests` e o `job.yml` recebidos e executados neste workspace com SUCCESS (0 falhas críticas, 1 aviso). `inferSchema=False` e a correção do rollover foram aplicados: `silver_leituras` com 2.152.336 leituras, 0 meses nulos e 0 consumos negativos.
+- **O que foi feito:**
+  - `data-engineering/job.yaml` reescrito no formato do Renan (Asset Bundle, mesmos nomes de tarefas e notebooks) com as 5 tarefas da Fatia 02. Pasta dos notebooks na variável `notebooks_dir`; agenda mensal mantida.
+  - Novo notebook `fatia02_export_sqlite`: roda depois dos testes das duas fatias e acrescenta as 4 tabelas da Fatia 02 ao `v_energy.db` criado pelo `Silver_to_Gold`, com PK, FK para `dim_unidade_consumidora`, 6 índices e conferência de contagens, FK e `integrity_check`.
+  - `docs/DATA_DICTIONARY.md` criado com a seção da Fatia 02 (seção da Fatia 01 reservada ao Renan).
+  - Colunas exportadas conferidas contra o que o backend já consulta (Visão 360, Receita, Perdas, Qualidade): sem divergência de nomes.
+- **Números com a Fatia 01 final:** `fato_faturamento` 2.152.336 (6.329 sem kWh, antes 7.210 + 292 negativos); demais tabelas inalteradas.
+- **Validação de Testes:**
+  - Job completo implantado como bundle de desenvolvimento e executado de ponta a ponta: 9 tarefas SUCCESS em 6,3 min.
+  - `v_energy.db` final: 8 tabelas, `journal_mode=wal`, `integrity_check=ok`, 0 violações de FK; copiado para `backend/v_energy.db`.
+  - `make lint-all` e `make test-all`: 100% aprovados.
+- **Observação para o Renan:** no `Bronze_to_Silver`, a auditoria de leituras órfãs é gravada com `append` e logo depois a tabela `auditoria_qualidade` é sobrescrita (`Overwrite`) pela contagem de anomalias, apagando o registro de órfãs.
