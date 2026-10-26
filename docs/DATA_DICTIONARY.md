@@ -18,7 +18,78 @@ Este dicionário descreve as tabelas que o pipeline Databricks publica em CSV (V
 
 ## Fatia 01 — Cadastro, Medição & GD (Renan)
 
-Tabelas `dim_unidade_consumidora`, `dim_tempo`, `fato_medicao` e `fato_anomalia_leitura`: seção a ser preenchida pelo dono da Fatia 01.
+Notebooks associados: `Landing_to_Bronze`, `Bronze_to_Silver`, `fatia01_gold`, e `fatia01_export_sqlite`. Decisões: [`DECISOES.md`](DECISOES.md).
+
+### `dim_unidade_consumidora`
+
+- **Grão:** 1 unidade consumidora (UC) consolidada. **Chave Primária:** `id_uc`.
+- **Origem:** `unidades_consumidoras.csv`, com cruzamentos de `medidores.csv` e `geracao_distribuida.csv`.
+- **Uso:** Filtros de região, painéis de inteligência comercial, e base para visão 360 do cliente.
+
+| Coluna | Tipo | Descrição e Regra |
+|---|---|---|
+| `id_uc` | TEXT | Identificador único da unidade consumidora. PK. |
+| `codigo_cliente` | TEXT | Documento do cliente associado (CNPJ/CPF normalizado na Silver, apenas números). |
+| `nome_titular` | TEXT | Nome do responsável limpo sem caracteres especiais. |
+| `logradouro` | TEXT | Rua/Avenida, padronizado para maiúsculas. |
+| `numero` | TEXT | Número do endereço; nulo se inferior a zero na origem. |
+| `bairro` | TEXT | Bairro padronizado (acentos e espaços em branco removidos). |
+| `municipio` | TEXT | Município da Região Metropolitana do Recife. |
+| `uf` | TEXT | UF consolidada (ex: conversão de 'PERNAMBUCO' para 'PE'). |
+| `cep` | TEXT | CEP limpo (exatamente 8 dígitos); caso contrário, nulo. |
+| `classe_consumo` | TEXT | Residencial, Comercial, Industrial, etc. (vem de `classe`). |
+| `subgrupo_tarifario` | TEXT | B1, B2, B3, A4 (trim e maiúsculas). |
+| `alimentador` | TEXT | Circuito da rede ao qual a UC está conectada. |
+| `subestacao` | TEXT | Projetado como Nulo na primeira versão. |
+| `numero_medidor_ativo` | TEXT | Número do medidor fisicamente instalado hoje (calculado via ADR-002: status = ATIVO ou retirada nula). |
+| `possui_gd` | BOOLEAN | `1` se existe no cadastro de geração distribuída, senão `0`. |
+| `potencia_gd_kw` | REAL | Potência instalada de geração solar em kW (se aplicável). |
+| `data_conexao_gd` | TEXT | Data de ligação da geração própria. |
+| `status` | TEXT | `ATIVA` ou `INATIVA`. |
+
+### `fato_medicao`
+
+- **Grão:** 1 leitura de consumo por competência por UC. **Chave Primária:** `id_medicao`. **FK:** `id_uc`.
+- **Origem:** `leituras/*.csv`.
+- **Uso:** Cálculo primário de volume físico (kWh) consumido, histórico 12m YoY. Exclui leituras anômalas.
+
+| Coluna | Tipo | Descrição e Regra |
+|---|---|---|
+| `id_medicao` | TEXT | Conciliação do `id_uc` + `competencia`. |
+| `id_uc` | TEXT | FK para `dim_unidade_consumidora`. Leituras sem UC (órfãs) foram descartadas e registradas em auditoria. |
+| `id_medidor` | TEXT | Medidor associado à leitura no momento do faturamento. |
+| `competencia` | TEXT | Mês de referência no formato `yyyy-MM`. |
+| `data_leitura` | TEXT | Data real em que o relógio foi aferido (`yyyy-MM-dd`). |
+| `leitura_anterior` | REAL | Índice anterior do medidor. |
+| `leitura_atual` | REAL | Índice atual medido. |
+| `consumo_kwh` | REAL | Consumo real faturável. Tratado para cenários de *rollover* de relógio (ADR-001). Sem valores negativos. |
+| `dias_faturamento` | INTEGER | `data_leitura` atual menos a `data_leitura` anterior. Padrão de 30 dias se nulo. |
+| `media_diaria_kwh` | REAL | Consumo / dias faturamento, útil para comparações independentemente de ciclos longos/curtos. |
+| `tipo_leitura` | TEXT | `REAL` (leiturista) ou `ESTIMADA` (fechado pela média por impossibilidade de acesso). |
+
+### `fato_anomalia_leitura`
+
+- **Grão:** 1 leitura inválida/anômala identificada pela engenharia. **Chave Primária:** `id_anomalia`.
+- **Origem:** Isolado das leituras brutas.
+- **Uso:** Fila de prioridade de Perdas (Adrian César).
+
+| Coluna | Tipo | Descrição e Regra |
+|---|---|---|
+| `id_anomalia` | TEXT | Identificador único (`id_uc` + `competencia`). |
+| `id_uc` | TEXT | UC onde foi detectada anomalia. |
+| `diferenca_leitura_kwh` | REAL | Quantidade de kWh "negativos" inexplicados (`leitura_atual` - `leitura_anterior`). |
+| `motivo_anomalia` | TEXT | Definido como `LEITURA_ATUAL_MENOR_SEM_ROLLOVER_OU_TROCA` (indício de fraude ou by-pass). |
+
+### `dim_tempo`
+
+- **Grão:** 1 mês de competência (yyyy-MM).
+- **Uso:** Agregação cronológica e gráficos de eixo X no portal analítico.
+
+| Coluna | Tipo | Descrição e Regra |
+|---|---|---|
+| `competencia` | TEXT | Formato `yyyy-MM`. PK. |
+| `ano` | INTEGER | Ano extraído. |
+| `mes` | INTEGER | Mês do calendário (1 a 12). |
 
 ---
 

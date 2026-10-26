@@ -25,7 +25,7 @@ resources:
       tasks:
         - task_key: Landing_to_Bronze
           notebook_task:
-            notebook_path: ${var.notebooks_dir}/Landing_to_Bronze
+            notebook_path: ${var.notebooks_dir}/fatia01_bronze
             source: WORKSPACE
         - task_key: fatia02_bronze
           depends_on:
@@ -37,7 +37,7 @@ resources:
           depends_on:
             - task_key: Landing_to_Bronze
           notebook_task:
-            notebook_path: ${var.notebooks_dir}/Bronze_to_Silver
+            notebook_path: ${var.notebooks_dir}/fatia01_silver
             source: WORKSPACE
         - task_key: fatia02_silver
           depends_on:
@@ -50,7 +50,7 @@ resources:
           depends_on:
             - task_key: Bronze_to_Silver
           notebook_task:
-            notebook_path: ${var.notebooks_dir}/Silver_to_Gold
+            notebook_path: ${var.notebooks_dir}/fatia01_gold
             source: WORKSPACE
         - task_key: fatia02_gold
           depends_on:
@@ -62,13 +62,20 @@ resources:
           depends_on:
             - task_key: Silver_to_Gold
           notebook_task:
-            notebook_path: ${var.notebooks_dir}/Gold_Quality_Tests
+            notebook_path: ${var.notebooks_dir}/fatia01_testes_qualidade
             source: WORKSPACE
         - task_key: fatia02_testes_qualidade
           depends_on:
             - task_key: fatia02_gold
           notebook_task:
             notebook_path: ${var.notebooks_dir}/fatia02_testes_qualidade
+            source: WORKSPACE
+        - task_key: fatia01_export_sqlite
+          depends_on:
+            - task_key: Testes
+            - task_key: fatia02_testes_qualidade
+          notebook_task:
+            notebook_path: ${var.notebooks_dir}/fatia01_export_sqlite
             source: WORKSPACE
         - task_key: fatia02_export_sqlite
           depends_on:
