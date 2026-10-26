@@ -129,3 +129,14 @@
 - **Validação de Testes:**
   - 5 testes novos em `fatia02_testes_qualidade` (24 no total), incluindo a soma das ocorrências por alimentador e mês contra `ucs_interrompidas`: todos aprovados.
   - `v_energy.db`: 9 tabelas, `integrity_check=ok`, 0 violações de FK.
+
+### [2026-10-26] - Reprodutibilidade do pipeline: fonte ANEEL versionada, bundle e README
+- **Autor:** Ryei Estevan (com apoio do Claude Code)
+- **O que foi feito:**
+  - Limites ANEEL versionados em `data-engineering/reference/aneel_limites_continuidade.csv` (só as 15.660 linhas da Neoenergia PE, 1,5 MB, sem alterar as linhas originais). Antes o arquivo existia só no Volume do workspace e não vem nos zips do case, então o pipeline não rodava em outro workspace.
+  - `data-engineering/databricks.yml`: bundle que implanta o `job.yaml` (alvos `dev`, com agenda pausada, e `prod`). `.databricks/` (estado local do bundle) adicionado ao `.gitignore`.
+  - README: nova seção "Pipeline de Dados (Databricks)" com o passo a passo (Volume, upload, import dos notebooks, deploy, execução e download do `v_energy.db`), a estratégia de agendamento justificada e o lugar do print do Workflow (pendente).
+- **Validação de Testes:**
+  - Job implantado a partir do bundle do repositório e executado de ponta a ponta: 9 tarefas SUCCESS em 8,3 min. `bronze_aneel_limites` passou de todas as distribuidoras para 15.660 linhas; Silver e Gold idênticas (mesmos limites, 11 alimentadores acima da referência em 2025).
+  - Comandos do README conferidos no CLI (`import-dir` cria os notebooks com os nomes do job).
+  - `make lint-all` e `make test-all`: 100% aprovados.

@@ -51,6 +51,61 @@ Demais comandos: `backend`, `frontend`, `lint`, `test` e `check` (lint, testes, 
 
 ---
 
+## 🧱 Pipeline de Dados (Databricks)
+
+O banco `backend/v_energy.db` usado pelo portal e pela IA é gerado por um pipeline **Bronze → Silver → Gold** no Databricks, orquestrado por um Workflow e exportado em CSV e SQLite.
+
+| Peça | Onde está |
+|---|---|
+| Notebooks (`.ipynb`) | [`data-engineering/notebooks/`](data-engineering/notebooks/) |
+| Workflow (Job) | [`data-engineering/job.yaml`](data-engineering/job.yaml), implantado pelo bundle [`data-engineering/databricks.yml`](data-engineering/databricks.yml) |
+| Fonte externa (limites ANEEL de DEC/FEC) | [`data-engineering/reference/aneel_limites_continuidade.csv`](data-engineering/reference/aneel_limites_continuidade.csv) |
+| Dicionário de dados da Gold | [`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md) |
+| Decisões e suposições (ADRs) | [`docs/DECISOES.md`](docs/DECISOES.md) |
+
+Tudo fica no catálogo `visagio_atividade_v_energy_360`, com um schema por camada (`bronze`, `silver`, `gold`). O Workflow roda as tarefas de cada fatia em paralelo quando possível, executa os **testes de qualidade** das duas fatias e só então exporta: se algum teste falhar, o job para e o portal continua com os últimos dados bons.
+
+### Como executar
+
+Pré-requisitos: [Databricks CLI](https://docs.databricks.com/dev-tools/cli/install.html) autenticado (`databricks auth login --host https://<seu-workspace>`) e as bases descompactadas (`make data-unzip`).
+
+```bash
+# 1. Criar catálogo, schema e Volume de landing (no Free Edition, rode no SQL Editor do Databricks):
+#    CREATE CATALOG IF NOT EXISTS visagio_atividade_v_energy_360;
+#    CREATE SCHEMA IF NOT EXISTS visagio_atividade_v_energy_360.bronze;
+#    CREATE VOLUME IF NOT EXISTS visagio_atividade_v_energy_360.bronze.landing;
+
+# 2. Enviar os arquivos brutos e a fonte externa da ANEEL para o Volume de landing
+databricks fs cp -r data/landing/ dbfs:/Volumes/visagio_atividade_v_energy_360/bronze/landing/ --overwrite
+databricks fs cp data-engineering/reference/aneel_limites_continuidade.csv \
+  dbfs:/Volumes/visagio_atividade_v_energy_360/bronze/landing/ --overwrite
+
+# 3. Importar os notebooks para uma pasta do workspace
+databricks workspace import-dir data-engineering/notebooks /Workspace/V_Energy_Analytics --overwrite
+
+# 4. Implantar e rodar o Workflow (prod mantém a agenda; sem -t prod, o job de teste fica pausado)
+cd data-engineering
+databricks bundle deploy -t prod --var="notebooks_dir=/Workspace/V_Energy_Analytics"
+databricks bundle run -t prod Job_Energy --var="notebooks_dir=/Workspace/V_Energy_Analytics"
+
+# 5. Baixar o banco gerado para o backend
+cd ..
+databricks fs cp dbfs:/Volumes/visagio_atividade_v_energy_360/gold/exports/v_energy.db backend/v_energy.db --overwrite
+```
+
+As tabelas Gold também ficam em CSV (um arquivo por tabela) em `/Volumes/visagio_atividade_v_energy_360/gold/exports/`.
+
+### Estratégia de agendamento
+
+O Workflow roda **todo dia 1º, às 04h (horário de Recife)**. Faturamento, leituras e indicadores DEC/FEC são fechados por **competência mensal**, então reprocessar uma vez por mês, logo após o fechamento, entrega o mês completo sem gastar computação com dados que não mudaram. A madrugada evita concorrência com o uso do portal, e uma execução por vez (`max_concurrent_runs: 1`) impede que duas cargas gravem o `v_energy.db` ao mesmo tempo.
+
+### Execução bem-sucedida do Workflow
+
+> [!NOTE]
+> Print da execução no Databricks: a adicionar em `docs/img/` (exigido pelo case).
+
+---
+
 ## 🧪 Testes e Qualidade
 
 O repositório possui uma suíte completa de testes automatizados e análise estática:
