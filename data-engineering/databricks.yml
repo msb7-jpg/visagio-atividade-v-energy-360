@@ -1,0 +1,19 @@
+# Bundle do Lakehouse V-Energy Grid 360: implanta o Workflow definido em job.yaml.
+# O workspace vem do perfil configurado no Databricks CLI (databricks auth login).
+#
+#   cd data-engineering
+#   databricks bundle deploy -t prod --var="notebooks_dir=/Workspace/<pasta dos notebooks>"
+#   databricks bundle run -t prod Job_Energy --var="notebooks_dir=/Workspace/<pasta dos notebooks>"
+#
+# O alvo dev (padrão) prefixa o nome do job com o usuário e pausa a agenda, para testes.
+bundle:
+  name: v_energy_grid_360
+
+include:
+  - job.yaml
+
+targets:
+  dev:
+    mode: development
+    default: true
+  prod: {}
