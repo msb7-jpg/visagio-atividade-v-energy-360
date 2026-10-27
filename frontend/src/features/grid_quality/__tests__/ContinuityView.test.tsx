@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { ContinuityView } from '@/features/grid_quality/components/ContinuityView'
 import { continuityDataset } from '@/features/grid_quality/mocks/continuityMock'
@@ -49,6 +49,14 @@ describe('ContinuityView', () => {
     expect(await screen.findByText('DEC simplificado (h por UC)')).toBeInTheDocument()
     expect(screen.getByText('Nº de interrupções')).toBeInTheDocument()
     expect(screen.getByText('Evento fora do padrão')).toBeInTheDocument()
+  })
+
+  it('mostra o mapa e o DEC por município', async () => {
+    renderView()
+    expect(await screen.findByText('Onde estão as piores interrupções')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Mapa esquemático do DEC por município' })).toBeInTheDocument()
+    expect(screen.getByText('DEC por município (h), período B')).toBeInTheDocument()
+    expect(within(screen.getByRole('list')).getByText('São Lourenço da Mata')).toBeInTheDocument()
   })
 
   it('recalcula ao excluir o mês do evento', async () => {

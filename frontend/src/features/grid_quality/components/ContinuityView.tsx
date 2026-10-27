@@ -4,6 +4,7 @@ import { Alert } from '@/components/ui/alert'
 import { ContinuityEventCard } from '@/features/grid_quality/components/ContinuityEventCard'
 import { ContinuityFilters } from '@/features/grid_quality/components/ContinuityFilters'
 import { ContinuityKpiCards } from '@/features/grid_quality/components/ContinuityKpiCards'
+import { ContinuityMapCard } from '@/features/grid_quality/components/ContinuityMapCard'
 import { useContinuityController } from '@/features/grid_quality/hooks/useContinuityController'
 
 /**
@@ -42,6 +43,7 @@ export function ContinuityView() {
           <div className="flex flex-col gap-6">
             <ContinuityKpiCards kpis={snapshot.data.kpis} />
             <ContinuityEventCard event={snapshot.data.event} />
+            <ContinuityMapCard municipalities={snapshot.data.municipalities} />
           </div>
         ) : null}
       </AsyncState>
