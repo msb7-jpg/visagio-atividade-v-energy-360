@@ -116,19 +116,19 @@
 
 ## 5. Pendências, Esclarecimentos e Decisões em Aberto
 
-> Atualizado em 2026-10-19 após a entrega do backend. Marque `[x]` ao resolver.
+> Atualizado em 2026-10-27 após o merge da Gold (#38). Marque `[x]` ao resolver.
 
 ### 5.1 Esclarecer com outras fatias
-- [ ] **Renan (Fatia 01):** incluir `nome_titular` na `dim_unidade_consumidora` (o case pede *"quem é o cliente"*). O backend já exibe a coluna automaticamente se ela existir.
-- [ ] **Renan (Fatia 01):** incluir `tipo_leitura` (REAL/ESTIMADA) na `fato_medicao`: 18% das leituras de 2025 são estimadas, causa comum de conta alta.
-- [ ] **Renan (Fatia 01):** incluir a data de conexão da GD (`data_conexao`) e tipo/data de instalação do medidor na `dim_unidade_consumidora`.
+- [x] **Renan (Fatia 01):** incluir `nome_titular` na `dim_unidade_consumidora` (o case pede *"quem é o cliente"*). O backend já exibe a coluna automaticamente se ela existir. (entregue no #38)
+- [x] **Renan (Fatia 01):** incluir `tipo_leitura` (REAL/ESTIMADA) na `fato_medicao`: 18% das leituras de 2025 são estimadas, causa comum de conta alta. (entregue no #38; usado no diagnóstico em 2026-10-27)
+- [x] **Renan (Fatia 01):** incluir a data de conexão da GD (`data_conexao_gd`) na `dim_unidade_consumidora`. (entregue no #38; exibida em 2026-10-27. Tipo e data de instalação do medidor não vieram, e a tela não depende deles.)
 - [ ] **Renan (Fatia 01):** criar índice em `dim_unidade_consumidora(numero_medidor_ativo)` para a busca por medidor (hoje varre ~46 mil linhas, ainda rápido).
-- [ ] Quando o `nome_titular` existir, incluir a busca por nome nas sugestões.
-- [ ] **Renan (Fatia 01):** como o `dias_faturamento` será calculado? No bruto, as datas de leitura geram intervalos de 19 a 47 dias, o que torna a média por dia instável.
+- [x] Quando o `nome_titular` existir, incluir a busca por nome nas sugestões. (feito em 2026-10-27)
+- [x] **Renan (Fatia 01):** como o `dias_faturamento` será calculado? No bruto, as datas de leitura geram intervalos de 19 a 47 dias, o que torna a média por dia instável.
 - [ ] **João Henrique (Fatia 06):** compartilhar o achado de jul/2025 (~5x mais interrupções que a média, em todos os alimentadores).
-- [ ] **Ryei (Fatia 02):** exportar uma tabela com as ocorrências individuais de rede (`id_uc`, `alimentador`, data, duração, causa). Hoje a aba de interrupções usa só o DEC/FEC mensal da `fato_qualidade_alimentador`.
-- [ ] **Ryei (Fatia 02), baixa prioridade:** criar `CREATE INDEX idx_fato_atend_uc ON fato_atendimentos(id_uc)`. Medido com o volume real (319 mil chamados): ~11 ms por busca sem índice, então não bloqueia.
-- [ ] **Ryei + João Henrique:** `dec_limite_aneel` / `violou_meta` contradizem o glossário do case (*"não para comparar com os limites regulatórios reais"*). Definir se a Visão 360 mostra badge de meta ANEEL.
+- [x] **Ryei (Fatia 02):** exportar uma tabela com as ocorrências individuais de rede (`id_uc`, `alimentador`, data, duração, causa). Hoje a aba de interrupções usa só o DEC/FEC mensal da `fato_qualidade_alimentador`. (entregue no #38 como `fato_ocorrencias_rede`; listada na aba em 2026-10-27)
+- [x] **Ryei (Fatia 02), baixa prioridade:** criar `CREATE INDEX idx_fato_atend_uc ON fato_atendimentos(id_uc)`. Medido com o volume real (319 mil chamados): ~11 ms por busca sem índice, então não bloqueia.
+- [x] **Ryei + João Henrique:** `dec_limite_aneel` / `violou_meta` contradizem o glossário do case (*"não para comparar com os limites regulatórios reais"*). Definir se a Visão 360 mostra badge de meta ANEEL. (resolvido pela ADR-003 revisada: a Visão 360 não mostra limite)
 - [ ] **João Henrique + Adrian:** confirmar a inclusão do `gerente_perdas` no acesso à Visão 360 (case, seção 3: *"o atendente, o analista de perdas e o diretor comercial"*). Atualizar a matriz RBAC do `ROADMAP.md` (linha 125).
 - [x] **João Henrique:** criar um grupo `CUSTOMER360_ACCESS` em `app/shared/role_groups.py` (incluindo `GERENTE_PERDAS`) e trocar a lista local `CUSTOMER360_ROLES` do meu router por ele, quando a branch do RBAC for mergeada. (feito em 2026-10-24)
 
@@ -136,12 +136,15 @@
 - [ ] Decidir com o time o limiar de ±10% de variação de consumo (`LIMIAR_VARIACAO_CONSUMO_PCT`).
 - [x] Diagnóstico de conta alta com 4 causas: consumo, dias faturados, bandeira e preço do kWh (2026-10-22).
 - [ ] Ciente: `status_pagamento = VENCIDA` é calculado na exportação da Fatia 02; pode ficar defasado até a próxima carga.
-- [ ] Registrar as decisões da Fatia 03 em `docs/DECISOES.md` (formato ADR) e as suposições no `README.md` (obrigatório no case).
+- [x] Registrar as decisões da Fatia 03 em `docs/DECISOES.md` (formato ADR). (ADR-006 a ADR-012, em 2026-10-27)
+- [ ] Levar as suposições da Fatia 03 para a seção de suposições do `README.md` (obrigatório no case), junto com as das outras fatias.
 - [ ] Após o merge da Fatia 05, adotar o `EndpointDoc` (`app/shared/docs.py`) com um `router_metadata.py`, no mesmo padrão do Adrian.
-- [ ] No merge com `main`, resolver os conflitos esperados em `api/v1/router.py` e `pyproject.toml` mantendo as linhas de todas as fatias (simulado em 2026-10-21: 165 testes verdes).
-- [ ] Trocar a seed pelo `v_energy.db` real e conferir os tipos/valores; ajustar `tests/customer360_seed.py` se o schema divergir.
+- [x] No merge com `main`, resolver os conflitos esperados em `api/v1/router.py` e `pyproject.toml` mantendo as linhas de todas as fatias (simulado em 2026-10-21: 165 testes verdes).
+- [x] Ajustar `tests/customer360_seed.py` ao esquema exportado pela Gold (todas as colunas e as tabelas `fato_ocorrencias_rede` e `fato_inspecoes_perdas`). (feito em 2026-10-27)
+- [ ] Conferir a tela com o `v_energy.db` real quando a equipe de dados compartilhar o arquivo.
 
-- [ ] Sugestão: mostrar o histórico de inspeções de perdas da UC (`fato_inspecoes_perdas`), completando a visão do analista de perdas.
+- [x] Sugestão: mostrar o histórico de inspeções de perdas da UC (`fato_inspecoes_perdas`), completando a visão do analista de perdas. (feito em 2026-10-27)
+- [x] Diagnóstico de conta alta com a 5ª causa, leitura estimada (`tipo_leitura`), e efeito do painel solar ligado no último ano (`data_conexao_gd`). (2026-10-27)
 - [x] Sugestão: mostrar a pontualidade de pagamento (pagas após o vencimento) a partir de `data_pagamento` e `data_vencimento`. (feito em 2026-10-24)
 
 ### 5.3 Frontend e integração
@@ -150,10 +153,11 @@
 - [x] Biblioteca de gráfico: chart no padrão shadcn (`components/ui/chart.tsx`) sobre Recharts 2.15. Avisar o time para reutilizarem.
 - [x] Implementar o frontend (checklist da seção 3).
 - [x] Propor ao time carregar as páginas sob demanda (`React.lazy`) no `AppRoutes.tsx`: o bundle passou de 500 kB. (feito em 2026-10-24: 1.103 kB → 274 kB)
-- [ ] No merge com a Fatia 05, resolver o conflito esperado em `AppRoutes.tsx` mantendo as rotas `/losses` e `/customers` (simulado em 2026-10-21: ESLint, Fallow, tsc, build e 25 testes verdes).
+- [x] No merge com a Fatia 05, resolver o conflito esperado em `AppRoutes.tsx` mantendo as rotas `/losses` e `/customers` (simulado em 2026-10-21: ESLint, Fallow, tsc, build e 25 testes verdes).
 - [ ] Propor ao João um `PageHeader` compartilhado junto do `AppLayout`: o cabeçalho com "Voltar ao painel" é igual ao da Fatia 05 (Fallow: 20 linhas duplicadas, dentro do limite de 5%).
-- [ ] Adicionar acesso à `/customers` no menu (`SidebarNav` do João) ou no `DashboardPage`; hoje a rota só é acessada digitando a URL.
-- [ ] Integrar `<AppLayout>` (João Henrique) e `<SmartInsightCard context="customer360" ucId={id_uc} />` (Miguel) quando entregues.
+- [x] Adicionar acesso à `/customers` no menu (`SidebarNav` do João) ou no `DashboardPage`; hoje a rota só é acessada digitando a URL.
+- [x] Integrar `<AppLayout>` (João Henrique).
+- [ ] Integrar `<SmartInsightCard context="customer360" ucId={id_uc} />` (Miguel) quando o #35 for mergeado.
 - [ ] Rodar `make lint-all` e `make test-all`, abrir PR da branch `feat/fatia-03-visao360`.
 
 ---

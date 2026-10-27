@@ -58,3 +58,70 @@ etc etc...
 - **Decisão:** as ocorrências **continuam no DEC/FEC**: a interrupção aconteceu no alimentador, e o erro mais provável está na data de ligação do cadastro. A nova tabela `fato_ocorrencias_rede` traz `fl_anterior_ligacao = true` nessas linhas, para auditoria e para o portal poder filtrá-las.
 - **Alternativa descartada:** excluir do cálculo, o que reduziria o DEC de 94 alimentadores com base numa data de cadastro de qualidade incerta.
 - **Conformidade:** teste na Gold: `fato_ocorrencias_rede` tem as mesmas 180.000 linhas da Silver, e a contagem por alimentador e mês bate com `ucs_interrompidas` de `fato_qualidade_alimentador`.
+
+## ADR-006 — Limiar de ±10% para dizer que o consumo "subiu" ou "caiu"
+
+- **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
+- **Contexto:** O atendente precisa responder se o consumo do cliente "realmente subiu" (case, user story do atendente). Pequenas oscilações mês a mês são normais e não devem virar "subiu".
+- **Decisão:** Comparar o mês da conta com o mesmo mês do ano anterior (mesma estação) e classificar como `SUBIU` acima de +10%, `CAIU` abaixo de −10% e `ESTAVEL` entre os dois (`LIMIAR_VARIACAO_CONSUMO_PCT`). Sem leitura no ano anterior, `SEM_COMPARACAO`.
+- **Alternativa descartada:** comparar com o mês anterior, que mistura o efeito da estação (verão e inverno) com a mudança de hábito.
+- **Impacto:** a constante fica num só lugar do backend e pode ser ajustada pelo time sem mudar o frontend.
+- **Conformidade:** teste `test_classify_trend_uses_ten_percent_threshold` (±10% exatos são estáveis).
+
+## ADR-007 — Diagnóstico de conta alta com cinco causas
+
+- **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
+- **Contexto:** A conta pode subir sem o consumo subir. As tabelas Gold trazem o que explica isso: período faturado (`dias_faturamento`), bandeira e preço médio do kWh (`fato_faturamento`) e se a leitura foi estimada (`tipo_leitura`).
+- **Decisão:** O backend devolve o diagnóstico estruturado (sem texto) com cinco causas, e o frontend escreve as frases para o atendente:
+  1. **Consumo** contra o mesmo mês do ano anterior (ADR-006).
+  2. **Leitura estimada:** a leitura do mês foi fechada pela média, sem acesso ao medidor; a diferença é acertada na próxima leitura real.
+  3. **Dias faturados:** só é citado com diferença de 3 dias ou mais e quando muda a conclusão (o total subiu, mas por dia ficou estável).
+  4. **Bandeira tarifária:** diz se ficou mais cara ou mais barata.
+  5. **Preço médio do kWh** (`tarifa_aplicada_rs_kwh`), só com variação de 1% ou mais. Ele já soma reajuste, bandeira e tributos, então o reajuste não é mostrado em separado.
+  - Quando a UC tem geração solar, a tela lembra que a energia gerada é abatida. Se o painel foi ligado entre os dois meses comparados (`data_conexao_gd`), diz que a queda de consumo é esperada.
+- **Alternativa descartada:** isolar o reajuste tarifário, que não existe como coluna na Gold e exigiria uma tabela de tarifas fora do escopo.
+- **Conformidade:** testes do serviço (`test_diagnosis_*`), do router (`test_history_*`) e do frontend (`diagnosisMessages.test.ts`, `Customer360Page.test.tsx`).
+
+## ADR-008 — Janela de 12 meses e totais só com meses comparáveis
+
+- **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
+- **Contexto:** Cada UC tem sua última leitura em um mês diferente, e UCs ligadas há menos de dois anos não têm o ano anterior completo.
+- **Decisão:** A janela tem 12 meses e termina na **última competência com leitura da própria UC**, não numa data fixa. Os totais dos 12 meses somam **apenas os meses que existem nos dois anos**, e a tela informa quantos meses foram comparados.
+- **Alternativa descartada:** somar todos os meses de cada ano, o que faria uma UC nova parecer ter "subido" só por ter mais meses no ano recente.
+- **Conformidade:** testes `test_history_builds_twelve_months_ending_at_latest_reading` e `test_totals_ignore_months_without_previous_year`.
+
+## ADR-009 — Falta de luz: interrupções da própria UC e comparação do alimentador com ele mesmo
+
+- **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
+- **Contexto:** O case pede que o atendente veja "se a rua dele teve falta de luz". O glossário diz que o DEC/FEC do case serve para comparar alimentadores e períodos entre si, não com limites regulatórios reais (ADR-003).
+- **Decisão:**
+  1. A aba de interrupções lista **cada interrupção que atingiu a UC** (`fato_ocorrencias_rede`: início, duração, tipo e causa), da mais recente para a mais antiga, com até 50 registros. Todos os tipos de ocorrência contam, como no DEC/FEC (dicionário de dados).
+  2. Interrupções com `fl_anterior_ligacao = true` **não aparecem** na Visão 360. Elas continuam no DEC/FEC (ADR-005), mas o cliente não existia na data e a conversa com ele não deve citá-las.
+  3. A região é mostrada pelo DEC/FEC mensal do alimentador, com "acima do normal" quando o mês passa de 1,5 vez a média dos 12 meses do **mesmo alimentador**. A tela não mostra limite ANEEL nem "violação".
+- **Alternativa descartada:** usar `violou_meta` como alerta, o que contraria o glossário.
+- **Conformidade:** testes `test_events_list_unit_outages_after_connection_most_recent_first` e `outageAnalysis.test.ts`.
+
+## ADR-010 — Busca por número da UC, do medidor ou nome do titular
+
+- **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
+- **Contexto:** O atendente recebe o número da conta em vários formatos (`100004`, `uc 100004`, `UC-100004`), às vezes só o número do medidor ou só o nome.
+- **Decisão:**
+  - O número é normalizado (sem espaços nem separadores, prefixo `UC` ou `MD` quando só há dígitos) e a busca usa "começa com" como intervalo (`id_uc >= 'UC1000' AND id_uc < 'UC1001'`), que aproveita o índice da chave.
+  - O nome é buscado por "contém" (`LIKE '%texto%'`), com espaços normalizados e curingas escapados.
+  - Sugestões a partir de 3 caracteres, 8 por padrão (até 20), em ordem de número da UC.
+- **Impacto:** a busca por nome percorre a `dim_unidade_consumidora` (~45 mil linhas, poucos milissegundos). O `LIKE` do SQLite ignora maiúsculas só em letras sem acento.
+- **Conformidade:** testes `test_customer360_search_terms.py` e `test_search_*` do router.
+
+## ADR-011 — Quem acessa a Visão 360
+
+- **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
+- **Contexto:** O case diz que "o atendente, o analista de perdas e o diretor comercial" olham o mesmo cliente.
+- **Decisão:** Acesso pelo grupo central `CUSTOMER360_ACCESS` (Fatia 06): atendente, gerente de atendimento, gerente de perdas e diretor. Operação fica de fora (403). O histórico de inspeções de perdas aparece para todos esses perfis: o atendente precisa saber de uma inspeção recente quando o cliente liga sobre ela.
+- **Conformidade:** testes `test_operation_profile_is_forbidden` e `test_director_and_losses_analyst_can_access`.
+
+## ADR-012 — A Visão 360 só lê a Gold e falha de forma explícita
+
+- **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
+- **Contexto:** As tabelas Gold vêm de duas fatias de dados e podem chegar em momentos diferentes.
+- **Decisão:** A feature só faz `SELECT`. Se uma tabela Gold estiver ausente, a API responde 500 com `DatabaseReadError`, nomeando a tabela, em vez de mostrar uma tela vazia que pareceria "cliente sem dados". A seed de desenvolvimento (`tests/customer360_seed.py`) reproduz o esquema exportado pelas Fatias 01 e 02 e se recusa a sobrescrever o `v_energy.db` real.
+- **Conformidade:** teste `test_missing_gold_tables_return_database_error`.

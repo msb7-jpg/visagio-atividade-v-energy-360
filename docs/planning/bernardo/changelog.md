@@ -134,3 +134,19 @@
 - **Validação de Testes:**
   - Backend: Ruff e pytest (511) aprovados.
   - Frontend: ESLint, Fallow e Vitest (86) aprovados.
+
+### [2026-10-27] - Visão 360 com as tabelas novas da Gold
+- **Autor:** Bernardo H
+- **Branch:** `feat/fatia-03-visao360-gold`
+- **O que foi feito:**
+  - Aba "Interrupções e Chamados": nova seção "Falta de luz nesta unidade" com cada interrupção da própria UC (`fato_ocorrencias_rede`: início, duração, tipo e causa), mais recente primeiro, com total de horas e a interrupção mais longa. Interrupções anteriores à ligação da UC (`fl_anterior_ligacao`) ficam de fora.
+  - Nova aba "Inspeções" com o histórico de inspeções de perdas da UC (`fato_inspecoes_perdas`): data, inspetor, resultado, tipo de irregularidade e kWh recuperado.
+  - Diagnóstico de conta alta com a 5ª causa, leitura estimada (`tipo_leitura = ESTIMADA` no mês da conta).
+  - Geração solar: o selo mostra "desde mês/ano" (`data_conexao_gd`), e o diagnóstico avisa quando o painel foi ligado entre os dois meses comparados.
+  - Busca por nome do titular nas sugestões (`LIKE` com espaços normalizados e curingas escapados). O frontend deixou de juntar as palavras antes de enviar, e o limite do texto subiu de 30 para 80 caracteres.
+  - Seed `tests/customer360_seed.py` no esquema exato exportado pelas Fatias 01 e 02, com nomes, data de conexão da GD, leitura estimada, ocorrências e inspeções. A nota CSAT da seed passou para a escala 1–5 (ADR-001).
+  - ADR-006 a ADR-012 da Fatia 03 em `docs/DECISOES.md`.
+  - Checklist atualizado: pendências resolvidas pelo #38 marcadas.
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter e pytest (546) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (177) e build (`tsc -b` + Vite) aprovados.
