@@ -192,3 +192,15 @@
 - **Registro de dados:**
   - `fato_ocorrencias_rede` existe; `OSCILACAO` e os 5 tipos contam; `NAO INFORMADA` é distinta de `NAO IDENTIFICADA`.
   - A Gold da Fatia 02 ainda não foi mesclada na `main`.
+
+
+### [2026-10-27] - Aba Continuidade na tela de qualidade (frontend com dados de exemplo)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `/quality` continua a única rota; `GridQualityPage` virou abas "Visão atual" (padrão, movida para `CurrentQualityView` sem mudar comportamento) e "Continuidade".
+  - Continuidade, a partir de `design/continuidade_referencia.png`: aviso "Dados de exemplo, aguardando a Gold da Fatia 02", filtros (mês do evento 07/2025 e município), 4 cards B contra A, destaque do evento, mapa esquemático e DEC por município, tabela por UC-horas, causas e tipos de ocorrência. Só componentes de `ui/` e tokens do `design.md`.
+  - Dados: `mocks/continuityMock.ts` (único arquivo de mock, colunas reais de `fato_qualidade_alimentador` e `fato_ocorrencias_rede`, conferidas em `origin/feat/fatia-02-faturamento`) atrás de `api/continuityApi.ts`; agregações em `utils/continuityAggregations.ts`. Trocar a API não mexe nos componentes.
+- **Fora desta entrega:** bloco "Gerado por IA" (depende do agente do Miguel), lista de bairros (exige `dim_unidade_consumidora`), filtro de causa, seletor de período, exportar CSV, premissa de retorno da manutenção, detalhe ao clicar no alimentador.
+- **Pendências:** trocar o mock pela API real depois do merge da Gold da Fatia 02; definir com o grupo a lista de causas atacáveis (premissa da referência); coordenadas dos municípios são fixas no mock.
+- **Validação de Testes:**
+  - `make lint-all` aprovado; `make test-all`: 537 pytest e 174 vitest.
