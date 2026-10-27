@@ -36,7 +36,8 @@ const summary: CustomerSummary = {
   subestacao: null,
   numero_medidor_ativo: 'MD500004',
   possui_gd: false,
-  potencia_gd_kw: 0
+  potencia_gd_kw: 0,
+  data_conexao_gd: null
 }
 
 const stableWithFlagChange: HighBillDiagnosis = {
@@ -57,7 +58,8 @@ const stableWithFlagChange: HighBillDiagnosis = {
   tendencia_media_diaria: 'ESTAVEL',
   tarifa_rs_kwh: 0.97,
   tarifa_rs_kwh_ano_anterior: 0.8,
-  variacao_tarifa_pct: 21.3
+  variacao_tarifa_pct: 21.3,
+  leitura_estimada: false
 }
 
 function buildInvoice(competencia: string, status: string, valor: number): Invoice {
@@ -97,7 +99,8 @@ function buildHistory(diagnosis: HighBillDiagnosis): CustomerHistory {
       variacao_media_diaria_pct: diagnosis.variacao_media_diaria_pct,
       tarifa_rs_kwh: diagnosis.tarifa_rs_kwh,
       tarifa_rs_kwh_ano_anterior: diagnosis.tarifa_rs_kwh_ano_anterior,
-      variacao_tarifa_pct: diagnosis.variacao_tarifa_pct
+      variacao_tarifa_pct: diagnosis.variacao_tarifa_pct,
+      tipo_leitura: diagnosis.leitura_estimada ? 'ESTIMADA' : 'REAL'
     }],
     resumo_12_meses: {
       meses_comparados: 12,
@@ -123,13 +126,51 @@ const events: CustomerEventTimeline = {
     { competencia: '2026-06', dec_apurado_horas: 0, fec_apurado_vezes: 0, dec_limite_aneel: 2.5, fec_limite_aneel: 2, violou_meta: false },
     { competencia: '2026-05', dec_apurado_horas: 4.2, fec_apurado_vezes: 3, dec_limite_aneel: 2.5, fec_limite_aneel: 2, violou_meta: true }
   ],
+  interrupcoes_uc: [
+    {
+      id_ocorrencia: 'OC2',
+      competencia: '2026-03',
+      inicio_interrupcao: '2026-03-02 07:05:00',
+      fim_interrupcao: '2026-03-02 11:17:00',
+      duracao_horas: 4.2,
+      tipo_ocorrencia: 'FIO PARTIDO',
+      causa: 'VEGETACAO'
+    },
+    {
+      id_ocorrencia: 'OC1',
+      competencia: '2025-07',
+      inicio_interrupcao: '2025-07-14 18:20:00',
+      fim_interrupcao: '2025-07-14 20:50:00',
+      duracao_horas: 2.5,
+      tipo_ocorrencia: 'FALTA DE ENERGIA',
+      causa: 'CLIMATICA'
+    }
+  ],
+  inspecoes: [
+    {
+      id_inspecao: 'INS2',
+      data_inspecao: '2025-11-04',
+      id_inspetor: 'INSP-02',
+      irregularidade_constatada: true,
+      tipo_irregularidade: 'BY-PASS',
+      kwh_recuperado: 1250.5
+    },
+    {
+      id_inspecao: 'INS1',
+      data_inspecao: '2025-08-12',
+      id_inspetor: 'INSP-07',
+      irregularidade_constatada: false,
+      tipo_irregularidade: null,
+      kwh_recuperado: 0
+    }
+  ],
   chamados: [{
     id_atendimento: 'AT1',
     numero_protocolo: 'PRT-2026-0003',
     motivo_chamado: 'FATURA',
     data_abertura: '2026-06-25 09:15:00',
     status_chamado: 'ABERTO',
-    nota_csat: 8
+    nota_csat: 4.5
   }]
 }
 
@@ -149,8 +190,10 @@ function renderPage(initialPath = '/customers') {
   )
 }
 
+const SEARCH_LABEL = 'Número da UC, do medidor ou nome do titular'
+
 function typeInSearch(typedId: string) {
-  fireEvent.change(screen.getByRole('combobox', { name: 'Número da UC ou do medidor' }), { target: { value: typedId } })
+  fireEvent.change(screen.getByRole('combobox', { name: SEARCH_LABEL }), { target: { value: typedId } })
 }
 
 function searchFor(typedId: string) {
@@ -275,7 +318,42 @@ describe('Customer360Page', () => {
     expect(within(outages).getByText('3 vezes')).toBeInTheDocument()
     const tickets = screen.getByRole('list', { name: 'Chamados abertos' })
     expect(within(tickets).getByText('PRT-2026-0003')).toBeInTheDocument()
-    expect(within(tickets).getByText('Nota 8')).toBeInTheDocument()
+    expect(within(tickets).getByText('Nota 4.5')).toBeInTheDocument()
+  })
+
+  it('lista cada interrupção que atingiu a própria UC', async () => {
+    renderPage()
+    searchFor('UC100004')
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Interrupções/ }))
+
+    expect(await screen.findByText(/Esta unidade teve 2 interrupções registradas, somando 6,7 h sem energia/)).toBeInTheDocument()
+    expect(screen.getByText(/A mais longa começou em 02\/03\/2026 às 07:05 e durou 4,2 h \(vegetação\)/)).toBeInTheDocument()
+    const outages = screen.getByRole('table', { name: 'Interrupções na unidade consumidora' })
+    expect(within(outages).getByText('14/07/2025 às 18:20')).toBeInTheDocument()
+    expect(within(outages).getByText('Fio partido')).toBeInTheDocument()
+    expect(within(outages).getByText('Climática')).toBeInTheDocument()
+  })
+
+  it('mostra o histórico de inspeções de perdas da UC', async () => {
+    renderPage()
+    searchFor('UC100004')
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Inspeções/ }))
+
+    expect(await screen.findByText('2 inspeções feitas nesta unidade: irregularidade constatada em 1, com 1.250,5 kWh recuperados.')).toBeInTheDocument()
+    const inspections = screen.getByRole('table', { name: 'Inspeções de perdas da unidade consumidora' })
+    expect(within(inspections).getByText('Irregular')).toBeInTheDocument()
+    expect(within(inspections).getByText('Regular')).toBeInTheDocument()
+    expect(within(inspections).getByText('By-pass')).toBeInTheDocument()
+  })
+
+  it('avisa quando a leitura do mês foi estimada', async () => {
+    mockedApi.getHistory.mockResolvedValue(buildHistory({ ...stableWithFlagChange, leitura_estimada: true }))
+    renderPage()
+    searchFor('UC100004')
+
+    expect(await screen.findByText(/A leitura de jun\/2026 foi estimada pela média/)).toBeInTheDocument()
   })
 
   it('resume faturas em aberto, falta de luz e chamados sem trocar de aba', async () => {
@@ -297,6 +375,15 @@ describe('Customer360Page', () => {
     expect(screen.getByText(/GD Solar \(4,5 kW\)/)).toBeInTheDocument()
   })
 
+  it('explica a queda de consumo pelo painel solar ligado no último ano', async () => {
+    mockedApi.getSummary.mockResolvedValue({ ...summary, possui_gd: true, potencia_gd_kw: 4.5, data_conexao_gd: '2025-09-15' })
+    renderPage()
+    searchFor('UC100004')
+
+    expect(await screen.findByText(/O painel solar foi ligado em set\/2025, depois de jun\/2025/)).toBeInTheDocument()
+    expect(screen.getByText(/desde set\/2025/)).toBeInTheDocument()
+  })
+
   it('aceita só os dígitos do número da conta e guarda a UC no endereço da página', async () => {
     renderPage()
     searchFor('100004')
@@ -309,7 +396,7 @@ describe('Customer360Page', () => {
     renderPage('/customers?uc=UC100004')
 
     expect(await screen.findByText('MD500004')).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: 'Número da UC ou do medidor' })).toHaveValue('UC100004')
+    expect(screen.getByRole('combobox', { name: SEARCH_LABEL })).toHaveValue('UC100004')
   })
 
   it('sugere UCs enquanto o atendente digita e abre a escolhida', async () => {
@@ -331,6 +418,23 @@ describe('Customer360Page', () => {
 
     expect(await screen.findByText('MD500004')).toBeInTheDocument()
     expect(mockedApi.getSummary).toHaveBeenCalledWith('UC100004', expect.anything())
+  })
+
+  it('sugere UCs pelo nome do titular', async () => {
+    mockedApi.search.mockResolvedValue([{
+      id_uc: 'UC100001',
+      nome_titular: 'Maria da Silva',
+      numero_medidor_ativo: 'MD500001',
+      bairro: 'Arruda',
+      municipio: 'Recife',
+      classe_consumo: 'Residencial',
+      possui_gd: false
+    }])
+    renderPage()
+    typeInSearch('silva')
+
+    expect(await screen.findByRole('option', { name: /UC100001.*Maria da Silva/ })).toBeInTheDocument()
+    expect(mockedApi.search).toHaveBeenCalledWith('silva', expect.anything())
   })
 
   it('lembra as UCs consultadas como atalhos de busca recente', async () => {
