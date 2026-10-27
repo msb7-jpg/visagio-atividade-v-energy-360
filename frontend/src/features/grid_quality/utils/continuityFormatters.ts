@@ -31,3 +31,27 @@ export function formatHoursMinutes(hours: number): string {
   const totalMinutes = Math.round(hours * 60)
   return `${Math.floor(totalMinutes / 60)}h${String(totalMinutes % 60).padStart(2, '0')}`
 }
+
+const OCCURRENCE_LABELS: Record<string, string> = {
+  CLIMATICA: 'Climática',
+  VEGETACAO: 'Vegetação',
+  TERCEIROS: 'Terceiros',
+  'FALHA DE EQUIPAMENTO': 'Falha de equipamento',
+  SOBRECARGA: 'Sobrecarga',
+  'NAO IDENTIFICADA': 'Não identificada',
+  'NAO INFORMADA': 'Não informada',
+  'FALTA DE ENERGIA': 'Falta de energia',
+  OSCILACAO: 'Oscilação',
+  'FIO PARTIDO': 'Fio partido',
+  'DANO EM EQUIPAMENTO': 'Dano em equipamento'
+}
+
+/**
+ * Rótulo legível de uma causa ou tipo de ocorrência da Gold; valor desconhecido volta como veio.
+ *
+ * @param value - Valor de `causa` ou `tipo_ocorrencia` (ex.: `NAO INFORMADA`).
+ * @returns Texto para a tela.
+ */
+export function labelOccurrence(value: string): string {
+  return OCCURRENCE_LABELS[value] ?? value
+}

@@ -1,6 +1,8 @@
 import { Info } from 'lucide-react'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { Alert } from '@/components/ui/alert'
+import { CauseSharesCard } from '@/features/grid_quality/components/CauseSharesCard'
+import { TypeSharesCard } from '@/features/grid_quality/components/TypeSharesCard'
 import { ContinuityEventCard } from '@/features/grid_quality/components/ContinuityEventCard'
 import { ContinuityFeedersCard } from '@/features/grid_quality/components/ContinuityFeedersCard'
 import { ContinuityFilters } from '@/features/grid_quality/components/ContinuityFilters'
@@ -46,6 +48,10 @@ export function ContinuityView() {
             <ContinuityEventCard event={snapshot.data.event} />
             <ContinuityMapCard municipalities={snapshot.data.municipalities} />
             <ContinuityFeedersCard feeders={snapshot.data.feeders} />
+            <div className="grid gap-6 lg:grid-cols-2">
+              <CauseSharesCard causes={snapshot.data.causes} />
+              <TypeSharesCard types={snapshot.data.types} />
+            </div>
           </div>
         ) : null}
       </AsyncState>

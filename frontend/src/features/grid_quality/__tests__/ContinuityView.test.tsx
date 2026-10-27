@@ -56,7 +56,7 @@ describe('ContinuityView', () => {
     expect(await screen.findByText('Onde estão as piores interrupções')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Mapa esquemático do DEC por município' })).toBeInTheDocument()
     expect(screen.getByText('DEC por município (h), período B')).toBeInTheDocument()
-    expect(within(screen.getByRole('list')).getByText('São Lourenço da Mata')).toBeInTheDocument()
+    expect(within(screen.getAllByRole('list')[0]).getByText('São Lourenço da Mata')).toBeInTheDocument()
   })
 
   it('ordena os alimentadores por UC-horas e marca amostra pequena', async () => {
@@ -65,6 +65,15 @@ describe('ContinuityView', () => {
     expect(within(rows[1]).getByText('ALM-REC-008')).toBeInTheDocument()
     expect(within(rows[1]).getByText('24.000')).toBeInTheDocument()
     expect(screen.getByText('amostra pequena')).toBeInTheDocument()
+  })
+
+  it('mostra causas (NAO INFORMADA separada de NAO IDENTIFICADA) e tipos de ocorrência', async () => {
+    renderView()
+    expect(await screen.findByText('Interrupções por causa')).toBeInTheDocument()
+    expect(screen.getByText('Não informada')).toBeInTheDocument()
+    expect(screen.getByText('Não identificada')).toBeInTheDocument()
+    expect(screen.getByText('Oscilação')).toBeInTheDocument()
+    expect(screen.getByText('Por tipo de ocorrência')).toBeInTheDocument()
   })
 
   it('recalcula ao excluir o mês do evento', async () => {
