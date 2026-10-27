@@ -35,6 +35,7 @@ class CustomerSummaryDTO(GoldRowModel):
     numero_medidor_ativo: str | None = None
     possui_gd: bool = False
     potencia_gd_kw: float | None = None
+    data_conexao_gd: str | None = None
 
 
 class CustomerSearchResultDTO(GoldRowModel):
@@ -69,6 +70,7 @@ class MeasurementDTO(GoldRowModel):
     competencia: str
     consumo_kwh: float | None = None
     dias_faturamento: int | None = None
+    tipo_leitura: str | None = None
 
 
 class MonthlyComparisonDTO(BaseModel):
@@ -91,6 +93,7 @@ class MonthlyComparisonDTO(BaseModel):
     tarifa_rs_kwh: float | None = None
     tarifa_rs_kwh_ano_anterior: float | None = None
     variacao_tarifa_pct: float | None = None
+    tipo_leitura: str | None = None
 
 
 class HighBillDiagnosisDTO(BaseModel):
@@ -114,6 +117,7 @@ class HighBillDiagnosisDTO(BaseModel):
     tarifa_rs_kwh: float | None = None
     tarifa_rs_kwh_ano_anterior: float | None = None
     variacao_tarifa_pct: float | None = None
+    leitura_estimada: bool = False
 
 
 class YearOverYearTotalsDTO(BaseModel):
@@ -174,10 +178,35 @@ class ServiceTicketDTO(GoldRowModel):
     nota_csat: float | None = None
 
 
+class UnitOutageDTO(GoldRowModel):
+    """Interrupção de fornecimento que atingiu a própria UC, lida de `fato_ocorrencias_rede`."""
+
+    id_ocorrencia: str
+    competencia: str | None = None
+    inicio_interrupcao: str | None = None
+    fim_interrupcao: str | None = None
+    duracao_horas: float | None = None
+    tipo_ocorrencia: str | None = None
+    causa: str | None = None
+
+
+class LossInspectionDTO(GoldRowModel):
+    """Inspeção de campo feita na UC pela equipe de perdas, lida de `fato_inspecoes_perdas`."""
+
+    id_inspecao: str
+    data_inspecao: str | None = None
+    id_inspetor: str | None = None
+    irregularidade_constatada: bool | None = None
+    tipo_irregularidade: str | None = None
+    kwh_recuperado: float | None = None
+
+
 class CustomerEventTimelineDTO(BaseModel):
-    """Interrupções no alimentador da UC e chamados abertos por ela."""
+    """Interrupções da UC e do seu alimentador, chamados abertos e inspeções de perdas."""
 
     id_uc: str
     alimentador: str | None = None
     qualidade_alimentador: list[FeederQualityMonthDTO]
+    interrupcoes_uc: list[UnitOutageDTO] = []
     chamados: list[ServiceTicketDTO]
+    inspecoes: list[LossInspectionDTO] = []
