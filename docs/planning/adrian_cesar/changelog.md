@@ -421,3 +421,11 @@
   - A tabela remonta com `key` dos filtros, então a paginação volta à página 1 ao mudar filtros.
   - Validação: `vitest` e `tsc -b`, ESLint e Fallow OK (rodados no frontend; backend não foi alterado).
 
+
+### [2026-10-27] - RBAC da fila de perdas passa a usar o grupo central `PERDAS_ACCESS`
+- **Autor:** Adrian César (Fatia 05)
+- **Origem:** issue #25 (João Henrique, Fatia 06): trocar `require_role(LOSS_ROLES)` pelo RBAC centralizado.
+- **O que foi feito:** `loss_management/router.py` deixou de definir `LOSS_ROLES` localmente e passou a usar `require_role(PERDAS_ACCESS)` (`app.shared.role_groups`), o mesmo grupo por trás de `RequirePerdas`. O alias `RequirePerdas` é um `Annotated[UserDTO, Depends(...)]` para parâmetros de rota e não entra em `dependencies=[...]` do router, por isso o grupo foi usado direto, como em `customer360/router.py`. Perfis autorizados inalterados: `diretor` e `gerente_perdas`.
+- **Validação (comandos equivalentes a `make lint-all` e `make test-all`, rodados direto porque `make` não existe neste shell):**
+  - Backend: Ruff OK, Pylint 10,00/10, import-linter 4 contratos mantidos, `pytest` 537 passed.
+  - **Frontend não validado nesta entrega:** `bun` não está instalado nesta máquina. Nenhum arquivo do frontend foi alterado.
