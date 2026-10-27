@@ -11,7 +11,7 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 
 /**
  * Campo de texto multilinha padronizado conforme design.md (SaaS Enterprise Analytics).
- * Possui raio de 12px (rounded-xl), borda de 1px e anel de foco proeminente com deslocamento.
+ * Possui raio de 12px (rounded-md), borda de 1px e anel de foco proeminente com deslocamento.
  *
  * @param props - Propriedades nativas de textarea HTML.
  * @returns Elemento textarea renderizado.
@@ -26,7 +26,7 @@ export function Textarea({
     <textarea
       ref={ref}
       className={cn(
-        'flex min-h-20 w-full rounded-xl border bg-background px-3.5 py-2.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+        'flex min-h-20 w-full rounded-md border bg-background px-3.5 py-2.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-base',
         error ? 'border-destructive focus-visible:ring-destructive' : 'border-input',
         className
       )}

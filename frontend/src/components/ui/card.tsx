@@ -3,7 +3,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const cardVariants = cva(
-  'rounded-xl border border-border bg-card text-card-foreground shadow-sm transition-all duration-200',
+  'rounded-lg border border-border bg-card text-card-foreground shadow-sm transition-all duration-200',
   {
     variants: {
       variant: {
@@ -27,7 +27,7 @@ export interface CardProps
 
 /**
  * Container Card padronizado conforme design.md (SaaS Enterprise Analytics).
- * Aplica raio de 12px (rounded-xl), borda sutil e fundo de superfície.
+ * Aplica raio de 12px (rounded-lg), borda sutil e fundo de superfície.
  *
  * @param props - Propriedades de div nativas, variantes e classes de layout.
  * @returns Elemento Card renderizado.
@@ -65,7 +65,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
 function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('text-base font-bold leading-none tracking-tight text-foreground', className)}
+      className={cn('text-lg font-bold leading-none tracking-tight text-foreground', className)}
       {...props}
     />
   )

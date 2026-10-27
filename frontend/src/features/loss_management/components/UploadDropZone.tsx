@@ -39,7 +39,7 @@ export function UploadDropZone({ file, disabled, onSelect }: UploadDropZoneProps
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
       className={cn(
-        'flex flex-col items-center gap-3 rounded-xl border border-dashed p-6 text-center',
+        'flex flex-col items-center gap-3 rounded-lg border border-dashed p-6 text-center',
         isDragging ? 'border-primary bg-accent' : 'border-border'
       )}
     >

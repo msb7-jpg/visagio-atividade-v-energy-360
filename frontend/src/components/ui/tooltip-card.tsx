@@ -136,7 +136,7 @@ export function Tooltip({
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                 className={cn(
-                  'pointer-events-none fixed z-50 w-auto max-w-sm overflow-hidden rounded-xl border border-border bg-card/95 p-3 shadow-xl backdrop-blur-md',
+                  'pointer-events-none fixed z-50 w-auto max-w-sm overflow-hidden rounded-lg border border-border bg-card/95 p-3 shadow-xl backdrop-blur-md',
                   tooltipClassName
                 )}
                 style={{ top: `${position.y}px`, left: `${position.x}px` }}
