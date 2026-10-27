@@ -1,10 +1,12 @@
 # Workflow do Lakehouse V-Energy Grid 360 (formato Databricks Asset Bundle).
-# Nomes de tarefas e notebooks da Fatia 01 seguem o padrão do Renan (ADR-004);
-# as tarefas fatia02_* são da Fatia 02 (Ryei Estevan).
+# Notebooks fatia01_* são da Fatia 01 (Renan); fatia02_* são da Fatia 02 (Ryei Estevan).
 #
-# Ordem: Bronze -> Silver -> Gold -> testes de qualidade -> exportação SQLite.
-# A exportação da Fatia 02 só roda depois que os testes das duas fatias passam e
-# acrescenta suas tabelas ao v_energy.db criado pelo Silver_to_Gold.
+# Ordem de cada fatia: Bronze -> Silver -> Gold -> testes de qualidade -> exportação.
+# As duas exportações gravam o MESMO v_energy.db e por isso rodam em sequência:
+#   1. fatia01_export_sqlite recria o arquivo do zero com as tabelas da Fatia 01;
+#   2. Testes (Fatia 01) confere a Gold e esse arquivo;
+#   3. fatia02_export_sqlite, só depois dos testes das duas fatias, acrescenta as
+#      tabelas da Fatia 02 ao arquivo (nunca rodar em paralelo com o passo 1).
 #
 # Todos os notebooks ficam na mesma pasta do workspace (variável notebooks_dir).
 # Para rodar em outro workspace: --var="notebooks_dir=/Workspace/<pasta>".
@@ -58,9 +60,15 @@ resources:
           notebook_task:
             notebook_path: ${var.notebooks_dir}/fatia02_gold
             source: WORKSPACE
-        - task_key: Testes
+        - task_key: fatia01_export_sqlite
           depends_on:
             - task_key: Silver_to_Gold
+          notebook_task:
+            notebook_path: ${var.notebooks_dir}/fatia01_export_sqlite
+            source: WORKSPACE
+        - task_key: Testes
+          depends_on:
+            - task_key: fatia01_export_sqlite
           notebook_task:
             notebook_path: ${var.notebooks_dir}/fatia01_testes_qualidade
             source: WORKSPACE
@@ -69,13 +77,6 @@ resources:
             - task_key: fatia02_gold
           notebook_task:
             notebook_path: ${var.notebooks_dir}/fatia02_testes_qualidade
-            source: WORKSPACE
-        - task_key: fatia01_export_sqlite
-          depends_on:
-            - task_key: Testes
-            - task_key: fatia02_testes_qualidade
-          notebook_task:
-            notebook_path: ${var.notebooks_dir}/fatia01_export_sqlite
             source: WORKSPACE
         - task_key: fatia02_export_sqlite
           depends_on:
