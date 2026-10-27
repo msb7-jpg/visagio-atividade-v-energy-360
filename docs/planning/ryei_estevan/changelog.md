@@ -140,3 +140,16 @@
   - Job implantado a partir do bundle do repositório e executado de ponta a ponta: 9 tarefas SUCCESS em 8,3 min. `bronze_aneel_limites` passou de todas as distribuidoras para 15.660 linhas; Silver e Gold idênticas (mesmos limites, 11 alimentadores acima da referência em 2025).
   - Comandos do README conferidos no CLI (`import-dir` cria os notebooks com os nomes do job).
   - `make lint-all` e `make test-all`: 100% aprovados.
+
+### [2026-10-27] - Integração final com a Fatia 01 e print do Workflow
+- **Autor:** Ryei Estevan (com apoio do Claude Code)
+- **Contexto:** a branch do Renan (`feat/fatia-01-cadastro`, commit `9ed2d9b`) foi criada a partir desta e traz os notebooks finais da Fatia 01 (`fatia01_*`) e uma tarefa nova de exportação. A branch foi trazida para cá (fast-forward, sem conflitos) para um PR único das duas fatias.
+- **Problema encontrado no `job.yaml`:** `fatia01_export_sqlite` recria o `v_energy.db` do zero e rodava em paralelo com `fatia02_export_sqlite`, que acrescenta tabelas ao mesmo arquivo: o último a terminar apagava as tabelas do outro. Além disso, os testes da Fatia 01 leem o `v_energy.db`, mas rodavam antes da exportação dele (falha em workspace novo).
+- **O que foi feito:**
+  - `job.yaml`: ordem `Silver_to_Gold` → `fatia01_export_sqlite` → `Testes` → `fatia02_export_sqlite` (esta também depende de `fatia02_testes_qualidade`). Comentário do arquivo explica por que as duas exportações não podem rodar em paralelo.
+  - `fatia02_export_sqlite`: textos e mensagem de erro passam a citar `fatia01_export_sqlite` como quem cria o banco.
+  - Print da execução bem-sucedida do Workflow em `docs/img/workflow_databricks.png`, referenciado no README.
+- **Validação de Testes:**
+  - Os 10 notebooks importados do repositório (`import-dir`) e o job implantado pelo bundle: 10 tarefas SUCCESS em 8,7 min, na ordem acima.
+  - `v_energy.db` final: 9 tabelas (4 da Fatia 01 + 5 da Fatia 02), `integrity_check=ok`, 0 violações de FK.
+  - `make lint-all` e `make test-all`: 100% aprovados.

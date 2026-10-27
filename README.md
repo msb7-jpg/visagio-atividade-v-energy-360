@@ -101,8 +101,9 @@ O Workflow roda **todo dia 1º, às 04h (horário de Recife)**. Faturamento, lei
 
 ### Execução bem-sucedida do Workflow
 
-> [!NOTE]
-> Print da execução no Databricks: a adicionar em `docs/img/` (exigido pelo case).
+Execução de ponta a ponta do Workflow no Databricks, com todas as tarefas concluídas com sucesso:
+
+![Execução bem-sucedida do Workflow no Databricks](docs/img/workflow_databricks.png)
 
 ---
 
