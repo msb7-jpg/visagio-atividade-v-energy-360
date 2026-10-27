@@ -65,3 +65,17 @@
 - **Validação de Testes:**
   - O banco de dados está íntegro (`PRAGMA integrity_check = ok`).
   - Trabalho destrancado para o Ryei (Faturamento), Célio (Receita), Bernardo (Visão 360) e Miguel (IA).
+
+
+### [2026-10-27] - Governança: Reorganização de ADRs e Ajuste no Workflow (job.yaml)
+- **Autor:** Renan
+- **O que foi feito:**
+  - Migração das 4 ADRs da Fatia 01 (Rollover, Medidor Ativo, GD Solar e Normalização de Datas/Textos) do documento do Adrian (`DECISOES_PERDAS.md`) para o documento mestre unificado (`DECISOES.md`), reenumerando-as de forma não colidente como ADR-006 a ADR-009.
+  - Limpeza do rascunho textual residual no topo de `DECISOES.md`.
+  - Atualização do `data-engineering/job.yaml`:
+    - Atualizado `notebooks_dir` padrão para `/Workspace/V_Energy_Analytics` (removendo e-mail pessoal).
+    - Invertida a precedência para rodar `Testes` (fatia01_testes_qualidade) antes de `fatia01_export_sqlite`, garantindo paridade com a Fatia 02.
+    - Atualizada a dependência de `fatia02_export_sqlite` para aguardar o término de `fatia01_export_sqlite`.
+  - Atualização dos apontamentos no `DATA_DICTIONARY.md` para as novas ADR-006 e ADR-007.
+- **Validação:**
+  - `job.yaml`, `DECISOES.md` e `DECISOES_PERDAS.md` revisados e validados.
