@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
  * Variantes de estilo para o componente Alert do Design System.
  */
 const alertVariants = cva(
-  'relative flex w-full items-start gap-3 rounded-xl border p-4 text-sm',
+  'relative flex w-full items-start gap-3 rounded-lg border p-4 text-sm',
   {
     variants: {
       variant: {

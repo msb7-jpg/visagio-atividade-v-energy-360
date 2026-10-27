@@ -39,7 +39,7 @@ interface ChartTooltipFrameProps {
  */
 function ChartTooltipFrame({ title, children }: ChartTooltipFrameProps) {
   return (
-    <div className="border-border bg-card text-card-foreground flex min-w-44 flex-col gap-1.5 rounded-xl border p-3 shadow-xl">
+    <div className="border-border bg-card text-card-foreground flex min-w-44 flex-col gap-1.5 rounded-lg border p-3 shadow-xl">
       <span className="text-foreground text-xs font-semibold">{title}</span>
       {children}
     </div>

@@ -1,4 +1,4 @@
-import type { InspectionStatus, SuspicionReason } from '@/features/loss_management/types/lossTypes'
+import type { SuspicionReason } from '@/features/loss_management/types/lossTypes'
 
 const kwhFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
 const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -14,13 +14,6 @@ const MONTH_ABBREVIATIONS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'a
 export const REASON_LABELS: Record<SuspicionReason, string> = {
   queda_subita: 'Queda abrupta de consumo',
   leitura_zerada: 'Consumo zero com medidor ativo'
-}
-
-export const STATUS_LABELS: Record<InspectionStatus, string> = {
-  gerada: 'Gerada',
-  pendente: 'Em campo',
-  concluida: 'Concluída',
-  cancelada: 'Cancelada'
 }
 
 /** Tipos de irregularidade registrados historicamente pelas equipes de campo. */
