@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import type { QualityStatus } from '@/features/grid_quality/types/qualityTypes'
 
 const STATUS_BADGES: Record<QualityStatus, { label: string; variant: 'destructive' | 'outline' | 'secondary' }> = {
-  violacao: { label: 'Violação Crítica', variant: 'destructive' },
+  violacao: { label: 'Acima do limite de referência', variant: 'destructive' },
   alerta: { label: 'Alerta (≥ 85% do limite)', variant: 'outline' },
   conforme: { label: 'Conforme', variant: 'secondary' }
 }
