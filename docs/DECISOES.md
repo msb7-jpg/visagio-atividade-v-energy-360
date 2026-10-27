@@ -1,12 +1,7 @@
-aq vamos documentar as decisões que tomamos no formato adr
+# Registro de Decisões de Arquitetura (ADRs)
 
-qual decisao
+Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **V-Energy Grid 360**.
 
-impacto
-
-como garantir confirmidade
-
-etc etc...
 ---
 
 ## ADR-001 — Escala da nota de satisfação (CSAT) dos atendimentos mantida em 1–5
@@ -58,3 +53,34 @@ etc etc...
 - **Decisão:** as ocorrências **continuam no DEC/FEC**: a interrupção aconteceu no alimentador, e o erro mais provável está na data de ligação do cadastro. A nova tabela `fato_ocorrencias_rede` traz `fl_anterior_ligacao = true` nessas linhas, para auditoria e para o portal poder filtrá-las.
 - **Alternativa descartada:** excluir do cálculo, o que reduziria o DEC de 94 alimentadores com base numa data de cadastro de qualidade incerta.
 - **Conformidade:** teste na Gold: `fato_ocorrencias_rede` tem as mesmas 180.000 linhas da Silver, e a contagem por alimentador e mês bate com `ucs_interrompidas` de `fato_qualidade_alimentador`.
+
+## ADR-006 — Regra de Virada de Medidor (Rollover) vs. Fraude (Anomalia)
+
+- **Data:** 2026-10-22 · **Fatia:** 01 (Renan) · **Status:** Aceita
+- **Contexto:** Nos arquivos de leituras, há casos onde a `leitura_atual` é substancialmente menor que a `leitura_anterior`. Na vida real, isso pode ser um medidor que "virou" (chegou a 99999 e reiniciou em 0) ou uma irregularidade técnica (fraude, by-pass, religação invertida).
+- **Decisão:** Assumir **rollover de medidor de 5 dígitos** estrito se: `leitura_anterior >= 90000` E `leitura_atual <= 10000`. O consumo faturável nesses casos é recalculado como `(100000 - leitura_anterior) + leitura_atual`. Se a leitura recuar *fora* desses limiares, marcamos a flag `anomalia_leitura = True`.
+- **Impacto:** Protege a `fato_medicao` (e subsequentemente a `fato_faturamento` do Ryei) de faturar consumos negativos absurdos. Alimenta de forma limpa a Gestão de Perdas (Adrian) gerando a `fato_anomalia_leitura` de alta precisão. (Este dado justifica D5 das Decisões de Perda).
+- **Conformidade:** Testes de PySpark automatizados: `assert df.filter("consumo_kwh < 0").count() == 0` passa 100%.
+
+## ADR-007 — Identificação do Medidor Ativo na Dimensão de UC
+
+- **Data:** 2026-10-24 · **Fatia:** 01 (Renan) · **Status:** Aceita
+- **Contexto:** Uma mesma UC pode ter múltiplos registros na tabela `medidores.csv` referentes ao histórico de trocas de hardware. O Atendimento (Visão 360) precisa saber qual o medidor exato está lá *hoje*.
+- **Decisão:** A subquery que cruza com a UC fará uma partição (Window) por `id_uc`, ordenada pela `data_instalacao_medidor` descendente, retendo apenas a linha onde `data_retirada IS NULL` ou `status = 'ATIVO'`.
+- **Impacto:** Garante unicidade e relação 1:1 entre a UC e seu medidor fisicamente ativo. Evita explosão cartesiana de registros durante os JOINs.
+- **Conformidade:** Teste de unicidade validando que `count(distinct id_uc) == count(id_uc)` na `dim_unidade_consumidora`.
+
+## ADR-008 — Enriquecimento Ativo da Geração Distribuída (GD Solar)
+
+- **Data:** 2026-10-22 · **Fatia:** 01 (Renan) · **Status:** Aceita
+- **Contexto:** Para responder o dilema do Diretor Comercial (por que volume caiu 4% mesmo com base subindo?), precisamos rastrear quem gera própria energia via painéis solares.
+- **Decisão:** Executar um `LEFT JOIN` determinístico da tabela de cadastro principal contra o arquivo `geracao_distribuida.csv` injetando uma booleana explícita (`possui_gd`) na camada Gold. 
+- **Impacto:** É a métrica mais valiosa da modelagem. Permite ao módulo de Receita (Célio) filtrar o painel, comprovando matematicamente que o "consumo desaparecido" migrou para Geração Distribuída em bairros de alta classe. (Isso também valida D3 das decisões da fila de perdas, onde UCs com GD são cortadas da fila de fiscalização).
+- **Conformidade:** A flag booleana é validada. Valores nulos resultantes do left join são transformados em `False/0`.
+
+## ADR-009 — Normalização Resiliente de Datas e Textos (Silver)
+
+- **Data:** 2026-10-22 · **Fatia:** 01 (Renan) · **Status:** Aceita
+- **Contexto:** Devido à dispersão de exportação dos sistemas legados da V-Energy, o campo `data_leitura` aparece como `yyyy-MM-dd`, `dd/MM/yyyy`, `dd.MM.yyyy` e o preenchimento de endereço e UFs flutua.
+- **Decisão:** Uso do `safe_date_parse_v2` testando via `coalesce(try_to_date(...))` uma cascata de 6 formatos até encontrar padrão. Remoção de todos os acentos e padronização `UPPER()` nas colunas `bairro` e `municipio`. `PERNAMBUCO` convertido para a sigla canônica `PE`.
+- **Impacto:** Evita perda por falha de casting ou criação de bairros duplicados no dashboard gerencial de filtro.
