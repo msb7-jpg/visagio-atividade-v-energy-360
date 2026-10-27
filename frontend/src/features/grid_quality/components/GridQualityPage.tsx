@@ -11,7 +11,7 @@ import type { QualityStatus } from '@/features/grid_quality/types/qualityTypes'
 
 const STATUS_FILTERS: { value: QualityStatus | ''; label: string }[] = [
   { value: '', label: 'Todos' },
-  { value: 'violacao', label: 'Somente com violação do limite' },
+  { value: 'violacao', label: 'Somente acima do limite de referência' },
   { value: 'alerta', label: 'Em alerta' },
   { value: 'conforme', label: 'Conformes' }
 ]
