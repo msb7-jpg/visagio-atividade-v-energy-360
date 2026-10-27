@@ -2,6 +2,7 @@ import { Info } from 'lucide-react'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { Alert } from '@/components/ui/alert'
 import { ContinuityEventCard } from '@/features/grid_quality/components/ContinuityEventCard'
+import { ContinuityFeedersCard } from '@/features/grid_quality/components/ContinuityFeedersCard'
 import { ContinuityFilters } from '@/features/grid_quality/components/ContinuityFilters'
 import { ContinuityKpiCards } from '@/features/grid_quality/components/ContinuityKpiCards'
 import { ContinuityMapCard } from '@/features/grid_quality/components/ContinuityMapCard'
@@ -44,6 +45,7 @@ export function ContinuityView() {
             <ContinuityKpiCards kpis={snapshot.data.kpis} />
             <ContinuityEventCard event={snapshot.data.event} />
             <ContinuityMapCard municipalities={snapshot.data.municipalities} />
+            <ContinuityFeedersCard feeders={snapshot.data.feeders} />
           </div>
         ) : null}
       </AsyncState>

@@ -59,6 +59,14 @@ describe('ContinuityView', () => {
     expect(within(screen.getByRole('list')).getByText('São Lourenço da Mata')).toBeInTheDocument()
   })
 
+  it('ordena os alimentadores por UC-horas e marca amostra pequena', async () => {
+    renderView()
+    const rows = await screen.findAllByRole('row')
+    expect(within(rows[1]).getByText('ALM-REC-008')).toBeInTheDocument()
+    expect(within(rows[1]).getByText('24.000')).toBeInTheDocument()
+    expect(screen.getByText('amostra pequena')).toBeInTheDocument()
+  })
+
   it('recalcula ao excluir o mês do evento', async () => {
     renderView()
     await screen.findByText('Evento fora do padrão')
