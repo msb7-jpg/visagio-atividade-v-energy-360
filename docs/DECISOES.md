@@ -153,3 +153,18 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 - **Decisão:** Os papéis são os membros de `UserRole`; não há perfil ADMIN (decisão de 2026-10-21). Cada grupo de acesso vive em `backend/app/shared/role_groups.py` (`DIRETORIA_ONLY`, `OPERACAO_ACCESS`, `ATENDIMENTO_ACCESS`, `PERDAS_ACCESS`, `CUSTOMER360_ACCESS`), com os aliases `Require*` em `backend/app/shared/dependencies.py`. `require_role(allowed_roles: Sequence[UserRole | str])` aceita membros do enum ou suas strings; string fora do enum levanta `ValueError`. `CUSTOMER360_ACCESS` inclui diretor, gerente_atendimento, atendente, gerente_perdas e gerente_operacao (este último para abrir a ficha do cliente a partir do ranking de circuitos).
 - **Impacto:** Mudar quem acessa uma área é editar um único grupo. No frontend, `NAV_ITEMS` (`components/layout/navItems.ts`) é a fonte única dos papéis por tela e deve espelhar `role_groups.py`; as rotas de `AppRoutes.tsx` leem dele.
 - **Conformidade:** `backend/tests/test_rbac.py` (matriz papel x rota em `ROUTE_BY_GROUP`, 401/403/200), `test_customer360_router.py` e, no frontend, `RbacNavigation.test.tsx` e `routes/__tests__/RbacMatrix.test.tsx` (papéis x rotas, tabela explícita). Novo grupo ou papel exige atualizar os dois lados e esses testes.
+
+## ADR-025 — Continuidade: períodos de 12 meses, evento extremo (K=3) e causas atacáveis
+
+- **Data:** 2026-10-28 · **Fatia:** 06 (Joao Henrique) · **Status:** Aceita
+- **Contexto:** A aba Continuidade comparava dois períodos fixos de 4 meses sobre dados de exemplo. Com a Gold real (48 meses, 180.000 ocorrências), os períodos e o mês de evento precisam sair dos dados, e o cálculo precisa ser feito em SQL.
+- **Decisão:**
+  1. **Períodos:** A = primeiros 12 meses da série e B = últimos 12 (`MESES_POR_PERIODO`), sem datas fixas.
+  2. **Evento extremo:** mês cujas UC-horas na rede inteira passam de 3 vezes (`LIMIAR_EVENTO_EXTREMO`) a mediana mensal da série de 48 meses. É o mesmo mês para qualquer município; os números do cartão são os do escopo. `incluir_evento=false` remove o mês de A e de B; sem mês acima do limiar, `event` é nulo.
+  3. **Indicadores:** UC-horas = soma de `duracao_horas`. DEC = UC-horas ÷ soma de `ucs_atendidas` contada uma vez por alimentador no escopo; FEC = ocorrências ÷ a mesma soma. Sem limite ANEEL (ADR-003, ADR-012).
+  4. **Causas atacáveis (suposição de negócio, a validar com a Fatia 02):** `VEGETACAO`, `FALHA DE EQUIPAMENTO` e `SOBRECARGA`. `NAO INFORMADA` aparece como "Sem causa registrada" e não é atacável.
+  5. **Municípios no mapa:** coordenadas estáticas e aproximadas em `municipalities.py`, nunca dado do banco.
+  6. **Escopo:** o município é resolvido em `scope_query` (alimentadores do escopo); as agregações só filtram por `id_alimentador`. O bairro entra no mesmo ponto.
+- **Alternativa descartada:** denominador somando as linhas mensais de `fato_qualidade_alimentador`, que conta as mesmas UCs 12 vezes e divide o DEC por 12.
+- **Impacto:** `GET /quality/continuity` responde sem carregar as ocorrências em Python; trocar K ou o tamanho do período é mudar uma constante.
+- **Conformidade:** `backend/tests/test_grid_quality_continuity.py` (seed pequeno, valores à mão) e `test_grid_quality_router.py`.

@@ -227,3 +227,20 @@
 - **Pendências:** a aba Continuidade ainda usa dados de exemplo; a troca do mock pelo banco real é a tarefa seguinte e atualizará a entrada de 27/10.
 - **Validação de Testes:**
   - Só documentação, nenhum código alterado. `make lint-all` aprovado; `make test-all`: 537 pytest e 342 vitest.
+
+
+### [2026-10-28] - Aba Continuidade com dados reais e clientes mais afetados por circuito
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Backend: `GET /quality/continuity?municipio=&incluir_evento=` (mesmo grupo `RequireOperacao`) devolve o `ContinuitySnapshot` agregado em SQL, sem carregar as 180 mil ocorrências. Arquivos novos em `grid_quality/`: `continuity_queries.py`, `continuity_rules.py`, `continuity_repository.py`, `continuity_service.py`, `continuity_schemas.py` (JSON em camelCase) e `municipalities.py`.
+  - Regras (constantes nomeadas em `continuity_rules.py`): período A = primeiros 12 meses e B = últimos 12 (`MESES_POR_PERIODO`), derivados da série; evento extremo = mês de UC-horas acima de 3 vezes a mediana mensal da rede inteira (`LIMIAR_EVENTO_EXTREMO`), igual para qualquer município; `incluir_evento=false` tira o mês de A e de B; sem mês acima do limiar, `event` vem nulo. UC-horas = soma de `duracao_horas`. DEC = UC-horas / soma de `ucs_atendidas` contada uma vez por alimentador no escopo; FEC = ocorrências / a mesma soma. Causa `NAO INFORMADA` vira "Sem causa registrada". Circuitos: os 20 maiores por UC-horas (`LIMITE_CIRCUITOS_RANKING`); amostra pequena = menos de 50 UCs.
+  - Causas atacáveis (suposição de negócio, a validar com a Fatia 02): `VEGETACAO`, `FALHA DE EQUIPAMENTO` e `SOBRECARGA`. As demais, inclusive "Sem causa registrada", não contam.
+  - Coordenadas dos 14 municípios: aproximação estática em `municipalities.py`, não vêm do banco.
+  - O filtro de escopo (município) está isolado em `scope_query` (`continuity_queries.py`): devolve os alimentadores do escopo e o resto só filtra por `id_alimentador`. O filtro de bairro entra ali, como parâmetro opcional sobre `dim_unidade_consumidora`, sem reescrever as agregações.
+  - Backend: `GET /quality/feeders/{id}/customers?meses=12&limite=10` (1 a 48 meses, 1 a 50 clientes) com as UCs de um circuito por horas sem energia.
+  - Frontend: `continuityApi` chama a API; removidos `continuityMock.ts`, `continuityAggregations.ts`, o banner de dados de exemplo e os tipos órfãos. Gaveta do circuito ganhou a tabela de clientes com "Ver ficha" para `/customers?uc=`. `QualityStatusBadge`: acima do limite = destructive, alerta = warning, conforme = success. Textos: "limite de referência" e "Situação em relação ao limite de referência".
+  - A lista de 14 municípios do filtro é constante no frontend (`continuityMunicipalities.ts`), porque o snapshot filtrado traz só o município escolhido.
+- **Fora desta entrega:** filtro de bairro (próxima etapa), bloco "Gerado por IA" e "causa principal por circuito".
+- **Pendências:** validar a lista de causas atacáveis com a Fatia 02. Nome de bairro sujo na Gold registrado em `docs/CORRECOES.md`.
+- **Validação de Testes:**
+  - `make lint-all` aprovado; `make test-all`: 644 pytest e 360 vitest. Testes novos: `test_grid_quality_continuity.py` e `test_grid_quality_customers.py` (seed pequeno, valores à mão) e rotas novas em `test_grid_quality_router.py`.
