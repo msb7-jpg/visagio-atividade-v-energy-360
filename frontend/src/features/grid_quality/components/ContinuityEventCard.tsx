@@ -18,7 +18,7 @@ function ComparisonBar({ label, value, maximum, tone }: { label: string; value: 
 /**
  * Destaque do mês fora do padrão: quanto ele pesa e como ficam DEC e FEC sem ele.
  *
- * @param props - Evento calculado a partir do período B.
+ * @param props - Evento detectado pela API na rede inteira.
  * @returns Card com texto e barras comparativas.
  */
 export function ContinuityEventCard({ event }: { event: ContinuityEvent }) {

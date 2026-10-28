@@ -1,9 +1,50 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ContinuityView } from '@/features/grid_quality/components/ContinuityView'
-import { continuityDataset } from '@/features/grid_quality/mocks/continuityMock'
-import { buildContinuitySnapshot } from '@/features/grid_quality/utils/continuityAggregations'
+import type { ContinuitySnapshot } from '@/features/grid_quality/types/continuityTypes'
+import { apiClient } from '@/lib/api-client'
+
+vi.mock('@/lib/api-client', () => ({ apiClient: { get: vi.fn() } }))
+
+const mockedGet = vi.mocked(apiClient.get)
+
+// Valores fictícios e redondos no formato da API; não representam dados do case.
+const comparison = { current: 4, previous: 2, changePercent: 100 }
+const snapshot: ContinuitySnapshot = {
+  kpis: { dec: comparison, fec: comparison, interruptions: comparison, averageDurationHours: comparison },
+  event: {
+    competencia: '2001-06',
+    eventInterruptions: 1200,
+    otherMonthsMedian: 100,
+    decWithoutEvent: 2,
+    fecWithoutEvent: 1
+  },
+  municipalities: [
+    { name: 'Olinda', latitude: -8.01, longitude: -34.85, decHours: 12 },
+    { name: 'Recife', latitude: -8.05, longitude: -34.9, decHours: 3 }
+  ],
+  feeders: [
+    {
+      id_alimentador: 'ALIM-TESTE-01',
+      municipality: 'Olinda',
+      ucsServed: 40,
+      decHours: 6,
+      fecTimes: 3,
+      interruptions: 120,
+      ucHours: 24_000,
+      networkSharePercent: 60,
+      decPreviousHours: 2,
+      smallSample: true
+    }
+  ],
+  causes: [
+    { cause: 'CLIMATICA', sharePercent: 60, actionable: false },
+    { cause: 'VEGETACAO', sharePercent: 30, actionable: true },
+    { cause: 'Sem causa registrada', sharePercent: 10, actionable: false }
+  ],
+  types: [{ type: 'OSCILACAO', sharePercent: 100 }]
+}
 
 beforeAll(() => {
   // Recharts mede o contêiner com ResizeObserver, ausente no jsdom.
@@ -12,6 +53,11 @@ beforeAll(() => {
     unobserve() {}
     disconnect() {}
   }
+})
+
+beforeEach(() => {
+  mockedGet.mockReset()
+  mockedGet.mockResolvedValue({ data: snapshot })
 })
 
 function renderView() {
@@ -23,63 +69,83 @@ function renderView() {
   )
 }
 
-describe('buildContinuitySnapshot', () => {
-  const all = { includeEventMonth: true, municipality: '' }
-
-  it('pondera DEC pelas UCs atendidas e compara B com A', () => {
-    const { kpis } = buildContinuitySnapshot(continuityDataset, all)
-    // (12*2000 + 10*1000 + 8*800 + 2*600 + 2*400 + 40*20) / 4820
-    expect(kpis.dec.current).toBeCloseTo(43_200 / 4820, 3)
-    expect(kpis.dec.changePercent).toBeGreaterThan(0)
-  })
-
-  it('exclui o mês do evento do período B e filtra por município', () => {
-    const withoutEvent = buildContinuitySnapshot(continuityDataset, { includeEventMonth: false, municipality: '' })
-    const withEvent = buildContinuitySnapshot(continuityDataset, all)
-    expect(withoutEvent.kpis.interruptions.current).toBeLessThan(withEvent.kpis.interruptions.current)
-    const olinda = buildContinuitySnapshot(continuityDataset, { includeEventMonth: true, municipality: 'Olinda' })
-    expect(olinda.feeders.map((feeder) => feeder.id_alimentador)).toEqual(['ALM-OLI-006'])
-  })
-})
-
 describe('ContinuityView', () => {
-  it('avisa que os dados são de exemplo e mostra os cards e o evento', async () => {
+  it('consulta a API sem município e com o mês do evento incluído', async () => {
     renderView()
-    expect(screen.getByText(/Dados de exemplo, aguardando a Gold da Fatia 02/)).toBeInTheDocument()
     expect(await screen.findByText('DEC simplificado (h por UC)')).toBeInTheDocument()
-    expect(screen.getByText('Nº de interrupções')).toBeInTheDocument()
+    expect(mockedGet).toHaveBeenCalledWith('/quality/continuity', {
+      params: { municipio: undefined, incluir_evento: true },
+      signal: expect.anything()
+    })
+    expect(screen.queryByText(/Dados de exemplo/)).not.toBeInTheDocument()
+  })
+
+  it('mostra KPIs, o cartão do evento e o rótulo do mês detectado', async () => {
+    renderView()
+    expect(await screen.findByText('Nº de interrupções')).toBeInTheDocument()
     expect(screen.getByText('Evento fora do padrão')).toBeInTheDocument()
+    expect(screen.getByText('Mês do evento (06/2001)')).toBeInTheDocument()
+  })
+
+  it('omite o cartão do evento quando a API devolve event nulo', async () => {
+    mockedGet.mockResolvedValue({ data: { ...snapshot, event: null } })
+    renderView()
+    expect(await screen.findByText('Nº de interrupções')).toBeInTheDocument()
+    expect(screen.queryByText('Evento fora do padrão')).not.toBeInTheDocument()
   })
 
   it('mostra o mapa e o DEC por município', async () => {
     renderView()
     expect(await screen.findByText('Onde estão as piores interrupções')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Mapa esquemático do DEC por município' })).toBeInTheDocument()
-    expect(screen.getByText('DEC por município (h), período B')).toBeInTheDocument()
-    expect(within(screen.getAllByRole('list')[0]).getByText('São Lourenço da Mata')).toBeInTheDocument()
+    expect(within(screen.getAllByRole('list')[0]).getByText('Olinda')).toBeInTheDocument()
   })
 
-  it('ordena os alimentadores por UC-horas e marca amostra pequena', async () => {
+  it('mostra os alimentadores por UC-horas e marca amostra pequena', async () => {
     renderView()
     const rows = await screen.findAllByRole('row')
-    expect(within(rows[1]).getByText('ALM-REC-008')).toBeInTheDocument()
+    expect(within(rows[1]).getByText('ALIM-TESTE-01')).toBeInTheDocument()
     expect(within(rows[1]).getByText('24.000')).toBeInTheDocument()
     expect(screen.getByText('amostra pequena')).toBeInTheDocument()
   })
 
-  it('mostra causas (NAO INFORMADA separada de NAO IDENTIFICADA) e tipos de ocorrência', async () => {
+  it('mostra causas com "Sem causa registrada" e tipos de ocorrência', async () => {
     renderView()
     expect(await screen.findByText('Interrupções por causa')).toBeInTheDocument()
-    expect(screen.getByText('Não informada')).toBeInTheDocument()
-    expect(screen.getByText('Não identificada')).toBeInTheDocument()
+    expect(screen.getByText('Sem causa registrada')).toBeInTheDocument()
+    expect(screen.getByText('Climática')).toBeInTheDocument()
     expect(screen.getByText('Oscilação')).toBeInTheDocument()
     expect(screen.getByText('Por tipo de ocorrência')).toBeInTheDocument()
   })
 
-  it('recalcula ao excluir o mês do evento', async () => {
+  it('refaz a consulta ao excluir o mês do evento e ao escolher um município', async () => {
     renderView()
     await screen.findByText('Evento fora do padrão')
     fireEvent.click(screen.getByRole('tab', { name: 'Excluir' }))
-    expect(await screen.findByRole('tab', { name: 'Excluir', selected: true })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(mockedGet).toHaveBeenLastCalledWith('/quality/continuity', {
+        params: { municipio: undefined, incluir_evento: false },
+        signal: expect.anything()
+      })
+    )
+    fireEvent.change(screen.getByLabelText('Município'), { target: { value: 'Olinda' } })
+    await waitFor(() =>
+      expect(mockedGet).toHaveBeenLastCalledWith('/quality/continuity', {
+        params: { municipio: 'Olinda', incluir_evento: false },
+        signal: expect.anything()
+      })
+    )
+  })
+
+  it('lista os 14 municípios no filtro, sem depender do snapshot filtrado', async () => {
+    renderView()
+    await screen.findByText('Evento fora do padrão')
+    expect(within(screen.getByLabelText('Município')).getAllByRole('option')).toHaveLength(15)
+  })
+
+  it('mostra erro quando a API falha', async () => {
+    mockedGet.mockRejectedValue(new Error('falha'))
+    renderView()
+    expect(await screen.findByText('Não foi possível carregar a Continuidade')).toBeInTheDocument()
   })
 })

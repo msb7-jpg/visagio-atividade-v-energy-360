@@ -14,7 +14,7 @@ export function ContinuityFeedersCard({ feeders }: { feeders: FeederUcHours[] })
       <CardHeader>
         <CardTitle>Alimentadores por UC-horas</CardTitle>
         <CardDescription>
-          UC-horas = DEC do mês × UCs atendidas, somado no período B. Amostra pequena: menos de 50 UCs atendidas.
+          UC-horas = soma das horas sem energia de cada UC interrompida no período B; os 20 maiores. Amostra pequena: menos de 50 UCs atendidas.
         </CardDescription>
       </CardHeader>
       <CardContent>

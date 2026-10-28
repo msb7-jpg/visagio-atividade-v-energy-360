@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
+  affectedCustomersQueryOptions,
   feederHistoryQueryOptions,
   feedersQueryOptions,
   indicatorsQueryOptions
@@ -19,6 +20,7 @@ export function useGridQualityController() {
   const indicators = useQuery(indicatorsQueryOptions())
   const feeders = useQuery(feedersQueryOptions(status))
   const history = useQuery(feederHistoryQueryOptions(selectedFeederId))
+  const customers = useQuery(affectedCustomersQueryOptions(selectedFeederId))
 
   return {
     status,
@@ -28,6 +30,7 @@ export function useGridQualityController() {
     closeFeeder: () => setSelectedFeederId(null),
     indicators,
     feeders,
-    history
+    history,
+    customers
   }
 }

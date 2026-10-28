@@ -1,6 +1,7 @@
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { formatCompetencia } from '@/features/grid_quality/utils/qualityFormatters'
 
 interface ContinuityFiltersProps {
   includeEventMonth: boolean
@@ -8,6 +9,8 @@ interface ContinuityFiltersProps {
   municipality: string
   onMunicipalityChange: (municipality: string) => void
   municipalityNames: string[]
+  /** Mês do evento detectado pela API; sem valor, o rótulo fica genérico. */
+  eventCompetencia: string | undefined
 }
 
 /**
@@ -21,12 +24,13 @@ export function ContinuityFilters({
   onIncludeEventMonthChange,
   municipality,
   onMunicipalityChange,
-  municipalityNames
+  municipalityNames,
+  eventCompetencia
 }: ContinuityFiltersProps) {
   return (
     <div className="flex flex-wrap items-end gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label>Mês do evento (07/2025)</Label>
+        <Label>{eventCompetencia ? `Mês do evento (${formatCompetencia(eventCompetencia)})` : 'Mês do evento'}</Label>
         <Tabs value={includeEventMonth ? 'incluir' : 'excluir'} onValueChange={(value) => onIncludeEventMonthChange(value === 'incluir')}>
           <TabsList>
             <TabsTrigger value="incluir">Incluir</TabsTrigger>

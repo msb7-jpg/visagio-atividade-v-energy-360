@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { continuityApi } from '@/features/grid_quality/api/continuityApi'
 import { continuityQueryOptions } from '@/features/grid_quality/queries/continuityQueries'
+import { MUNICIPALITY_NAMES } from '@/features/grid_quality/utils/continuityMunicipalities'
 
 /**
  * Controlador da visão de Continuidade: filtros (mês do evento e município) e consulta.
@@ -18,7 +18,7 @@ export function useContinuityController() {
     setIncludeEventMonth,
     municipality,
     setMunicipality,
-    municipalityNames: continuityApi.municipalityNames,
+    municipalityNames: MUNICIPALITY_NAMES,
     snapshot
   }
 }

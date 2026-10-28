@@ -22,7 +22,7 @@ const STATUS_FILTERS: { value: QualityStatus | ''; label: string }[] = [
  * @returns Cards de indicadores, filtro de status, ranking e gaveta do histórico.
  */
 export function CurrentQualityView() {
-  const { status, setStatus, selectedFeederId, openFeeder, closeFeeder, indicators, feeders, history } =
+  const { status, setStatus, selectedFeederId, openFeeder, closeFeeder, indicators, feeders, history, customers } =
     useGridQualityController()
   const rankedFeeders = feeders.data ?? []
 
@@ -34,7 +34,7 @@ export function CurrentQualityView() {
       ) : null}
 
       <div className="flex max-w-sm flex-col gap-1.5">
-        <Label htmlFor="filtro-status">Status regulatório</Label>
+        <Label htmlFor="filtro-status">Situação em relação ao limite de referência</Label>
         <Select
           id="filtro-status"
           value={status ?? ''}
@@ -62,6 +62,9 @@ export function CurrentQualityView() {
         history={history.data}
         isLoading={history.isLoading}
         isError={history.isError}
+        customers={customers.data}
+        isCustomersLoading={customers.isLoading}
+        isCustomersError={customers.isError}
         onClose={closeFeeder}
       />
     </div>

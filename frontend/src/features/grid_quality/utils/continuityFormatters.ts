@@ -39,7 +39,6 @@ const OCCURRENCE_LABELS: Record<string, string> = {
   'FALHA DE EQUIPAMENTO': 'Falha de equipamento',
   SOBRECARGA: 'Sobrecarga',
   'NAO IDENTIFICADA': 'Não identificada',
-  'NAO INFORMADA': 'Não informada',
   'FALTA DE ENERGIA': 'Falta de energia',
   OSCILACAO: 'Oscilação',
   'FIO PARTIDO': 'Fio partido',

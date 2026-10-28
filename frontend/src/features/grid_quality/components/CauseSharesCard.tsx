@@ -6,7 +6,7 @@ import type { CauseShare } from '@/features/grid_quality/types/continuityTypes'
 
 /**
  * Bloco "Interrupções por causa": participação de cada causa nas UC-horas do período B.
- * `NAO INFORMADA` (causa vazia na origem) aparece separada de `NAO IDENTIFICADA`.
+ * Causa vazia na origem chega da API como "Sem causa registrada", separada de `NAO IDENTIFICADA`.
  *
  * @param props - Causas ordenadas pela participação.
  * @returns Card com barras e selo de causa atacável ou não.
