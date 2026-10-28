@@ -3,6 +3,7 @@ import { revenueApi } from '@/features/revenue/api/revenueApi'
 import type {
   BreakdownControls,
   BreakdownLevel,
+  BreakdownPage,
   NeighborhoodRef,
   RevenueFilters,
   RevenueQuery
@@ -14,12 +15,13 @@ const revenueKeys = {
   kpis: (params: Record<string, string>) => [...revenueKeys.all, 'kpis', params] as const,
   decomposition: (params: Record<string, string>) => [...revenueKeys.all, 'decomposition', params] as const,
   breakdown: (params: Record<string, string | number>) => [...revenueKeys.all, 'breakdown', params] as const,
+  options: (params: Record<string, string | number>) => [...revenueKeys.all, 'options', params] as const,
   history: (params: Record<string, string | number>) => [...revenueKeys.all, 'history', params] as const
 }
 
 // Os dados Gold mudam pouco: cache de 5 minutos evita refazer a consulta ao alternar filtros.
 const REVENUE_STALE_TIME_MS = 5 * 60 * 1000
-// Teto da API; um nível territorial inteiro cabe em uma página para alimentar os filtros.
+// Teto da API por página; níveis maiores (Recife tem 106 bairros) são lidos em várias páginas.
 const OPTIONS_PAGE_SIZE = 100
 
 /**
@@ -77,13 +79,35 @@ export function revenueBreakdownQueryOptions(query: RevenueQuery, controls: Brea
 }
 
 /**
+ * Lê todas as páginas do ranking e junta as linhas numa página só, para os seletores não perderem valores.
+ *
+ * @param query - Janelas e recortes da lista.
+ * @param controls - Nível, ordenação e tamanho de página (a página inicial é ignorada).
+ * @param signal - Cancela todas as páginas quando a consulta é descartada.
+ * @returns Página única com todas as linhas do nível.
+ */
+export async function fetchAllBreakdownRows(
+  query: RevenueQuery,
+  controls: BreakdownControls,
+  signal?: AbortSignal
+): Promise<BreakdownPage> {
+  const firstPage = await revenueApi.getBreakdown(query, { ...controls, page: 1 }, signal)
+  const remainingPages = Array.from({ length: Math.max(firstPage.total_pages - 1, 0) }, (_, offset) => offset + 2)
+  const otherPages = await Promise.all(
+    remainingPages.map((page) => revenueApi.getBreakdown(query, { ...controls, page }, signal))
+  )
+  const items = [firstPage, ...otherPages].flatMap((breakdownPage) => breakdownPage.items)
+  return { ...firstPage, items, page: 1, page_size: items.length, total_pages: 1 }
+}
+
+/**
  * Opções que listam os valores existentes de um nível (municípios, bairros ou classes) para alimentar os filtros.
  *
  * @param query - Janelas escolhidas; os recortes da tela são ignorados para a lista não encolher ao filtrar.
  * @param nivel - Nível cujos valores populam o seletor.
  * @param enabled - `false` evita chamar a API enquanto as janelas são inválidas.
  * @param scope - Recorte que limita a lista (ex.: o município escolhido, para listar só os bairros dele).
- * @returns Opções de query reaproveitando o endpoint de ranking.
+ * @returns Opções de query que leem todas as páginas do endpoint de ranking.
  */
 export function revenueOptionsQueryOptions(
   query: RevenueQuery,
@@ -99,7 +123,12 @@ export function revenueOptionsQueryOptions(
     page: 1,
     page_size: OPTIONS_PAGE_SIZE
   }
-  return revenueBreakdownQueryOptions(windowsOnly, controls, enabled)
+  return queryOptions({
+    queryKey: revenueKeys.options(toBreakdownParams(windowsOnly, controls)),
+    queryFn: ({ signal }) => fetchAllBreakdownRows(windowsOnly, controls, signal),
+    staleTime: REVENUE_STALE_TIME_MS,
+    enabled
+  })
 }
 
 /**

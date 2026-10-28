@@ -6,14 +6,14 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from './ProtectedRoute'
 import { homeRouteFor } from './homeRoute'
 
-const DashboardPage = lazy(() => import('@/features/auth/components/DashboardPage').then((module) => ({ default: module.DashboardPage })))
+const ExecutiveDashboardPage = lazy(() => import('@/features/executive_dashboard/components/ExecutiveDashboardPage').then((module) => ({ default: module.ExecutiveDashboardPage })))
 const LossManagementPage = lazy(() => import('@/features/loss_management/components/LossManagementPage').then((module) => ({ default: module.LossManagementPage })))
 const GridQualityPage = lazy(() => import('@/features/grid_quality/components/GridQualityPage').then((module) => ({ default: module.GridQualityPage })))
 const RevenueDashboardPage = lazy(() => import('@/features/revenue/components/RevenueDashboardPage').then((module) => ({ default: module.RevenueDashboardPage })))
 const Customer360Page = lazy(() => import('@/features/customer360/components/Customer360Page').then((module) => ({ default: module.Customer360Page })))
 
-// Mesmo RBAC do backend (`LOSS_ROLES` em loss_management/router.py).
-const DASHBOARD_ROLES = ['diretor', 'gerente_operacao', 'gerente_perdas']
+// Mesmo RBAC do backend (`LOSS_ROLES` em loss_management/router.py; Painel: `RequireDiretoria`).
+const DASHBOARD_ROLES = ['diretor']
 const LOSS_ROLES = ['diretor', 'gerente_perdas']
 const QUALITY_ROLES = ['diretor', 'gerente_operacao']
 // Mesmo RBAC do backend (`RequireDiretoria` em revenue/router.py).
@@ -41,7 +41,7 @@ export function AppRoutes() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route element={<ProtectedRoute allowedRoles={DASHBOARD_ROLES} />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/dashboard" element={<ExecutiveDashboardPage />} />
             </Route>
             <Route element={<ProtectedRoute allowedRoles={LOSS_ROLES} />}>
               <Route path="/losses" element={<LossManagementPage />} />
