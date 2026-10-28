@@ -1,9 +1,11 @@
+import { useMemo } from 'react'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { IndicatorGroup } from '@/features/executive_dashboard/components/IndicatorGroup'
 import { LossesSnapshotCard } from '@/features/executive_dashboard/components/LossesSnapshotCard'
 import { PeriodSelector } from '@/features/executive_dashboard/components/PeriodSelector'
 import { useExecutiveDashboardController } from '@/features/executive_dashboard/hooks/useExecutiveDashboardController'
 import { competenciasOf, describeWindow } from '@/features/executive_dashboard/utils/dashboardPeriods'
+import { SmartInsightCard } from '@/features/insights/SmartInsightCard'
 
 const FALLBACK_AVAILABLE_PERIOD = { competencia_inicio: '2022-07', competencia_fim: '2026-06' }
 
@@ -17,6 +19,19 @@ export function ExecutiveDashboardPage() {
     useExecutiveDashboardController()
   const groups = indicators.data?.grupos ?? []
   const months = competenciasOf(indicators.data?.periodo_disponivel ?? FALLBACK_AVAILABLE_PERIOD)
+
+  const executiveMetrics = useMemo(() => {
+    if (!indicators.data?.grupos) return undefined
+    const metricMap: Record<string, string | number> = {}
+    for (const group of indicators.data.grupos) {
+      for (const item of group.indicadores) {
+        if (item.atual !== null) {
+          metricMap[item.id] = item.atual
+        }
+      }
+    }
+    return metricMap
+  }, [indicators.data])
 
   return (
     <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
@@ -35,6 +50,15 @@ export function ExecutiveDashboardPage() {
         problem={problem}
         onChange={changePeriods}
         onReset={resetPeriods}
+      />
+
+      <SmartInsightCard
+        context="executive"
+        filters={{
+          base: `${periods.base.competencia_inicio} a ${periods.base.competencia_fim}`,
+          atual: `${periods.atual.competencia_inicio} a ${periods.atual.competencia_fim}`
+        }}
+        metrics={executiveMetrics}
       />
 
       {problem === null ? (

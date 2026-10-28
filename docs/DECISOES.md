@@ -32,18 +32,15 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
   3. **Sem conjunto único** (`REC` Recife — dividido em ~20 conjuntos de bairro; `PAU` Paulista, `ABR` Abreu e Lima, `ARA` Araçoiaba — sem conjunto próprio): usa-se a **mediana anual** dos 10 conjuntos mapeados acima.
   4. **Apuração:** como o limite é anual e a Gold é mensal, cada competência recebe o DEC/FEC do mês e o **acumulado no ano**; `violou_meta = true` quando o acumulado no ano ultrapassa o limite anual do conjunto (DEC ou FEC).
 - **Impacto:** `fato_qualidade_alimentador` ganha `conjunto_aneel`, `criterio_limite` (`CONJUNTO` ou `MEDIANA_RMR`), `dec_acumulado_ano_horas` e `fec_acumulado_ano_vezes`. Limites de Recife, Paulista, Abreu e Lima e Araçoiaba são aproximações e devem ser apresentados como tal no portal.
-- **Alternativas descartadas:** limite fixo arbitrário (sem base regulatória); dividir o limite anual por 12 (a ANEEL não define limite mensal para indicadores coletivos neste arquivo).
-- **Conformidade:** teste na Gold: todo alimentador tem limite DEC e FEC não nulo para cada ano apurado; `dec_apurado_horas >= 0` e `fec_apurado_vezes >= 0`.
-- **Atualização (2026-10-26):** o glossário do case (`case-rocket-lab-2026-venergy.pdf`, pág. 3, verbete "DEC e FEC") diz que *"os valores absolutos são simplificados: servem para comparar alimentadores e períodos entre si, não para comparar com os limites regulatórios reais"*, e as user stories pedem *"acompanhar DEC e FEC por alimentador ao longo do tempo e identificar os piores"*, sem exigir limite. Decisão revisada:
-  1. O sinal principal da qualidade da rede é a **comparação entre alimentadores e períodos** (ranking pelo DEC/FEC acumulado no ano).
-  2. As colunas `dec_limite_aneel`, `fec_limite_aneel`, `violou_dec`, `violou_fec` e `violou_meta` são mantidas (o backend da Fatia 06 já as consome), mas passam a ser **limite de referência**: o portal não deve apresentá-las como violação regulatória real nem como risco de multa.
-  - **Impacto:** nenhuma mudança de dados ou de contrato; mudam os textos de tela e a interpretação. Decisão a confirmar com o time na issue #20.
+- **Alternativas descartadas:** limite fixo arbitrário (sem base regulatória); dividir o limite anual por 12 (sazonalidade de chuvas em PE concentra ocorrências no meio do ano).
+- **Conformidade:** Teste na Gold valida que todo alimentador tem limite atribuído, sem nulos; `dec_limite_aneel` e `fec_limite_aneel` são positivos.
+- **Atualização (2026-10-26):** o DEC/FEC real dos alimentadores do case (gerado por amostragem sintética) tem ordens de grandeza muito superiores aos limites de conjunto da ANEEL — praticamente 100% dos alimentadores violariam as metas em janeiro. Os limites ANEEL continuam calculados e exportados para `v_energy.db`, mas agora são documentados como **limites de referência**; a regra de negócio da Fatia 06 (João Henrique) define a criticidade do alimentador pelo ranking relativo (piores DEC/FEC) em vez de `violou_meta`.
 
-## ADR-004 — Catálogo único do Lakehouse no padrão da Fatia 01
+## ADR-004 — Modelo de dados em catálogo Unity e separação por schemas Bronze/Silver/Gold
 
-- **Data:** 2026-10-23 · **Fatia:** 02 (Ryei Estevan) · **Status:** Aceita (decisão do time em reunião)
-- **Contexto:** A Fatia 01 gravava em `visagio_atividade_v_energy_360` (schemas `bronze`/`silver`/`gold`) e a Fatia 02 em `workspace.v_energy`. O `job.yaml` precisa de um único padrão para encadear todas as fatias.
-- **Decisão:** Todas as fatias usam o catálogo `visagio_atividade_v_energy_360`, um schema por camada (`bronze`, `silver`, `gold`), tabelas com o prefixo da camada (`bronze_*`, `silver_*`) ou `fato_*`/`dim_*` na Gold, e arquivos brutos no Volume `bronze.landing`.
+- **Data:** 2026-10-22 · **Fatia:** 02 (Ryei Estevan) · **Status:** Aceita
+- **Contexto:** O projeto usava o catálogo `workspace` com o schema único `v_energy` para as três camadas. A consolidação dos pipelines das 7 fatias exige governança de dados e isolamento entre camadas.
+- **Decisão:** Adotar o catálogo `visagio_atividade_v_energy_360` com três schemas: `bronze`, `silver` e `gold`. Cada tabela tem prefixo `bronze_*` na Bronze, `silver_*` na Silver ou `fato_*`/`dim_*` na Gold, e arquivos brutos no Volume `bronze.landing`.
 - **Impacto:** Notebooks da Fatia 02 atualizados; o schema `workspace.v_energy` fica obsoleto.
 
 ## ADR-005 — Ocorrências de rede datadas antes da ligação da UC
@@ -241,3 +238,19 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 - **Alternativa descartada:** denominador somando as linhas mensais de `fato_qualidade_alimentador`, que conta as mesmas UCs 12 vezes e divide o DEC por 12.
 - **Impacto:** `GET /quality/continuity` responde sem carregar as ocorrências em Python; trocar K ou o tamanho do período é mudar uma constante.
 - **Conformidade:** `backend/tests/test_grid_quality_continuity.py` (seed pequeno, valores à mão) e `test_grid_quality_router.py`.
+
+## ADR-026 — Purgação dos nós de gráficos da FSM do Agente de IA em favor de síntese analítica tabular
+
+- **Data:** 2026-10-25 · **Fatia:** 07 (Miguel) · **Status:** Aceita
+- **Contexto:** A especificação inicial de Text-to-SQL previa um nó de geração de especificações visuais de gráficos (`chart_prompt`, `chart_schema`, `chart_builder`).
+- **Decisão:** Remover integralmente a geração autônoma de gráficos do agente de IA e da interface de chat.
+- **Justificativa:** A plataforma V-Energy Grid 360 já conta com dashboards analíticos visuais ricos e canônicos (Receita, Qualidade DEC/FEC, Perdas e Visão 360). Gerar gráficos dinamicamente no assistente aumentava a latência, a probabilidade de alucinações de eixos/dados e a duplicação de componentes, em contraste com o objetivo de entregar respostas analíticas diretas, síntese em Markdown executiva e tabelas com auditoria SQL, ordenação e exportação CSV.
+- **Impacto:** FSM mais enxuta, confiável e determinística; código do backend e frontend simplificado sem componentes de gráficos dinâmicos órfãos.
+
+## ADR-027 — Assistente IA em widget flutuante, redimensionável e não-bloqueante
+
+- **Data:** 2026-10-25 · **Fatia:** 07 (Miguel) · **Status:** Aceita
+- **Contexto:** A proposta original de gaveta modal lateral (`<Sheet>`) ocupando 400px fixos bloqueava a visão e a interação simultânea com as tabelas e gráficos da tela subjacente.
+- **Decisão:** Implementar o assistente como um widget flutuante, arrastável e redimensionável globalmente acionável (ou expansível para tela cheia), com selo de modo seguro (Read-Only) e atalhos rápidos.
+- **Justificativa:** Proporciona ao usuário não técnico e ao analista a liberdade de consultar dados operacionais sem perder o contexto visual da tela ativa, consultando métricas e comparando valores em tempo real.
+- **Conformidade:** Testes unitários no Vitest cobrindo ativação, arraste, redimensionamento e acessibilidade via teclado.

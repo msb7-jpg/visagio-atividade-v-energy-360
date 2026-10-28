@@ -23,10 +23,15 @@ class StreamErrorPayload(BaseModel):
 class ProactiveInsightsRequest(BaseModel):
     """Requisição de insights proativos baseados no contexto da tela e métricas."""
 
-    tela: str = Field(..., description="Identificador da tela ou painel de contexto")
+    context: str | None = Field(default=None, description="Contexto de tela (customer360, revenue, losses, quality)")
+    tela: str | None = Field(default=None, description="Alias compatível com contexto de tela")
     metricas: dict[str, float | int | str] = Field(
         default_factory=dict,
         description="Métricas operacionais observadas na visualização atual",
+    )
+    filtros: dict[str, str | int | float | None] = Field(
+        default_factory=dict,
+        description="Filtros operacionais aplicados (municipio, bairro, alimentador, etc.)",
     )
 
 

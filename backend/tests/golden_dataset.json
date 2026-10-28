@@ -1,0 +1,152 @@
+[
+  {
+    "id": 1,
+    "pergunta": "Qual o faturamento total em reais no ano de 2024?",
+    "categoria": "faturamento",
+    "sql_esperado": "SELECT ROUND(SUM(valor_total_rs), 2) FROM fato_faturamento WHERE competencia LIKE '2024%';"
+  },
+  {
+    "id": 2,
+    "pergunta": "Quantas unidades consumidoras possuem painel solar fotovoltaico?",
+    "categoria": "geracao_distribuida",
+    "sql_esperado": "SELECT COUNT(*) FROM dim_unidade_consumidora WHERE possui_gd = 1;"
+  },
+  {
+    "id": 3,
+    "pergunta": "Quais são os 5 alimentadores com maior DEC apurado no último mês?",
+    "categoria": "qualidade_rede",
+    "sql_esperado": "SELECT id_alimentador, dec_apurado_horas FROM fato_qualidade_alimentador WHERE competencia = (SELECT MAX(competencia) FROM fato_qualidade_alimentador) ORDER BY dec_apurado_horas DESC LIMIT 5;"
+  },
+  {
+    "id": 4,
+    "pergunta": "Qual o total de energia recuperada através de inspeções de perdas em 2025?",
+    "categoria": "perdas",
+    "sql_esperado": "SELECT ROUND(SUM(kwh_recuperado), 2) FROM fato_inspecoes_perdas WHERE data_inspecao LIKE '2025%';"
+  },
+  {
+    "id": 5,
+    "pergunta": "Quantos chamados de falta de energia foram abertos no canal telefônico?",
+    "categoria": "atendimento",
+    "sql_esperado": "SELECT COUNT(*) FROM fato_atendimentos WHERE motivo_chamado = 'FALTA DE ENERGIA' AND canal_atendimento = 'TELEFONE';"
+  },
+  {
+    "id": 6,
+    "pergunta": "Qual município possui o maior número de unidades consumidoras residenciais?",
+    "categoria": "cadastro",
+    "sql_esperado": "SELECT UPPER(municipio) AS mun, COUNT(*) AS total FROM dim_unidade_consumidora WHERE UPPER(classe_consumo) LIKE '%RESIDENCIAL%' GROUP BY mun ORDER BY total DESC LIMIT 1;"
+  },
+  {
+    "id": 7,
+    "pergunta": "Quantas inspeções encontraram irregularidade do tipo desvio direto?",
+    "categoria": "perdas",
+    "sql_esperado": "SELECT COUNT(*) FROM fato_inspecoes_perdas WHERE tipo_irregularidade = 'DESVIO DIRETO';"
+  },
+  {
+    "id": 8,
+    "pergunta": "Qual a média de consumo faturado em kWh na classe residencial?",
+    "categoria": "faturamento",
+    "sql_esperado": "SELECT ROUND(AVG(f.consumo_faturado_kwh), 2) FROM fato_faturamento f JOIN dim_unidade_consumidora u ON f.id_uc = u.id_uc WHERE UPPER(u.classe_consumo) LIKE '%RESIDENCIAL%';"
+  },
+  {
+    "id": 9,
+    "pergunta": "Quantas faturas estão com status de pagamento em atraso ou vencida?",
+    "categoria": "faturamento",
+    "sql_esperado": "SELECT COUNT(*) FROM fato_faturamento WHERE status_pagamento IN ('VENCIDA', 'EM ABERTO');"
+  },
+  {
+    "id": 10,
+    "pergunta": "Quais alimentadores violaram a meta regulatória de continuidade em 2024?",
+    "categoria": "qualidade_rede",
+    "sql_esperado": "SELECT DISTINCT id_alimentador FROM fato_qualidade_alimentador WHERE violou_meta = 1 AND competencia LIKE '2024%';"
+  },
+  {
+    "id": 11,
+    "pergunta": "Quantas inspeções confirmaram irregularidade constatada?",
+    "categoria": "perdas",
+    "sql_esperado": "SELECT COUNT(*) FROM fato_inspecoes_perdas WHERE irregularidade_constatada = 1;"
+  },
+  {
+    "id": 12,
+    "pergunta": "Qual a potência instalada total de energia solar em Boa Viagem?",
+    "categoria": "geracao_distribuida",
+    "sql_esperado": "SELECT ROUND(SUM(potencia_gd_kw), 2) FROM dim_unidade_consumidora WHERE UPPER(bairro) LIKE '%BOA VIAGEM%' AND possui_gd = 1;"
+  },
+  {
+    "id": 13,
+    "pergunta": "Quantos chamados foram registrados por motivo de fatura ou conta alta?",
+    "categoria": "atendimento",
+    "sql_esperado": "SELECT COUNT(*) FROM fato_atendimentos WHERE motivo_chamado = 'FATURA';"
+  },
+  {
+    "id": 14,
+    "pergunta": "Qual o faturamento médio mensal na classe comercial?",
+    "categoria": "faturamento",
+    "sql_esperado": "SELECT ROUND(AVG(f.valor_total_rs), 2) FROM fato_faturamento f JOIN dim_unidade_consumidora u ON f.id_uc = u.id_uc WHERE UPPER(u.classe_consumo) LIKE '%COMERCIAL%';"
+  },
+  {
+    "id": 15,
+    "pergunta": "Quantas UCs comerciais existem em Jaboatão dos Guararapes?",
+    "categoria": "cadastro",
+    "sql_esperado": "SELECT COUNT(*) FROM dim_unidade_consumidora WHERE UPPER(municipio) LIKE '%JABOAT%' AND UPPER(classe_consumo) LIKE '%COMERCIAL%';"
+  },
+  {
+    "id": 16,
+    "pergunta": "Qual o consumo faturado total em kWh em 2024?",
+    "categoria": "faturamento",
+    "sql_esperado": "SELECT ROUND(SUM(consumo_faturado_kwh), 2) FROM fato_faturamento WHERE competencia LIKE '2024%';"
+  },
+  {
+    "id": 17,
+    "pergunta": "Qual alimentador teve o maior FEC apurado em 2024?",
+    "categoria": "qualidade_rede",
+    "sql_esperado": "SELECT id_alimentador, MAX(fec_apurado_vezes) FROM fato_qualidade_alimentador WHERE competencia LIKE '2024%' GROUP BY id_alimentador ORDER BY MAX(fec_apurado_vezes) DESC LIMIT 1;"
+  },
+  {
+    "id": 18,
+    "pergunta": "Quantas ocorrências de interrupção na rede foram causadas por vegetação?",
+    "categoria": "qualidade_rede",
+    "sql_esperado": "SELECT COUNT(*) FROM fato_ocorrencias_rede WHERE causa = 'VEGETACAO';"
+  },
+  {
+    "id": 19,
+    "pergunta": "Qual a quantidade de faturas com bandeira tarifária vermelha patamar 2?",
+    "categoria": "faturamento",
+    "sql_esperado": "SELECT COUNT(*) FROM fato_faturamento WHERE bandeira_tarifaria LIKE '%VERMELHA%2%';"
+  },
+  {
+    "id": 20,
+    "pergunta": "Qual o tempo médio de resolução em horas dos chamados encerrados?",
+    "categoria": "atendimento",
+    "sql_esperado": "SELECT ROUND(AVG(tempo_resolucao_horas), 2) FROM fato_atendimentos WHERE status_chamado = 'ENCERRADO';"
+  },
+  {
+    "id": 21,
+    "pergunta": "Quantas UCs na classe industrial estão cadastradas?",
+    "categoria": "cadastro",
+    "sql_esperado": "SELECT COUNT(*) FROM dim_unidade_consumidora WHERE UPPER(classe_consumo) LIKE '%INDUSTRIAL%';"
+  },
+  {
+    "id": 22,
+    "pergunta": "Qual bairro concentra o maior número de irregularidades do tipo medidor adulterado?",
+    "categoria": "perdas",
+    "sql_esperado": "SELECT u.bairro, COUNT(*) AS total FROM fato_inspecoes_perdas i JOIN dim_unidade_consumidora u ON i.id_uc = u.id_uc WHERE i.tipo_irregularidade = 'MEDIDOR ADULTERADO' GROUP BY u.bairro ORDER BY total DESC LIMIT 1;"
+  },
+  {
+    "id": 23,
+    "pergunta": "Qual foi a tarifa média aplicada no faturamento de 2023?",
+    "categoria": "faturamento",
+    "sql_esperado": "SELECT ROUND(AVG(tarifa_aplicada_rs_kwh), 4) FROM fato_faturamento WHERE competencia LIKE '2023%' AND tarifa_aplicada_rs_kwh IS NOT NULL;"
+  },
+  {
+    "id": 24,
+    "pergunta": "Quantas unidades em Olinda possuem sistema solar conectado?",
+    "categoria": "geracao_distribuida",
+    "sql_esperado": "SELECT COUNT(*) FROM dim_unidade_consumidora WHERE UPPER(municipio) LIKE '%OLINDA%' AND possui_gd = 1;"
+  },
+  {
+    "id": 25,
+    "pergunta": "Qual a nota média de satisfação dos atendimentos avaliados?",
+    "categoria": "atendimento",
+    "sql_esperado": "SELECT ROUND(AVG(nota_csat), 2) FROM fato_atendimentos WHERE nota_csat IS NOT NULL;"
+  }
+]

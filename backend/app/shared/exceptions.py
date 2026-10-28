@@ -57,3 +57,10 @@ class DatabaseConnectionError(DomainException):
     def __init__(self, message: str = "Não foi possível conectar ao banco SQLite"):
         super().__init__(message=message, status_code=int(HTTPStatus.SERVICE_UNAVAILABLE))
 
+
+class ServiceUnavailableError(DomainException):
+    """Serviço externo ou provedor de IA indisponível."""
+
+    def __init__(self, message: str = "Serviço temporariamente indisponível"):
+        super().__init__(message=message, status_code=int(HTTPStatus.SERVICE_UNAVAILABLE))
+

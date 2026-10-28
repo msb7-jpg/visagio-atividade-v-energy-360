@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from fastapi import APIRouter
 from langchain_core.messages import HumanMessage
+from langgraph.checkpoint.memory import MemorySaver
 from sse_starlette.sse import EventSourceResponse
 
 if TYPE_CHECKING:
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
 from app.agent.graph import create_agent_graph
 from app.core.config import get_settings
 from app.features.chat.event_dispatcher import SSEEventDispatcher
+from app.features.chat.insights_service import generate_proactive_insights_service
 from app.features.chat.schemas import (
     ChatQueryRequest,
     ProactiveInsightsRequest,
@@ -24,11 +26,12 @@ from app.features.chat.schemas import (
 from app.shared.dependencies import CurrentUser, DbSession
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/agent", tags=["Agente de Inteligência Artificial"])
+router = APIRouter(tags=["Agente de Inteligência Artificial"])
 settings = get_settings()
 
-# Instância reutilizável do grafo compilado
-agent_graph = create_agent_graph()
+# Instância reutilizável do grafo compilado com memória conversacional por thread_id
+memory_checkpointer = MemorySaver()
+agent_graph = create_agent_graph(checkpointer=memory_checkpointer)
 
 
 @router.post("/chat/stream", summary="Conversar com o Agente Text-to-SQL via SSE")
@@ -39,15 +42,16 @@ async def chat_stream(
 ) -> EventSourceResponse:
     """
     Processa a pergunta do usuário através da máquina de estados do LangGraph
-    e transmite os eventos via SSE: session -> step_end -> thought -> sql -> chart -> data -> answer -> done.
+    e transmite os eventos via SSE: session -> step_end -> thought -> sql -> data -> answer -> done.
     """
     del db
-    thread_id = request.thread_id or str(uuid.uuid4())
+    raw_thread_id = request.thread_id or str(uuid.uuid4())
+    session_thread_id = f"{current_user.id}:{raw_thread_id}"
 
     async def event_generator() -> AsyncIterator[dict[str, str]]:
-        # 1. Handshake de sessão
+        # 1. Handshake de sessão emitindo o thread_id original para o cliente
         yield SSEEventDispatcher.emit_session(
-            thread_id=thread_id,
+            thread_id=raw_thread_id,
             provider=request.provider,
             model=request.model,
         )
@@ -61,7 +65,6 @@ async def chat_stream(
             "error_count": 0,
             "last_error": None,
             "error_category": None,
-            "chart_spec": None,
             "steps": [],
             "command": None,
         }
@@ -70,7 +73,8 @@ async def chat_stream(
             "configurable": {
                 "provider": request.provider,
                 "model": request.model,
-                "thread_id": thread_id,
+                "base_url": settings.ai_base_url,
+                "thread_id": session_thread_id,
                 "role": current_user.role,
             }
         }
@@ -87,7 +91,7 @@ async def chat_stream(
                         yield evt
 
             # Sinalização de conclusão
-            yield SSEEventDispatcher.emit_done(thread_id=thread_id)
+            yield SSEEventDispatcher.emit_done(thread_id=raw_thread_id)
 
         except Exception as exc:
             logger.error("Falha no pipeline de execução do agente: %s", exc, exc_info=True)
@@ -102,7 +106,7 @@ async def chat_stream(
     return EventSourceResponse(event_generator())
 
 
-@router.post("/insights", response_model=ProactiveInsightsResponse)
+@router.post("/ai/insights", response_model=ProactiveInsightsResponse)
 async def generate_proactive_insights(
     request: ProactiveInsightsRequest,
     current_user: CurrentUser,
@@ -110,24 +114,11 @@ async def generate_proactive_insights(
     """Gera insights proativos de acordo com o contexto operacional do usuário.
 
     Args:
-        request: Payload contendo a tela ativa e métricas observadas.
+        request: Payload contendo a tela ativa, filtros e métricas observadas.
         current_user: Usuário autenticado obtido via token JWT.
 
     Returns:
         ProactiveInsightsResponse com lista de achados e resumo executivo.
     """
     del current_user  # Autenticação validada via injeção de dependência
-    dec_val = request.metricas.get("dec")
-    fec_val = request.metricas.get("fec")
-
-    insights_list = [
-        f"Painel monitorado: {request.tela.upper()}.",
-        f"Métricas recebidas: DEC={dec_val}, FEC={fec_val} em análise contínua.",
-    ]
-    summary = f"Operação estável com acompanhamento dos indicadores na tela {request.tela}."
-
-    return ProactiveInsightsResponse(
-        insights=insights_list,
-        resumo_executivo=summary,
-    )
-
+    return await generate_proactive_insights_service(request)

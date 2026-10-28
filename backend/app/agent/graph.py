@@ -11,7 +11,6 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from app.agent.nodes.chart_generator import chart_generator_node
 from app.agent.nodes.corrector import sql_corrector_node
 from app.agent.nodes.router_node import router_node
 from app.agent.nodes.sql_executor import sql_executor_node
@@ -34,7 +33,7 @@ def route_decision(state: AgentState) -> str:
 
 def check_sql_execution(state: AgentState) -> str:
     """
-    Decide o próximo nó após a execução SQL (sucesso para gráfico/síntese ou loop de autocorreção).
+    Decide o próximo nó após a execução SQL (sucesso para síntese ou loop de autocorreção).
     """
     last_error = state.get("last_error")
     error_count = state.get("error_count", 0)
@@ -42,13 +41,11 @@ def check_sql_execution(state: AgentState) -> str:
     results = state.get("query_result")
 
     if not last_error:
-        if results and len(results) > 0:
-            logger.info(
-                "Transição [check_sql_execution]: Sucesso SQL (%d linhas). Desviando para chart_generator.",
-                len(results),
-            )
-            return AgentNode.CHART_GENERATOR.value
-        logger.info("Transição [check_sql_execution]: Sucesso SQL sem linhas. Desviando para synthesizer.")
+        lines_count = len(results) if results else 0
+        logger.info(
+            "Transição [check_sql_execution]: Sucesso SQL (%d linhas). Desviando para synthesizer.",
+            lines_count,
+        )
         return AgentNode.SYNTHESIZER.value
 
     # Recusas de segurança ou solicitações não suportadas vão direto para o sintetizador
@@ -175,7 +172,7 @@ def _wrap_node(node_name: str, fn: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def create_agent_graph(checkpointer: Any = None) -> CompiledStateGraph:
-    """Compila o StateGraph completo com roteamento, SQL generator, executor, corrector, charts e synthesizer."""
+    """Compila o StateGraph completo com roteamento, SQL generator, executor, corrector e synthesizer."""
     workflow = StateGraph(AgentState)
 
     # 1. Registro de todos os nós com telemetria
@@ -184,7 +181,6 @@ def create_agent_graph(checkpointer: Any = None) -> CompiledStateGraph:
         (AgentNode.SQL_GENERATOR.value, sql_generator_node),
         (AgentNode.SQL_EXECUTOR.value, sql_executor_node),
         (AgentNode.SQL_CORRECTOR.value, sql_corrector_node),
-        (AgentNode.CHART_GENERATOR.value, chart_generator_node),
         (AgentNode.SYNTHESIZER.value, synthesizer_node),
     ]
     for name, fn in nodes:
@@ -206,13 +202,12 @@ def create_agent_graph(checkpointer: Any = None) -> CompiledStateGraph:
     # 4. Pipeline SQL: Gerador -> Executor
     workflow.add_edge(AgentNode.SQL_GENERATOR.value, AgentNode.SQL_EXECUTOR.value)
 
-    # 5. Avaliação pós-execução SQL (Autocorreção, Gráfico ou Síntese)
+    # 5. Avaliação pós-execução SQL (Autocorreção ou Síntese)
     workflow.add_conditional_edges(
         AgentNode.SQL_EXECUTOR.value,
         check_sql_execution,
         {
             AgentNode.SQL_CORRECTOR.value: AgentNode.SQL_CORRECTOR.value,
-            AgentNode.CHART_GENERATOR.value: AgentNode.CHART_GENERATOR.value,
             AgentNode.SYNTHESIZER.value: AgentNode.SYNTHESIZER.value,
         },
     )
@@ -220,10 +215,7 @@ def create_agent_graph(checkpointer: Any = None) -> CompiledStateGraph:
     # 6. Loop de autocorreção: Corrector -> Executor
     workflow.add_edge(AgentNode.SQL_CORRECTOR.value, AgentNode.SQL_EXECUTOR.value)
 
-    # 7. Gráfico -> Síntese final
-    workflow.add_edge(AgentNode.CHART_GENERATOR.value, AgentNode.SYNTHESIZER.value)
-
-    # 8. Conclusão: Synthesizer -> END
+    # 7. Conclusão: Synthesizer -> END
     workflow.add_edge(AgentNode.SYNTHESIZER.value, END)
 
     return workflow.compile(checkpointer=checkpointer)

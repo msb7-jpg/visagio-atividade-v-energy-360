@@ -18,4 +18,3 @@ api_router.include_router(executive_dashboard_router)
 api_router.include_router(grid_quality_router)
 api_router.include_router(loss_router)
 api_router.include_router(revenue_router)
-

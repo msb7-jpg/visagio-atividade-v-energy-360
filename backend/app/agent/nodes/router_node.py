@@ -17,7 +17,7 @@ def _resolve_command_route(command_info: SlashCommandInfo) -> AgentStateUpdate |
     """Resolve a rota imediata a partir de comando de barra explícito."""
     cmd_name = command_info.get('name')
     logger.info("Slash command detectado no router: %s", cmd_name)
-    if cmd_name in ("sql", "chart"):
+    if cmd_name == "sql":
         return {"route": "sql", "command": command_info}
     if cmd_name in ("direct", "explain"):
         return {"route": "direct", "command": command_info}
