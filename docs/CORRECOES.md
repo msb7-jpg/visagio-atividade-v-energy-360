@@ -15,6 +15,17 @@
 
 ## 1. Dados e pipeline (Renan, com Ryei)
 
+- [ ] 🔴 **Faturas não pagas marcadas como "PAGA" na Gold.** No `faturas.csv`, o sistema legado marca fatura não paga com `status = EM ABERTO` e `data_pagamento` vazia **ou** `9999-12-31`. A Gold trata a data vazia como `VENCIDA`, mas transforma a `9999-12-31` em `PAGA`.
+  - **Tamanho:** 60.394 faturas (R$ 12,9 mi) em 33.142 UCs, cerca de 1.250 por mês até jun/2026. Nenhuma fatura tem status `ABERTA` (dentro do prazo) na Gold.
+  - **Impacto:**
+    - a inadimplência real é cerca de **5,6%, e não 3,6%** (Painel do Diretor e causa 6.3 do diagnóstico);
+    - na Visão 360, essas faturas aparecem como pagas e entram na pontualidade com atraso de mais de 8 mil anos (UC100095: atraso médio de 323.605 dias);
+    - as "faturas em aberto" da Visão 360 ficam incompletas.
+  - **Onde:** `data-engineering/notebooks/fatia02_silver.ipynb` (Fatia 02, Ryei), na regra `CASE WHEN f.data_pagamento IS NOT NULL THEN 'PAGA'`. O texto `9999-12-31` não é nulo, então vira `PAGA`. A Silver da Fatia 01 já trata essa mesma data como vazia em `data_retirada`.
+  - **Segundo problema na mesma regra:** `VENCIDA` é decidido com `current_date()`, a data do dia em que o pipeline roda. Rodado depois de jul/2026, nenhuma fatura fica `ABERTA`, e o resultado muda conforme o dia da execução. O certo é comparar com a data de corte da base (2026-06-30).
+  - **Correção:** na Silver, tratar `9999-12-31` como data ausente. `EM ABERTO` vira `VENCIDA` quando o vencimento é anterior à data de corte da base, e `ABERTA` quando ainda está no prazo. Depois, regerar o `v_energy.db`.
+  - **Conferência:** `SELECT count(*) FROM fato_faturamento WHERE data_pagamento = '9999-12-31'` deve voltar 0, e `status_pagamento` deve ter `ABERTA` nas faturas com vencimento depois de jun/2026.
+
 - [ ] 🔴 **Bairros com o nome corrompido na Gold.** 61 bairros de `dim_unidade_consumidora` chegam com erro de acentuação, e o mesmo bairro aparece com dois nomes. Exemplos:
 
   | Bairro | Nome correto | Nome corrompido |
@@ -62,7 +73,6 @@
 ## 5. Visão 360 (Bernardo)
 
 - [ ] 🟡 Abrir o PR de `feat/fatia-03-visao360-gold` (interrupções da UC, inspeções, leitura estimada, busca por nome).
-- [ ] 🟡 **Numeração das ADRs.** A `main` tem ADR-006 a ADR-009 (Fatia 01); a branch da Visão 360 usa ADR-006 a ADR-012; o Painel usa ADR-010 a ADR-016. Quem entrar depois na `main` renumera as suas.
 - [ ] ⚪ Plugar o `SmartInsightCard context="customer360"` depois do merge do #35.
 
 ## 6. Gestão de Perdas (Adrian)
@@ -84,5 +94,7 @@
 ## Já resolvido
 
 - [x] PR #34: lista de bairros limitada a 100 (Recife tem 106). Corrigido em `07a69c0` e mesclado na `main` em 2026-10-28.
+- [x] Numeração das ADRs: as da Visão 360 passaram para ADR-017 a ADR-023 (a `main` usa 006–009 da Fatia 01, e o Painel, 010–016). Resolvido na branch `feat/fatia-03-visao360-gold` em 2026-10-28, junto com o merge da `main`.
+- [x] Visão 360: o resumo de interrupções dizia "teve 50" em 33 UCs com mais de 50 (agora usa o total real), e o diagnóstico do mês sem leitura apontava o mês errado. Corrigido na branch `feat/fatia-03-visao360-gold` em 2026-10-28.
 - [x] Painel do Diretor: conflito com a `main` depois do merge do #34 (`navItems.ts` e `RbacNavigation.test.tsx`). Menu do diretor: Painel, Inteligência Comercial, Gestão de Perdas, Qualidade da Rede, Visão 360. Resolvido na branch `feat/painel-diretor` em 2026-10-28.
 - [x] Painel do Diretor: lentidão (de 11 s para 0,01 s) e inadimplência marcada como "piorou" por +0,05 ponto percentual (ADR-011 e ADR-016), em 2026-10-28.

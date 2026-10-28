@@ -262,7 +262,7 @@ Os números dos exemplos são ilustrativos.
 - [ ] **Adrian (para depois):** revisar o frontend no PR e confirmar o contrato da seção 6, que já foi implementado nesse formato.
 - [x] **Banco real:** dump `.db` obtido no Drive em 27/10; será colocado em `backend/v_energy.db` (fora do repositório) na etapa 4.
 - [ ] **Miguel (para depois):** o `DashboardPage` antigo foi removido nesta branch. No #35, tirar o `SmartInsightCard` dele; o quadro volta no Painel novo, ligado aos indicadores reais (etapa 7).
-- [ ] **ADRs:** a `main` já tem ADR-006 a ADR-009 (Fatia 01), e a branch `feat/fatia-03-visao360-gold` também usa ADR-006 a ADR-012. O Painel usa ADR-010 a ADR-015. A branch que entrar depois na `main` renumera as suas.
+- [x] **ADRs:** a `main` tem ADR-006 a ADR-009 (Fatia 01), o Painel usa ADR-010 a ADR-016, e as da Visão 360 foram renumeradas para ADR-017 a ADR-023 (28/10). Não há mais colisão, qualquer que seja a ordem dos merges.
 - [ ] **João:** revisão das mudanças em `AppRoutes.tsx` e `navItems.ts`.
 - [x] **Time:** autorização para incluir a linha do Painel no `ROADMAP.md` (confirmada em 27/10).
 
