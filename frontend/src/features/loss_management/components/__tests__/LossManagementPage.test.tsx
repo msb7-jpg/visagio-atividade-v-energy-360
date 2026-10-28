@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { AxiosError, type AxiosResponse } from 'axios'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
@@ -12,6 +13,8 @@ import type {
   SuspiciousQueue,
   SuspiciousUnit
 } from '@/features/loss_management/types/lossTypes'
+
+vi.mock('sonner', () => ({ toast: { success: vi.fn() } }))
 
 vi.mock('@/features/loss_management/api/lossApi', () => ({
   lossApi: {
@@ -92,7 +95,7 @@ function renderPage() {
 
 async function openOrdersTab() {
   fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
-  return screen.findByRole('table', { name: 'Ordens de inspeção' })
+  return screen.findByRole('region', { name: 'Ordens de inspeção' })
 }
 
 describe('LossManagementPage', () => {
@@ -111,7 +114,7 @@ describe('LossManagementPage', () => {
     renderPage()
     await openOrdersTab()
 
-    expect(screen.getByRole('button', { name: /Exportar para campo/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Exportar planilha de campo/ })).toBeDisabled()
   })
 
   it('habilita a exportação quando há ordem pendente em campo', async () => {
@@ -119,44 +122,47 @@ describe('LossManagementPage', () => {
     renderPage()
     await openOrdersTab()
 
-    expect(screen.getByRole('button', { name: /Exportar para campo/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /Exportar planilha de campo/ })).toBeEnabled()
   })
 
   it('envia ordem gerada para campo com o fiscal responsável', async () => {
     mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'gerada' })])
     renderPage()
-    const table = await openOrdersTab()
+    const board = await openOrdersTab()
 
-    fireEvent.click(within(table).getByRole('button', { name: 'Enviar para campo' }))
+    fireEvent.click(within(board).getByRole('button', { name: /^Enviar a campo OI-/ }))
     fireEvent.change(await screen.findByLabelText('Fiscal responsável'), { target: { value: 'Equipe 3' } })
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar envio' }))
 
     await waitFor(() => expect(mockedApi.updateInspection).toHaveBeenCalledWith(1, {
       status: 'pendente', fiscal_responsavel: 'Equipe 3'
     }))
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('OI-2026-0001 enviada a campo com Equipe 3.'))
   })
 
   it('registra o resultado de campo de uma ordem pendente', async () => {
     mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'pendente' })])
     renderPage()
-    const table = await openOrdersTab()
+    const board = await openOrdersTab()
 
-    fireEvent.click(within(table).getByRole('button', { name: 'Registrar resultado' }))
+    fireEvent.click(within(board).getByRole('button', { name: /^Registrar resultado OI-/ }))
     fireEvent.change(await screen.findByLabelText(/Irregularidade constatada\?/), { target: { value: 'sim' } })
-    fireEvent.change(screen.getByLabelText('kWh recuperado'), { target: { value: '680' } })
+    fireEvent.change(screen.getByLabelText(/Tipo de irregularidade/), { target: { value: 'BY-PASS' } })
+    fireEvent.change(screen.getByLabelText(/kWh recuperado/), { target: { value: '680' } })
     fireEvent.click(screen.getByRole('button', { name: 'Salvar resultado' }))
 
     await waitFor(() => expect(mockedApi.updateInspection).toHaveBeenCalledWith(1, expect.objectContaining({
       status: 'concluida', irregularidade_constatada: true, kwh_recuperado: 680
     })))
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Resultado de OI-2026-0001 registrado.'))
   })
 
   it('exige justificativa para cancelar uma ordem', async () => {
     mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'pendente' })])
     renderPage()
-    const table = await openOrdersTab()
+    const board = await openOrdersTab()
 
-    fireEvent.click(within(table).getByRole('button', { name: 'Cancelar ordem' }))
+    fireEvent.click(within(board).getByRole('button', { name: /^Cancelar OI-/ }))
     const confirmButton = await screen.findByRole('button', { name: 'Confirmar cancelamento' })
     expect(confirmButton).toBeDisabled()
 
@@ -166,6 +172,7 @@ describe('LossManagementPage', () => {
     await waitFor(() => expect(mockedApi.updateInspection).toHaveBeenCalledWith(1, {
       status: 'cancelada', justificativa_cancelamento: 'Cliente regularizou'
     }))
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('OI-2026-0001 cancelada.'))
   })
 })
 
@@ -177,8 +184,8 @@ function buildApiError(status: number, detail: string): AxiosError {
 async function openCancelDialog() {
   mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'pendente' })])
   renderPage()
-  const table = await openOrdersTab()
-  fireEvent.click(within(table).getByRole('button', { name: 'Cancelar ordem' }))
+  const board = await openOrdersTab()
+  fireEvent.click(within(board).getByRole('button', { name: /^Cancelar OI-/ }))
   fireEvent.change(await screen.findByLabelText(/^Justificativa/), { target: { value: 'Cliente regularizou' } })
   return screen.getByRole('button', { name: 'Confirmar cancelamento' })
 }

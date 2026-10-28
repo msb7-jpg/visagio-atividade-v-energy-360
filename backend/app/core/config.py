@@ -41,7 +41,7 @@ class Settings(BaseSettings):
 
     # Provedores de IA (Gemini / OpenRouter / Local llama.cpp)
     gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
-    ai_model_name: str = "gemini-2.5-flash-lite"
+    ai_model_name: str | None = Field(default=None, alias="AI_MODEL_NAME")
     ai_provider: str | None = Field(default=None, alias="AI_PROVIDER")
     ai_base_url: str | None = Field(default=None, alias="AI_BASE_URL")
 

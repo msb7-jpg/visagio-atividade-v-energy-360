@@ -22,6 +22,14 @@ provider_registry.register(LLMProvider.OPENROUTER.value, OpenRouterProviderStrat
 provider_registry.register(LLMProvider.MOCK.value, GroundedMockStrategy())
 
 
+PROVIDER_DEFAULT_MODELS: dict[str, str] = {
+    LLMProvider.OPENROUTER.value: "google/gemini-2.5-flash-lite",
+    LLMProvider.LOCAL.value: "local-model",
+    LLMProvider.GOOGLE.value: "gemini-2.5-flash-lite",
+    LLMProvider.MOCK.value: "mock",
+}
+
+
 def get_chat_model(
     provider: str | None = None,
     model: str | None = None,
@@ -48,16 +56,9 @@ def get_chat_model(
     resolved_base_url = base_url or settings.ai_base_url
 
     # Fallback consciente do provedor para garantir compatibilidade
-    resolved_model = model or settings.ai_model_name
-    if not model:
-        if resolved_provider == LLMProvider.OPENROUTER.value:
-            resolved_model = "google/gemini-2.5-flash-lite"
-        elif resolved_provider == LLMProvider.LOCAL.value:
-            resolved_model = "local-model"
-        elif resolved_provider == LLMProvider.GOOGLE.value:
-            resolved_model = "gemini-2.5-flash-lite"
-        elif resolved_provider == LLMProvider.MOCK.value:
-            resolved_model = "mock"
+    resolved_model = (
+        model or settings.ai_model_name or PROVIDER_DEFAULT_MODELS.get(resolved_provider)
+    )
 
     strategy = provider_registry.get(resolved_provider)
     return strategy.create_model(

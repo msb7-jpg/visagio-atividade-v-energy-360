@@ -6,6 +6,25 @@
 
 ## Registros de Execução
 
+### [2026-10-28] - Resolução dos Comentários da 2ª Rodada de Revisão (Bernardo) & Sincronização com `main`
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Correção de Tipagem no Build do Frontend (`ChatMessage.tsx`):**
+    - Corrigido typo `ChatMessageData` para `ChatMessageType`, garantindo compilação TypeScript e Vite build sem erros.
+  - **Prioridade e Respeito a `AI_MODEL_NAME` na LLM Factory (`backend/app/core/`):**
+    - `config.py`: Definido `ai_model_name: str | None = Field(default=None, alias="AI_MODEL_NAME")` para leitura explícita do `.env`.
+    - `factory.py`: Refatorada resolução de modelo com `PROVIDER_DEFAULT_MODELS`. Caso `AI_MODEL_NAME` esteja definido no `.env` (ou passado como argumento), ele tem prioridade sobre o modelo padrão do provedor (ex: `Qwen3.5-4B-Q4_K_M` para provedor local).
+  - **Sincronização e Resolução de Conflitos com `origin/main`:**
+    - Resolvidos conflitos em `frontend/src/index.css`, `frontend/src/components/ui/input.tsx`, `frontend/src/components/layout/AppLayout.tsx`, `frontend/package.json`, `frontend/bun.lock` e `docs/DECISOES.md`.
+    - Preservadas as decisões ADR-001 até ADR-009 da equipe em `docs/DECISOES.md`, re-numerando as decisões da Fatia 07 para ADR-010 e ADR-011.
+  - **Alinhamento do Checklist de Integração (`agente_text_to_sql_ia.md`):**
+    - Atualizado item sobre `SmartInsightCard.tsx` para deixar claro o cumprimento da fatia como componente exportado e desacoplado, pronto para plug nas telas dos membros responsáveis (Fatia 03 - Bernardo e Fatia 04 - Célio).
+- **Validação:**
+  - `bun run build` aprovado com 0 erros.
+  - Linters e testes validados com 100% de aprovação.
+
+---
+
 ### [2026-10-27] - Resolução Integral do Code Review do PR #35 (Miguel)
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

@@ -63,7 +63,7 @@ function UserChatMessage({ message, className }: { message: ChatMessageType; cla
 }
 
 interface AssistantMessageBodyProps {
-  message: ChatMessageData
+  message: ChatMessageType
   onRetry?: () => void
   isStreaming?: boolean
 }

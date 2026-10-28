@@ -3,11 +3,11 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const inputVariants = cva(
-  'flex h-10 w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+  'flex h-10 w-full rounded-md border bg-background px-3.5 py-2 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-base',
   {
     variants: {
       variant: {
-        default: '',
+        default: 'border-input focus-visible:ring-ring',
         embedded: 'h-9 border-0 bg-transparent px-2 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0'
       }
     },
@@ -17,22 +17,37 @@ const inputVariants = cva(
   }
 )
 
+/**
+ * Propriedades do Input: as nativas de input HTML, variantes visuais e estado de erro.
+ */
 export interface InputProps
   extends React.ComponentProps<'input'>,
-  VariantProps<typeof inputVariants> {}
+  VariantProps<typeof inputVariants> {
+  /**
+   * Se `true`, destaca a borda e o foco com a cor semântica destrutiva (mesmo contrato do `Select`).
+   * @defaultValue `false`
+   */
+  error?: boolean
+}
 
 /**
  * Campo de entrada Input padronizado conforme design.md (SaaS Enterprise Analytics).
- * Possui raio de 12px (rounded-xl), borda de 1px e anel de foco proeminente com deslocamento.
+ * Possui raio base (rounded-md), borda de 1px e anel de foco proeminente com deslocamento.
  *
- * @param props - Propriedades nativas de input HTML e variantes de exibição.
+ * @param props - Propriedades nativas de input HTML, variante e estado de erro.
  * @returns Elemento input renderizado.
  */
-function Input({ className, type, variant, ...props }: InputProps) {
+function Input({ className, type, variant, error = false, ...props }: InputProps) {
+  const errorClasses = error ? 'border-destructive focus-visible:ring-destructive' : ''
+
   return (
     <input
       type={type}
-      className={cn(inputVariants({ variant, className }))}
+      className={cn(
+        inputVariants({ variant }),
+        errorClasses,
+        className
+      )}
       {...props}
     />
   )

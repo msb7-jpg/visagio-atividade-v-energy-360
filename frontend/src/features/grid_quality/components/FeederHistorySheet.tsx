@@ -24,7 +24,7 @@ export function FeederHistorySheet({ feederId, history, isLoading, isError, onCl
       <SheetContent side="right" className="sm:max-w-xl">
         <SheetHeader>
           <SheetTitle>Alimentador {feederId}</SheetTitle>
-          <SheetDescription>DEC acumulado no ano contra o limite anual de referência (suposição pendente, B1); o valor do mês aparece ao passar o mouse.</SheetDescription>
+          <SheetDescription>DEC acumulado no ano contra o limite anual de referência; o valor do mês aparece ao passar o mouse.</SheetDescription>
         </SheetHeader>
         <AsyncState
           isLoading={isLoading}

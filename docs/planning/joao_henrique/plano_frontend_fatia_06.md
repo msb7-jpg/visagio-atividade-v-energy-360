@@ -35,7 +35,7 @@ Pasta `frontend/src/features/grid_quality/` no mesmo padrão de `loss_management
 2. `queries/qualityQueries.ts`: `queryOptions` para indicadores, ranking e histórico (usar a skill `tanstack-query`).
 3. `hooks/useGridQualityController.ts`: filtros (status, alimentador selecionado, competência) e alimentador aberto na gaveta. Município e bairro: só entram se o dado existir (B3 aberta); começar com **status + alimentador**.
 4. Componentes (≤ 150 linhas cada):
-   - `QualityKpiCards.tsx`: DEC médio, FEC médio, % em violação (ex.: "14 de 122"), vs "limite de referência (suposição pendente, B1)". O Card 4 (UCs expostas) só se o backend expuser o dado; senão fica fora e vai para pendências.
+   - `QualityKpiCards.tsx`: DEC médio, FEC médio, % em violação (ex.: "14 de 122"), vs "limite de referência". O Card 4 (UCs expostas) só se o backend expuser o dado; senão fica fora e vai para pendências.
    - `FeederRankingTable.tsx`: ordenado por ΔDEC, badges Violação/Alerta/Conforme; clique abre `<Sheet side="right">`.
    - `FeederTimeSeriesChart.tsx`: 48 meses, linha de DEC + linha tracejada do limite (usa `ui/chart`). **Sem lista de causas** (depende de tabela do Ryei).
    - `GridQualityPage.tsx`: monta KPIs + filtro de status + tabela; `LoadingSkeleton`, `EmptyState`, erro.
@@ -57,7 +57,7 @@ Pasta `frontend/src/features/grid_quality/` no mesmo padrão de `loss_management
 | Risco | Efeito | Mitigação |
 |---|---|---|
 | `v_energy.db` real ainda sem `fato_qualidade_alimentador` | Tela só testada com mock | Validar com o banco real assim que o pipeline (Ryei) entregar; avisar o grupo |
-| B1 (limite) e B2 (denominador) abertas | Textos de limite são suposição | Manter o rótulo "limite de referência (suposição pendente, B1)" |
+| B1 e B2 resolvidas (ADR-003 revisado) | Limite é de referência, sem multa nem violação real | Usar o rótulo "limite de referência" |
 | Tabela de causas e bairro pendentes | Sem lista de causas e sem visão por região | Fora do escopo desta entrega; listado nas pendências |
 | Conflitos em `AppRoutes.tsx` / nav com Fatias 03, 05, 07 | Merge manual | Só acréscimos; `navItems.ts` único; combinar com o grupo antes do push |
 | `ChatDrawer` (Miguel) ainda não existe | Slot vazio no header | Deixar só o ponto de encaixe |

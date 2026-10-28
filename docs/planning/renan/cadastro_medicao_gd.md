@@ -34,40 +34,40 @@
 ## 3. Checklist Operacional de Execução
 
 ### Fase 1: Ingestão na Camada Bronze
-- [ ] Ler `unidades_consumidoras.csv` sem alteração de schemas ou valores brutos.
-- [ ] Ler os 5 arquivos da pasta `leituras/` unificando a partição histórica de medições.
-- [ ] Ler `medidores.csv` e `geracao_distribuida.csv`.
-- [ ] Anexar metadados obrigatórios em todas as tabelas: `_ingested_at` (timestamp atual) e `_source_file` (nome do arquivo de origem).
-- [ ] Gravar tabelas Delta Bronze:
+- [x] Ler `unidades_consumidoras.csv` sem alteração de schemas ou valores brutos.
+- [x] Ler os 5 arquivos da pasta `leituras/` unificando a partição histórica de medições.
+- [x] Ler `medidores.csv` e `geracao_distribuida.csv`.
+- [x] Anexar metadados obrigatórios em todas as tabelas: `_ingested_at` (timestamp atual) e `_source_file` (nome do arquivo de origem).
+- [x] Gravar tabelas Delta Bronze:
   - `bronze_unidades_consumidoras`
   - `bronze_leituras`
   - `bronze_medidores`
   - `bronze_geracao_distribuida`
 
 ### Fase 2: Higienização e Enriquecimento na Camada Silver
-- [ ] **Tipagem e Padronização:**
+- [x] **Tipagem e Padronização:**
   - Converter datas (`data_leitura`, `data_instalacao_medidor`, `data_conexao_gd`) para `DateType` / `TimestampType`.
   - Converter consumos (`consumo_apurado_kwh`, `potencia_instalada_kw`) para `DoubleType` ou `DecimalType(18, 4)`.
   - Aplicar `trim()` e normalização de maiúsculas em municípios e bairros.
-- [ ] **Deduplicação Canônica:**
+- [x] **Deduplicação Canônica:**
   - Deduplicar `id_uc` determinando a foto cadastral mais atualizada.
   - Eliminar registros duplicados de leituras com a mesma competência e `id_uc`.
-- [ ] **Integridade Referencial & Órfãos:**
+- [x] **Integridade Referencial & Órfãos:**
   - Identificar e isolar leituras que referenciam UCs inexistentes.
   - Criar log/métrica de contagem de órfãos para auditoria.
-- [ ] **Enriquecimento:**
+- [x] **Enriquecimento:**
   - Adicionar flag booleano `possui_geracao_solar` e coluna `potencia_solar_kw` no cadastro da UC via junção com `geracao_distribuida`.
 
 ### Fase 3: Modelagem Star Schema na Camada Gold
-- [ ] Construir a dimensão `dim_unidade_consumidora` com atributos desnormalizados:
+- [x] Construir a dimensão `dim_unidade_consumidora` com atributos desnormalizados:
   - `id_uc`, `codigo_cliente`, `classe_consumo`, `subgrupo_tarifario`, `municipio`, `bairro`, `alimentador`, `subestacao`, `numero_medidor_ativo`, `possui_gd`, `potencia_gd_kw`.
-- [ ] Construir a dimensão `dim_tempo` / `dim_calendario` (ano, mês, competência formatada MM/YYYY).
-- [ ] Construir a tabela de fatos `fato_medicao`:
+- [x] Construir a dimensão `dim_tempo` / `dim_calendario` (ano, mês, competência formatada MM/YYYY).
+- [x] Construir a tabela de fatos `fato_medicao`:
   - `id_medicao`, `id_uc`, `competencia`, `leitura_anterior`, `leitura_atual`, `consumo_kwh`, `dias_faturamento`, `media_diaria_kwh`.
 
 ### Fase 4: Exportação para o SQLite Local (`backend/v_energy.db`)
-- [ ] Script de exportação das tabelas Gold do seu domínio para SQLite em modo WAL (`PRAGMA journal_mode=WAL;`).
-- [ ] Criar índices analíticos essenciais:
+- [x] Script de exportação das tabelas Gold do seu domínio para SQLite em modo WAL (`PRAGMA journal_mode=WAL;`).
+- [x] Criar índices analíticos essenciais:
   - `CREATE INDEX IF NOT EXISTS idx_dim_uc_id ON dim_unidade_consumidora(id_uc);`
   - `CREATE INDEX IF NOT EXISTS idx_dim_uc_bairro ON dim_unidade_consumidora(bairro);`
   - `CREATE INDEX IF NOT EXISTS idx_dim_uc_mun ON dim_unidade_consumidora(municipio);`
@@ -75,11 +75,11 @@
   - `CREATE INDEX IF NOT EXISTS idx_fato_med_comp ON fato_medicao(competencia);`
 
 ### Fase 5: Testes Automatizados de Qualidade
-- [ ] Implementar asserções PySpark / Great Expectations testando:
+- [x] Implementar asserções PySpark / Great Expectations testando:
   - Unicidade da chave primária de `dim_unidade_consumidora` (zero duplicatas).
   - Ausência de valores negativos em `consumo_kwh` sem justificativa regulatória.
   - Integridade referencial: 100% dos `id_uc` em `fato_medicao` presentes na dimensão.
-- [ ] Executar testes e garantir validação verde.
+- [x] Executar testes e garantir validação verde.
 
 ---
 
@@ -120,5 +120,3 @@
 1. Antes de iniciar, marque o item como `[- Em andamento por Renan - YYYY-MM-DD]`.
 2. Após implementar e validar os testes de dados, marque `[x]`.
 3. Registre detalhadamente a entrega em [`changelog.md`](changelog.md).
-
-

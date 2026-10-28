@@ -181,3 +181,14 @@
   - `make lint-all` aprovado; `make test-all`: 418 pytest e 86 vitest.
 - **Pendências:**
   - Conferir a tela no navegador e contra o `v_energy.db` real; filtros de município e bairro, aba de região, causas e card de UCs expostas seguem fora do escopo.
+
+
+### [2026-10-27] - Textos da tela ajustados ao ADR-003 revisado (B1 resolvida)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - B1 resolvida pelo ADR-003 revisado (26/10, Ryei, issue #23): o limite é "limite de referência", sem multa nem violação regulatória real. Removido "(suposição pendente, B1)" de `QualityKpiCards`, `FeederHistorySheet` e do teste.
+  - Rótulos: "Violação Crítica" virou "Acima do limite de referência"; "Alimentadores em violação" virou "Alimentadores acima do limite de referência" (fórmula sem a palavra violação); filtro "Somente acima do limite de referência".
+  - Só texto: `VIOLACAO`, `percentual_violacao`, `alimentadores_em_violacao`, `dec_limite_aneel` e `violou_*` não foram renomeados.
+- **Registro de dados:**
+  - `fato_ocorrencias_rede` existe; `OSCILACAO` e os 5 tipos contam; `NAO INFORMADA` é distinta de `NAO IDENTIFICADA`.
+  - A Gold da Fatia 02 ainda não foi mesclada na `main`.

@@ -50,3 +50,6 @@ data/landing/*
 *.swo
 .DS_Store
 Thumbs.db
+
+# Databricks Asset Bundle (estado local do deploy)
+.databricks/

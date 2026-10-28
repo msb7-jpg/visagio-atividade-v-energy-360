@@ -1,16 +1,39 @@
 ---
 version: "1.0.0"
 name: "SaaS Enterprise Analytics (V-Energy Grid 360)"
-description: "Design System oficial do V-Energy Grid 360: plataforma de operação, medição, faturamento e inteligência artificial para concessionárias de energia. Visual corporativo, paleta Corporate Blue, glassmorphism com backdrop blur, tipografia Inter e JetBrains Mono, cantos arredondados de 12px e total conformidade com os linters da codebase."
+description: "Design System oficial do V-Energy Grid 360: plataforma de operação, medição, faturamento e inteligência artificial para concessionárias de energia. Visual corporativo, paleta Corporate Blue, tokens shadcn em hex (escuro por padrão), tipografia Inter e JetBrains Mono, raio base de 8px e total conformidade com os linters da codebase."
 reference: https://designmd.app/library/saas-enterprise-analytics
 colors:
-  primary: "#0F172A"       # Dark Navy (Superfície escura / texto principal)
-  secondary: "#1E40AF"     # Royal Blue (Ação primária / destaque institucional)
-  tertiary: "#3B82F6"      # Blue (Acento interativo / focus ring)
-  neutral: "#60A5FA"       # Light Blue (Métricas / badges / acento suave)
-  surface: "#FFFFFF"       # White (Superfície de cards e modais)
-  accent: "#F8FAFC"        # Light Grey (Fundo no modo claro / texto atenuado)
-  contrast: "#334155"      # Dark Grey (Bordas e superfícies de alto contraste)
+  dark:
+    background: "#0A121E"
+    foreground: "#E7EDF4"
+    card: "#111B2A"
+    muted: "#172437"
+    muted-foreground: "#A8B6C8"
+    primary: "#5BB8DD"
+    primary-foreground: "#06121C"
+    secondary: "#1D2D44"
+    accent: "#123349"
+    destructive: "#F28479"
+    success: "#5BCB93"
+    warning: "#F2B92B"
+    border: "#24354D"
+    input: "#5A7396"
+  light:
+    background: "#F2F5F8"
+    foreground: "#0F1B2D"
+    card: "#FFFFFF"
+    muted: "#F5F7FA"
+    muted-foreground: "#4C5A6D"
+    primary: "#0B5C7A"
+    primary-foreground: "#FFFFFF"
+    secondary: "#E9EEF4"
+    accent: "#E1EEF4"
+    destructive: "#B8322A"
+    success: "#176B41"
+    warning: "#8A5A00"
+    border: "#DCE2E9"
+    input: "#7C8BA0"
 typography:
   display:
     fontFamily: Inter
@@ -37,17 +60,17 @@ typography:
     fontFamily: JetBrains Mono
     fontSize: 0.875rem
 rounded:
-  base: 12px               # --radius: 0.75rem / rounded-xl
-  sm: 12px
-  md: 24px
-  lg: 36px
+  base: 8px                # --radius: 8px
+  sm: 4px                  # barras, selos de tabela
+  md: 8px                  # botões, campos, linhas
+  lg: 12px                 # cards, gaveta, diálogos
 components:
   button:
-    rounded: "rounded-xl (12px)"
+    rounded: "rounded-md (8px)"
     fontWeight: "font-semibold (600)"
     tactileEffect: "active:translate-y-px"
   card:
-    rounded: "rounded-xl (12px)"
+    rounded: "rounded-lg (12px)"
     shadow: "shadow-sm"
     variants: ["default", "glass", "interactive"]
 ---
@@ -62,9 +85,9 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 
 - **Estilo:** *Corporate Blue, Clean, Data-Driven & AI-Ready*.
 - **Arquitetura de Cores:** B2B Enterprise — transmite confiança operacional, clareza métrica para lideranças e precisão para engenheiros de dados.
-- **Profundidade:** Glassmorphism suave (`backdrop-filter: blur(12px)`), bordas translúcidas de 1px e elevações sutis sem glows agressivos.
+- **Profundidade:** Superfícies opacas com borda de 1px (`--border`) e sombra mínima (`shadow-sm` = `0 1px 2px rgba(0,0,0,.12)`); sem glows.
 - **Física de Movimento:** Curvas suaves de desaceleração (*ease-out*), durações de 200–300ms, transições táteis em botões (`active:translate-y-px`) e micro-animações via `motion/react`.
-- **Suporte a Temas:** Dark Mode por padrão (`:root, .dark` com `<html class="dark">`), com suporte opcional a Light Mode via classe `.light`.
+- **Suporte a Temas:** Dark Mode por padrão (`<html class="dark">`); o modo claro é a variação e vive em `:root` (sem a classe `dark`). Fonte dos valores: `tokens-claro.png` e `tokens-escuro.png`.
 
 ---
 
@@ -75,21 +98,26 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 > Nunca utilize cores Tailwind brutas no JSX (ex: `bg-slate-900`, `text-blue-500`, `border-gray-200`) ou valores arbitrários entre colchetes (ex: `bg-[#0F172A]`, `text-[11px]`, `min-h-[100dvh]`).
 > Use sempre as **classes semânticas oficiais** listadas abaixo:
 
-| Token Semântico do Design System | Cor Hex / OKLCH | Classe Tailwind Obrigatória | Onde Utilizar |
-|---|---|---|---|
-| **Fundo Primário** | `#F8FAFC` (Light) / `#0F172A` (Dark) | `bg-background` | Fundo principal da página e containers raiz |
-| **Texto Primário** | `#0F172A` (Light) / `#F8FAFC` (Dark) | `text-foreground` | Títulos, valores numéricos e textos de destaque |
-| **Superfície de Cards** | `#FFFFFF` (Light) / `#1E293B` (Dark) | `bg-card text-card-foreground` | Cards de dados, modais e containers |
-| **Ação Primária (Royal Blue)** | `#1E40AF` | `bg-primary text-primary-foreground` | Botões primários, ícones de destaque e links |
-| **Acento Interativo (Blue)** | `#3B82F6` | `text-primary ring-ring border-primary` | Anéis de foco, tabs ativas e bordas hover |
-| **Métricas e Badges (Light Blue)** | `#60A5FA` | `bg-secondary text-secondary-foreground` | Badges de status, tags e destaques analíticos |
-| **Texto Atenuado (Muted)** | `#64748B` / `#94A3B8` | `text-muted-foreground` | Legendas, rótulos auxiliares e descrições |
-| **Fundo Atenuado (Muted)** | `#F1F5F9` / `#334155` | `bg-muted` | Linhas de tabela hover, fundos de inputs |
-| **Bordas Estruturais** | `#E2E8F0` / `rgba(255,255,255,0.12)` | `border-border` | Divisores, bordas de tabela e contornos de cards |
-| **Bordas de Formulário** | `#E2E8F0` / `rgba(255,255,255,0.14)` | `border-input` | Contorno de inputs e caixas de seleção |
-| **Destrutivo / Alerta** | `oklch(0.58 0.22 25)` | `bg-destructive text-destructive-foreground` | Botões de exclusão, badges de erro e alertas |
-| **Atenção / Warning** | `oklch(0.80 0.16 80)` (Dark) / `oklch(0.52 0.14 65)` (Light) | `text-warning border-warning/50 bg-warning/10` (ou `<Alert variant="warning">`) | Avisos que não bloqueiam o uso, como dados parcialmente indisponíveis |
-| **Gradiente Institucional** | `#0F172A` $\to$ `#1E40AF` | `glass-gradient` | Fundo da tela de login e banners hero |
+| Token | Escuro (principal) | Claro (variação) | Classe Tailwind | Onde Utilizar |
+|---|---|---|---|---|
+| `--background` | `#0A121E` | `#F2F5F8` | `bg-background` | Fundo da página |
+| `--foreground` | `#E7EDF4` | `#0F1B2D` | `text-foreground` | Texto principal |
+| `--card` / `--card-foreground` | `#111B2A` / `#E7EDF4` | `#FFFFFF` / `#0F1B2D` | `bg-card text-card-foreground` | Cards, menus, barra superior, gaveta |
+| `--muted` / `--muted-foreground` | `#172437` / `#A8B6C8` | `#F5F7FA` / `#4C5A6D` | `bg-muted text-muted-foreground` | Cabeçalho de tabela, hover de linha, rótulos, legendas |
+| `--primary` / `--primary-foreground` | `#5BB8DD` / `#06121C` | `#0B5C7A` / `#FFFFFF` | `bg-primary text-primary-foreground` | Botão principal, links, item ativo, foco, série 1 |
+| `--secondary` / `--secondary-foreground` | `#1D2D44` / `#E7EDF4` | `#E9EEF4` / `#0F1B2D` | `bg-secondary text-secondary-foreground` | Hover de botão neutro, chips |
+| `--accent` / `--accent-foreground` | `#123349` / `#5BB8DD` | `#E1EEF4` / `#0B5C7A` | `bg-accent text-accent-foreground` | Item de menu ativo, linha selecionada |
+| `--destructive` / `-foreground` | `#F28479` / `#1A0A09` | `#B8322A` / `#FFFFFF` | `bg-destructive text-destructive-foreground` | Piora, erro, atraso, recusa |
+| `--success` / `-foreground` | `#5BCB93` / `#06121C` | `#176B41` / `#FFFFFF` | `bg-success text-success-foreground` | Melhoria, pago, concluído |
+| `--warning` / `-foreground` | `#F2B92B` / `#1A1204` | `#8A5A00` / `#FFFFFF` | `bg-warning text-warning-foreground` | Atenção, selo "Gerado por IA" |
+| `--border` | `#24354D` | `#DCE2E9` | `border-border` | Divisórias, bordas de card e tabela |
+| `--input` | `#5A7396` | `#7C8BA0` | `border-input` | Borda de campos e botões de contorno (3:1) |
+| `--ring` | `#5BB8DD` | `#0B5C7A` | `ring-ring` | Anel de foco (2px, deslocado 2px) |
+| `--chart-1…5` | `#5BB8DD #F59A6B #B39DF0 #F2B92B #4FD1C0` | `#0B5C7A #C2410C #7B4FC4 #8A5A00 #0E8C80` | `fill-chart-1` etc. | Séries de gráficos |
+
+**Receitas derivadas (sem criar token novo):** tint de success/warning/destructive = `bg-success/15`; hover do primary = `bg-primary/85`; série "Outros" e eixos = `muted-foreground`; sombra = `shadow-sm`. Todo `-foreground` é texto sobre a cor correspondente (contraste AA ≥ 4,5).
+
+**Fundo do login e banners hero:** `glass-gradient`, derivado de `--background` → `--accent` (sem hex próprio).
 
 ---
 
@@ -98,11 +126,13 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 A tipografia do projeto utiliza duas fontes carregadas via Google Fonts em `frontend/index.html`:
 
 1. **Inter (`font-sans`):** Fonte primária para interface, títulos, botões e tabelas.
-   - **Hero / Display:** `text-2xl md:text-3xl font-bold tracking-tight`
-   - **H1:** `text-xl font-bold tracking-tight`
-   - **H2 / Títulos de Cards:** `text-base font-bold text-foreground`
-   - **Body:** `text-sm font-normal leading-relaxed`
-   - **Rótulos / Labels:** `text-xs font-semibold text-muted-foreground`
+   - **Hero / valor de KPI principal:** `text-3xl font-bold tracking-tight` (30/36)
+   - **Título de tela:** `text-2xl font-bold tracking-tight` (24/32)
+   - **Título de seção / KPI secundário:** `text-xl font-bold` (20/28)
+   - **Títulos de Cards:** `text-lg font-semibold text-foreground` (16/24)
+   - **Body e botões:** `text-base font-normal` (14/20)
+   - **Tabelas e texto de apoio:** `text-sm` (13/18)
+   - **Rótulos / Labels:** `text-xs font-semibold text-muted-foreground` (12/16; nada abaixo de 12px)
    - **Legendas / Badges:** `text-xs font-semibold`
 2. **JetBrains Mono (`font-mono`):** Utilizada estritamente para dados técnicos, números de código, queries SQL do Agente de IA e hashes de transação.
 
@@ -110,13 +140,13 @@ A tipografia do projeto utiliza duas fontes carregadas via Google Fonts em `fron
 
 ## 4. Escala de Arredondamento e Espaçamento
 
-- **Raio de Base:** **12px** (`--radius: 0.75rem` / `rounded-xl`).
-  - Cards, Modais, Drawers: `rounded-xl`
-  - Inputs e Campos de Formulário: `rounded-xl`
-  - Botões Primários e Secundários: `rounded-xl`
-  - Badges e Tags: `rounded-lg` (8px)
+- **Raio de Base:** **8px** (`--radius: 8px`). Escala: `rounded-sm` 4px, `rounded-md` 8px, `rounded-lg` 12px.
+  - Cards, Modais, Drawers: `rounded-lg`
+  - Inputs, Selects e Campos de Formulário: `rounded-md`
+  - Botões Primários e Secundários: `rounded-md`
+  - Badges, Tags e abas: `rounded-md`
 - **Espaçamento e Layout:**
-  - Base unitária: `0.5rem` (8px). Use `gap-2` (8px), `gap-3` (12px), `gap-4` (16px), `gap-6` (24px).
+  - Base de 4px (escala padrão do Tailwind). Use `gap-2` (8px), `gap-3` (12px), `gap-4` (16px), `gap-6` (24px).
   - **Proibição de `space-x-*` e `space-y-*`:** Use sempre `flex flex-col gap-*` ou `flex items-center gap-*`.
   - **Proibição de `h-screen` e `min-h-[100dvh]`:** Use sempre `min-h-dvh`.
   - **Dimensões Iguais:** Use `size-*` (ex: `size-9`, `size-4`) em vez de `w-9 h-9`.
@@ -129,7 +159,7 @@ A tipografia do projeto utiliza duas fontes carregadas via Google Fonts em `fron
 - **Regra de Ouro:** O linter proíbe classes de largura e cor no `className` do Button (`deny: ["w-*", "h-*", "p-*", "bg-*"]`).
 - **Botão com 100% de largura:** Use a propriedade nativa `fullWidth` (`<Button fullWidth>Entrar</Button>`). Nunca passe `className="w-full"`.
 - **Variantes:**
-  - `default`: Fundo Royal Blue (`bg-primary`), texto branco, sombra sutil.
+  - `default`: Fundo `bg-primary`, texto branco, sombra sutil.
   - `outline`: Borda de 1.5px (`border-border`), texto semântico, hover com preenchimento atenuado.
   - `secondary`: Fundo cinza suave (`bg-secondary`), ideal para ações alternativas.
   - `destructive`: Vermelho semântico para exclusão ou revogação.
@@ -155,7 +185,7 @@ A tipografia do projeto utiliza duas fontes carregadas via Google Fonts em `fron
   <Card variant="interactive">
     <CardHeader className="flex flex-row items-center justify-between pb-2">
       <CardTitle>Diagnóstico de Receita</CardTitle>
-      <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+      <div className="p-1.5 rounded-md bg-primary/10 text-primary">
         <Zap className="size-4" />
       </div>
     </CardHeader>
@@ -181,7 +211,8 @@ A tipografia do projeto utiliza duas fontes carregadas via Google Fonts em `fron
   ```
 
 ### 5.4 `Badge` (`@/components/ui/badge`)
-- Variantes permitidas: `default`, `secondary`, `destructive`, `outline`.
+- Variantes permitidas: `default`, `secondary`, `destructive`, `warning`, `success`, `outline`.
+- `warning` marca atenção ou etapa pendente; `success` marca etapa concluída ou resultado confirmado.
 - Exemplo: `<Badge variant="secondary">DIRETOR</Badge>`.
 
 ### 5.5 Componentes de Feedback (`src/components/feedback/`)
@@ -222,7 +253,7 @@ export function KpiMetricCard() {
     <Card variant="interactive">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>Receita Total Faturada</CardTitle>
-        <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+        <div className="p-1.5 rounded-md bg-primary/10 text-primary">
           <TrendingUp className="size-4" />
         </div>
       </CardHeader>
@@ -230,7 +261,7 @@ export function KpiMetricCard() {
         <div className="text-foreground text-2xl font-bold tracking-tight">R$ 48.250.120</div>
         <div className="mt-2 flex items-center gap-2">
           <Badge variant="secondary">
-            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+            <span className="text-success flex items-center gap-1">
               <ArrowUpRight className="size-3" /> +4.2%
             </span>
           </Badge>
@@ -242,7 +273,7 @@ export function KpiMetricCard() {
 }
 ```
 
-### Receita 2: Header de Página com Glassmorphism
+### Receita 2: Header de Página
 ```tsx
 import { Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -252,11 +283,11 @@ export function PageHeader() {
     <header className="border-border bg-card/90 backdrop-blur-md border-b sticky top-0 z-40">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
-          <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-xl shadow-sm">
+          <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-lg shadow-sm">
             <Zap className="size-5" />
           </div>
           <div>
-            <h1 className="text-foreground text-base font-bold">V-Energy Grid 360</h1>
+            <h1 className="text-foreground text-lg font-bold">V-Energy Grid 360</h1>
             <p className="text-muted-foreground text-xs">Visão Integrada de Concessionária</p>
           </div>
         </div>

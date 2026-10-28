@@ -31,7 +31,7 @@ export function AppLayout() {
     <div className="bg-background flex min-h-dvh">
       <aside className="border-border bg-card sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-4 self-start overflow-y-auto border-r p-4 md:flex">
         <div className="flex items-center gap-2">
-          <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-xl">
+          <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md">
             <Zap className="size-5" />
           </div>
           <span className="text-foreground text-sm font-bold">V-Energy Grid 360</span>
@@ -41,7 +41,7 @@ export function AppLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-border bg-card/90 sticky top-0 z-40 flex items-center justify-end gap-3 border-b px-4 py-3 backdrop-blur-md">
+        <header className="border-border bg-card sticky top-0 z-40 flex items-center justify-end gap-3 border-b px-4 py-3">
           <ChatDrawer />
           <div className="text-right">
             <p className="text-foreground text-sm font-semibold">{user?.nome}</p>

@@ -40,7 +40,9 @@
 - **Limite anual e acumulado no ano (ADR-003):** a ANEEL fixa limite anual por conjunto elétrico. A Gold traz DEC/FEC do mês **e** `dec_acumulado_ano_horas` / `fec_acumulado_ano_vezes`; a violação é apurada sobre o acumulado no ano. O backend classifica pelo acumulado (VIOLACAO acima do limite, ALERTA a partir de 85%) e recalcula em Python, sem ler `violou_meta`. B1 informada pelo ADR-003: limite por conjunto (`criterio_limite = CONJUNTO`) e mediana dos 10 conjuntos mapeados para Recife, Paulista, Abreu e Lima e Araçoiaba (`MEDIANA_RMR`).
 - **Pendente:** quais tipos de ocorrência contam como interrupção (hoje a fórmula conta todas as linhas da base).
 - **Observação:** números calculados sobre os dados BRUTOS, antes do pipeline; podem mudar após o Silver/Gold.
-- **Decisão pendente do grupo (tensão ADR-003 × pág. 4 do case):** o ADR-003 usa limites reais da ANEEL (anuais, por conjunto), enquanto a pág. 4 do case diz que os valores são simplificados e não comparáveis com limites reais. Até o grupo decidir, os textos de tela seguem como "limite de referência (suposição pendente, B1)"; os nomes de coluna do contrato (`dec_limite_aneel`, `fec_limite_aneel`) permanecem.
+- **B1 resolvida pelo ADR-003 revisado (26/10, Ryei, issue #23):** o limite aparece como "limite de referência", sem falar em multa nem violação regulatória real. Os nomes de coluna e campos do contrato (`dec_limite_aneel`, `fec_limite_aneel`, `VIOLACAO`, `percentual_violacao`, `alimentadores_em_violacao`, `violou_*`) permanecem.
+- **Ocorrências:** `fato_ocorrencias_rede` existe; `OSCILACAO` e os 5 tipos de ocorrência contam. `NAO INFORMADA` (causa vazia) é distinta de `NAO IDENTIFICADA`.
+- **Gold da Fatia 02:** ainda não mesclada na `main` (conferido em 27/10; vive em `origin/feat/fatia-02-faturamento`).
 
 ### Contrato real de `fato_qualidade_alimentador` (Gold da Fatia 02, conferido em `origin/feat/fatia-02-faturamento`, commit `65ad127`)
 
@@ -63,7 +65,7 @@
   - `rules.py`: Regras puras, sem FastAPI e sem SQLAlchemy: `classify_status` (sobre o acumulado no ano: VIOLACAO acima do limite anual, ALERTA a partir de 85%, CONFORME), `delta_dec` (acumulado menos o limite), `rank_feeders` e `summarize_indicators` (média simples do acumulado no ano entre alimentadores; o denominador já é fixo por alimentador, ADR-003). `FeederScope` guarda conjunto, critério do limite e UCs.
   - `queries.py`: Consultas SQLAlchemy Core sobre `fato_qualidade_alimentador`; único módulo que conhece o nome da tabela e das colunas do contrato.
   - `repository.py`: `GridQualityRepository` sobre `AsyncSession`; falha de tabela ou coluna vira `DatabaseReadError`.
-  - `service.py`: `GridQualityService` com indicadores, ranking e histórico. O limite é lido da coluna do contrato (anual, por conjunto ou mediana RMR, ADR-003); a decisão do grupo entre o ADR-003 e a pág. 4 do case segue pendente (B1).
+  - `service.py`: `GridQualityService` com indicadores, ranking e histórico. O limite é lido da coluna do contrato (anual, por conjunto ou mediana RMR, ADR-003); B1 resolvida pelo ADR-003 revisado.
   - `dependencies.py`: Fábrica `get_grid_quality_service` e alias `GridQualitySvc`.
   - `router.py`: Rotas `GET /quality/indicators` (`competencia`), `/quality/feeders` (`competencia`, `status`) e `/quality/feeders/{id_alimentador}/history` (`meses`, de 1 a 48, padrão 48), sob `/api/v1`, protegidas com `RequireOperacao`.
 - `auth/rbac`:
@@ -73,7 +75,7 @@
 ### Frontend (`frontend/src/features/grid_quality/` & `frontend/src/components/layout/`):
 - `GridQualityPage.tsx`: Painel de continuidade operacional ($\le 150$ linhas).
 - `hooks/useGridQualityController.ts`: Hook headless controlando filtros de município, bairro e alimentador.
-- `components/QualityKpiCards.tsx`: Cards de DEC e FEC médios consolidados vs limite de referência (suposição pendente, B1).
+- `components/QualityKpiCards.tsx`: Cards de DEC e FEC médios consolidados vs limite de referência.
 - `components/FeederRankingTable.tsx`: Tabela dos piores circuitos com badges de alerta.
 - `components/FeederTimeSeriesChart.tsx`: Série histórica mensal de 48 meses do circuito selecionado.
 - `components/layout/AppLayout.tsx` & `SidebarNav.tsx`: Layout com navegação adaptativa ao cargo logado.
@@ -81,10 +83,10 @@
 
 #### 🧩 Componentes do Design System Recomendados (`@/components/ui/` & `@/components/feedback/`):
 - **Layout & Navegação:** `<AppLayout>` com `<SidebarNav>`, utilizando `<Separator />` para agrupamento de módulos permitidos por cargo (RBAC).
-- **KPIs Regulatórios:** `<Card variant="glass">` e `<Card variant="interactive">` para DEC/FEC consolidado e percentual de violação do limite de referência (suposição pendente, B1).
+- **KPIs Regulatórios:** `<Card variant="glass">` e `<Card variant="interactive">` para DEC/FEC consolidado e percentual de violação do limite de referência.
 - **Alternância de Módulos:** `<Tabs>` e `<TabsList>` / `<TabsTrigger>` para alternar entre *Visão por Região (município e bairro; a visão por bairro depende de dado ainda pendente)*, *Ranking de Alimentadores* e *Série Temporal*.
 - **Tabela de Circuitos:** `<Table>` com `<TableHeader>`, `<TableRow>` e `<TableCell>` para ordenar alimentadores críticos com paginação limpa.
-- **Badges Regulatórios:** `<Badge variant="destructive">` para circuitos que ultrapassaram o limite de referência (suposição pendente, B1) e `<Badge variant="secondary">` para circuitos conformes.
+- **Badges Regulatórios:** `<Badge variant="destructive">` para circuitos que ultrapassaram o limite de referência e `<Badge variant="secondary">` para circuitos conformes.
 - **Filtros Operacionais:** `<Select>` com `<Label>` para seleção dinâmica de Município, Bairro e Alimentador.
 - **Gaveta Lateral de Circuito:** `<Sheet side="right">` disparado ao clicar em um alimentador para inspecionar gráfico de interrupções e UCs afetadas.
 - **Tooltips Técnicos:** `<Tooltip>` de `@/components/ui/tooltip-card` explicando as fórmulas regulatórias de DEC (Duração Equivalente) e FEC (Frequência Equivalente).
@@ -115,8 +117,8 @@
 ### 4.1 Especificação Concreta de Tela, Layout e Comportamentos (Zero Abstração)
 1. **Cards Superiores de Continuidade (`QualityKpiCards.tsx`):**
    - Utilizam `<Card variant="glass">` e `<Card variant="interactive">`:
-     - Card 1: **DEC Médio da Concessão (horas)** vs limite de referência (suposição pendente, B1) (badge verde se $\le$ limite, vermelho se acima).
-     - Card 2: **FEC Médio da Concessão (vezes)** vs limite de referência (suposição pendente, B1).
+     - Card 1: **DEC Médio da Concessão (horas)** vs limite de referência (badge verde se $\le$ limite, vermelho se acima).
+     - Card 2: **FEC Médio da Concessão (vezes)** vs limite de referência.
      - Card 3: **Percentual de Alimentadores em Violação (%)** com contagem absoluta (ex: *"14 de 122 circuitos"*).
      - Card 4: **Total de UCs Expostas a Circuitos Críticos** (impacto regulatório e risco de compensação).
 2. **Filtros Operacionais:**

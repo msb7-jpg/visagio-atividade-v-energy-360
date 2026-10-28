@@ -47,7 +47,7 @@ export function LoginPage() {
     <div className="flex min-h-dvh items-center justify-center p-4 glass-gradient">
       <Card variant="glass" className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="bg-primary/10 text-primary mx-auto mb-2 flex size-12 items-center justify-center rounded-2xl border border-primary/20">
+          <div className="bg-primary/10 text-primary mx-auto mb-2 flex size-12 items-center justify-center rounded-lg border border-primary/20">
             <Zap className="size-6" />
           </div>
           <CardTitle>
@@ -61,7 +61,7 @@ export function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {errorMsg ? (
-              <div className="bg-destructive/15 text-destructive rounded-xl p-3 text-xs border border-destructive/20">
+              <div className="bg-destructive/15 text-destructive rounded-lg p-3 text-xs border border-destructive/20">
                 {errorMsg}
               </div>
             ) : null}
