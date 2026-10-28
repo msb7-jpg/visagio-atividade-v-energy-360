@@ -52,7 +52,6 @@ export interface SuspiciousUnitsFilter {
   bairro?: string
   classe?: string
   motivo?: SuspicionReason
-  score_minimo?: number
 }
 
 /** Taxa histórica de inspeções que confirmaram irregularidade. */

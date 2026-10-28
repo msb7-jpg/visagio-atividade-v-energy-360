@@ -50,6 +50,14 @@ describe('PrioritizedQueueTable', () => {
     expect(screen.getByText(/Mostrando 1–2 de 2 UCs carregadas \(1\.248 na fila\)/)).toBeInTheDocument()
   })
 
+  it('explica o score ao focar o cabeçalho da coluna pelo teclado', async () => {
+    renderTable([buildUnit('UC1')])
+
+    fireEvent.focus(screen.getByRole('button', { name: 'Score' }))
+
+    expect(await screen.findByText(/Score de 0 a 100 = chance de irregularidade/)).toBeInTheDocument()
+  })
+
   it('mostra 25 UCs por página e navega para as seguintes', () => {
     const units = Array.from({ length: 30 }, (_, index) => buildUnit(`UC${index + 1}`))
     renderTable(units)

@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tooltip } from '@/components/ui/tooltip-card'
 import { PrioritizedQueueRow } from '@/features/loss_management/components/PrioritizedQueueRow'
 import { QueuePagination } from '@/features/loss_management/components/QueuePagination'
 import type { useQueueSelection } from '@/features/loss_management/hooks/useQueueSelection'
@@ -15,6 +17,8 @@ function headerCheckState(selectableCount: number, selectedCount: number): Heade
 }
 
 const PAGE_SIZE = 25
+const SCORE_EXPLANATION =
+  'Score de 0 a 100 = chance de irregularidade × energia recuperável, relativo à UC mais promissora da fila (100).'
 
 const COLUMNS = [
   '#',
@@ -76,7 +80,15 @@ export function PrioritizedQueueTable({
                 onCheckedChange={() => selection.toggleMany(pageSelectableIds)}
               />
             </TableHead>
-            {COLUMNS.map((column) => <TableHead key={column}>{column}</TableHead>)}
+            {COLUMNS.map((column) => (
+              <TableHead key={column}>
+                {column === 'Score' ? (
+                  <Tooltip content={SCORE_EXPLANATION}>
+                    <Button type="button" variant="link" size="sm">Score</Button>
+                  </Tooltip>
+                ) : column}
+              </TableHead>
+            ))}
           </TableRow>
         </TableHeader>
         <TableBody>

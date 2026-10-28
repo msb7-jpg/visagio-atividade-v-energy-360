@@ -19,10 +19,10 @@ describe('lossApi: fila e ordens', () => {
     mockedGet.mockResolvedValue({ data: { itens: [], total: 0, avisos: [] } })
     const abortController = new AbortController()
 
-    await lossApi.listSuspiciousUnits({ motivo: 'queda_subita', score_minimo: 70 }, abortController.signal)
+    await lossApi.listSuspiciousUnits({ motivo: 'queda_subita', municipio: 'Recife' }, abortController.signal)
 
     expect(mockedGet).toHaveBeenCalledWith('/losses/suspicious-units', {
-      params: { motivo: 'queda_subita', score_minimo: 70 },
+      params: { motivo: 'queda_subita', municipio: 'Recife' },
       signal: abortController.signal
     })
   })

@@ -41,7 +41,6 @@ class SuspiciousUnitsFilterDTO(BaseModel):
     bairro: str | None = None
     classe: str | None = None
     motivo: SuspicionReason | None = None
-    score_minimo: int = Field(default=0, ge=0, le=100, description="Só UCs com score a partir deste valor")
     limit: int = Field(default=FILA_CAPACIDADE_MENSAL, ge=1, le=500)
 
 

@@ -22,16 +22,14 @@ const FILTER_OPTIONS_STALE_TIME_MS = 10 * 60 * 1000
  * @returns Apenas os filtros preenchidos.
  */
 function compactFilters(filters: SuspiciousUnitsFilter): SuspiciousUnitsFilter {
-  const filledEntries = Object.entries(filters).filter(([, filterValue]) =>
-    typeof filterValue === 'number' ? filterValue > 0 : Boolean(filterValue?.trim())
-  )
+  const filledEntries = Object.entries(filters).filter(([, filterValue]) => Boolean(filterValue?.trim()))
   return Object.fromEntries(filledEntries)
 }
 
 /**
  * Opções reutilizáveis da consulta da fila de suspeitas.
  *
- * @param filters - Filtros de município, bairro, classe, motivo e score mínimo.
+ * @param filters - Filtros de município, bairro, classe e motivo.
  * @returns Opções de query com chave hierárquica e cancelamento via signal.
  */
 export function suspiciousUnitsQueryOptions(filters: SuspiciousUnitsFilter) {

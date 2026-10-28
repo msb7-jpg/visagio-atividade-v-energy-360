@@ -17,7 +17,7 @@ list_suspicious_units_doc = EndpointDoc(
         "distribuída e as já inspecionadas dentro da janela de análise (ordem concluída ou histórico de "
         "campo); ordem cancelada devolve a UC à fila. UCs com ordem "
         "ativa seguem na lista, com `situacao` ordem_gerada ou em_campo. Cada UC traz `score` de 0 a 100 (kWh "
-        "esperado relativo ao topo da fila). Filtros por município, bairro, classe, motivo e score mínimo; "
+        "esperado relativo ao topo da fila). Filtros por município, bairro, classe e motivo; "
         "limite padrão de 200 (capacidade mensal da equipe de campo). "
         "Ordenação decrescente por kWh esperado, isto é, kWh estimado a recuperar vezes a "
         "taxa histórica de acerto do sinal ('probabilidade_acerto'); o score de risco só desempata. "

@@ -114,7 +114,7 @@ class LossService:
         """Monta a fila de UCs suspeitas priorizada pela energia estimada a recuperar.
 
         Args:
-            queue_filter: Filtros de município, bairro, classe, motivo e score mínimo, e o tamanho da fila.
+            queue_filter: Filtros de município, bairro, classe e motivo, e o tamanho da fila.
 
         Returns:
             UCs suspeitas, com score de 0 a 100 e situação (na fila, ordem gerada ou em campo), em ordem
@@ -126,9 +126,7 @@ class LossService:
             DatabaseReadError: Se as tabelas Gold não puderem ser consultadas.
         """
         candidates = await self.repository.fetch_consumption_profiles(suspicion_filters(queue_filter))
-        ranked_units = rank_suspicious_units(
-            candidates.profiles, None, reason=queue_filter.motivo, min_score=queue_filter.score_minimo
-        )
+        ranked_units = rank_suspicious_units(candidates.profiles, None, reason=queue_filter.motivo)
         units = apply_situation(ranked_units[: queue_filter.limit], candidates.active_orders)
         fixed_competencia = candidates.reference_competencia
         reference_warnings = [reference_competencia_warning(fixed_competencia)] if fixed_competencia else []

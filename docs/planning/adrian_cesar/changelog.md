@@ -532,3 +532,15 @@
   - Sinais testados e não adotados: consumo frente à mediana das UCs da mesma classe e alimentador, e leituras estimadas nos 3 meses anteriores. Entre as 130 inspeções com queda abaixo de 20% (11 irregularidades), nenhum separa as irregulares.
 - **Pendências com a equipe:** prazo de reincidência para UC com irregularidade constatada; autorização de um piloto de 40 a 50 inspeções fora da fila para validar um sinal novo. **Não conferido no navegador** (nem as abas dentro das abas da página, nos dois temas).
 - **Validação:** `make lint-all` exit 0; `make test-all` exit 0: backend **543 passed**, frontend **227 passed**.
+
+### [2026-10-27] - Fase 13: filtros da fila enxutos (sem "Score mínimo")
+- **Autor:** Adrian César (Fatia 05)
+- **Motivação:** com as abas por chance de acerto (Fase 12), o select "Score mínimo" (50, 70, 90) virou um segundo corte de prioridade, em outra escala e relativo à UC do topo, sem critério operacional.
+- **O que foi feito (só frontend; o backend não mudou):**
+  - `QueueFilters.tsx`: ficam Motivo, Município e Classe (grid de 3 colunas); saíram o select, `MIN_SCORE_OPTIONS` e o link "como calculamos o score".
+  - `PrioritizedQueueTable.tsx`: o cabeçalho "Score" virou um botão com a explicação do score (abre com mouse e com foco de teclado).
+  - `lossTypes.ts`: `score_minimo` saiu de `SuspiciousUnitsFilter`; `lossQueries.ts`: `compactFilters` só trata texto.
+  - Testes: `SuspiciousQueueTab`, `lossQueries` e `lossApiRequests` sem `score_minimo`; caso novo em `PrioritizedQueueTable.test.tsx` para a explicação do score.
+- **Backend (removido no mesmo dia, depois de conferir que ninguém mais usava):** `score_minimo` saiu de `SuspiciousUnitsFilterDTO` e de `GET /losses/suspicious-units` (a documentação OpenAPI foi ajustada); `min_score` saiu de `rank_suspicious_units` e do `LossService.list_suspicious_units`. O `score` de cada UC continua calculado sobre todas as candidatas, antes do filtro de motivo. Um cliente antigo que ainda mande `?score_minimo=` não recebe erro: o parâmetro é ignorado.
+  - Testes removidos: corte por score mínimo no ranking e validação de `score_minimo` acima de 100. Os casos de motivo no serviço e na rota ficaram, sem o `score_minimo`.
+- **Validação:** `make lint-all` exit 0; `make test-all` exit 0: backend **541 passed** (543 antes, menos os 2 testes removidos), frontend **228 passed** (1 novo). **Não conferido no navegador.**

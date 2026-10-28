@@ -181,6 +181,9 @@
 - [x] **12.1 — Abas Prioritárias, Baixa chance e Todas** na Fila de Inspeção (`QueueBandTabs`, `queueBands.ts`), acima da tabela e com contagem, corte de 30% de chance de acerto e "Selecionar top 10 prioritárias" só entre as prioritárias. Decisão D11 em `docs/DECISOES_PERDAS.md`. (Adrian César, 2026-10-27)
 - [ ] **12.2 — Pendências com a equipe:** prazo de reincidência para UC com irregularidade constatada e autorização de um piloto de inspeção fora da fila.
 
+### Fase 13 — Filtros da fila enxutos (2026-10-27)
+- [x] **13.1 — Remover o filtro "Score mínimo"** da Fila de Inspeção: as abas por chance de acerto já cortam a fila. A explicação do score passa para o cabeçalho da coluna. Backend (`score_minimo`) fica por compatibilidade. (Adrian César, 2026-10-27)
+
 ---
 
 ## 4. Telas Concretas, Comportamentos & Contratos de Integração (Fatia 05)

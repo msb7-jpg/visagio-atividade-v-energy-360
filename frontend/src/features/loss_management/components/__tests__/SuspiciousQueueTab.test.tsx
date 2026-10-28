@@ -245,19 +245,19 @@ describe('Fila de Inspeção', () => {
     expect(screen.getByRole('checkbox', { name: 'Selecionar as UCs livres da página' })).toHaveAttribute('aria-checked', 'mixed')
   })
 
-  it('filtra por motivo, município, classe e score mínimo', async () => {
+  it('filtra por motivo, município e classe, sem filtro de score mínimo', async () => {
     renderPage()
     await rowOf('UC100002')
 
     fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'queda_subita' } })
     fireEvent.change(await screen.findByLabelText('Município'), { target: { value: 'Recife' } })
     fireEvent.change(screen.getByLabelText('Classe'), { target: { value: 'Comercial' } })
-    fireEvent.change(screen.getByLabelText('Score mínimo'), { target: { value: '70' } })
 
     await waitFor(() => expect(mockedApi.listSuspiciousUnits).toHaveBeenLastCalledWith(
-      { motivo: 'queda_subita', municipio: 'Recife', classe: 'Comercial', score_minimo: 70 },
+      { motivo: 'queda_subita', municipio: 'Recife', classe: 'Comercial' },
       expect.anything()
     ))
+    expect(screen.queryByLabelText('Score mínimo')).not.toBeInTheDocument()
   })
 
   it('volta para a primeira página ao mudar os filtros', async () => {

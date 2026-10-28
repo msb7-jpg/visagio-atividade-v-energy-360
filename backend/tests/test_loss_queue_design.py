@@ -95,12 +95,6 @@ def test_score_does_not_change_when_a_filter_hides_the_top_unit():
     assert ranked[0].score == 3  # 18,8 / 697,5, e não 100 só porque a maior saiu da lista
 
 
-def test_minimum_score_filter_drops_lower_scores():
-    ranked = rank_suspicious_units([BIG_DROP, SMALL_DROP, ZERO_ONLY], limit=10, min_score=48)
-
-    assert [unit.id_uc for unit in ranked] == ["UC_GRANDE", "UC_MEDIA"]
-
-
 def test_limit_is_applied_after_the_filters():
     profiles = [BIG_DROP, SMALL_DROP, ZERO_ONLY]
 
@@ -139,14 +133,14 @@ async def test_units_with_an_active_order_are_marked_by_the_order_status():
     }
 
 
-async def test_service_applies_motive_and_minimum_score_filters():
+async def test_service_applies_the_motive_filter():
     candidates = QueueCandidates(profiles=[BIG_DROP, SMALL_DROP, ZERO_ONLY], field_history_applied=True)
     service = LossService(repository=FakeQueueRepository(candidates))  # type: ignore[arg-type]
-    queue_filter = SuspiciousUnitsFilterDTO(motivo=SuspicionReason.QUEDA_SUBITA, score_minimo=50)
+    queue_filter = SuspiciousUnitsFilterDTO(motivo=SuspicionReason.QUEDA_SUBITA)
 
     queue = await service.list_suspicious_units(queue_filter)
 
-    assert [unit.id_uc for unit in queue.itens] == ["UC_GRANDE"]
+    assert [unit.id_uc for unit in queue.itens] == ["UC_GRANDE", "UC_MEDIA"]
 
 
 async def test_queue_reports_the_total_before_the_limit_cut():
@@ -165,11 +159,6 @@ async def test_queue_total_respects_the_filters():
     queue = await service.list_suspicious_units(SuspiciousUnitsFilterDTO(motivo=SuspicionReason.LEITURA_ZERADA))
 
     assert queue.total == 1
-
-
-def test_filter_dto_rejects_minimum_score_above_one_hundred():
-    with pytest.raises(ValueError, match="score_minimo"):
-        SuspiciousUnitsFilterDTO(score_minimo=101)
 
 
 # --- a consulta da fila passa a trazer UCs com ordem ativa ---------------------------------------------------------
@@ -236,12 +225,10 @@ async def test_queue_marks_a_unit_after_its_order_is_generated(client: AsyncClie
     assert units["UC_FRAUDE"]["score"] == 100
 
 
-async def test_queue_accepts_motive_and_minimum_score_query_params(client: AsyncClient):
+async def test_queue_accepts_the_motive_query_param(client: AsyncClient):
     headers = await auth_headers(client, "perdas@venergy.com")
 
-    response = await client.get(
-        f"{BASE_URL}/suspicious-units", headers=headers, params={"motivo": "leitura_zerada", "score_minimo": 0}
-    )
+    response = await client.get(f"{BASE_URL}/suspicious-units", headers=headers, params={"motivo": "leitura_zerada"})
 
     assert [unit["id_uc"] for unit in response.json()["itens"]] == ["UC_ZERADA"]
 

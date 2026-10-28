@@ -257,7 +257,6 @@ def rank_suspicious_units(
     limit: int | None,
     *,
     reason: SuspicionReason | None = None,
-    min_score: int = 0,
 ) -> list[SuspiciousUnitDTO]:
     """Monta a fila priorizada pelo kWh esperado (kWh a recuperar x taxa de acerto do sinal).
 
@@ -268,7 +267,6 @@ def rank_suspicious_units(
         profiles: Perfis de consumo candidatos.
         limit: Tamanho máximo da fila; None devolve todas as que passam nos filtros.
         reason: Mantém só as UCs com este motivo; None não filtra.
-        min_score: Mantém só as UCs com score a partir deste valor.
 
     Returns:
         Itens suspeitos em ordem decrescente de kWh esperado (desempate por score de risco), até `limit` itens.
@@ -278,7 +276,5 @@ def rank_suspicious_units(
     ranked = sorted(candidates_by_id, key=priority_key, reverse=True)
     top_expected_kwh = priority_key(ranked[0])[0] if ranked else 0.0
     scored = [unit.model_copy(update={"score": priority_score(unit, top_expected_kwh)}) for unit in ranked]
-    visible = [
-        unit for unit in scored if unit.score >= min_score and (reason is None or reason in unit.motivos)
-    ]
+    visible = [unit for unit in scored if reason is None or reason in unit.motivos]
     return visible if limit is None else visible[:limit]
