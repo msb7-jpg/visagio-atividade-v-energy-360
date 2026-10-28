@@ -84,3 +84,11 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 - **Contexto:** Devido à dispersão de exportação dos sistemas legados da V-Energy, o campo `data_leitura` aparece como `yyyy-MM-dd`, `dd/MM/yyyy`, `dd.MM.yyyy` e o preenchimento de endereço e UFs flutua.
 - **Decisão:** Uso do `safe_date_parse_v2` testando via `coalesce(try_to_date(...))` uma cascata de 6 formatos até encontrar padrão. Remoção de todos os acentos e padronização `UPPER()` nas colunas `bairro` e `municipio`. `PERNAMBUCO` convertido para a sigla canônica `PE`.
 - **Impacto:** Evita perda por falha de casting ou criação de bairros duplicados no dashboard gerencial de filtro.
+
+## ADR-010 — RBAC: papéis do `UserRole`, sem ADMIN, grupos centrais em `role_groups.py`
+
+- **Data:** 2026-10-28 · **Fatia:** 06 (Joao Henrique) · **Status:** Aceita
+- **Contexto:** O ROADMAP citava `UserRole.ATENDIMENTO`, `UserRole.DIRETORIA` e `UserRole.ADMIN`, que não existem. O enum real é `UserRole` (diretor, gerente_operacao, gerente_atendimento, atendente, gerente_perdas) e o grupo da Visão 360 precisou crescer a pedido da Fatia 03.
+- **Decisão:** Os papéis são os membros de `UserRole`; não há perfil ADMIN (decisão de 2026-10-21). Cada grupo de acesso vive em `backend/app/shared/role_groups.py` (`DIRETORIA_ONLY`, `OPERACAO_ACCESS`, `ATENDIMENTO_ACCESS`, `PERDAS_ACCESS`, `CUSTOMER360_ACCESS`), com os aliases `Require*` em `backend/app/shared/dependencies.py`. `require_role(allowed_roles: Sequence[UserRole | str])` aceita membros do enum ou suas strings; string fora do enum levanta `ValueError`. `CUSTOMER360_ACCESS` inclui diretor, gerente_atendimento, atendente, gerente_perdas e gerente_operacao (este último para abrir a ficha do cliente a partir do ranking de circuitos).
+- **Impacto:** Mudar quem acessa uma área é editar um único grupo. No frontend, `NAV_ITEMS` (`components/layout/navItems.ts`) é a fonte única dos papéis por tela e deve espelhar `role_groups.py`; as rotas de `AppRoutes.tsx` leem dele.
+- **Conformidade:** `backend/tests/test_rbac.py` (matriz papel x rota em `ROUTE_BY_GROUP`, 401/403/200), `test_customer360_router.py` e, no frontend, `RbacNavigation.test.tsx` e `routes/__tests__/RbacMatrix.test.tsx` (papéis x rotas, tabela explícita). Novo grupo ou papel exige atualizar os dois lados e esses testes.
