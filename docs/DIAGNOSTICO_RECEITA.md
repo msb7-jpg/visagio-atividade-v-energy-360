@@ -107,14 +107,17 @@ Cuidados de interpretação (a validar com os dados antes de afirmar qualquer co
 Antes de atribuir a queda a qualquer causa, separar de onde ela vem. A base de clientes cresceu, então o volume total junta três grupos: UCs **novas** (só na janela atual), UCs **perdidas** (só na base) e UCs **mantidas** (nas duas). As causas 6.1 a 6.5 explicam a queda das mantidas; as novas e as perdidas mostram o efeito do crescimento. Consulta **C0** (seção 9).
 
 - **Medido (C0):** 44.741 UCs mantidas e 259 novas. Nenhuma UC foi perdida. As mantidas tiveram -12.414 MWh e +R$ 11,92 mi; as novas deram +797 MWh e +R$ 0,66 mi. O crescimento da base (+0,6% de UCs) quase não compensa a queda de consumo das mantidas.
-- **Cuidado:** UC que entrou ou saiu no meio de uma janela tem menos de 12 faturas e distorce a comparação. `[a preencher]` quantas UCs mantidas têm menos de 12 faturas em cada janela (consulta C7).
+- **Cuidado:** UC que entrou ou saiu no meio de uma janela tem menos de 12 faturas e distorce a comparação. Medido (C7): 103 das 44.741 UCs mantidas (0,2%) têm menos de 12 faturas na janela base e nenhuma na atual. Entraram no meio da janela base, então o volume base delas é menor que o de um ano completo. O efeito é pequeno e não muda a conclusão.
 
 ### 6.1 Painéis solares (GD)
 
 - **Como medir:** variação de consumo faturado das UCs **mantidas** com `possui_gd = 1` contra as sem GD da mesma classe (consulta **C1**). A diferença entre as duas variações, aplicada ao consumo da base das UCs com GD, é a parte atribuível à geração própria.
 - **Cuidados:** `data_conexao_gd` mostra quando a UC passou a gerar; UC que ligou a GD no meio da janela mistura antes e depois. Confirmar com o Renan se `consumo_faturado_kwh` já é líquido da energia injetada.
 - **Medido (C1):** entre as UCs mantidas, as 3.496 com GD (3.115 residenciais e 381 comerciais) consumiram 62% menos (residencial -62,0%, comercial -61,6%), o que dá -11.314 MWh (-6.565 residencial e -4.749 comercial). As UCs sem GD ficaram praticamente estáveis (residencial +0,9%, comercial -3,0%, industrial -0,6%). A GD responde por 97,4% da queda líquida de volume (11.314 de 11.618 MWh) e por 91% da queda das UCs mantidas.
-- **Cuidados do dado:** (1) a soma de `potencia_gd_kw` das residenciais dá 227 mil kW para 3.115 UCs (cerca de 73 kW por UC), valor alto para residência; `[a confirmar com Renan]` a unidade e se há UCs fora do padrão. (2) `possui_gd` é o estado atual da UC; `[a preencher]` conferir pela `data_conexao_gd` (consulta C6) quantas ligaram a GD antes da janela base. (3) `[a confirmar com Renan]` se o consumo faturado já é líquido da energia injetada.
+- **Cuidados do dado:**
+  1. **Potência:** a soma de `potencia_gd_kw` das residenciais dá 227 mil kW para 3.115 UCs (cerca de 73 kW por UC). Os máximos por ano de conexão (C6) chegam a cerca de 9.000 kW em residência e 5.900 kW em comercial de 2024, o que não faz sentido para esses perfis, e a média é puxada por eles. Nas conexões comerciais de 2025 e 2026 o máximo é 75 kW. `[a confirmar com Renan]` a unidade e se há UCs com potência errada. A conclusão sobre volume não usa a potência.
+  2. **Quando a GD ligou:** `possui_gd` é o estado atual da UC. Pela `data_conexao_gd` (C6), todas as UCs com GD ligaram a partir de 2024: 1.845 em 2024, 1.304 em 2025 e 361 em 2026. Nenhuma tinha GD na janela base, então a base é limpa. Já as ligadas em 2025 e 2026 passaram parte da janela atual sem GD, e por isso a queda média de 62% provavelmente subestima o efeito de uma UC com a GD funcionando o ano inteiro.
+  3. **Consumo líquido:** `[a confirmar com Renan]` se o consumo faturado já é líquido da energia injetada.
 - **Ação proposta:** `[a confirmar com Renan]` (hipóteses: acompanhar a cada mês as novas conexões de GD e a potência instalada para projetar a perda de volume; rever com o regulatório como a rede é remunerada nessas UCs).
 - **Ganho estimado e premissa:** não é um ganho a recuperar, é uma perda a medir: ≈ R$ 8,3 mi por ano de receita (6.565 MWh × R$ 0,7145 residencial + 4.749 MWh × R$ 0,7540 comercial, tarifas médias da janela base na consulta D1). Aproximação: a conta exata por UC fica para depois da conferência.
 
@@ -153,7 +156,8 @@ Antes de atribuir a queda a qualquer causa, separar de onde ela vem. A base de c
 
 - **Como medir:** queda das UCs mantidas, sem GD e sem leitura anômala, por classe, município e bairro (consulta **C5**). Cruzar com o ranking territorial da tela.
 - **Medido (C1 e C5):** no total, as UCs mantidas sem GD variaram -1.101 MWh (queda pequena, de 0,5%). Mas a queda se concentra em poucos bairros: Iputinga e Macaxeira (Recife), Jardim Jordão e Prazeres (Jaboatão dos Guararapes). No comércio desses bairros o consumo caiu perto de 50% e na residencial perto de 17%, num total de 2.714 MWh (1.766 comercial e 948 residencial). Outros locais compensam parte disso.
-- **Causa:** não sabemos. `[a preencher]` investigar antes de afirmar qualquer coisa (consulta C8: status das UCs, GD, tipo de queda mês a mês, relação com a qualidade da rede).
+- **Medido (C8):** a queda começa de uma vez em maio de 2025, nos quatro bairros ao mesmo tempo (entre -10% e -11% em maio, e de -13% a -21% em junho e julho, contra o mesmo mês de 2024). Até abril de 2025 o consumo repete o de 2024. O número de UCs não muda, então não são clientes que saíram.
+- **Causa:** não sabemos. Um corte em data única, em bairros de dois municípios diferentes, sugere uma causa em comum. A consulta C9 mostra que a queda atinge seis alimentadores diferentes (três em Jaboatão e três em Recife) e que um alimentador (ALM-REC-024) tem um bairro que cai (Iputinga) e outro que não (IPSEP, -2,8%). Então a causa parece estar ligada aos bairros, não a um alimentador, e a coluna `subestacao` está vazia no banco, o que impede olhar por subestação. `[a preencher]` hipóteses ainda a testar, com Renan e João Henrique: mudança de critério de cobrança ou de medição, evento local em maio de 2025, GD não registrada no cadastro. Não afirmar nenhuma antes de testar.
 - **Ação proposta:** `[a preencher]` depende da causa encontrada.
 - **Valor em jogo:** até ≈ R$ 2,0 mi por ano se o consumo voltasse ao da base (1.766 MWh × R$ 0,754 comercial + 948 MWh × R$ 0,7145 residencial). É um teto, não um ganho garantido.
 
@@ -178,7 +182,7 @@ A GD explica quase toda a queda líquida. O resto é a soma de dois movimentos q
 | Ação | Causa | Escopo | Ganho estimado (R$/ano) | Premissa | Prioridade |
 |---|---|---|---|---|---|
 | Acompanhar novas conexões de GD e projetar a perda de volume | 6.1 | 3.496 UCs com GD | Perda estimada de ≈ R$ 8,3 mi/ano a medir (não é ganho a recuperar) | tarifa média da base por classe | Alta |
-| Investigar a queda de consumo em Iputinga, Macaxeira, Jardim Jordão e Prazeres | 6.5 | 4 bairros, 2.714 MWh | até ≈ R$ 2,0 mi/ano em jogo (teto) | depende da causa encontrada | Alta |
+| Investigar a queda de consumo que começou em maio de 2025 em Iputinga, Macaxeira, Jardim Jordão e Prazeres | 6.5 | 4 bairros, 2.714 MWh | até ≈ R$ 2,0 mi/ano em jogo (teto) | depende da causa encontrada | Alta |
 | Inspecionar o topo da fila de perdas | 6.2 | `[a preencher]` UCs | `[a preencher]` | tarifa e cálculo do Adrian | Média |
 | Acompanhar arrecadação (caixa) | 6.3 | faturas vencidas | não entra na conta de volume | 5,4% do faturado vencido | Baixa |
 
@@ -211,7 +215,7 @@ GROUP BY janela;
 
 ### Consultas das causas
 
-Todas rodam no SQLite (`v_energy.db`) com as janelas fixas da seção 2. Os resultados de D1 e C0 a C5 foram obtidos no banco real em 28/10/2026 (um script de leitura roda todas: `rodar_consultas_receita.py`). C6 a C8 ainda estão sem resultado.
+Todas rodam no SQLite (`v_energy.db`) com as janelas fixas da seção 2. Os resultados de D1 e C0 a C5 foram obtidos no banco real em 28/10/2026 (um script de leitura roda todas: `rodar_consultas_receita.py`). C6 a C9 foram obtidos no mesmo dia.
 
 **D1: totais por classe e janela (seção 4)**
 
@@ -449,7 +453,18 @@ GROUP BY ano_conexao, classe_consumo
 ORDER BY ano_conexao, classe_consumo;
 ```
 
-**Resultado:** `[a preencher]`
+**Resultado** (banco real, 28/10/2026):
+
+| Ano da conexão | Classe | UCs | Potência média (kW) | Potência máxima (kW) |
+|---|---|---|---|---|
+| 2024 | COMERCIAL | 207 | 79,1 | 5.911,6 |
+| 2024 | RESIDENCIAL | 1.638 | 76,3 | 8.908,7 |
+| 2025 | COMERCIAL | 130 | 33,6 | 75,0 |
+| 2025 | RESIDENCIAL | 1.174 | 73,8 | 8.994,9 |
+| 2026 | COMERCIAL | 46 | 33,9 | 75,0 |
+| 2026 | RESIDENCIAL | 315 | 48,8 | 6.529,1 |
+
+Nenhuma UC ligou a GD antes de 2024, então a janela base (2022-07 a 2023-06) é anterior a toda a GD.
 
 **C7: UCs mantidas com menos de 12 faturas em alguma janela (seção 6.0)**
 
@@ -467,7 +482,7 @@ FROM (
 );
 ```
 
-**Resultado:** `[a preencher]`
+**Resultado** (banco real, 28/10/2026): das 44.741 UCs mantidas, 103 têm menos de 12 faturas na janela base e nenhuma tem menos de 12 na janela atual.
 
 **C8: os quatro bairros com maior queda (causa 6.5)**
 
@@ -486,7 +501,58 @@ GROUP BY f.competencia, u.bairro
 ORDER BY u.bairro, f.competencia;
 ```
 
-**Resultado:** `[a preencher]`
+**Resultado** (banco real, 28/10/2026): consumo mensal (kWh) das UCs sem GD nos quatro bairros, comparando cada mês com o mesmo mês de 2024. O número de UCs quase não muda no período (por exemplo, Iputinga vai de 1.109 a 1.123).
+
+| Bairro | abr/2025 | mai/2025 | jun/2025 | jul/2025 |
+|---|---|---|---|---|
+| IPUTINGA | -1,2% | -6,9% | -13,2% | -13,5% |
+| JARDIM JORDAO | -0,2% | -10,4% | -20,5% | -18,6% |
+| MACAXEIRA | +1,8% | -10,4% | -13,0% | -17,3% |
+| PRAZERES | 0,0% | -11,4% | -17,5% | -21,2% |
+
+Até abril de 2025 o consumo repete o de 2024, com a mesma sazonalidade. A partir de maio de 2025 cai de uma vez, nos quatro bairros ao mesmo tempo, e fica abaixo da curva anterior até junho de 2026 (a série completa tem 48 meses por bairro).
+
+
+**C9: alimentador e subestação dos quatro bairros (causa 6.5)**
+
+Ver se os quatro bairros compartilham a rede, e quanto cada alimentador caiu.
+
+```sql
+WITH por_uc AS (
+  SELECT f.id_uc,
+         SUM(CASE WHEN f.competencia BETWEEN '2024-05' AND '2024-12' THEN f.consumo_faturado_kwh END) AS kwh_2024,
+         SUM(CASE WHEN f.competencia BETWEEN '2025-05' AND '2025-12' THEN f.consumo_faturado_kwh END) AS kwh_2025
+  FROM fato_faturamento f
+  GROUP BY f.id_uc
+)
+SELECT u.subestacao, u.alimentador, u.bairro, u.municipio,
+       COUNT(*)                                      AS ucs,
+       ROUND(SUM(p.kwh_2025) - SUM(p.kwh_2024), 0)   AS variacao_kwh,
+       ROUND(100.0 * (SUM(p.kwh_2025) - SUM(p.kwh_2024)) / SUM(p.kwh_2024), 1) AS variacao_pct
+FROM por_uc p
+JOIN dim_unidade_consumidora u ON u.id_uc = p.id_uc
+WHERE p.kwh_2024 IS NOT NULL AND p.kwh_2025 IS NOT NULL
+  AND COALESCE(u.possui_gd, 0) = 0
+GROUP BY u.subestacao, u.alimentador, u.bairro, u.municipio
+HAVING COUNT(*) >= 30
+ORDER BY variacao_pct
+LIMIT 25;
+```
+
+**Resultado** (banco real, 28/10/2026): variação do consumo de mai a dez/2025 contra mai a dez/2024, UCs sem GD, grupos com 30 UCs ou mais. A coluna `subestacao` está vazia em todas as linhas.
+
+| Alimentador | Bairro | Município | UCs | Variação kWh | Variação % |
+|---|---|---|---|---|---|
+| ALM-JAB-014 | PRAZERES | JABOATAO DOS GUARARAPES | 320 | -173.472 | -18,6 |
+| ALM-JAB-007 | JARDIM JORDAO | JABOATAO DOS GUARARAPES | 996 | -443.274 | -17,0 |
+| ALM-JAB-013 | PRAZERES | JABOATAO DOS GUARARAPES | 304 | -129.564 | -16,9 |
+| ALM-REC-027 | MACAXEIRA | RECIFE | 278 | -133.471 | -14,8 |
+| ALM-REC-028 | MACAXEIRA | RECIFE | 246 | -134.684 | -14,3 |
+| ALM-REC-024 | IPUTINGA | RECIFE | 1.119 | -526.886 | -13,5 |
+| ALM-REC-013 | CACOTE | RECIFE | 76 | -14.952 | -5,2 |
+| ALM-REC-024 | IPSEP | RECIFE | 92 | -8.595 | -2,8 |
+
+As demais 18 linhas do top 25 ficam entre -4,2% e -1,6%. Os seis alimentadores dos quatro bairros caem de 13,5% a 18,6%, e o resto da lista cai bem menos (até 5,2%). O alimentador ALM-REC-024 atende Iputinga (-13,5%) e também IPSEP (-2,8%), então uma falha no alimentador não explicaria sozinha a queda.
 
 
 **Limites e premissas em aberto**
@@ -494,6 +560,7 @@ ORDER BY u.bairro, f.competencia;
 - Receita e volume por `valor_total_rs` e `consumo_faturado_kwh`; `[a confirmar com Ryei]` se o consumo faturado já é líquido da geração distribuída.
 - Banco real conferido em 28/10/2026: 2.152.336 faturas, nenhuma sem UC no cadastro, 6.329 sem consumo, nenhum par UC e competência com mais de uma fatura, 5 classes (COMERCIAL, INDUSTRIAL, PODER PUBLICO, RESIDENCIAL, RURAL) e 14 municípios.
 - `possui_gd` é o estado atual da UC, não o da época de cada janela.
+- A coluna `subestacao` de `dim_unidade_consumidora` está vazia no banco real; só o `alimentador` está preenchido.
 - O seletor de bairro da tela mostra no máximo 100 bairros por município (limite da API); Recife tem 106. Correção pendente.
 - Uma fatura por UC por competência (usada no ticket médio).
 - Os valores de DEC/FEC e qualquer limite de referência são só comparativos; **não** são multas nem violações regulatórias reais (glossário do case).
