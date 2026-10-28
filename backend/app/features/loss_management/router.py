@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from pydantic import StringConstraints
 
-from app.core.constants import UserRole
 from app.features.loss_management.dependencies import LossSvc
 from app.features.loss_management.exceptions import UploadTooLargeError
 from app.features.loss_management.router_metadata import (
@@ -31,8 +30,8 @@ from app.features.loss_management.schemas import (
     UploadResultDTO,
 )
 from app.shared.dependencies import CurrentUser, require_role
+from app.shared.role_groups import PERDAS_ACCESS
 
-LOSS_ROLES = [UserRole.DIRETOR.value, UserRole.GERENTE_PERDAS.value]
 EXPORT_FILENAME = "ordens_inspecao_campo.csv"
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 MAX_SELECTED_UNITS = FILA_CAPACIDADE_MENSAL * 2
@@ -41,7 +40,7 @@ UnitId = Annotated[str, StringConstraints(min_length=1, max_length=20)]
 router = APIRouter(
     prefix="/losses",
     tags=["Gestão de Perdas"],
-    dependencies=[Depends(require_role(LOSS_ROLES))],
+    dependencies=[Depends(require_role(PERDAS_ACCESS))],
 )
 
 

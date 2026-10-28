@@ -32,7 +32,7 @@ interface YearTotalsSummaryProps {
 export function YearTotalsSummary({ totals }: YearTotalsSummaryProps) {
   const monthsLabel = totals.meses_comparados === 12 ? 'Últimos 12 meses' : `Últimos ${totals.meses_comparados} meses comparáveis`
   return (
-    <div className="bg-muted flex flex-wrap gap-x-8 gap-y-2 rounded-xl p-3">
+    <div className="bg-muted flex flex-wrap gap-x-8 gap-y-2 rounded-lg p-3">
       <TotalItem
         label={`${monthsLabel} · consumo`}
         current={formatKwh(totals.consumo_kwh)}

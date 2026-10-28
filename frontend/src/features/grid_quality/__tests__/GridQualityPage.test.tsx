@@ -99,7 +99,7 @@ describe('GridQualityPage', () => {
     expect(screen.getByText('50%')).toBeInTheDocument()
     expect(screen.getByText('1 de 2 circuitos.')).toBeInTheDocument()
     expect(screen.getAllByText(/Média do acumulado no ano até 03\/2000/)).toHaveLength(2)
-    expect(screen.getAllByText(/limite de referência \(suposição pendente, B1\)/)).toHaveLength(2)
+    expect(screen.getAllByText(/comparado ao limite de referência/)).toHaveLength(2)
   })
 
   it('mostra o acumulado no ano ao lado do limite anual e o status de cada alimentador', async () => {
@@ -110,7 +110,7 @@ describe('GridQualityPage', () => {
     expect(within(violatingRow).getByText('25')).toBeInTheDocument()
     expect(within(violatingRow).getByText('20')).toBeInTheDocument()
     expect(within(violatingRow).getByText('5')).toBeInTheDocument()
-    expect(within(violatingRow).getByText('Violação Crítica')).toBeInTheDocument()
+    expect(within(violatingRow).getByText('Acima do limite de referência')).toBeInTheDocument()
     expect(within(violatingRow).queryByText('Limite aproximado')).not.toBeInTheDocument()
   })
 

@@ -1,0 +1,75 @@
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
+import { formatDate } from '@/features/loss_management/utils/lossFormatters'
+import {
+  ACTION_LABELS,
+  ACTIONS_BY_STATUS,
+  formatOrderCode,
+  summarizeFieldResult,
+  type OrderActionKind
+} from '@/features/loss_management/utils/orderBoard'
+
+interface OrderCardProps {
+  order: InspectionOrder
+  onAction: (kind: OrderActionKind, order: InspectionOrder) => void
+}
+
+/**
+ * Linha cinza do cartão: inspetor responsável ou aviso de que ainda não há.
+ *
+ * @param order - Ordem de inspeção.
+ * @returns Texto de apoio do cartão.
+ */
+function describeInspector(order: InspectionOrder): string {
+  return order.fiscal_responsavel ?? 'sem inspetor'
+}
+
+/**
+ * Cartão de uma ordem de inspeção no quadro, com código, UC, inspetor, resultado e ações da etapa.
+ *
+ * @param props - Ordem e callback das ações (enviar a campo, registrar resultado, cancelar).
+ * @returns Item de lista com o cartão da ordem.
+ */
+export function OrderCard({ order, onAction }: OrderCardProps) {
+  const resultSummary = summarizeFieldResult(order)
+  const actions = ACTIONS_BY_STATUS[order.status]
+
+  return (
+    <li>
+      <Card className="flex flex-col gap-1.5 p-3">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-foreground text-sm font-bold tabular-nums">{formatOrderCode(order)}</span>
+          <span className="text-muted-foreground text-xs tabular-nums">{formatDate(order.criado_em)}</span>
+        </div>
+        <p className="text-foreground text-sm tabular-nums">{order.id_uc}</p>
+        <p className="text-muted-foreground text-xs">{describeInspector(order)}</p>
+        {resultSummary ? (
+          <Badge variant={resultSummary.tone} className="h-auto self-start whitespace-normal">{resultSummary.text}</Badge>
+        ) : null}
+        {order.justificativa_cancelamento ? (
+          <p className="text-muted-foreground border-border rounded-md border p-2 text-xs">
+            Cancelada: {order.justificativa_cancelamento}
+          </p>
+        ) : null}
+        {actions.length > 0 ? (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {actions.map((kind) => (
+              <Button
+                key={kind}
+                type="button"
+                size="sm"
+                variant={kind === 'cancel' ? 'ghost' : 'default'}
+                aria-label={`${ACTION_LABELS[kind]} ${formatOrderCode(order)}`}
+                onClick={() => onAction(kind, order)}
+              >
+                {ACTION_LABELS[kind]}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+      </Card>
+    </li>
+  )
+}

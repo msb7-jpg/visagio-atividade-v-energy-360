@@ -26,10 +26,10 @@ function KpiCard({ title, formula, value, detail }: KpiCardProps) {
   )
 }
 
-const LIMIT_NOTE = 'limite de referência (suposição pendente, B1)'
+const LIMIT_NOTE = 'limite de referência'
 
 /**
- * Cards de DEC e FEC médios e de alimentadores em violação da competência mais recente.
+ * Cards de DEC e FEC médios e de alimentadores acima do limite de referência da competência mais recente.
  *
  * @param props - Indicadores consolidados devolvidos pela API.
  * @returns Grade com os três cards.
@@ -51,8 +51,8 @@ export function QualityKpiCards({ indicators }: { indicators: QualityIndicators 
         detail={`Média do acumulado no ano até ${period}; comparado ao ${LIMIT_NOTE}.`}
       />
       <KpiCard
-        title="Alimentadores em violação"
-        formula="Violação: DEC ou FEC acumulado no ano acima do limite anual de referência."
+        title="Alimentadores acima do limite de referência"
+        formula="Acima do limite: DEC ou FEC acumulado no ano maior que o limite anual de referência."
         value={`${formatDecimal(indicators.percentual_violacao)}%`}
         detail={`${indicators.alimentadores_em_violacao} de ${indicators.total_alimentadores} circuitos.`}
       />

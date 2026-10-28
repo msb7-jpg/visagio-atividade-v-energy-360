@@ -153,7 +153,15 @@
 - [x] **Fase 9.3 — Frontend, UI:** cards de resumo, filtros em select, barra de ações, tabela priorizada (barra de score, chips de motivo, situação) e abas com contadores.
 - [x] **Fase 9.4 — Testes Vitest** da nova tela.
 - [x] **Fase 9.5 — Validação:** `make lint-all`, `make test-all`, conferência visual contra as imagens e registro no changelog.
+- [x] **Fase 9.6 — Quadro de ordens (2026-10-26, Adrian César):** quadro de 4 colunas sobre a API real; pendências (Playwright, capturas, token `success`, alvo de 44 px) registradas no `changelog.md`.
 - Fora desta entrega (decisão em aberto): motivos novos do desenho (abaixo dos vizinhos, leituras estimadas, irregularidade confirmada antes), "Ver acerto por inspetor" (Fatia 07) e distribuição por inspetor.
+
+### Fase 10 — Alinhamento ao novo design (tokens e componentes, 2026-10-27)
+- [x] **10.1 — Tokens:** `index.css` com os valores hex de `tokens-claro.png`/`tokens-escuro.png` (`:root` claro, `.dark` escuro), escala de tipo 12–30 px, raio base de 8 px e `shadow-sm`; `design.md` atualizado. (Adrian César, 2026-10-27)
+- [x] **10.2 — Componentes existentes alinhados** a `componentes-*.png`: `EmptyState`, `LoadingSkeleton`, `Badge` (tint de 15% e variantes `accent`/`muted`), `SidebarNav`, `AppLayout`. (Adrian César, 2026-10-27)
+- [x] **10.3 — `StatusBadge`** (`fatura`, `ordem`, `leitura`) ligado à Fila de Inspeção. Código morto `InspectionStatusBadge` e `STATUS_LABELS` removidos. (Adrian César, 2026-10-27)
+- [x] **10.4 — `ErrorState`** em `AsyncState` e `ErrorBoundary`. (Adrian César, 2026-10-27)
+- [ ] **10.5 — Pendências:** conferência visual nos dois temas, `onRetry` nas telas de outras fatias, migração de UC 360 (`PAYMENT_STATUS`) para o `StatusBadge`, e `KpiCard`, `DeltaBadge`, `DataTable`, `FilterBar` (dono a definir com a equipe).
 
 ---
 

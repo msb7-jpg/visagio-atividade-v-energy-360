@@ -14,7 +14,7 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 
 /**
  * Dropdown de seleção nativo padronizado do design system (design.md).
- * Possui raio de 12px (rounded-xl), anel de foco duplo com offset e estado de erro semântico.
+ * Possui raio de 12px (rounded-md), anel de foco duplo com offset e estado de erro semântico.
  *
  * @param props - Propriedades de estilo, erro e elementos option filhos.
  * @returns Elemento JSX do select renderizado.
@@ -30,7 +30,7 @@ export function Select({
     <select
       ref={ref}
       className={cn(
-        'flex h-10 w-full rounded-xl border bg-background px-3 py-2 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer',
+        'flex h-10 w-full rounded-md border bg-background px-3 py-2 text-base text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer',
         error ? 'border-destructive focus-visible:ring-destructive' : 'border-input',
         className
       )}

@@ -27,7 +27,7 @@ export function ServiceTicketsList({ tickets }: ServiceTicketsListProps) {
   return (
     <ul aria-label="Chamados abertos" className="flex flex-col gap-2">
       {tickets.map((ticket) => (
-        <li key={ticket.id_atendimento} className="border-border flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3">
+        <li key={ticket.id_atendimento} className="border-border flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
           <div className="flex flex-col">
             <span className="text-foreground text-sm font-semibold">{ticket.motivo_chamado ?? 'Motivo não informado'}</span>
             <span className="text-muted-foreground text-xs">

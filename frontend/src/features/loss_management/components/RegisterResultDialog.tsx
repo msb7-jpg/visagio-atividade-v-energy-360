@@ -1,40 +1,26 @@
-import { useState, type ChangeEvent } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { ActionDialog } from '@/features/loss_management/components/ActionDialog'
 import { ActionDialogFooter } from '@/features/loss_management/components/ActionDialogFooter'
-import { useUpdateInspectionMutation } from '@/features/loss_management/hooks/useLossMutations'
-import type { InspectionOrder, InspectionOrderUpdate } from '@/features/loss_management/types/lossTypes'
-import { getApiErrorMessage } from '@/features/loss_management/utils/apiErrorMessage'
+import { useResultFormController } from '@/features/loss_management/hooks/useResultFormController'
+import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { IRREGULARITY_TYPES } from '@/features/loss_management/utils/lossFormatters'
+import { formatOrderCode } from '@/features/loss_management/utils/orderBoard'
 
-interface FieldResultForm {
-  irregularidade: '' | 'sim' | 'nao'
-  tipo: string
-  kwh: string
-  toi: string
+interface FieldErrorProps {
+  id: string
+  message: string | undefined
 }
 
-const EMPTY_FORM: FieldResultForm = { irregularidade: '', tipo: '', kwh: '', toi: '' }
-
 /**
- * Converte o formulário de campo no payload de conclusão, omitindo campos vazios.
+ * Mensagem de erro de um campo, ligada a ele por `aria-describedby`.
  *
- * @param form - Valores digitados pelo gerente.
- * @returns Payload de conclusão da ordem.
+ * @param props - Id do elemento de erro e a mensagem (nada é exibido sem mensagem).
+ * @returns Texto de erro em destructive, ou nada.
  */
-function buildResultPayload(form: FieldResultForm): InspectionOrderUpdate {
-  const isIrregular = form.irregularidade === 'sim'
-  const kwhText = form.kwh.trim().replace(',', '.')
-  const toiText = form.toi.trim()
-  return {
-    status: 'concluida',
-    irregularidade_constatada: isIrregular,
-    ...(isIrregular && form.tipo ? { tipo_irregularidade: form.tipo } : {}),
-    ...(isIrregular && kwhText ? { kwh_recuperado: Number(kwhText) } : {}),
-    ...(isIrregular && toiText ? { numero_toi: toiText } : {})
-  }
+function FieldError({ id, message }: FieldErrorProps) {
+  return message ? <p id={id} className="text-destructive text-xs" role="alert">{message}</p> : null
 }
 
 interface RegisterResultDialogProps {
@@ -45,69 +31,56 @@ interface RegisterResultDialogProps {
 /**
  * Registra o resultado encontrado em campo e conclui a ordem.
  *
- * @param props - Ordem pendente e callback de fechamento.
- * @returns Diálogo de registro de resultado.
+ * @param props - Ordem em campo e callback de fechamento.
+ * @returns Diálogo de registro de resultado com validação por campo.
  */
 export function RegisterResultDialog({ order, onClose }: RegisterResultDialogProps) {
-  const updateMutation = useUpdateInspectionMutation()
-  const [form, setForm] = useState<FieldResultForm>(EMPTY_FORM)
-  const updateField = (field: keyof FieldResultForm) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm((currentForm) => ({ ...currentForm, [field]: event.target.value }))
-  }
-
-  const handleConfirm = () => {
-    updateMutation.mutate({ idInspecao: order.id_inspecao, payload: buildResultPayload(form) }, { onSuccess: onClose })
-  }
+  const { form, inspector, setInspector, errors, updateField, confirm, isPending, errorMessage } =
+    useResultFormController(order, onClose)
+  const isIrregular = form.irregularidade === 'sim'
 
   return (
-    <ActionDialog title={`Registrar resultado da ordem #${order.id_inspecao}`} description={`UC ${order.id_uc} · a ordem será concluída.`} onClose={onClose}>
+    <ActionDialog title={`Registrar resultado da ordem ${formatOrderCode(order)}`} description={`UC ${order.id_uc} · a ordem será concluída.`} onClose={onClose}>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="irregularidade" required>Irregularidade constatada?</Label>
-          <Select id="irregularidade" value={form.irregularidade} onChange={updateField('irregularidade')}>
+          <Select id="irregularidade" value={form.irregularidade} onChange={updateField('irregularidade')} error={Boolean(errors.irregularidade)} aria-invalid={Boolean(errors.irregularidade)} aria-describedby="irregularidade-erro">
             <option value="">Selecione</option>
             <option value="sim">Sim</option>
             <option value="nao">Não</option>
           </Select>
+          <FieldError id="irregularidade-erro" message={errors.irregularidade} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="tipo-irregularidade">Tipo de irregularidade</Label>
-          <Select
-            id="tipo-irregularidade"
-            value={form.tipo}
-            onChange={updateField('tipo')}
-            disabled={form.irregularidade !== 'sim'}
-          >
-            <option value="">Não informado</option>
+          <Label htmlFor="tipo-irregularidade" required={isIrregular}>Tipo de irregularidade</Label>
+          <Select id="tipo-irregularidade" value={form.tipo} onChange={updateField('tipo')} disabled={!isIrregular} error={Boolean(errors.tipo)} aria-invalid={Boolean(errors.tipo)} aria-describedby="tipo-erro">
+            <option value="">Selecione</option>
             {IRREGULARITY_TYPES.map((irregularityType) => (
               <option key={irregularityType} value={irregularityType}>{irregularityType}</option>
             ))}
           </Select>
+          <FieldError id="tipo-erro" message={errors.tipo} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="kwh-recuperado">kWh recuperado</Label>
-          <Input
-            id="kwh-recuperado"
-            type="number"
-            min={0}
-            step="0.1"
-            value={form.kwh}
-            onChange={updateField('kwh')}
-            disabled={form.irregularidade !== 'sim'}
-          />
+          <Label htmlFor="kwh-recuperado" required={isIrregular}>kWh recuperado</Label>
+          <Input id="kwh-recuperado" type="number" min={0} step="0.1" value={form.kwh} onChange={updateField('kwh')} disabled={!isIrregular} error={Boolean(errors.kwh)} aria-invalid={Boolean(errors.kwh)} aria-describedby="kwh-erro" />
+          <FieldError id="kwh-erro" message={errors.kwh} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="inspetor-resultado">Inspetor</Label>
+          <Input id="inspetor-resultado" value={inspector} onChange={(event) => setInspector(event.target.value)} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="numero-toi">Número do TOI</Label>
-          <Input id="numero-toi" value={form.toi} onChange={updateField('toi')} disabled={form.irregularidade !== 'sim'} />
+          <Input id="numero-toi" value={form.toi} onChange={updateField('toi')} disabled={!isIrregular} />
         </div>
       </div>
       <ActionDialogFooter
         confirmLabel="Salvar resultado"
-        isPending={updateMutation.isPending}
-        isConfirmDisabled={form.irregularidade === ''}
-        errorMessage={updateMutation.isError ? getApiErrorMessage(updateMutation.error) : null}
+        isPending={isPending}
+        errorMessage={errorMessage}
         onCancel={onClose}
-        onConfirm={handleConfirm}
+        onConfirm={confirm}
       />
     </ActionDialog>
   )
