@@ -11,6 +11,7 @@ interface RevenueFiltersBarProps {
   query: RevenueQuery
   windowError: string | null
   municipalities: string[]
+  neighborhoods: string[]
   classes: string[]
   onMonthChange: (window: WindowName, edge: WindowEdge, month: string) => void
   onFilterChange: (name: keyof RevenueFilters, value: string) => void
@@ -18,14 +19,15 @@ interface RevenueFiltersBarProps {
 }
 
 /**
- * Barra de filtros: período base, período de comparação, município e classe de consumo.
+ * Barra de filtros: período base, período de comparação, município, bairro e classe de consumo.
+ * O bairro só pode ser escolhido depois do município, e a lista mostra apenas os bairros dele.
  * Janelas inválidas mostram um aviso e suspendem as consultas (sem erro 400 da API).
  *
  * @param props - Seleção atual, erro das janelas, opções dos seletores e callbacks.
  * @returns Card de filtros com aviso opcional.
  */
 export function RevenueFiltersBar(props: RevenueFiltersBarProps) {
-  const { query, windowError, municipalities, classes, onMonthChange, onFilterChange, onReset } = props
+  const { query, windowError, municipalities, neighborhoods, classes, onMonthChange, onFilterChange, onReset } = props
   return (
     <Card>
       <CardContent className="flex flex-col gap-4 p-6">
@@ -43,7 +45,7 @@ export function RevenueFiltersBar(props: RevenueFiltersBarProps) {
             onChange={(edge, month) => onMonthChange('atual', edge, month)}
           />
         </div>
-        <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <FilterSelect
             id="filtro-municipio"
             label="Município"
@@ -51,6 +53,15 @@ export function RevenueFiltersBar(props: RevenueFiltersBarProps) {
             value={query.filters.municipio ?? ''}
             options={municipalities}
             onChange={(value) => onFilterChange('municipio', value)}
+          />
+          <FilterSelect
+            id="filtro-bairro"
+            label="Bairro"
+            allLabel={query.filters.municipio ? 'Todos os bairros' : 'Escolha um município'}
+            value={query.filters.bairro ?? ''}
+            options={neighborhoods}
+            disabled={!query.filters.municipio}
+            onChange={(value) => onFilterChange('bairro', value)}
           />
           <FilterSelect
             id="filtro-classe"

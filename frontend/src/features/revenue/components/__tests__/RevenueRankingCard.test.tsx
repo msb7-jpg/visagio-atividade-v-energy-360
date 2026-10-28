@@ -43,6 +43,13 @@ describe('RevenueRankingCard', () => {
     expect(screen.getAllByText('24 MWh')).toHaveLength(2)
   })
 
+  it('mostra o efeito cruzado para a soma dos efeitos fechar com a variação', () => {
+    render(<RevenueRankingCard breakdownQuery={makeQuery()} ranking={makeRanking()} />)
+
+    expect(screen.getByRole('columnheader', { name: 'Efeito cruzado' })).toBeInTheDocument()
+    expect(screen.getByText(/efeito-preço \+ efeito-volume \+ efeito cruzado = variação/)).toBeInTheDocument()
+  })
+
   it('abre o histórico ao clicar no bairro', () => {
     const ranking = makeRanking()
     render(<RevenueRankingCard breakdownQuery={makeQuery()} ranking={ranking} />)
@@ -78,8 +85,8 @@ describe('RevenueRankingCard', () => {
     render(<RevenueRankingCard breakdownQuery={makeQuery({ data })} ranking={ranking} />)
 
     expect(screen.getByText('Página 2 de 3 · 22 linhas')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /Próxima/ }))
-    fireEvent.click(screen.getByRole('button', { name: /Anterior/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Página anterior' }))
 
     expect(ranking.changePage).toHaveBeenNthCalledWith(1, 3)
     expect(ranking.changePage).toHaveBeenNthCalledWith(2, 1)
@@ -88,8 +95,8 @@ describe('RevenueRankingCard', () => {
   it('bloqueia anterior na primeira página e próxima na última', () => {
     render(<RevenueRankingCard breakdownQuery={makeQuery()} ranking={makeRanking()} />)
 
-    expect(screen.getByRole('button', { name: /Anterior/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Próxima/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Página anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Próxima página' })).toBeDisabled()
   })
 
   it('mostra estado vazio quando o recorte não tem linhas', () => {

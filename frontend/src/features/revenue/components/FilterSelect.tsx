@@ -1,4 +1,3 @@
-import { ChevronDown } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 
@@ -8,30 +7,26 @@ interface FilterSelectProps {
   allLabel: string
   value: string
   options: string[]
+  disabled?: boolean
   onChange: (value: string) => void
 }
 
 /**
- * Seletor de filtro com rótulo, opção "todos" e uma seta própria (lucide) por cima da seta nativa do navegador.
+ * Seletor de filtro com rótulo e opção "todos"; a seta vem do `Select` do design system.
  *
- * @param props - Id, rótulos, valor atual, opções e callback de alteração.
- * @returns Campo `Select` do design system com o ícone de seta.
+ * @param props - Id, rótulos, valor atual, opções, estado desabilitado e callback de alteração.
+ * @returns Campo `Select` rotulado.
  */
-export function FilterSelect({ id, label, allLabel, value, options, onChange }: FilterSelectProps) {
+export function FilterSelect({ id, label, allLabel, value, options, disabled = false, onChange }: FilterSelectProps) {
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <div className="relative">
-        <Select id={id} value={value} onChange={(event) => onChange(event.target.value)}>
-          <option value="">{allLabel}</option>
-          {options.map((option) => (
-            <option key={option} value={option}>{option}</option>
-          ))}
-        </Select>
-        <div className="bg-background pointer-events-none absolute inset-y-px right-px flex w-10 items-center justify-center rounded-r-xl">
-          <ChevronDown className="text-muted-foreground size-4" />
-        </div>
-      </div>
+      <Select id={id} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
+        <option value="">{allLabel}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </Select>
     </div>
   )
 }

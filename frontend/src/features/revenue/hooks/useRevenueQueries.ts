@@ -10,6 +10,7 @@ import type {
   BreakdownControls,
   BreakdownLevel,
   NeighborhoodRef,
+  RevenueFilters,
   RevenueQuery
 } from '@/features/revenue/types/revenueTypes'
 
@@ -48,15 +49,21 @@ export function useRevenueBreakdownQuery(query: RevenueQuery, controls: Breakdow
 }
 
 /**
- * Valores existentes de um nível (municípios ou classes) para os seletores de filtro.
+ * Valores existentes de um nível (municípios, bairros ou classes) para os seletores de filtro.
  *
  * @param query - Janelas escolhidas.
  * @param nivel - Nível que alimenta o seletor.
- * @param enabled - `false` quando as janelas são inválidas.
+ * @param enabled - `false` quando as janelas são inválidas ou o recorte ainda não foi escolhido.
+ * @param scope - Recorte que limita a lista (ex.: o município, para listar os bairros dele).
  * @returns Estado da query com as linhas do nível.
  */
-export function useRevenueOptionsQuery(query: RevenueQuery, nivel: BreakdownLevel, enabled: boolean) {
-  return useQuery(revenueOptionsQueryOptions(query, nivel, enabled))
+export function useRevenueOptionsQuery(
+  query: RevenueQuery,
+  nivel: BreakdownLevel,
+  enabled: boolean,
+  scope?: RevenueFilters
+) {
+  return useQuery(revenueOptionsQueryOptions(query, nivel, enabled, scope))
 }
 
 /**

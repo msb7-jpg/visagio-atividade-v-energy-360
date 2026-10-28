@@ -59,6 +59,7 @@
 
 /* Tema claro: variação (o padrão do portal é escuro, via <html class="dark">). */
 :root {
+  color-scheme: light;
   --background: #F2F5F8;
   --foreground: #0F1B2D;
   --card: #FFFFFF;
@@ -89,6 +90,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #0A121E;
   --foreground: #E7EDF4;
   --card: #111B2A;

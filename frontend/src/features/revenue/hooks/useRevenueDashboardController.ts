@@ -27,6 +27,9 @@ export function useRevenueDashboardController() {
   const breakdownQuery = useRevenueBreakdownQuery(query, ranking.controls, enabled)
   const municipalitiesQuery = useRevenueOptionsQuery(query, 'municipio', enabled)
   const classesQuery = useRevenueOptionsQuery(query, 'classe_consumo', enabled)
+  // Bairros só são listados depois de escolher o município (o mesmo nome pode se repetir entre municípios).
+  const { municipio } = query.filters
+  const neighborhoodsQuery = useRevenueOptionsQuery(query, 'bairro', enabled && Boolean(municipio), { municipio })
   const historyQuery = useRevenueHistoryQuery(query, ranking.selected)
 
   // Qualquer mudança de recorte volta o ranking para a primeira página.
@@ -55,6 +58,7 @@ export function useRevenueDashboardController() {
     breakdownQuery,
     municipalitiesQuery,
     classesQuery,
+    neighborhoodsQuery,
     historyQuery
   }
 }

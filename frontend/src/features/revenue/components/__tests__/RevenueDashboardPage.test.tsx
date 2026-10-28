@@ -86,6 +86,33 @@ describe('RevenueDashboardPage', () => {
     )
   })
 
+  it('filtra por bairro depois de escolher o município e limpa o bairro ao trocar de município', async () => {
+    mockHappyPath()
+    renderPage()
+    await screen.findByRole('option', { name: 'RECIFE' })
+    expect(screen.getByLabelText('Bairro')).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Município'), { target: { value: 'RECIFE' } })
+    await screen.findByRole('option', { name: 'CASA AMARELA' })
+    fireEvent.change(screen.getByLabelText('Bairro'), { target: { value: 'CASA AMARELA' } })
+
+    await waitFor(() =>
+      expect(mockedApi.getKpis).toHaveBeenLastCalledWith(
+        expect.objectContaining({ filters: { municipio: 'RECIFE', bairro: 'CASA AMARELA' } }),
+        expect.anything()
+      )
+    )
+    expect(mockedApi.getBreakdown).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: { municipio: 'RECIFE' } }),
+      expect.objectContaining({ nivel: 'bairro', page_size: 100 }),
+      expect.anything()
+    )
+
+    fireEvent.change(screen.getByLabelText('Município'), { target: { value: 'OLINDA' } })
+
+    await waitFor(() => expect(screen.getByLabelText('Bairro')).toHaveValue(''))
+  })
+
   it('abre o histórico do bairro escolhido no ranking', async () => {
     mockHappyPath()
     renderPage()

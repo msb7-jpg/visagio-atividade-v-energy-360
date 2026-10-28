@@ -22,7 +22,11 @@ export function useRevenueFilters() {
   }
 
   const changeFilter = (name: keyof RevenueFilters, filterValue: string) => {
-    setQuery((current) => ({ ...current, filters: { ...current.filters, [name]: filterValue || undefined } }))
+    setQuery((current) => {
+      // O mesmo nome de bairro pode existir em municípios diferentes: trocar o município limpa o bairro.
+      const clearedNeighborhood = name === 'municipio' ? { bairro: undefined } : {}
+      return { ...current, filters: { ...current.filters, ...clearedNeighborhood, [name]: filterValue || undefined } }
+    })
   }
 
   const reset = () => setQuery(DEFAULT_REVENUE_QUERY)

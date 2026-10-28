@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BreakdownTable } from '@/features/revenue/components/BreakdownTable'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { getRevenueErrorMessage } from '@/features/revenue/utils/revenueErrorMessage'
-import { TablePagination } from '@/features/revenue/components/TablePagination'
+import { Pagination } from '@/components/ui/pagination'
 import type { useRevenueRankingControls } from '@/features/revenue/hooks/useRevenueRankingControls'
 import type { BreakdownLevel, BreakdownPage } from '@/features/revenue/types/revenueTypes'
 
@@ -60,12 +60,19 @@ export function RevenueRankingCard({ breakdownQuery, ranking }: RevenueRankingCa
           {data ? (
             <>
               <BreakdownTable rows={data.items} controls={controls} onSort={ranking.toggleSort} onSelect={ranking.openNeighborhood} />
-              <TablePagination page={data.page} totalPages={data.total_pages} total={data.total} onPageChange={ranking.changePage} />
+              <Pagination
+                page={data.page}
+                totalPages={data.total_pages}
+                summary={`${data.total} ${data.total === 1 ? 'linha' : 'linhas'}`}
+                label="Paginação do ranking"
+                onPageChange={ranking.changePage}
+              />
             </>
           ) : null}
         </AsyncState>
         <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-          <MapPinned className="size-3.5" /> Efeito-preço e efeito-volume somam, com o efeito cruzado, a variação de cada linha.
+          <MapPinned className="size-3.5 shrink-0" />
+          Em cada linha, efeito-preço + efeito-volume + efeito cruzado = variação. O efeito-volume da linha já inclui a troca de composição (mix).
         </p>
       </CardContent>
     </Card>

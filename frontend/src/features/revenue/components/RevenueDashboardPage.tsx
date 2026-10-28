@@ -28,6 +28,7 @@ export function RevenueDashboardPage() {
         query={query}
         windowError={windowError}
         municipalities={distinctValues(dashboard.municipalitiesQuery.data, 'municipio')}
+        neighborhoods={distinctValues(dashboard.neighborhoodsQuery.data, 'bairro')}
         classes={distinctValues(dashboard.classesQuery.data, 'classe_consumo')}
         onMonthChange={dashboard.changeMonth}
         onFilterChange={dashboard.changeFilter}

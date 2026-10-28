@@ -29,7 +29,6 @@ export function PeriodFieldset({ idPrefix, legend, window, onChange }: PeriodFie
           <Input
             id={`${idPrefix}-inicio`}
             type="date"
-            className="scheme-dark in-[.light]:scheme-light"
             value={monthToDate(window.inicio, 'inicio')}
             max={monthToDate(window.fim, 'fim')}
             onChange={(event) => onChange('inicio', dateToMonth(event.target.value))}
@@ -40,7 +39,6 @@ export function PeriodFieldset({ idPrefix, legend, window, onChange }: PeriodFie
           <Input
             id={`${idPrefix}-fim`}
             type="date"
-            className="scheme-dark in-[.light]:scheme-light"
             value={monthToDate(window.fim, 'fim')}
             min={monthToDate(window.inicio, 'inicio')}
             onChange={(event) => onChange('fim', dateToMonth(event.target.value))}

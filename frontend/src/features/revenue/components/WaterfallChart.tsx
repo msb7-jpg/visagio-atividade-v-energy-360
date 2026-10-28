@@ -28,7 +28,12 @@ function BarTooltip({ bar }: { bar: WaterfallBar }) {
 function WaterfallColumn({ bar }: { bar: WaterfallBar }) {
   return (
     <Tooltip content={<BarTooltip bar={bar} />} containerClassName="flex h-full flex-1 items-end">
-      <div className="relative h-full w-full">
+      <div
+        role="img"
+        tabIndex={0}
+        aria-label={`${bar.label}: ${formatBarValue(bar)}. ${bar.explanation}`}
+        className="focus-visible:ring-ring relative h-full w-full rounded-sm focus-visible:ring-2 focus-visible:outline-none"
+      >
         <motion.div
           className={cn('absolute inset-x-2 bottom-(--plot-bottom) rounded-sm sm:inset-x-4', BAR_STYLES[bar.kind])}
           style={{ '--plot-bottom': `${bar.bottomPct}%` } as CSSProperties}
@@ -43,7 +48,8 @@ function WaterfallColumn({ bar }: { bar: WaterfallBar }) {
 
 /**
  * Ponte de receita (waterfall): receita base, quatro efeitos e receita atual, construída com o design system.
- * O eixo não começa em zero; os valores exatos aparecem no tooltip e na tabela equivalente para leitores de tela.
+ * O eixo não começa em zero; os valores exatos e a explicação de cada coluna aparecem no tooltip, que abre com mouse,
+ * foco do teclado (Tab) ou toque, e são lidos por leitores de tela na própria coluna.
  *
  * @param props - Eixo e colunas calculados por `buildWaterfallAxis`.
  * @returns Gráfico de colunas com rótulos, linhas de grade e tooltip por coluna.
@@ -54,7 +60,7 @@ export function WaterfallChart({ axis }: { axis: WaterfallAxis }) {
     <MotionConfig reducedMotion="user">
       <div className="overflow-x-auto py-3">
         <div className="flex min-w-xl flex-col gap-2">
-          <div role="img" aria-label="Ponte de receita entre a janela base e a janela atual" className="flex gap-2">
+          <div role="group" aria-label="Ponte de receita entre a janela base e a janela atual" className="flex gap-2">
             <div className="text-muted-foreground relative h-64 w-20 shrink-0 text-xs">
               {GRID_STEPS.map((step) => (
                 <span key={step} className="absolute right-0 bottom-(--plot-bottom) translate-y-1/2" style={{ '--plot-bottom': `${step * 100}%` } as CSSProperties}>
@@ -84,17 +90,6 @@ export function WaterfallChart({ axis }: { axis: WaterfallAxis }) {
               ))}
             </div>
           </div>
-          <table className="sr-only">
-            <caption>Ponte de receita entre as janelas</caption>
-            <tbody>
-              {axis.bars.map((bar) => (
-                <tr key={bar.key}>
-                  <th scope="row">{bar.label}</th>
-                  <td>{formatBarValue(bar)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </MotionConfig>

@@ -7,12 +7,7 @@ import type { RevenueKpis } from '@/features/revenue/types/revenueTypes'
 const kpis: RevenueKpis = { ...kpisFixture, ticket_medio_rs: { base: null, atual: null, variacao_pct: null } }
 
 function cardOf(title: string): HTMLElement {
-  const titleElement = screen.getByText(title)
-  const card = titleElement.closest('div[class*="rounded-xl"]')
-  if (!(card instanceof HTMLElement)) {
-    throw new Error(`Card "${title}" não encontrado`)
-  }
-  return card
+  return screen.getByRole('group', { name: title })
 }
 
 describe('RevenueKpiCards', () => {

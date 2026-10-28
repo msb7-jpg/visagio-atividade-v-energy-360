@@ -70,6 +70,7 @@ function NameCell({ row, level, onSelect }: { row: BreakdownRow; level: Breakdow
 
 /**
  * Tabela do ranking de variação de receita: volume, receita e efeitos por bairro, município ou classe.
+ * As colunas de efeito (preço, volume e cruzado) somam a variação de cada linha.
  * No nível de bairro, o nome abre o histórico mensal.
  *
  * @param props - Linhas da página, ordenação ativa e callbacks de ordenar e abrir o histórico.
@@ -85,6 +86,7 @@ export function BreakdownTable({ rows, controls, onSort, onSelect }: BreakdownTa
           <SortableHead field="receita_atual_rs" label="Receita atual" controls={controls} onSort={onSort} />
           <SortableHead field="efeito_preco_rs" label="Efeito-preço" controls={controls} onSort={onSort} />
           <SortableHead field="efeito_volume_rs" label="Efeito-volume" controls={controls} onSort={onSort} />
+          <TableHead className="text-right">Efeito cruzado</TableHead>
           <SortableHead field="variacao_rs" label="Variação" controls={controls} onSort={onSort} />
         </TableRow>
       </TableHeader>
@@ -99,6 +101,7 @@ export function BreakdownTable({ rows, controls, onSort, onSelect }: BreakdownTa
             <NumberCell>{formatCurrency(row.receita_atual_rs)}</NumberCell>
             <SignedCell value={row.efeito_preco_rs} />
             <SignedCell value={row.efeito_volume_rs} />
+            <SignedCell value={row.efeito_cruzado_rs} />
             <SignedCell value={row.variacao_rs} />
           </TableRow>
         ))}

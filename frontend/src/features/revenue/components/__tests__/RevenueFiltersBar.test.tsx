@@ -1,15 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { RevenueFiltersBar } from '@/features/revenue/components/RevenueFiltersBar'
+import type { RevenueFilters } from '@/features/revenue/types/revenueTypes'
 import { DEFAULT_REVENUE_QUERY } from '@/features/revenue/utils/revenueFilters'
 
-function setup(windowError: string | null = null) {
+function setup(windowError: string | null = null, filters: RevenueFilters = {}) {
   const handlers = { onMonthChange: vi.fn(), onFilterChange: vi.fn(), onReset: vi.fn() }
   render(
     <RevenueFiltersBar
-      query={DEFAULT_REVENUE_QUERY}
+      query={{ ...DEFAULT_REVENUE_QUERY, filters }}
       windowError={windowError}
       municipalities={['OLINDA', 'RECIFE']}
+      neighborhoods={['BOA VIAGEM', 'CASA AMARELA']}
       classes={['B1', 'B3']}
       {...handlers}
     />
@@ -43,6 +45,25 @@ describe('RevenueFiltersBar', () => {
     expect(handlers.onFilterChange).toHaveBeenNthCalledWith(1, 'municipio', 'RECIFE')
     expect(handlers.onFilterChange).toHaveBeenNthCalledWith(2, 'classe_consumo', 'B1')
     expect(screen.getByRole('option', { name: 'Todos os municípios' })).toBeInTheDocument()
+  })
+
+  it('só libera o bairro depois de escolher o município', () => {
+    setup()
+
+    const neighborhood = screen.getByLabelText('Bairro')
+    expect(neighborhood).toBeDisabled()
+    expect(screen.getByRole('option', { name: 'Escolha um município' })).toBeInTheDocument()
+  })
+
+  it('lista os bairros do município escolhido e avisa a escolha', () => {
+    const handlers = setup(null, { municipio: 'RECIFE' })
+
+    const neighborhood = screen.getByLabelText('Bairro')
+    expect(neighborhood).toBeEnabled()
+    fireEvent.change(neighborhood, { target: { value: 'CASA AMARELA' } })
+
+    expect(screen.getByRole('option', { name: 'Todos os bairros' })).toBeInTheDocument()
+    expect(handlers.onFilterChange).toHaveBeenCalledWith('bairro', 'CASA AMARELA')
   })
 
   it('restaura o padrão', () => {

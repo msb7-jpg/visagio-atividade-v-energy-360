@@ -35,25 +35,28 @@ const EFFECTS = [
     key: 'preco',
     label: 'Efeito-preço',
     field: 'efeito_preco_rs',
-    explanation: '(P₁ − P₀) × Q₀: quanto a receita mudou só porque a tarifa média mudou, mantendo o volume da base.'
+    explanation:
+      '(P₁ − P₀) × Q₀, calculado em cada segmento (classe e local) e somado: quanto a receita mudou só porque a tarifa mudou, mantendo o volume da base.'
   },
   {
     key: 'volume',
     label: 'Efeito-volume',
     field: 'efeito_volume_rs',
-    explanation: '(Q₁ − Q₀) × P₀: quanto a receita mudou só porque a energia faturada mudou, na tarifa da base.'
+    explanation:
+      '(Q₁ − Q₀) × tarifa média da base: quanto a receita mudou só porque a energia faturada mudou, sem trocar a composição do consumo.'
   },
   {
     key: 'mix',
     label: 'Efeito-mix',
     field: 'efeito_mix_rs',
-    explanation: 'Efeito da troca de composição do consumo entre classes e locais com tarifas diferentes.'
+    explanation:
+      'Soma do efeito de volume de cada segmento menos o efeito de volume puro: troca de composição entre classes e locais com tarifas diferentes.'
   },
   {
     key: 'cruzado',
     label: 'Efeito cruzado',
     field: 'efeito_cruzado_rs',
-    explanation: 'ΔP × ΔQ: interação entre a mudança de preço e a mudança de volume ao mesmo tempo.'
+    explanation: 'ΔP × ΔQ, somado por segmento: interação entre a mudança de preço e a mudança de volume ao mesmo tempo.'
   }
 ] as const
 

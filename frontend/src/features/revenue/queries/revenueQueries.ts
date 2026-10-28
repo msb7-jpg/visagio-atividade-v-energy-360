@@ -4,6 +4,7 @@ import type {
   BreakdownControls,
   BreakdownLevel,
   NeighborhoodRef,
+  RevenueFilters,
   RevenueQuery
 } from '@/features/revenue/types/revenueTypes'
 import { toApiParams, toBreakdownParams, toHistoryParams } from '@/features/revenue/utils/revenueFilters'
@@ -76,15 +77,21 @@ export function revenueBreakdownQueryOptions(query: RevenueQuery, controls: Brea
 }
 
 /**
- * Opções que listam os valores existentes de um nível (municípios ou classes) para alimentar os filtros.
+ * Opções que listam os valores existentes de um nível (municípios, bairros ou classes) para alimentar os filtros.
  *
- * @param query - Janelas escolhidas; os recortes são ignorados para a lista não encolher ao filtrar.
+ * @param query - Janelas escolhidas; os recortes da tela são ignorados para a lista não encolher ao filtrar.
  * @param nivel - Nível cujos valores populam o seletor.
  * @param enabled - `false` evita chamar a API enquanto as janelas são inválidas.
+ * @param scope - Recorte que limita a lista (ex.: o município escolhido, para listar só os bairros dele).
  * @returns Opções de query reaproveitando o endpoint de ranking.
  */
-export function revenueOptionsQueryOptions(query: RevenueQuery, nivel: BreakdownLevel, enabled = true) {
-  const windowsOnly: RevenueQuery = { ...query, filters: {} }
+export function revenueOptionsQueryOptions(
+  query: RevenueQuery,
+  nivel: BreakdownLevel,
+  enabled = true,
+  scope: RevenueFilters = {}
+) {
+  const windowsOnly: RevenueQuery = { ...query, filters: scope }
   const controls: BreakdownControls = {
     nivel,
     ordenar_por: 'receita_atual_rs',

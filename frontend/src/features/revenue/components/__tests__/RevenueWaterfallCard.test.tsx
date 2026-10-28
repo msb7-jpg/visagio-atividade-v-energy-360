@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { decompositionFixture } from '@/features/revenue/__tests__/revenueFixtures'
 import { RevenueWaterfallCard } from '@/features/revenue/components/RevenueWaterfallCard'
@@ -25,10 +25,22 @@ describe('RevenueWaterfallCard', () => {
     expect(screen.getByText(/não em zero/)).toBeInTheDocument()
   })
 
-  it('oferece a tabela equivalente para leitores de tela', () => {
+  it('deixa cada coluna alcançável pelo teclado, com valor e explicação para leitores de tela', () => {
     renderCard()
 
-    expect(screen.getByRole('table', { name: 'Ponte de receita entre as janelas' })).toBeInTheDocument()
+    const columns = screen.getAllByRole('img')
+    expect(columns).toHaveLength(6)
+    columns.forEach((column) => expect(column).toHaveAttribute('tabindex', '0'))
+    expect(screen.getByRole('img', { name: /Efeito-preço:.*em cada segmento/ })).toBeInTheDocument()
+  })
+
+  it('abre a explicação da coluna ao receber o foco do teclado', () => {
+    renderCard()
+
+    expect(screen.queryByText(/sem trocar a composição do consumo/)).not.toBeInTheDocument()
+    fireEvent.focus(screen.getByRole('img', { name: /Efeito-volume/ }))
+
+    expect(screen.getByText(/sem trocar a composição do consumo/)).toBeInTheDocument()
   })
 
   it('mostra a mensagem do backend quando a consulta falha', () => {

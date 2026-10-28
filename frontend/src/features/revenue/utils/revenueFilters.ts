@@ -6,8 +6,8 @@ import type {
 } from '@/features/revenue/types/revenueTypes'
 
 /**
- * Janelas padrão do case: primeiro ano da base contra os últimos 12 meses.
- * Premissa a confirmar com os dados reais (primeira e última competência da Gold).
+ * Janelas padrão do case: primeiro ano da base (jul/2022 a jun/2023) contra os últimos 12 meses (jul/2025 a jun/2026).
+ * São as mesmas janelas do diagnóstico da receita e da tela do diretor.
  */
 export const DEFAULT_REVENUE_QUERY: RevenueQuery = {
   base: { inicio: '2022-07', fim: '2023-06' },
