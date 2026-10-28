@@ -1,7 +1,7 @@
 # 📈 Fatia 04: Inteligência Comercial, Receita & Decomposição (Fullstack)
 
 > **Dono Único:** Celio  
-> **Status:** Não Iniciado  
+> **Status:** Em andamento (frontend entregue no PR #34; falta o diagnóstico)  
 > **Skills de Referência:** [`.agents/skills/backend-coding-standards/SKILL.md`](.agents/skills/backend-coding-standards/SKILL.md) & [`.agents/skills/frontend-coding-standards/SKILL.md`](.agents/skills/frontend-coding-standards/SKILL.md)  
 > **Log Individual:** [`changelog.md`](changelog.md)
 
@@ -59,12 +59,12 @@
 - [x] Criar pasta `backend/app/features/revenue/` com `schemas.py`, `repository.py`, `service.py` e `router.py`.
 - [x] Registrar rotas em `backend/app/api/v1/router.py`.
 - [x] Criar testes unitários em `backend/tests/test_revenue_service.py` validando os cálculos de decomposição com números reais.
-- [ ] Garantir conformidade com `make lint-backend`.
-- [ ] Criar pasta `frontend/src/features/revenue/` com componentes atômicos $\le 150$ linhas.
-- [ ] Adicionar rota `/revenue` em `frontend/src/routes/AppRoutes.tsx`.
-- [ ] Criar testes unitários no frontend com Vitest em `RevenueDashboardPage.test.tsx`.
-- [ ] Redigir relatório e conclusões em `docs/DIAGNOSTICO_RECEITA.md`.
-- [ ] Garantir conformidade com `make lint-frontend`.
+- [x] Garantir conformidade com `make lint-backend`.
+- [x] Criar pasta `frontend/src/features/revenue/` com componentes atômicos $\le 150$ linhas.
+- [x] Adicionar rota `/revenue` em `frontend/src/routes/AppRoutes.tsx`.
+- [x] Criar testes unitários no frontend com Vitest em `RevenueDashboardPage.test.tsx`.
+- [- Em andamento por Celio - 2026-10-27] Redigir relatório e conclusões em `docs/DIAGNOSTICO_RECEITA.md`.
+- [x] Garantir conformidade com `make lint-frontend`.
 
 ---
 
