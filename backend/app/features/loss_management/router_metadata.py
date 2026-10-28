@@ -10,9 +10,12 @@ AUTH_ERROR_RESPONSES: OpenApiResponses = {
 list_suspicious_units_doc = EndpointDoc(
     summary="Fila de UCs suspeitas priorizada por energia esperada a recuperar",
     description=(
-        "Lista UCs com queda >= 50% do consumo médio das 3 últimas competências em relação às 12 anteriores, "
-        "ou com leitura zerada. Exclui UCs com geração distribuída e as já inspecionadas dentro da janela "
-        "de análise (ordem concluída ou histórico de campo); ordem cancelada devolve a UC à fila. UCs com ordem "
+        "Fila classificada: lista UCs com queda >= 20% do consumo médio das 3 últimas competências em relação "
+        "às 12 anteriores, ou com leitura zerada. A queda >= 50% é 'queda_subita' (acerto histórico de 93%); a "
+        "de 20% a 50% é 'queda_moderada', com 'probabilidade_acerto' calibrada por faixa (42% de 30% a 50%; "
+        "7% de 20% a 30%), então o topo da fila continua sendo a queda súbita. Exclui UCs com geração "
+        "distribuída e as já inspecionadas dentro da janela de análise (ordem concluída ou histórico de "
+        "campo); ordem cancelada devolve a UC à fila. UCs com ordem "
         "ativa seguem na lista, com `situacao` ordem_gerada ou em_campo. Cada UC traz `score` de 0 a 100 (kWh "
         "esperado relativo ao topo da fila). Filtros por município, bairro, classe, motivo e score mínimo; "
         "limite padrão de 200 (capacidade mensal da equipe de campo). "

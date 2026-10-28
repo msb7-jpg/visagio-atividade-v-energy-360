@@ -134,12 +134,29 @@ describe('PrioritizedQueueTable', () => {
     expect(within(screen.getByRole('row', { name: /UC1/ })).getAllByText('—')).toHaveLength(3)
   })
 
-  it('mostra um chip por motivo da UC', () => {
-    renderTable([buildUnit('UC1')])
+  it('mostra a queda de consumo da UC com o consumo base e o recente', () => {
+    renderTable([buildUnit('UC1', { consumo_base_kwh: 300, consumo_recente_kwh: 200 })])
 
     const row = screen.getByRole('row', { name: /UC1/ })
-    expect(within(row).getByText('Queda abrupta de consumo')).toBeInTheDocument()
-    expect(within(row).getByText('Consumo zero com medidor ativo')).toBeInTheDocument()
+    expect(within(row).getByText('−33%')).toBeInTheDocument()
+    expect(within(row).getByText('300 → 200 kWh/mês')).toBeInTheDocument()
+  })
+
+  it('mostra a chance de acerto de cada UC, que muda com a faixa de queda', () => {
+    renderTable([
+      buildUnit('UC1', { probabilidade_acerto: 0.93 }),
+      buildUnit('UC2', { probabilidade_acerto: 0.07 })
+    ])
+
+    expect(within(screen.getByRole('row', { name: /UC1/ })).getByText('93%')).toBeInTheDocument()
+    expect(within(screen.getByRole('row', { name: /UC2/ })).getByText('7%')).toBeInTheDocument()
+  })
+
+  it('não repete o motivo em cada linha da tabela', () => {
+    renderTable([buildUnit('UC1', { motivos: ['queda_moderada'] })])
+
+    expect(screen.queryByText('Queda moderada de consumo')).not.toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Motivos' })).not.toBeInTheDocument()
   })
 
   it('codifica o id da UC no link para a Visão 360', () => {

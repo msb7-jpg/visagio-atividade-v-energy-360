@@ -21,7 +21,7 @@ from app.features.loss_management.schemas import (
     SuspiciousUnitsFilterDTO,
     UploadResultDTO,
 )
-from app.features.loss_management.scoring import LIMIAR_QUEDA_SUBITA, order_estimated_kwh, rank_suspicious_units
+from app.features.loss_management.scoring import LIMIAR_QUEDA_MODERADA, order_estimated_kwh, rank_suspicious_units
 from app.features.loss_management.update_rules import ensure_fields_match_status, ensure_required_fields
 from app.features.loss_management.upload_parser import read_spreadsheet
 from app.features.loss_management.upload_reconcile import (
@@ -94,10 +94,10 @@ def suspicion_filters(queue_filter: SuspiciousUnitsFilterDTO) -> SuspicionFilter
         queue_filter: Filtros recebidos pela API.
 
     Returns:
-        Critérios com o limiar de queda súbita da regra de negócio.
+        Critérios com o piso de queda da fila classificada (a queda súbita é só a faixa de topo).
     """
     return SuspicionFilters(
-        limiar_queda=LIMIAR_QUEDA_SUBITA,
+        limiar_queda=LIMIAR_QUEDA_MODERADA,
         municipio=queue_filter.municipio,
         bairro=queue_filter.bairro,
         classe=queue_filter.classe,

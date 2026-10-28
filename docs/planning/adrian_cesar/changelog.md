@@ -460,3 +460,75 @@
 - **Diferenças conhecidas em relação ao desenho:** selos e abas em 8 px (o spec pede 6 px, degrau que o Tailwind v4 não tem sem criar token); hover do botão primário em `/90` (spec: `/85`); ícone do selo "Estimada" é aproximado (`CircleDashed`); `EmptyState` sem `reason`/`activeFilters`; `AppShell` sem busca de UC, menu recolhível, selos "Dados até" e "Modo demonstração" nem seletor de tema.
 - **Efeito na entrega do dia 26:** o raio do quadro de ordens, antes 12 px "do design system", agora segue a escala nova (cartões `rounded-md`, colunas `rounded-lg`).
 - **Pendente / outras fatias:** `onRetry` do `ErrorState` ainda não ligado ao `refetch` em `Customer360Details`, `GridQualityPage` e `SuspiciousQueueTab`; UC 360 (`PAYMENT_STATUS`, Bernardo) e `QualityStatusBadge` (João Henrique) não migraram para o `StatusBadge`; `KpiCard`, `DeltaBadge`, `DataTable` e `FilterBar` seguem sem dono (compartilhados); `ChartCard`/`DrillDownTable` (Célio) e `ChatDrawer`/`SqlAuditPanel` (Miguel) ficam com os donos das fatias.
+
+### [2026-10-27] - Fase 7: fila conferida contra a Gold real (`v_energy.db`)
+- **Autor:** Adrian César (Fatia 05)
+- **Contexto:** a equipe de dados enviou o `backend/v_energy.db` real. Até aqui a fila foi desenvolvida e validada em bancos de simulação (o seed de 45.200 UCs com fila de 83 UCs e o banco sintético de 400 UCs). Nesta data o `v_energy.db` passou a ser a fonte de verdade; as entradas anteriores com números do seed ficam como histórico.
+- **O que foi conferido (somente leitura, nenhum código alterado):**
+  - **Banco usado:** análises e backend abrem `backend/v_energy.db` (sem `.env` de banco nem `DATABASE_URL`). O `v_energy_dev.db` (65 KB, seed da Visão 360) e os `-wal`/`-shm` órfãos de `v_energy_perdas_dev` não foram usados. O `v_energy.db` não tem tabela de seed.
+  - **Esquema:** colunas e formatos batem com o contrato usado em `queries.py` (`competencia` 'YYYY-MM', `data_inspecao` texto ISO, `possui_gd` 0/1). Contagens: 45.000 UCs, 2.152.336 medições (2022-07 a 2026-06, sem consumo negativo), 1.389 inspeções (871 irregulares, 62,7%), 3.510 UCs com GD (iguais às de `geracao_distribuida.csv`). `ordem_inspecao` e `fato_anomalia_leitura` vazias.
+  - **Fila em tempo real (2026-06): 0 UCs.** As 559 UCs com queda ≥ 50% são todas com GD e todas conectaram entre 2025-06 e 2026-04, ou seja, a queda é explicada pela geração solar e a regra as exclui. Entre as UCs sem GD, a maior queda é de 38%. As 1.358 UCs sem GD inspecionadas desde 2025-04 saem da fila. O resultado é o esperado (ver `DECISOES_PERDAS.md` D9) e a regra não foi alterada.
+  - **Poder do sinal nas 1.385 inspeções analisáveis** (consumo dos 3 meses antes da inspeção contra os 12 anteriores): queda ≥ 50% acerta 91% (713 de 780); faixa de 0,5 a 0,7 do consumo, 42%; de 0,7 a 0,85, 7%; sem queda, cerca de 6 a 10%. Nas 391 UCs com GD medidas, o consumo cai a uma mediana de 27% depois da conexão.
+- **Backtest com o `LossService` real** (competência fixada, só as inspeções até o mês contam; acerto nas inspeções dos 3 meses seguintes):
+
+| Referência | UCs na fila | Inspecionadas depois | Acerto | Top 200 inspecionadas | Acerto do top 200 |
+|---|---|---|---|---|---|
+| 2025-06 | 3 | 0 | n/a | 0 | n/a |
+| 2025-07 | 827 | 300 | 94,0% | 129 | 94,6% |
+| 2025-08 | 773 | 369 | 94,9% | 155 | 96,8% |
+| 2025-09 | 590 | 492 | 91,5% | 197 | 93,9% |
+| 2025-10 | 352 | 336 | 90,8% | 197 | 92,9% |
+| 2025-11 | 71 | 70 | 90,0% | 70 | 90,0% |
+| 2026-06 | 0 | 0 | n/a | 0 | n/a |
+
+  - A API limita a 500 UCs por consulta, então "UCs na fila" é o `total` e o acerto da fila é medido nas 500 primeiras.
+  - Fila de 2025-07 contra todas as inspeções posteriores (sem limite de 3 meses): 500 UCs, 497 inspecionadas depois, 467 irregulares (94,0%); top 200 com 189 de 199 (95,0%), contra 62,7% de toda a base.
+- **Configuração para demonstração:** criado `backend/.env` local (ignorado pelo git) com `LOSS_REFERENCE_COMPETENCIA="2025-07"`. A API devolve 827 UCs (200 exibidas) e o aviso `competencia_referencia_fixada`, que a tela mostra. Para voltar ao tempo real, remover a linha e reiniciar o backend. Não conferido no navegador.
+- **Decisões e limitações:**
+  - Quase todas as UCs da fila fixada (497 de 500) foram depois inspecionadas: o campo já seguia esse padrão de queda. O backtest mostra que a regra reproduz bem a escolha do campo, mas **não prova** que ache irregularidades em UCs que ninguém inspecionou; apresentar como "taxa histórica de acerto".
+  - `possui_gd` é o estado atual: UCs que conectaram GD depois da referência ficam fora do backtest (conservador).
+  - A tabela do D9 de `DECISOES_PERDAS.md` foi medida no banco de simulação (por exemplo 354 UCs em 2025-06); na Gold real a onda de quedas começa mais tarde (3 UCs em 2025-06). A tabela acima a substitui.
+- **Pendências:**
+  - Tarifa: `TARIFA_MEDIA_RS_KWH` = 0,714 no código e 0,85 no D8; no `fato_faturamento` real a média de `tarifa_aplicada_rs_kwh` é 0,774 e `valor_energia_rs / consumo_faturado_kwh` é 0,561. Definir com Ryei qual medida usar.
+  - Remedir na Gold real: limiar de 50% (92,6% no D2), exclusão de GD (3,2% no D3) e a taxa da leitura zerada isolada (usa a geral 0,627).
+  - Taxa da queda súbita (0,93): mantida; o backtest na Gold real dá 91 a 95%.
+  - Fila em tempo real vazia: `SuspiciousQueueTab.tsx` já explica ("Nenhuma UC atende aos critérios. UCs com geração distribuída ou já inspecionadas na janela de análise ficam fora da fila"). Opcional: citar também o limiar de queda de 50%.
+- **Validação:** consultas somente leitura (`mode=ro`) e a `LossService` do backend; sem alteração de código, então `make lint-all` e `make test-all` não foram reexecutados.
+
+### [2026-10-27] - Fase 11: fila classificada (piso de 20% e chance de acerto por faixa)
+- **Autor:** Adrian César (Fatia 05)
+- **Motivação:** com o limiar duro de 50%, a fila em tempo real (2026-06) ficava vazia e os dados de 2026 não apareciam. Pedido: uma fila classificada, sem corte duro, com a chance de acerto calibrada por faixa de queda.
+- **O que foi feito (TDD, testes escritos antes):**
+  - `schemas.py`: novo motivo `SuspicionReason.QUEDA_MODERADA` (`"queda_moderada"`).
+  - `scoring.py`: piso `LIMIAR_QUEDA_MODERADA` = 0,2 e `LIMIAR_QUEDA_MODERADA_FORTE` = 0,3. Queda de 50% ou mais segue `queda_subita` (0,93); de 20% a 50% vira `queda_moderada`, com `probabilidade_acerto` por faixa: **0,42** (30% a 50%) e **0,07** (20% a 30%). Novas `reason_hit_rate` e `hit_probability(reasons, drop_ratio)`. A ordenação não mudou: kWh esperado = kWh a recuperar × chance de acerto, então a queda súbita continua no topo.
+  - `service.py`: `suspicion_filters` passa o piso de 20% como critério de candidata (vale para a lista, o resumo e o kWh das ordens novas).
+  - Front: tipo `SuspicionReason`, rótulo "Queda moderada de consumo" e opção no filtro Motivo. Texto OpenAPI de `GET /losses/suspicious-units` atualizado.
+  - Tabela da fila: a coluna "Motivos" saiu, porque o motivo não está no banco (é calculado na API) e vinha igual em todas as linhas. Entraram "Queda" (`formatConsumptionDrop`, com consumo base → recente) e "Chance de acerto" (`probabilidade_acerto`), que variam por UC. O filtro por motivo continua. Validação: `make lint-all` e `make test-all` verdes (backend 543, frontend 209).
+  - `backend/tests/conftest.py`: isola a suíte do `backend/.env` local. Sem isso, a competência fixada para demonstração fazia 12 testes falharem.
+  - Fixture `UC_ZERADA` (base 150 para 120) e o teste unitário de leitura zerada isolada (recente 100 para 130) ajustados: com o piso novo, a queda de 33% deixou de ser "sem queda grande".
+- **Taxas das faixas** (medidas no `v_energy.db`, inspeções de 2025-08 a 2025-12): 30% a 50% de queda = 42% (132 de 314); 15% a 30% = 7% (13 de 176); a faixa de 20% a 30% usa a segunda. Amostras pequenas e escolhidas pelo campo.
+- **Resultado nos dados reais:**
+  - Tempo real (2026-06): **165 UCs** sem GD e não inspecionadas, 19 com chance de 42% e 146 com 7%. Os dados de 2026 passam a aparecer.
+  - Backtest 2025-07: top 200 com **94,9%** de acerto (188 de 198 inspecionadas depois) e fila de 500 com 94,1%; a ordenação do topo não piorou.
+- **Limitações:**
+  - **Meses de queda generalizada:** em 2025-07 e 2025-09 quase toda a carteira cai 20% ou mais (34.240 e 39.247 UCs acima do piso). O topo continua certo (queda súbita primeiro), mas o `total` perde o sentido e a consulta carrega todos os candidatos em memória. Melhoria possível: normalizar a queda pela queda mediana da carteira.
+  - A API continua limitada a 500 UCs por consulta e não tem paginação (`offset`).
+  - Taxas de 42% e 7% a remedir com mais dados; a de 0,93 segue confirmada pelo backtest (91 a 95%).
+- **Configuração:** a competência fixada em 2025-07 foi comentada no `backend/.env` (a fila usa a mais recente, 2026-06). Reiniciar o backend para valer.
+- **Validação:** `make lint-all` exit 0 (Ruff, Pylint 10/10, import-linter 4/4, ESLint, Fallow 0 acima do limite); `make test-all` exit 0: backend **543 passed** (6 novos), frontend **201 passed** (1 novo). **Não conferido no navegador.**
+
+### [2026-10-27] - Fase 12: fila em abas (prioritárias, baixa chance e todas)
+- **Autor:** Adrian César (Fatia 05)
+- **Motivação:** a fila real (2026-06) tem 165 UCs, todas `queda_moderada`: 19 com chance de acerto de 42% e 146 com 7%. Misturadas, a posição 100 parecia tão boa quanto a 10. A primeira versão recolhia a baixa chance atrás de um botão no fim da lista; o usuário não descobria as outras UCs sem rolar a página, então virou abas acima da tabela.
+- **O que foi feito (só frontend; o backend não mudou):**
+  - `utils/queueBands.ts`: `PRIORITY_MIN_HIT_PROBABILITY` = 0,3 (entre 7% e 42%), `isPriorityUnit` e `splitQueueBands`, que mantêm a ordem do backend dentro de cada faixa.
+  - `QueueBandTabs.tsx`: abas **Prioritárias**, **Baixa chance** e **Todas** acima da tabela, com a contagem em cada uma e uma linha que explica a faixa. Usam o estilo sublinhado (`Tabs variant="line"`, variante nova em `ui/tabs.tsx`; o padrão `segmented` não mudou), para não parecerem as abas da página. Abre nas prioritárias; aba sem UC fica desligada e, sem nenhuma prioritária, abre a primeira com UC. Avisa quando a fila foi cortada pelo limite da API.
+  - `PrioritizedQueueTable.tsx`: `total` opcional e `label` próprio por tabela. A posição (#) vale dentro da aba.
+  - `useQueueSelection.selectTop(count, include?)` e `QueueActionsBar`: o botão passou a "Selecionar top 10 prioritárias" e só marca UCs prioritárias, em qualquer aba. A seleção vale entre abas.
+  - Testes: `queueBands.test.ts`, `QueueBandTabs.test.tsx` e um caso novo em `useQueueSelection.test.ts`.
+- **Medições que sustentam a decisão** (consultas somente leitura no `v_energy.db`; D11 em `DECISOES_PERDAS.md`):
+  - Funil: 45.000 UCs, 41.490 sem GD, 40.128 sem as 1.358 inspecionadas, 165 com queda de 20% ou mais. Antes de excluir as inspecionadas eram 656 (491 removidas, 93% delas com irregularidade).
+  - Taxas no ponto do tempo (queda até o mês anterior à inspeção, 1.385 inspeções): 7% (12 de 161) em 20% a 30%, 42% (132 de 314) em 30% a 50% e 91% (713 de 780) a partir de 50%. Confirmam as taxas do código; a análise com a queda de hoje dava 93% na faixa de 20% a 30% por olhar para o futuro.
+  - Sinais testados e não adotados: consumo frente à mediana das UCs da mesma classe e alimentador, e leituras estimadas nos 3 meses anteriores. Entre as 130 inspeções com queda abaixo de 20% (11 irregularidades), nenhum separa as irregulares.
+- **Pendências com a equipe:** prazo de reincidência para UC com irregularidade constatada; autorização de um piloto de 40 a 50 inspeções fora da fila para validar um sinal novo. **Não conferido no navegador** (nem as abas dentro das abas da página, nos dois temas).
+- **Validação:** `make lint-all` exit 0; `make test-all` exit 0: backend **543 passed**, frontend **227 passed**.

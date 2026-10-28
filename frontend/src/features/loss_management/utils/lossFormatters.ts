@@ -7,12 +7,14 @@ const dateFormatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' })
 const integerFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
 const compactFormatter = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
+const PERCENT_SCALE = 100
 const THOUSAND = 1000
 const MILLION = 1_000_000
 const MONTH_ABBREVIATIONS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'] as const
 
 export const REASON_LABELS: Record<SuspicionReason, string> = {
   queda_subita: 'Queda abrupta de consumo',
+  queda_moderada: 'Queda moderada de consumo',
   leitura_zerada: 'Consumo zero com medidor ativo'
 }
 
@@ -53,6 +55,19 @@ export function formatCurrency(value: number): string {
  */
 export function formatPercent(fraction: number): string {
   return percentFormatter.format(fraction)
+}
+
+/**
+ * Formata a queda do consumo recente frente ao consumo base da UC.
+ *
+ * @param baseKwh - Consumo médio mensal das 12 competências de base.
+ * @param recentKwh - Consumo médio mensal das 3 últimas competências.
+ * @returns Texto como "−33%", "0%" sem queda ou "—" quando não há consumo base.
+ */
+export function formatConsumptionDrop(baseKwh: number, recentKwh: number): string {
+  if (baseKwh <= 0) return '—'
+  const drop = Math.max(0, 1 - recentKwh / baseKwh)
+  return drop === 0 ? '0%' : `−${integerFormatter.format(drop * PERCENT_SCALE)}%`
 }
 
 /**

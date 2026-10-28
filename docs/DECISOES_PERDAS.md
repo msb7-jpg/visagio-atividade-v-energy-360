@@ -35,8 +35,15 @@ fora (1.385 de 1.389 entram).
 - **Conformidade:** testes em `test_loss_management_service.py` (ordem pelo produto e desempate pelo score).
 
 ### D2. Sinais e limiares
-- **Decisão:** UC suspeita se o consumo médio das 3 últimas competências cair 50% ou mais frente às 12 anteriores,
-  ou se tiver leitura zerada. Taxas: queda súbita 0,93; leitura zerada 0,627 (a taxa geral).
+- **Decisão (atualizada em 2026-10-27, fila classificada):** UC entra na fila se o consumo médio das 3 últimas
+  competências cair **20% ou mais** frente às 12 anteriores, ou se tiver leitura zerada. A queda de 50% ou mais é
+  `queda_subita` (0,93); a de 20% a 50% é `queda_moderada`, com chance por faixa medida na Gold real: 0,42 de 30% a
+  50% e 0,07 de 20% a 30%. Leitura zerada 0,627 (a taxa geral). A ordem da fila não mudou (kWh esperado = kWh a
+  recuperar x chance), então a queda súbita segue no topo e o piso de 20% só amplia a lista. Em meses de queda
+  generalizada da carteira (ex.: 2025-07 e 2025-09) o piso não seleciona e a lista fica com dezenas de milhares de
+  UCs; o topo continua correto.
+- **Decisão anterior (até 2026-10-27):** só a queda de 50% ou mais entrava; a fila em tempo real (2026-06) ficava
+  vazia.
 - **Impacto:** o limiar de 50% é **conservador**: a faixa de 40 a 50% já acerta 64,9%, quase a média geral, mas
   abaixo de 40% o acerto é de 15% ou menos. Baixar o limiar para 40% aumentaria a fila com UCs de acerto médio.
 - **Suposição não verificada:** a taxa de **leitura zerada é uma suposição**. Esse sinal nunca ocorre nos dados do
@@ -80,6 +87,9 @@ fora (1.385 de 1.389 entram).
 ### D8. Tarifa fixa de R$ 0,85 por kWh (suposição)
 - **Decisão:** o R$ a recuperar usa tarifa média fixa. A tarifa real está em `fato_faturamento` (Fatia 02) e ainda
   não foi integrada. O R$ é uma estimativa; o PDF pede a energia (kWh).
+- **Conferência na Gold real (2026-10-27):** o código usa hoje `TARIFA_MEDIA_RS_KWH` = 0,714 (e não 0,85). No
+  `fato_faturamento` real a média de `tarifa_aplicada_rs_kwh` é 0,774 e `valor_energia_rs / consumo_faturado_kwh` é
+  0,561. Pendente: definir com a Fatia 02 qual medida representa a tarifa a recuperar.
 
 ## 4. Dados e demonstração
 
@@ -88,15 +98,25 @@ fora (1.385 de 1.389 entram).
 - **Impacto:** com os dados limpos, a onda de quedas foi em meados de 2025 e já foi inspecionada (a equipe saiu a
   campo de agosto a dezembro). Com a referência fixada, a fila é calculada com os dados até aquele mês, e só as
   inspeções feitas até o fim dele excluem a UC. A tela mostra o aviso "Competência de referência fixada".
-- **Evidência** (a fila de cada mês, sem o histórico de campo, e o que as inspeções reais acharam nos 3 meses
-  seguintes):
+- **Evidência na Gold real** (`v_energy.db`, conferida em 2026-10-27: a fila de cada mês e o que as inspeções reais
+  acharam nos 3 meses seguintes):
 
 | Referência | UCs na fila | Inspecionadas depois | Acerto | Top 200 inspecionadas | Acerto do top 200 |
 |---|---|---|---|---|---|
-| 2025-06 | 354 | 138 | 93,5% | 83 | 95,2% |
-| 2025-08 | 594 | 377 | 93,1% | 131 | 95,4% |
-| 2025-10 | 323 | 134 | 94,8% | 77 | 97,4% |
+| 2025-06 | 3 | 0 | n/a | 0 | n/a |
+| 2025-07 | 827 | 300 | 94,0% | 129 | 94,6% |
+| 2025-08 | 773 | 369 | 94,9% | 155 | 96,8% |
+| 2025-09 | 590 | 492 | 91,5% | 197 | 93,9% |
+| 2025-10 | 352 | 336 | 90,8% | 197 | 92,9% |
+| 2025-11 | 71 | 70 | 90,0% | 70 | 90,0% |
 | 2026-06 | 0 | 0 | n/a | 0 | n/a |
+
+  A API limita a consulta a 500 UCs; "UCs na fila" é o `total`. Na fila de 2026-06 há 559 quedas ≥ 50%, todas em UCs
+  com GD (conectadas entre 2025-06 e 2026-04), que a regra exclui. O acerto vale para UCs que o campo já inspecionava
+  com esse padrão (497 das 500 primeiras de 2025-07 foram inspecionadas depois): é a taxa histórica de acerto, e não
+  prova que a regra ache irregularidades em UCs que ninguém inspecionou.
+- **Medição anterior (banco de simulação, substituída pela tabela acima):** 2025-06: 354 UCs, 93,5%; 2025-08: 594
+  UCs, 93,1%; 2025-10: 323 UCs, 94,8%. Os acertos são parecidos, mas a onda de quedas da Gold real começa mais tarde.
 
 - **Demonstração de ponta a ponta** (`2025-08`, banco de simulação local): fila de 200 UCs, 200 ordens geradas,
   exportação de 200 linhas e upload do `inspecoes.xlsx` real com **198 conciliadas, 188 irregulares (94,9%)**.
@@ -112,6 +132,26 @@ fora (1.385 de 1.389 entram).
 - **Risco aceito:** casar pela UC conclui a ordem ativa mesmo se a planilha trouxer o resultado de uma inspeção
   antiga. A planilha do portal não tem esse risco. Rejeitar datas anteriores à criação da ordem quebraria a
   demonstração, porque as inspeções são de 2025.
+
+### D11. A fila aparece em duas faixas pela chance de acerto
+- **Decisão:** a tela separa a fila em abas acima da tabela: **Prioritárias** (chance de acerto de 30% ou mais, aba
+  inicial), **Baixa chance** (abaixo de 30%) e **Todas**, cada uma com a contagem. Aba sem UC fica desligada, e a
+  tela abre na primeira que tem UC. Uma versão anterior recolhia a baixa chance atrás de um botão no fim da lista;
+  foi trocada porque o usuário não descobria as outras UCs sem rolar a página. O corte
+  (`PRIORITY_MIN_HIT_PROBABILITY`) fica entre as taxas medidas: 7% (queda de 20% a 30%) e 42% (30% a 50%). A ordem
+  dentro de cada aba é a do backend (kWh esperado). "Selecionar top 10 prioritárias" escolhe só entre as
+  prioritárias, em qualquer aba. A seleção vale entre abas.
+- **O que os dados mostram (2026-06, `v_energy.db` real):** a fila tem **165 UCs**, todas `queda_moderada`: 19 com
+  42% e 146 com 7%. Não há queda abrupta (≥ 50%) nem leitura zerada. As 1.358 UCs já inspecionadas saem da fila:
+  das 656 candidatas com queda de 20% ou mais, 491 foram inspecionadas em 2025-08 a 2025-12.
+- **Taxas conferidas no ponto do tempo** (queda calculada até o mês anterior à inspeção, 1.385 inspeções): 7% (12 de
+  161) para 20% a 30%, 42% (132 de 314) para 30% a 50% e 91% (713 de 780) a partir de 50%. Medir com a queda de hoje
+  dá 93% na faixa de 20% a 30%, mas é viés de olhar para o futuro: não usar.
+- **Sinais testados e não adotados:** consumo frente à mediana das UCs da mesma classe e alimentador, e leituras
+  estimadas nos 3 meses anteriores. Entre as 130 inspeções com queda abaixo de 20% (11 irregularidades), nenhum
+  separa as irregulares. Faltam exemplos de UCs que o campo nunca visitou, então só um **piloto de inspeção** em
+  uma amostra de fora da fila valida um sinal novo.
+- **Em aberto:** depois de quanto tempo uma UC com irregularidade constatada volta à fila (reincidência).
 
 ## 5. Limitações e pendências
 

@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from app.features.loss_management.schemas import InspectionStatus, SuspicionReason, SuspiciousUnitDTO
 
 LIMIAR_QUEDA_SUBITA = 0.5
+LIMIAR_QUEDA_MODERADA_FORTE = 0.3
+LIMIAR_QUEDA_MODERADA = 0.2  # piso da fila classificada: abaixo disso a UC não entra
 JANELA_RECUPERACAO_MESES = 3
 TARIFA_MEDIA_RS_KWH = 0.714  # tarifa de referência do desenho da tela; a real virá de fato_faturamento (Fatia 02)
 MESES_POR_ANO = 12
@@ -15,6 +17,10 @@ SCORE_MAXIMO = 100.0
 # Taxas de acerto medidas em fato_inspecoes_perdas (1.389 inspeções; ver changelog de 2026-10-20 e 2026-10-21).
 # Só a queda súbita tem taxa própria; a leitura zerada isolada ainda não foi medida e usa a taxa geral.
 TAXA_ACERTO_GERAL = 0.627
+# Queda moderada: taxa por faixa, medida no v_energy.db real (changelog de 2026-10-27): queda de 30% a 50% = 42%
+# (132 de 314 inspeções); de 15% a 30% = 7% (13 de 176). A faixa de 20% a 30% usa a segunda.
+TAXA_ACERTO_QUEDA_MODERADA_FORTE = 0.42
+TAXA_ACERTO_QUEDA_MODERADA_FRACA = 0.07
 TAXA_ACERTO_POR_MOTIVO = {
     SuspicionReason.QUEDA_SUBITA: 0.93,
     SuspicionReason.LEITURA_ZERADA: TAXA_ACERTO_GERAL,
@@ -76,12 +82,16 @@ def detect_reasons(profile: ConsumptionProfile) -> list[SuspicionReason]:
         profile: Consumo médio da UC nas janelas base e recente.
 
     Returns:
-        Motivos detectados (queda súbita e/ou leitura zerada); vazio se a UC não é suspeita.
+        Motivos detectados (queda súbita, queda moderada e/ou leitura zerada); vazio se a UC não é suspeita.
+        Queda súbita e queda moderada são excludentes: a moderada vai do piso até o limiar da súbita.
     """
-    has_sudden_drop = consumption_drop_ratio(profile) >= LIMIAR_QUEDA_SUBITA
+    drop_ratio = consumption_drop_ratio(profile)
+    has_sudden_drop = drop_ratio >= LIMIAR_QUEDA_SUBITA
+    has_moderate_drop = LIMIAR_QUEDA_MODERADA <= drop_ratio < LIMIAR_QUEDA_SUBITA
     has_zero_reading = profile.meses_zerados > 0
     reason_checks = (
         (has_sudden_drop, SuspicionReason.QUEDA_SUBITA),
+        (has_moderate_drop, SuspicionReason.QUEDA_MODERADA),
         (has_zero_reading, SuspicionReason.LEITURA_ZERADA),
     )
     return [reason for is_detected, reason in reason_checks if is_detected]
@@ -103,16 +113,33 @@ def risk_score(profile: ConsumptionProfile) -> float:
     return round(capped_score, 1)
 
 
-def hit_probability(reasons: list[SuspicionReason]) -> float:
+def reason_hit_rate(reason: SuspicionReason, drop_ratio: float) -> float:
+    """Taxa histórica de acerto de um sinal; a queda moderada varia com a faixa de queda da UC.
+
+    Args:
+        reason: Motivo de suspeita.
+        drop_ratio: Fração de queda do consumo da UC (0 a 1), usada só pela queda moderada.
+
+    Returns:
+        A taxa de acerto do sinal (0 a 1).
+    """
+    if reason == SuspicionReason.QUEDA_MODERADA:
+        is_strong_band = drop_ratio >= LIMIAR_QUEDA_MODERADA_FORTE
+        return TAXA_ACERTO_QUEDA_MODERADA_FORTE if is_strong_band else TAXA_ACERTO_QUEDA_MODERADA_FRACA
+    return TAXA_ACERTO_POR_MOTIVO[reason]
+
+
+def hit_probability(reasons: list[SuspicionReason], drop_ratio: float = 0.0) -> float:
     """Estima a chance de uma inspeção achar irregularidade a partir dos sinais da UC.
 
     Args:
         reasons: Motivos de suspeita detectados na UC.
+        drop_ratio: Fração de queda do consumo da UC, para calibrar a taxa da queda moderada por faixa.
 
     Returns:
         A maior taxa histórica de acerto entre os sinais presentes (0 a 1); 0 sem sinais.
     """
-    rates = [TAXA_ACERTO_POR_MOTIVO[reason] for reason in reasons]
+    rates = [reason_hit_rate(reason, drop_ratio) for reason in reasons]
     return max(rates, default=0.0)
 
 
@@ -165,7 +192,7 @@ def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | No
         classe_consumo=profile.classe_consumo,
         motivos=reasons,
         score_risco=risk_score(profile),
-        probabilidade_acerto=hit_probability(reasons),
+        probabilidade_acerto=hit_probability(reasons, consumption_drop_ratio(profile)),
         consumo_base_kwh=round(profile.consumo_base_kwh, 1),
         consumo_recente_kwh=round(profile.consumo_recente_kwh, 1),
         kwh_estimado_recuperar=recoverable_kwh,

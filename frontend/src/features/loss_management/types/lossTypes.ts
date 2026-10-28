@@ -2,7 +2,7 @@
 export type InspectionStatus = 'gerada' | 'pendente' | 'concluida' | 'cancelada'
 
 /** Motivos de suspeita calculados pelo backend. */
-export type SuspicionReason = 'queda_subita' | 'leitura_zerada'
+export type SuspicionReason = 'queda_subita' | 'queda_moderada' | 'leitura_zerada'
 
 /** Situação da UC na fila: livre para ordem, com ordem gerada ou já em campo. */
 export type QueueSituation = 'na_fila' | 'ordem_gerada' | 'em_campo'

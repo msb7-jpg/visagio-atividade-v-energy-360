@@ -10,7 +10,7 @@ import type {
 } from '@/features/loss_management/types/lossTypes'
 import { REASON_LABELS } from '@/features/loss_management/utils/lossFormatters'
 
-const REASONS: SuspicionReason[] = ['queda_subita', 'leitura_zerada']
+const REASONS: SuspicionReason[] = ['queda_subita', 'queda_moderada', 'leitura_zerada']
 const MIN_SCORE_OPTIONS = [50, 70, 90]
 const SCORE_EXPLANATION =
   'Score de 0 a 100 = chance de irregularidade × energia recuperável, relativo à UC mais promissora da fila (100).'

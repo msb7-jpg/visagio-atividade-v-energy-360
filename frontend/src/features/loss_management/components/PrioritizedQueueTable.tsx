@@ -16,22 +16,40 @@ function headerCheckState(selectableCount: number, selectedCount: number): Heade
 
 const PAGE_SIZE = 25
 
-const COLUMNS = ['#', 'UC', 'Bairro / município', 'Classe', 'Score', 'Motivos', 'kWh/mês', 'R$/ano', 'Situação'] as const
+const COLUMNS = [
+  '#',
+  'UC',
+  'Bairro / município',
+  'Classe',
+  'Score',
+  'Queda',
+  'Chance de acerto',
+  'kWh/mês',
+  'R$/ano',
+  'Situação'
+] as const
 
 interface PrioritizedQueueTableProps {
   units: SuspiciousUnit[]
-  /** UCs que passam nos filtros, antes do corte da fila. */
-  total: number
+  /** UCs que passam nos filtros, antes do corte da fila; sem ele, o texto não cita o total da fila. */
+  total?: number
+  /** Nome acessível da tabela; as duas faixas da fila usam nomes diferentes. */
+  label?: string
   selection: ReturnType<typeof useQueueSelection>
 }
 
 /**
  * Fila priorizada com seleção em massa: a ordem é a do backend (kWh esperado, da mais promissora para a menos).
  *
- * @param props - UCs visíveis, total da fila e controle de seleção.
+ * @param props - UCs visíveis, total da fila (opcional), nome da tabela e controle de seleção.
  * @returns Tabela com marcação por linha e "marcar as UCs livres da página" no cabeçalho.
  */
-export function PrioritizedQueueTable({ units, total, selection }: PrioritizedQueueTableProps) {
+export function PrioritizedQueueTable({
+  units,
+  total,
+  label = 'Fila priorizada de UCs suspeitas',
+  selection
+}: PrioritizedQueueTableProps) {
   const [requestedPage, setRequestedPage] = useState(0)
   const pageCount = Math.max(1, Math.ceil(units.length / PAGE_SIZE))
   const page = Math.min(requestedPage, pageCount - 1)
@@ -43,10 +61,11 @@ export function PrioritizedQueueTable({ units, total, selection }: PrioritizedQu
   return (
     <div className="flex flex-col gap-2">
       <p className="text-muted-foreground text-xs">
-        Mostrando {firstRank + 1}–{firstRank + pageUnits.length} de {formatInteger(units.length)} UCs carregadas (
-        {formatInteger(total)} na fila) · clique no número da UC para ver por que ela está na fila
+        Mostrando {firstRank + 1}–{firstRank + pageUnits.length} de {formatInteger(units.length)} UCs carregadas
+        {total === undefined ? '' : ` (${formatInteger(total)} na fila)`} · clique no número da UC para ver por que
+        ela está na fila
       </p>
-      <Table aria-label="Fila priorizada de UCs suspeitas">
+      <Table aria-label={label}>
         <TableHeader>
           <TableRow>
             <TableHead>

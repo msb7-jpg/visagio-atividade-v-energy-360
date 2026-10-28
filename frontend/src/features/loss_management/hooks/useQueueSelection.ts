@@ -31,8 +31,11 @@ export function useQueueSelection(units: SuspiciousUnit[]) {
   )
 
   const selectTop = useCallback(
-    (count: number) => setPickedIds(new Set(selectableIds.slice(0, count))),
-    [selectableIds]
+    (count: number, include: (unit: SuspiciousUnit) => boolean = () => true) => {
+      const eligibleIds = units.filter((unit) => isSelectable(unit) && include(unit)).map((unit) => unit.id_uc)
+      setPickedIds(new Set(eligibleIds.slice(0, count)))
+    },
+    [units]
   )
   const clear = useCallback(() => setPickedIds(new Set()), [])
   const toggleMany = useCallback(

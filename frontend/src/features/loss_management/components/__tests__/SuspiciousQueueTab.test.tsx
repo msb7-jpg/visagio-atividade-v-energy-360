@@ -139,14 +139,15 @@ describe('Fila de Inspeção', () => {
     expect(screen.getByText(/871 de 1\.389 inspeções/)).toBeInTheDocument()
   })
 
-  it('lista a UC com score, motivo, kWh por mês, valor por ano e link para a Visão 360', async () => {
+  it('lista a UC com score, queda, chance de acerto, kWh por mês, valor por ano e link para a Visão 360', async () => {
     renderPage()
 
     const row = await rowOf('UC100002')
 
     expect(within(row).getByRole('link', { name: 'UC100002' })).toHaveAttribute('href', '/customers?uc=UC100002')
     expect(within(row).getByText('91')).toBeInTheDocument()
-    expect(within(row).getByText('Queda abrupta de consumo')).toBeInTheDocument()
+    expect(within(row).getByText('−83%')).toBeInTheDocument()
+    expect(within(row).getByText('93%')).toBeInTheDocument()
     expect(within(row).getByText('1.840')).toBeInTheDocument()
     expect(within(row).getByText('Na fila')).toBeInTheDocument()
   })
@@ -180,7 +181,7 @@ describe('Fila de Inspeção', () => {
     renderPage()
     await rowOf('UC100002')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Selecionar top 10' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Selecionar top 10 prioritárias' }))
 
     expect(await screen.findByRole('button', { name: 'Gerar 3 ordens' })).toBeEnabled()
     expect(within(await rowOf('UC100005')).getByRole('checkbox')).toBeChecked()

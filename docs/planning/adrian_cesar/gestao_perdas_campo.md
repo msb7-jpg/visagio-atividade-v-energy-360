@@ -134,7 +134,21 @@
 - [x] Upload aceita o formato real do campo (`inspecoes.xlsx`): apelidos `data`, `resultado` e `inspetor`; quando o `id_inspecao` não é um id do portal (ex.: `IN0000007`), a linha casa pela ordem ativa da `id_uc`. Com ordens ativas, as 1.389 linhas reais são conciliadas.
 
 ### Fase 7 — Troca do provisório pela Gold real
-- [ ] Quando Renan/Ryei exportarem a Gold: **apagar** o seed local da Fase 1 e as tabelas geradas por ele, rodar a fila contra os dados reais e conferir os números.
+> A equipe de dados enviou o `backend/v_energy.db` real (Gold). Conferência feita em 2026-10-27; detalhes no `changelog.md`.
+- [x] Seed local da Fase 1 sem resíduos: o `v_energy.db` real só tem as tabelas da Gold e a `ordem_inspecao` (nenhuma tabela marcada `_seed_provisorio_fatia05`); o `v_energy_dev.db` é só da Visão 360.
+- [x] Fila rodada contra os dados reais e números conferidos: 45.000 UCs, 2.152.336 medições (2022-07 a 2026-06), 1.389 inspeções (871 irregulares, 62,7%). Fila em tempo real (2026-06): **0 UCs** (as 559 quedas ≥ 50% são todas de UCs com GD, que a regra exclui); com a competência fixada em 2025-07: **827 UCs**, top 200 com **94,6%** de acerto nas inspeções dos 3 meses seguintes.
+- [x] Taxa geral 0,627 confirmada (871/1.389). Taxa da queda súbita (0,93): o backtest na Gold real dá 91 a 95% por competência, então a constante segue defensável.
+- [ ] Tarifa: `TARIFA_MEDIA_RS_KWH` (0,714 no código; 0,85 em `DECISOES_PERDAS.md` D8) contra a Gold real: média de `tarifa_aplicada_rs_kwh` = 0,774 e `valor_energia_rs / consumo_faturado_kwh` = 0,561. Aguarda definição com Ryei (Fatia 02) de qual medida usar.
+- [ ] Remedir na Gold real os números que ainda vêm do seed: limiar de 50% (92,6%, D2), exclusão de GD (3,2%, D3) e a taxa da leitura zerada isolada (usa a geral).
+
+### Fase 11 — Fila classificada (2026-10-27)
+> Pedido do dono da fatia: em vez de cortar a fila no limiar de 50%, classificar as UCs e deixar a chance de acerto por faixa mostrar o quanto cada uma vale a inspeção. Detalhes no `changelog.md`.
+- [x] `queda_moderada` (queda de 20% a 50%) entra na fila com chance de acerto por faixa: 0,42 (30% a 50%) e 0,07 (20% a 30%); a queda súbita (50% ou mais, 0,93) continua no topo.
+- [x] Testes escritos antes (TDD), front com o novo motivo e filtro, `tests/conftest.py` isolando o `.env`.
+- [x] No `v_energy.db` real, a fila em tempo real (2026-06) passa de 0 para 165 UCs; backtest de 2025-07 mantém 94,9% de acerto no top 200.
+- [ ] Conferir a tela no navegador com a fila classificada.
+- [ ] Meses de queda generalizada: normalizar a queda pela queda mediana da carteira (hoje o piso de 20% não seleciona em 2025-07 e 2025-09).
+- [ ] Paginação (`offset`) além das 500 UCs da API.
 
 ### Fase 8 — Documentação e suposições (README / changelog)
 > Tudo abaixo está documentado em [`docs/DECISOES_PERDAS.md`](../../DECISOES_PERDAS.md) (decisão, impacto e conformidade).
@@ -162,6 +176,10 @@
 - [x] **10.3 — `StatusBadge`** (`fatura`, `ordem`, `leitura`) ligado à Fila de Inspeção. Código morto `InspectionStatusBadge` e `STATUS_LABELS` removidos. (Adrian César, 2026-10-27)
 - [x] **10.4 — `ErrorState`** em `AsyncState` e `ErrorBoundary`. (Adrian César, 2026-10-27)
 - [ ] **10.5 — Pendências:** conferência visual nos dois temas, `onRetry` nas telas de outras fatias, migração de UC 360 (`PAYMENT_STATUS`) para o `StatusBadge`, e `KpiCard`, `DeltaBadge`, `DataTable`, `FilterBar` (dono a definir com a equipe).
+
+### Fase 12 — Fila em duas faixas (2026-10-27)
+- [x] **12.1 — Abas Prioritárias, Baixa chance e Todas** na Fila de Inspeção (`QueueBandTabs`, `queueBands.ts`), acima da tabela e com contagem, corte de 30% de chance de acerto e "Selecionar top 10 prioritárias" só entre as prioritárias. Decisão D11 em `docs/DECISOES_PERDAS.md`. (Adrian César, 2026-10-27)
+- [ ] **12.2 — Pendências com a equipe:** prazo de reincidência para UC com irregularidade constatada e autorização de um piloto de inspeção fora da fila.
 
 ---
 

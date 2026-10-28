@@ -57,8 +57,51 @@ def test_stable_consumption_is_not_suspicious():
     assert build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=190)) is None
 
 
+def test_moderate_drop_enters_the_ranked_queue_with_its_own_reason():
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=195))
+
+    assert unit is not None
+    assert unit.motivos == [SuspicionReason.QUEDA_MODERADA]
+    assert unit.kwh_mes_recuperavel == pytest.approx(105.0)
+
+
+def test_drop_just_below_the_floor_is_not_suspicious():
+    assert build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=170)) is None
+
+
+def test_drop_of_exactly_half_is_a_sudden_drop_not_a_moderate_one():
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=100))
+
+    assert unit is not None
+    assert unit.motivos == [SuspicionReason.QUEDA_SUBITA]
+
+
+def test_hit_probability_of_a_moderate_drop_depends_on_its_band():
+    assert hit_probability([SuspicionReason.QUEDA_MODERADA], drop_ratio=0.35) == pytest.approx(0.42)
+    assert hit_probability([SuspicionReason.QUEDA_MODERADA], drop_ratio=0.25) == pytest.approx(0.07)
+
+
+def test_unit_exposes_the_calibrated_probability_of_its_drop_band():
+    strong_moderate = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=195))
+    weak_moderate = build_suspicious_unit(make_profile("UC2", base_kwh=300, recent_kwh=225))
+
+    assert strong_moderate is not None
+    assert weak_moderate is not None
+    assert strong_moderate.probabilidade_acerto == pytest.approx(0.42)
+    assert weak_moderate.probabilidade_acerto == pytest.approx(0.07)
+
+
+def test_ranking_puts_a_sudden_drop_ahead_of_a_larger_but_unlikelier_moderate_drop():
+    large_weak_drop = make_profile("UC_QUEDA_FRACA_GRANDE", base_kwh=2000, recent_kwh=1500)
+    small_sudden_drop = make_profile("UC_QUEDA_SUBITA", base_kwh=300, recent_kwh=100)
+
+    ranked = rank_suspicious_units([large_weak_drop, small_sudden_drop], limit=2)
+
+    assert [unit.id_uc for unit in ranked] == ["UC_QUEDA_SUBITA", "UC_QUEDA_FRACA_GRANDE"]
+
+
 def test_zero_reading_is_flagged_even_without_large_drop():
-    unit = build_suspicious_unit(make_profile("UC1", base_kwh=150, recent_kwh=100, zero_months=1))
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=150, recent_kwh=130, zero_months=1))
 
     assert unit is not None
     assert unit.motivos == [SuspicionReason.LEITURA_ZERADA]

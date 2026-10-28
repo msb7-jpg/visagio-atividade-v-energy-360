@@ -15,7 +15,7 @@ RECENT_COMPETENCIAS = COMPETENCIAS[-3:]
 # (id_uc, possui_gd, bairro, consumo base, consumo nas 3 competências recentes)
 SEED_UNITS = [
     ("UC_FRAUDE", 0, "Centro", 300.0, [50.0, 50.0, 50.0]),
-    ("UC_ZERADA", 0, "Centro", 150.0, [150.0, 0.0, 150.0]),
+    ("UC_ZERADA", 0, "Centro", 120.0, [150.0, 0.0, 150.0]),
     ("UC_NORMAL", 0, "Centro", 200.0, [200.0, 200.0, 200.0]),
     ("UC_SOLAR", 1, "Centro", 300.0, [40.0, 40.0, 40.0]),
     ("UC_INSPECIONADA", 0, "Centro", 250.0, [50.0, 50.0, 50.0]),

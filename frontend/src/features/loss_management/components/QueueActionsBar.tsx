@@ -23,7 +23,7 @@ export function QueueActionsBar({ selectedCount, hasOrdersToExport, onSelectTop,
     <div className="flex flex-wrap items-start gap-2">
       <ExportOrdersButton label="Exportar fila (CSV)" disabled={!hasOrdersToExport} />
       <Button type="button" variant="outline" onClick={onSelectTop}>
-        Selecionar top {TOP_SELECTION_COUNT}
+        Selecionar top {TOP_SELECTION_COUNT} prioritárias
       </Button>
       <Button type="button" onClick={onGenerate} disabled={selectedCount === 0}>
         Gerar {selectedCount} {ordersLabel(selectedCount)}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   describeReasons,
   formatCompactCurrency,
+  formatConsumptionDrop,
   formatInteger,
   formatPercent,
   formatPeriod,
@@ -47,7 +48,24 @@ describe('contagens e percentuais', () => {
   })
 })
 
+describe('formatConsumptionDrop', () => {
+  it.each([
+    [300, 200, '−33%'],
+    [300, 50, '−83%'],
+    [120, 0, '−100%'],
+    [100, 100, '0%'],
+    [100, 130, '0%'],
+    [0, 0, '—']
+  ])('base %d e recente %d viram %s', (base, recent, expected) => {
+    expect(formatConsumptionDrop(base, recent)).toBe(expected)
+  })
+})
+
 describe('describeReasons', () => {
+  it('descreve a queda moderada da fila classificada', () => {
+    expect(describeReasons(['queda_moderada'])).toBe('Queda moderada de consumo')
+  })
+
   it('usa os textos do desenho, separados por vírgula', () => {
     expect(describeReasons(['queda_subita', 'leitura_zerada'])).toBe(
       'Queda abrupta de consumo, Consumo zero com medidor ativo'

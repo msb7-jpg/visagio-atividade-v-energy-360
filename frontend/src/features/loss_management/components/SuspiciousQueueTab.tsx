@@ -1,12 +1,13 @@
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { Card } from '@/components/ui/card'
 import { GenerateOrdersDialog } from '@/features/loss_management/components/GenerateOrdersDialog'
-import { PrioritizedQueueTable } from '@/features/loss_management/components/PrioritizedQueueTable'
 import { QueueActionsBar, TOP_SELECTION_COUNT } from '@/features/loss_management/components/QueueActionsBar'
+import { QueueBandTabs } from '@/features/loss_management/components/QueueBandTabs'
 import { QueueFilters } from '@/features/loss_management/components/QueueFilters'
 import { QueueSummaryCards } from '@/features/loss_management/components/QueueSummaryCards'
 import { QueueWarnings } from '@/features/loss_management/components/QueueWarnings'
 import type { SuspiciousQueueController } from '@/features/loss_management/hooks/useSuspiciousQueueController'
+import { isPriorityUnit } from '@/features/loss_management/utils/queueBands'
 
 interface SuspiciousQueueTabProps {
   queue: SuspiciousQueueController
@@ -29,7 +30,7 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
         <QueueActionsBar
           selectedCount={selection.selectedIds.length}
           hasOrdersToExport={(summary?.capacidade_programada ?? 0) > 0}
-          onSelectTop={() => selection.selectTop(TOP_SELECTION_COUNT)}
+          onSelectTop={() => selection.selectTop(TOP_SELECTION_COUNT, isPriorityUnit)}
           onGenerate={queue.openDialog}
         />
       </Card>
@@ -43,7 +44,7 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
         emptyTitle="Nenhuma UC suspeita na fila"
         emptyDescription="Nenhuma UC atende aos critérios. UCs com geração distribuída ou já inspecionadas na janela de análise ficam fora da fila."
       >
-        <PrioritizedQueueTable
+        <QueueBandTabs
           key={JSON.stringify(queue.filters)}
           units={units}
           total={queue.total ?? units.length}

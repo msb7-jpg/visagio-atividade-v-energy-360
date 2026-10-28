@@ -19,6 +19,7 @@ class SuspicionReason(StrEnum):
     """Motivos que colocam uma UC na fila de suspeitas."""
 
     QUEDA_SUBITA = "queda_subita"
+    QUEDA_MODERADA = "queda_moderada"
     LEITURA_ZERADA = "leitura_zerada"
 
 

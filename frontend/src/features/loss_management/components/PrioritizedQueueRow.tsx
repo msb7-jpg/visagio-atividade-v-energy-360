@@ -1,11 +1,15 @@
 import { Link } from 'react-router-dom'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { QueueSituationBadge } from '@/features/loss_management/components/QueueSituationBadge'
 import { ScoreBar } from '@/features/loss_management/components/ScoreBar'
 import type { SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
-import { formatCompactCurrency, formatInteger, REASON_LABELS } from '@/features/loss_management/utils/lossFormatters'
+import {
+  formatCompactCurrency,
+  formatConsumptionDrop,
+  formatInteger,
+  formatPercent
+} from '@/features/loss_management/utils/lossFormatters'
 
 interface PrioritizedQueueRowProps {
   unit: SuspiciousUnit
@@ -16,7 +20,8 @@ interface PrioritizedQueueRowProps {
 }
 
 /**
- * Linha da fila priorizada: marcação, posição, UC (link para a Visão 360), território, score, motivos e situação.
+ * Linha da fila priorizada: marcação, posição, UC (link para a Visão 360), território, score, queda de consumo,
+ * chance de acerto e situação.
  *
  * @param props - UC, posição, estado de seleção e callback de marcação.
  * @returns Linha da tabela; UCs com ordem gerada ou em campo não podem ser marcadas.
@@ -47,12 +52,14 @@ export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onTo
       <TableCell>{unit.classe_consumo ?? '—'}</TableCell>
       <TableCell><ScoreBar score={unit.score} /></TableCell>
       <TableCell>
-        <div className="flex flex-wrap gap-1">
-          {unit.motivos.map((reason) => (
-            <Badge key={reason} variant="outline">{REASON_LABELS[reason]}</Badge>
-          ))}
+        <div className="flex flex-col">
+          <span className="font-mono">{formatConsumptionDrop(unit.consumo_base_kwh, unit.consumo_recente_kwh)}</span>
+          <span className="text-muted-foreground text-xs">
+            {formatInteger(unit.consumo_base_kwh)} → {formatInteger(unit.consumo_recente_kwh)} kWh/mês
+          </span>
         </div>
       </TableCell>
+      <TableCell><span className="font-mono">{formatPercent(unit.probabilidade_acerto)}</span></TableCell>
       <TableCell><span className="font-mono">{formatInteger(unit.kwh_mes_recuperavel)}</span></TableCell>
       <TableCell><span className="font-mono">{formatCompactCurrency(unit.valor_ano_rs)}</span></TableCell>
       <TableCell><QueueSituationBadge situation={unit.situacao} /></TableCell>

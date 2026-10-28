@@ -87,7 +87,7 @@ def _candidate_select(consumo: Subquery) -> Select:
 def _candidate_conditions(
     consumo: Subquery, filters: SuspicionFilters, excluded_units: Select | CompoundSelect
 ) -> list[ColumnElement[bool]]:
-    """Condições para uma UC virar candidata: sem GD, sem inspeção recente, com queda súbita ou leitura zerada."""
+    """Condições para uma UC virar candidata: sem GD, sem inspeção recente, com queda acima do piso ou zerada."""
     uc = dim_unidade_consumidora
     remaining_share = 1 - filters.limiar_queda
     drop_ceiling_kwh = consumo.c.consumo_base_kwh * remaining_share
