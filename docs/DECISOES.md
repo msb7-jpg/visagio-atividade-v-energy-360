@@ -80,10 +80,13 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 
 ## ADR-009 — Normalização Resiliente de Datas e Textos (Silver)
 
-- **Data:** 2026-10-22 · **Fatia:** 01 (Renan) · **Status:** Aceita
-- **Contexto:** Devido à dispersão de exportação dos sistemas legados da V-Energy, o campo `data_leitura` aparece como `yyyy-MM-dd`, `dd/MM/yyyy`, `dd.MM.yyyy` e o preenchimento de endereço e UFs flutua.
-- **Decisão:** Uso do `safe_date_parse_v2` testando via `coalesce(try_to_date(...))` uma cascata de 6 formatos até encontrar padrão. Remoção de todos os acentos e padronização `UPPER()` nas colunas `bairro` e `municipio`. `PERNAMBUCO` convertido para a sigla canônica `PE`.
-- **Impacto:** Evita perda por falha de casting ou criação de bairros duplicados no dashboard gerencial de filtro.
+- **Data:** 2026-10-22 · **Fatia:** 01 (Renan) · **Status:** Aceita (revisada em 2026-10-28)
+- **Contexto:** Devido à dispersão de exportação dos sistemas legados da V-Energy, o campo `data_leitura` aparece como `yyyy-MM-dd`, `dd/MM/yyyy`, `dd.MM.yyyy` e o preenchimento de endereço e UFs flutua. Além disso, o arquivo bruto `unidades_consumidoras.csv` mistura textos íntegros em UTF-8 com textos em dupla codificação (*mojibake*: UTF-8 lido como Latin-1/Windows-1252 e re-salvo em UTF-8), corrompendo 61 bairros em 348 UCs (ex.: `Brasília Teimosa` virando `BRASA\xadLIA TEIMOSA`).
+- **Decisão:**
+  1. **Datas e siglas:** Uso do `safe_date_parse_v2` testando via `coalesce(try_to_date(...))` uma cascata de 6 formatos até encontrar padrão. `PERNAMBUCO` convertido para a sigla canônica `PE`.
+  2. **Reversão de Mojibake e remoção de acentos:** Antes da remoção de acentos, reverter a dupla codificação com o UDF `fix_mojibake` (`texto.encode("latin-1").decode("utf-8")` com tratamento de erro `UnicodeEncodeError`/`UnicodeDecodeError`). Em seguida, aplicar remoção de acentos via `translate` e padronização `UPPER()` e `trim()` nos campos cadastrais (`bairro`, `municipio`, `logradouro` e `nome_titular`).
+- **Impacto:** Evita perda por falha de casting e unifica os 61 bairros duplicados, eliminando bairros "fantasmas" no filtro de bairro, no ranking da Receita e na Visão 360.
+- **Conformidade:** Teste no Spark `dim_unidade.filter(F.col("bairro").rlike(r"[^ -~]")).count() == 0` e no SQLite `SELECT count(*) FROM dim_unidade_consumidora WHERE bairro GLOB '*[^ -~]*' == 0`.
 
 ## ADR-010 — Painel do Diretor: indicadores das cinco áreas e períodos padrão do case
 
