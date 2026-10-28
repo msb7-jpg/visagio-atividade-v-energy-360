@@ -91,10 +91,10 @@ Cada causa tem **uma consulta direta no banco** (seção 9), **uma ação** e **
 | # | Causa | O que medir | Fonte (tabela.coluna) | Responsável | Energia (MWh) | Receita (R$/ano) |
 |---|---|---|---|---|---|---|
 | 6.1 | **Painéis solares (GD)** | queda de consumo faturado das UCs com GD depois da `data_conexao_gd`, comparada com UCs sem GD da mesma classe | `dim_unidade_consumidora.possui_gd`, `potencia_gd_kw`, `data_conexao_gd` · `fato_faturamento` | Renan | `[a preencher]` | `[a preencher]` |
-| 6.2 | **Fraude e furto** | energia não faturada com indício de irregularidade; usar **o mesmo cálculo de energia recuperável da fila de perdas** (Adrian) | `fato_anomalia_leitura` · fila de perdas | Renan + Adrian | `[a preencher]` | `[a preencher]` |
+| 6.2 | **Fraude e furto** | energia não faturada com indício de irregularidade; usar **o mesmo cálculo de energia recuperável da fila de perdas** (Adrian), mais o que as inspeções de campo já recuperaram | `fato_anomalia_leitura` · `fato_inspecoes_perdas` · fila de perdas (`/api/v1/losses`) | Renan + Adrian | `[a preencher]` | `[a preencher]` |
 | 6.3 | **Inadimplência** | faturas vencidas e não pagas e o valor delas | `fato_faturamento.status_pagamento = 'VENCIDA'` | Ryei | n/a | `[a preencher]` |
-| 6.4 | **Leituras estimadas** | faturas fechadas pela média e quanto elas se afastam da leitura real seguinte | `fato_medicao.tipo_leitura = 'ESTIMADA'` | Renan | `[a preencher]` | `[a preencher]` |
-| 6.5 | **Clientes que passaram a consumir menos** | queda de consumo das UCs sem GD e sem anomalia, por classe e bairro | `fato_faturamento` · `dim_unidade_consumidora` | Célio (ranking da tela) | `[a preencher]` | `[a preencher]` |
+| 6.4 | **Leituras estimadas** | leituras fechadas pela média (participação em cada janela) e quanto elas se afastam da leitura real seguinte | `fato_medicao.tipo_leitura = 'ESTIMADA'` | Renan | `[a preencher]` | `[a preencher]` |
+| 6.5 | **Clientes que passaram a consumir menos** | queda de consumo das UCs mantidas, sem GD e sem anomalia, por classe e bairro (o que sobra depois de 6.1 a 6.4) | `fato_faturamento` · `dim_unidade_consumidora` | Célio (ranking da tela) | `[a preencher]` | `[a preencher]` |
 
 Cuidados de interpretação (a validar com os dados antes de afirmar qualquer coisa):
 
@@ -102,12 +102,52 @@ Cuidados de interpretação (a validar com os dados antes de afirmar qualquer co
 - **Leitura estimada** muda o mês em que o consumo é cobrado, e tende a se compensar em 12 meses. Medir o efeito real nas duas janelas antes de contá-lo como causa.
 - **Faturas sem consumo válido** (6.329 faturas, segundo o dicionário de dados) entram na receita, mas não no volume: elevam levemente a tarifa média. Informar o tamanho disso na seção 9.
 
-### 6.1 a 6.5: detalhamento
+### 6.0 Ponto de partida: UCs novas, perdidas e mantidas
 
-Repetir o bloco abaixo para cada causa depois que o número existir.
+Antes de atribuir a queda a qualquer causa, separar de onde ela vem. A base de clientes cresceu, então o volume total junta três grupos: UCs **novas** (só na janela atual), UCs **perdidas** (só na base) e UCs **mantidas** (nas duas). As causas 6.1 a 6.5 explicam a queda das mantidas; as novas e as perdidas mostram o efeito do crescimento. Consulta **C0** (seção 9).
 
-- **Medido:** `[a preencher]` (valor, janela, recorte)
-- **Consulta:** código da consulta na seção 9
+- **Cuidado:** UC que entrou ou saiu no meio de uma janela tem menos de 12 faturas e distorce a comparação. Conferir quantas UCs mantidas têm menos de 12 meses em cada janela e dizer o tamanho disso.
+
+### 6.1 Painéis solares (GD)
+
+- **Como medir:** variação de consumo faturado das UCs **mantidas** com `possui_gd = 1` contra as sem GD da mesma classe (consulta **C1**). A diferença entre as duas variações, aplicada ao consumo da base das UCs com GD, é a parte atribuível à geração própria.
+- **Cuidados:** `data_conexao_gd` mostra quando a UC passou a gerar; UC que ligou a GD no meio da janela mistura antes e depois. Confirmar com o Renan se `consumo_faturado_kwh` já é líquido da energia injetada.
+- **Medido:** `[a preencher]` (kWh e MWh na janela, nº de UCs, kWp instalados)
+- **Ação proposta:** `[a preencher]`
+- **Ganho estimado e premissa:** `[a preencher]`
+
+### 6.2 Fraude e furto
+
+- **Como medir:** usar o **mesmo cálculo da fila de perdas** (Adrian), para não existirem dois números. No código dele (`backend/app/features/loss_management/scoring.py`):
+  - kWh/mês recuperável = consumo médio da base − consumo médio recente da UC (mínimo 0);
+  - valor/ano = kWh/mês × 12 × tarifa de referência;
+  - retorno esperado = kWh/mês × taxa histórica de acerto (62,7% no geral e 93% para queda súbita, medidas em 1.389 inspeções de campo).
+- **Conferir com o Adrian:** a tarifa de referência da fila é uma constante provisória (R$ 0,714/kWh, "tarifa de referência do desenho da tela"), diferente da tarifa média da tela de receita. Combinar qual vale no diagnóstico e usar a mesma nos dois.
+- **Também medir (campo):** o que as inspeções já recuperaram de fato (consulta **C2a**) e quantas UCs têm leitura anômala (consulta **C2b**), como contexto, sem somar com a estimativa da fila.
+- **Medido:** `[a preencher]` (UCs na fila, kWh/mês recuperável, valor/ano)
+- **Ação proposta:** `[a preencher]` (ex.: quantas UCs do topo da fila inspecionar)
+- **Ganho estimado e premissa:** `[a preencher]`
+
+### 6.3 Inadimplência
+
+- **Como medir:** percentual do faturado que está vencido e não pago, em cada janela (consulta **C3**).
+- **Cuidado:** muda o caixa, não a receita faturada nem o volume. Entra no documento como problema de arrecadação, em separado das causas de volume.
+- **Medido:** `[a preencher]`
+- **Ação proposta:** `[a preencher]`
+- **Ganho estimado e premissa:** `[a preencher]`
+
+### 6.4 Leituras estimadas
+
+- **Como medir:** participação das leituras estimadas em cada janela e o kWh que elas carregam (consulta **C4**). Depois comparar o consumo estimado com a leitura real seguinte da mesma UC.
+- **Cuidado:** tende a mudar o mês da cobrança, não o total do ano. Só entra como causa se houver efeito líquido nas duas janelas.
+- **Medido:** `[a preencher]`
+- **Ação proposta:** `[a preencher]`
+- **Ganho estimado e premissa:** `[a preencher]`
+
+### 6.5 Clientes que passaram a consumir menos
+
+- **Como medir:** queda das UCs mantidas, sem GD e sem leitura anômala, por classe, município e bairro (consulta **C5**). Cruzar com o ranking territorial da tela.
+- **Medido:** `[a preencher]`
 - **Ação proposta:** `[a preencher]`
 - **Ganho estimado e premissa:** `[a preencher]`
 
@@ -156,7 +196,166 @@ WHERE f.competencia BETWEEN '2022-07' AND '2023-06'
 GROUP BY janela;
 ```
 
-`[a preencher]` Consultas das causas 6.1 a 6.5, uma por causa, com o resultado ao lado.
+### Consultas das causas
+
+Todas rodam no SQLite (`v_energy.db`) com as janelas fixas da seção 2. Os resultados ainda não foram preenchidos: as consultas foram escritas a partir do dicionário de dados (`docs/DATA_DICTIONARY.md`) e testadas apenas quanto à sintaxe, então **conferir nomes de colunas e resultados no banco real** antes de usar qualquer número.
+
+**C0: UCs novas, perdidas e mantidas (seção 6.0)**
+
+Mostra de onde vem a variação de volume e de receita.
+
+```sql
+WITH por_uc AS (
+  SELECT f.id_uc,
+         SUM(CASE WHEN f.competencia BETWEEN '2022-07' AND '2023-06' THEN f.consumo_faturado_kwh END) AS kwh_base,
+         SUM(CASE WHEN f.competencia BETWEEN '2025-07' AND '2026-06' THEN f.consumo_faturado_kwh END) AS kwh_atual,
+         SUM(CASE WHEN f.competencia BETWEEN '2022-07' AND '2023-06' THEN f.valor_total_rs END)      AS rs_base,
+         SUM(CASE WHEN f.competencia BETWEEN '2025-07' AND '2026-06' THEN f.valor_total_rs END)      AS rs_atual
+  FROM fato_faturamento f
+  GROUP BY f.id_uc
+)
+SELECT CASE
+         WHEN kwh_base IS NULL  THEN 'nova (só na janela atual)'
+         WHEN kwh_atual IS NULL THEN 'perdida (só na janela base)'
+         ELSE 'mantida (nas duas janelas)'
+       END                                   AS grupo,
+       COUNT(*)                              AS ucs,
+       ROUND(SUM(COALESCE(kwh_base, 0)), 0)  AS kwh_base,
+       ROUND(SUM(COALESCE(kwh_atual, 0)), 0) AS kwh_atual,
+       ROUND(SUM(COALESCE(kwh_atual, 0)) - SUM(COALESCE(kwh_base, 0)), 0) AS variacao_kwh,
+       ROUND(SUM(COALESCE(rs_atual, 0)) - SUM(COALESCE(rs_base, 0)), 2)   AS variacao_rs
+FROM por_uc
+GROUP BY grupo
+ORDER BY variacao_kwh;
+```
+
+**Resultado:** `[a preencher]`
+
+**C1: UCs mantidas com e sem geração distribuída (causa 6.1)**
+
+Compara a variação de consumo das UCs com GD com as sem GD, por classe.
+
+```sql
+WITH por_uc AS (
+  SELECT f.id_uc,
+         SUM(CASE WHEN f.competencia BETWEEN '2022-07' AND '2023-06' THEN f.consumo_faturado_kwh END) AS kwh_base,
+         SUM(CASE WHEN f.competencia BETWEEN '2025-07' AND '2026-06' THEN f.consumo_faturado_kwh END) AS kwh_atual
+  FROM fato_faturamento f
+  GROUP BY f.id_uc
+)
+SELECT u.possui_gd,
+       u.classe_consumo,
+       COUNT(*)                                  AS ucs,
+       ROUND(SUM(p.kwh_base), 0)                 AS kwh_base,
+       ROUND(SUM(p.kwh_atual), 0)                AS kwh_atual,
+       ROUND(SUM(p.kwh_atual) - SUM(p.kwh_base), 0) AS variacao_kwh,
+       ROUND(100.0 * (SUM(p.kwh_atual) - SUM(p.kwh_base)) / SUM(p.kwh_base), 1) AS variacao_pct,
+       ROUND(SUM(CASE WHEN u.possui_gd = 1 THEN u.potencia_gd_kw END), 1)       AS potencia_gd_kw
+FROM por_uc p
+JOIN dim_unidade_consumidora u ON u.id_uc = p.id_uc
+WHERE p.kwh_base IS NOT NULL AND p.kwh_atual IS NOT NULL
+GROUP BY u.possui_gd, u.classe_consumo
+ORDER BY variacao_kwh;
+```
+
+**Resultado:** `[a preencher]`
+
+**C2a: o que as inspeções de campo já recuperaram (causa 6.2)**
+
+Taxa de acerto e energia recuperada medidas nas inspeções.
+
+```sql
+SELECT COUNT(*)                                          AS inspecoes,
+       SUM(irregularidade_constatada)                    AS com_irregularidade,
+       ROUND(100.0 * SUM(irregularidade_constatada) / COUNT(*), 1) AS taxa_acerto_pct,
+       ROUND(SUM(kwh_recuperado), 0)                     AS kwh_recuperado,
+       ROUND(SUM(CASE WHEN irregularidade_constatada = 1 THEN kwh_recuperado END)
+             / SUM(irregularidade_constatada), 0)        AS kwh_medio_por_irregularidade
+FROM fato_inspecoes_perdas;
+```
+
+**Resultado:** `[a preencher]`
+
+**C2b: leituras anômalas (causa 6.2)**
+
+Indício de by-pass; não é a estimativa da fila, que vem da API de perdas.
+
+```sql
+SELECT COUNT(DISTINCT id_uc)              AS ucs_com_anomalia,
+       COUNT(*)                           AS leituras_anomalas,
+       ROUND(SUM(ABS(diferenca_leitura_kwh)), 0) AS kwh_inexplicados
+FROM fato_anomalia_leitura;
+```
+
+**Resultado:** `[a preencher]`
+
+**C3: inadimplência por janela (causa 6.3)**
+
+Percentual do faturado que está vencido.
+
+```sql
+SELECT CASE WHEN competencia BETWEEN '2022-07' AND '2023-06' THEN 'base' ELSE 'atual' END AS janela,
+       COUNT(*)                                                                AS faturas,
+       ROUND(SUM(valor_total_rs), 2)                                           AS faturado_rs,
+       ROUND(SUM(CASE WHEN status_pagamento = 'VENCIDA' THEN valor_total_rs ELSE 0 END), 2) AS vencido_rs,
+       ROUND(100.0 * SUM(CASE WHEN status_pagamento = 'VENCIDA' THEN valor_total_rs ELSE 0 END)
+             / SUM(valor_total_rs), 2)                                         AS vencido_pct
+FROM fato_faturamento
+WHERE competencia BETWEEN '2022-07' AND '2023-06'
+   OR competencia BETWEEN '2025-07' AND '2026-06'
+GROUP BY janela
+ORDER BY janela;
+```
+
+**Resultado:** `[a preencher]`
+
+**C4: leituras estimadas por janela (causa 6.4)**
+
+Participação das leituras estimadas.
+
+```sql
+SELECT CASE WHEN competencia BETWEEN '2022-07' AND '2023-06' THEN 'base' ELSE 'atual' END AS janela,
+       COUNT(*)                                                     AS leituras,
+       SUM(tipo_leitura = 'ESTIMADA')                               AS estimadas,
+       ROUND(100.0 * SUM(tipo_leitura = 'ESTIMADA') / COUNT(*), 2)  AS estimadas_pct,
+       ROUND(SUM(CASE WHEN tipo_leitura = 'ESTIMADA' THEN consumo_kwh END), 0) AS kwh_estimado
+FROM fato_medicao
+WHERE competencia BETWEEN '2022-07' AND '2023-06'
+   OR competencia BETWEEN '2025-07' AND '2026-06'
+GROUP BY janela
+ORDER BY janela;
+```
+
+**Resultado:** `[a preencher]`
+
+**C5: queda das UCs sem GD e sem anomalia (causa 6.5)**
+
+Maiores quedas por classe, município e bairro.
+
+```sql
+WITH por_uc AS (
+  SELECT f.id_uc,
+         SUM(CASE WHEN f.competencia BETWEEN '2022-07' AND '2023-06' THEN f.consumo_faturado_kwh END) AS kwh_base,
+         SUM(CASE WHEN f.competencia BETWEEN '2025-07' AND '2026-06' THEN f.consumo_faturado_kwh END) AS kwh_atual
+  FROM fato_faturamento f
+  GROUP BY f.id_uc
+)
+SELECT u.classe_consumo, u.municipio, u.bairro,
+       COUNT(*)                                     AS ucs,
+       ROUND(SUM(p.kwh_atual) - SUM(p.kwh_base), 0) AS variacao_kwh,
+       ROUND(100.0 * (SUM(p.kwh_atual) - SUM(p.kwh_base)) / SUM(p.kwh_base), 1) AS variacao_pct
+FROM por_uc p
+JOIN dim_unidade_consumidora u ON u.id_uc = p.id_uc
+WHERE p.kwh_base IS NOT NULL AND p.kwh_atual IS NOT NULL
+  AND COALESCE(u.possui_gd, 0) = 0
+  AND p.id_uc NOT IN (SELECT id_uc FROM fato_anomalia_leitura)
+GROUP BY u.classe_consumo, u.municipio, u.bairro
+ORDER BY variacao_kwh
+LIMIT 20;
+```
+
+**Resultado:** `[a preencher]`
+
 
 **Limites e premissas em aberto**
 
