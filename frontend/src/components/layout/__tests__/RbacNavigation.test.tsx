@@ -26,7 +26,7 @@ describe('RBAC da navegação', () => {
     ['gerente_atendimento', ['Visão 360 da UC']],
     ['gerente_operacao', ['Qualidade da Rede']],
     ['gerente_perdas', ['Gestão de Perdas', 'Visão 360 da UC']],
-    ['diretor', ['Painel', 'Gestão de Perdas', 'Qualidade da Rede', 'Visão 360 da UC']],
+    ['diretor', ['Painel', 'Inteligência Comercial', 'Gestão de Perdas', 'Qualidade da Rede', 'Visão 360 da UC']],
     ['papel_desconhecido', []]
   ])('%s vê apenas os itens permitidos', (role, labels) => {
     expect(navItemsFor(role).map((item) => item.label)).toEqual(labels)
