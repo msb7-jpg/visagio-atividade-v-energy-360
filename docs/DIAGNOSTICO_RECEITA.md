@@ -62,7 +62,17 @@ A variação total de receita entre as janelas é separada em quatro efeitos, ca
 
 Fonte: totais das duas janelas (consulta-modelo da seção 9; as mesmas contas da tela `/revenue`). Por classe (D1): a tarifa média residencial foi de 0,7145 para 0,8187 R$/kWh (+14,6%) e o volume residencial caiu de 81.685 para 76.234 MWh (-6,7%).
 
-**Efeitos da decomposição.** Os valores exatos, por segmento, são os da cascata da tela `/revenue` com as janelas padrão. `[a preencher]` copiar da tela: preço, volume, mix e cruzado, em R$ e em % da variação. Como ordem de grandeza, calculando só no total (sem separar segmentos, então sem mix): preço ≈ +R$ 21,7 mi, volume ≈ -R$ 8,0 mi, cruzado ≈ -R$ 1,1 mi, soma ≈ R$ 12,6 mi. Esse cálculo é só uma conferência e **não** substitui o da tela.
+**Efeitos da decomposição** (cascata da tela `/revenue`, janelas padrão, sem filtros; valores arredondados como a tela mostra):
+
+| Efeito | R$ | % da variação (aprox.) |
+|---|---|---|
+| Preço | +22,6 mi | ≈ +180% |
+| Volume | -8,0 mi | ≈ -64% |
+| Mix | -0,46 mi | ≈ -4% |
+| Cruzado | -1,5 mi | ≈ -12% |
+| **Soma (= variação)** | **+12,6 mi** | 100% |
+
+Em palavras: a tarifa traria +R$ 22,6 mi, mas a queda de volume tira R$ 8,0 mi, e o efeito cruzado e o mix tiram mais R$ 2,0 mi, o que deixa a receita em +R$ 12,6 mi. Como conferência, a mesma conta feita só no total (sem separar por segmento) dá preço ≈ +21,7 mi, volume ≈ -8,0 mi e cruzado ≈ -1,1 mi. A diferença para a tela vem de separar por segmento (classe, município e bairro), e a tela é a referência.
 
 **Conferência com o diretor:**
 - Receita +8,0%: bate.
@@ -78,9 +88,9 @@ Origem: aba **Ranking territorial** da tela `/revenue`, ordenada pelo efeito-vol
 
 | Nível | Principais perdas de volume | Observação |
 |---|---|---|
-| Classe de consumo | `[a preencher]` copiar da tela. Pelos totais da consulta D1: residencial -5.451 MWh e comercial -5.868 MWh | o industrial fica quase estável (-396 MWh) |
+| Classe de consumo | 1ª Comercial -R$ 4,42 mi (volume -11,3%); 2ª Residencial -R$ 3,89 mi (-6,7%); 3ª Industrial -R$ 0,25 mi (-0,5%). Rural (+R$ 0,02 mi, +1,3%) e Poder Público (+R$ 0,05 mi, +1,6%) não perdem volume | comercial e residencial respondem por quase todo o efeito-volume por classe (-R$ 8,50 mi no total, que é o volume de -R$ 8,0 mi mais o mix de -R$ 0,46 mi). Nas cinco classes a variação da receita é positiva (comercial +R$ 2,63 mi, residencial +R$ 4,05 mi, industrial +R$ 4,75 mi, rural +R$ 0,47 mi e poder público +R$ 0,67 mi), porque o efeito-preço cobre a perda |
 | Município | `[a preencher]` copiar da tela | |
-| Bairro (10 maiores perdas) | `[a preencher]` copiar da tela | cruzar com a penetração de GD (causa 6.1) e com os bairros da consulta C5 (6.5) |
+| Bairro (maiores perdas de efeito-volume) | 1º Iputinga (Recife) -R$ 1,01 mi; 2º Jardim Jordão (Jaboatão) -R$ 0,79 mi; 3º Prazeres (Jaboatão) -R$ 0,50 mi; 4º Macaxeira (Recife) -R$ 0,41 mi; 5º Brasília Teimosa (Recife) -R$ 0,33 mi; 6º Barra de Jangada (Jaboatão) -R$ 0,14 mi; 7º Engenho Velho (Jaboatão) -R$ 0,13 mi. `[a preencher]` 8º a 10º, copiar da tela | os quatro primeiros são os mesmos bairros das consultas C5 e C8 (causa 6.5) e os únicos dos sete com receita menor em R$ (variação somada de -R$ 1,40 mi), mesmo com o efeito-preço positivo. Brasília Teimosa e os demais perdem volume, mas a tarifa mais que compensa |
 
 ---
 
