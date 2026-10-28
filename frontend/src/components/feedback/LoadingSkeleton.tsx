@@ -6,7 +6,7 @@ interface LoadingSkeletonProps {
 }
 
 /**
- * Componente Skeleton com animação Shimmer matching dimensions (design.md).
+ * Esqueleto com shimmer (sem animação quando o usuário prefere movimento reduzido), conforme o design.md.
  * Utilizado para estados de carregamento estruturados sem spinners circulares intrusivos.
  *
  * @param props - Propriedades de customização e contagem de skeletons.
@@ -21,7 +21,7 @@ export function LoadingSkeleton({ className, count = 1 }: LoadingSkeletonProps) 
         <div
           key={skeletonKey}
           className={cn(
-            'bg-muted h-4 w-full animate-pulse rounded-lg',
+            'h-4 w-full animate-shimmer rounded-md motion-reduce:animate-none motion-reduce:bg-muted',
             className
           )}
         />

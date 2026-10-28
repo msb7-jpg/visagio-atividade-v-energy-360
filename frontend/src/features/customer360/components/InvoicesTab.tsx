@@ -23,7 +23,7 @@ function PaymentStatusBadge({ status }: { status: string | null }) {
 function OpenInvoicesSummary({ openInvoices, openAmount }: { openInvoices: Invoice[], openAmount: number }) {
   const hasOpenInvoices = openInvoices.length > 0
   return (
-    <div className="bg-muted flex items-center gap-3 rounded-xl p-3">
+    <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
       <Wallet className="text-primary size-5" />
       <span className="text-foreground text-sm">
         {hasOpenInvoices
@@ -47,7 +47,7 @@ function describePunctuality(punctuality: PaymentPunctuality): string {
 
 function PunctualitySummary({ punctuality }: { punctuality: PaymentPunctuality }) {
   return (
-    <div className="bg-muted flex items-center gap-3 rounded-xl p-3">
+    <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
       <CalendarCheck className="text-primary size-5" />
       <span className="text-foreground text-sm">{describePunctuality(punctuality)}</span>
     </div>

@@ -22,7 +22,7 @@ export function DashboardPage() {
           <Card variant="interactive">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>Diagnóstico de Receita</CardTitle>
-              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <div className="p-1.5 rounded-md bg-primary/10 text-primary">
                 <Zap className="size-4" />
               </div>
             </CardHeader>
@@ -37,7 +37,7 @@ export function DashboardPage() {
           <Card variant="interactive">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>Visão 360 da UC</CardTitle>
-              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <div className="p-1.5 rounded-md bg-primary/10 text-primary">
                 <Users className="size-4" />
               </div>
             </CardHeader>
@@ -52,7 +52,7 @@ export function DashboardPage() {
           <Card variant="interactive">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>Fila de Perdas</CardTitle>
-              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <div className="p-1.5 rounded-md bg-primary/10 text-primary">
                 <FileSearch className="size-4" />
               </div>
             </CardHeader>
@@ -67,7 +67,7 @@ export function DashboardPage() {
           <Card variant="interactive">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>Qualidade da Rede</CardTitle>
-              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <div className="p-1.5 rounded-md bg-primary/10 text-primary">
                 <Activity className="size-4" />
               </div>
             </CardHeader>

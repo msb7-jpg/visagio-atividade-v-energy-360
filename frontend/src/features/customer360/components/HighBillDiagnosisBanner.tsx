@@ -47,7 +47,7 @@ export function HighBillDiagnosisBanner({ diagnosis, hasSolar }: HighBillDiagnos
   return (
     <Card>
       <CardContent className="flex items-start gap-3 pt-6">
-        <div className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-xl">
+        <div className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg">
           {TREND_ICONS[diagnosis.tendencia_consumo]}
         </div>
         <div className="flex flex-col gap-1.5">

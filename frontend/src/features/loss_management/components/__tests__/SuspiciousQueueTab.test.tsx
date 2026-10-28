@@ -329,7 +329,7 @@ describe('Fila de Inspeção', () => {
     await screen.findByRole('button', { name: 'Gerar 1 ordem' })
 
     fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
-    await screen.findByRole('table', { name: 'Ordens de inspeção' })
+    await screen.findByRole('region', { name: 'Ordens de inspeção' })
     fireEvent.click(screen.getByRole('tab', { name: /Fila priorizada/ }))
 
     expect(await screen.findByRole('button', { name: 'Gerar 1 ordem' })).toBeEnabled()

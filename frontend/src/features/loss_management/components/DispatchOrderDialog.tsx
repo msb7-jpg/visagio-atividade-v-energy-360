@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ActionDialog } from '@/features/loss_management/components/ActionDialog'
@@ -6,6 +7,7 @@ import { ActionDialogFooter } from '@/features/loss_management/components/Action
 import { useUpdateInspectionMutation } from '@/features/loss_management/hooks/useLossMutations'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { getApiErrorMessage } from '@/features/loss_management/utils/apiErrorMessage'
+import { formatOrderCode } from '@/features/loss_management/utils/orderBoard'
 
 interface DispatchOrderDialogProps {
   order: InspectionOrder
@@ -25,11 +27,17 @@ export function DispatchOrderDialog({ order, onClose }: DispatchOrderDialogProps
   const handleConfirm = () => {
     const fiscalName = fiscal.trim()
     const payload = fiscalName ? { status: 'pendente' as const, fiscal_responsavel: fiscalName } : { status: 'pendente' as const }
-    updateMutation.mutate({ idInspecao: order.id_inspecao, payload }, { onSuccess: onClose })
+    updateMutation.mutate({ idInspecao: order.id_inspecao, payload }, {
+      onSuccess: () => {
+        const withInspector = fiscalName ? ` com ${fiscalName}` : ''
+        toast.success(`${formatOrderCode(order)} enviada a campo${withInspector}.`)
+        onClose()
+      }
+    })
   }
 
   return (
-    <ActionDialog title={`Enviar ordem #${order.id_inspecao} para campo`} description={`UC ${order.id_uc} · a ordem passa ao status Em campo.`} onClose={onClose}>
+    <ActionDialog title={`Enviar ordem ${formatOrderCode(order)} para campo`} description={`UC ${order.id_uc} · a ordem passa ao status Em campo.`} onClose={onClose}>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="fiscal-responsavel">Fiscal responsável</Label>
         <Input id="fiscal-responsavel" value={fiscal} onChange={(event) => setFiscal(event.target.value)} />

@@ -22,7 +22,7 @@ function CommandInput({ className, ...props }: React.ComponentProps<typeof Comma
   return (
     <CommandPrimitive.Input
       className={cn(
-        'flex h-10 w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-10 w-full rounded-md border border-input bg-background px-3.5 py-2 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
         className
       )}
       {...props}
@@ -40,7 +40,7 @@ function CommandList({ className, ...props }: React.ComponentProps<typeof Comman
   return (
     <CommandPrimitive.List
       className={cn(
-        'border-border bg-popover text-popover-foreground absolute top-full right-0 left-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-xl border p-1 shadow-xl',
+        'border-border bg-popover text-popover-foreground absolute top-full right-0 left-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-md border p-1 shadow-xl',
         className
       )}
       {...props}
@@ -68,7 +68,7 @@ function CommandItem({ className, ...props }: React.ComponentProps<typeof Comman
   return (
     <CommandPrimitive.Item
       className={cn(
-        'flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm outline-none aria-selected:bg-muted aria-disabled:pointer-events-none aria-disabled:opacity-50',
+        'flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2 text-sm outline-none aria-selected:bg-muted aria-disabled:pointer-events-none aria-disabled:opacity-50',
         className
       )}
       {...props}

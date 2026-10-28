@@ -29,16 +29,16 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'border-border flex flex-col items-center justify-center rounded-xl border border-dashed p-8 text-center bg-card/50',
+        'border-border bg-card flex flex-col items-center justify-center rounded-lg border p-8 text-center',
         className
       )}
     >
       <div className="text-muted-foreground mb-3">
         {renderedIcon}
       </div>
-      <h3 className="text-foreground text-base font-semibold">{title}</h3>
+      <h3 className="text-foreground text-lg font-bold">{title}</h3>
       {description ? (
-        <p className="text-muted-foreground mt-1.5 max-w-sm text-sm">{description}</p>
+        <p className="text-muted-foreground mt-1.5 max-w-md text-sm">{description}</p>
       ) : null}
       {action ? (
         <div className="mt-4">{action}</div>
