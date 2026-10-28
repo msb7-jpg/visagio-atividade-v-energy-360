@@ -6,6 +6,41 @@
 
 ## Registros de Execução
 
+### [2026-10-27] - Resolução Integral do Code Review do PR #35 (Miguel)
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Quality Gates e Conformidade Estrita com Linters:**
+    - Revertido `"complexity-crap": "error"` no `frontend/.fallowrc.jsonc`.
+    - Refatoradas e simplificadas as funções `drainReader` (lib de streaming) e `AssistantChatMessage` (feed do chat), mantendo o score CRAP e a complexidade ciclomática/cognitiva bem abaixo dos tetos permitidos (0 violações no Fallow).
+    - Removidos 5 arquivos mortos legados com supressão: `AgentStepProgress.tsx`, `ChatInput.tsx`, `ChatMessageBubble.tsx`, `SqlAuditAccordion.tsx` e `DirectionalSlide.tsx`.
+    - Removidas supressões obsoletas `fallow-ignore-file unused-file` em `sheet.tsx` e `tooltip-card.tsx`.
+  - **Isolamento de Sessão por Usuário no LangGraph (`router.py`):**
+    - Conversas no checkpointer `MemorySaver` agora isoladas por usuário via composição de chave `f"{current_user.id}:{thread_id}"`, impedindo vazamento de histórico entre diferentes papéis (Diretoria vs Atendimento).
+  - **Unificação Canônica de Endpoints:**
+    - Rotas de IA consolidadas exclusivamente nos contratos canônicos da especificação: `POST /api/v1/chat/stream` e `POST /api/v1/ai/insights`.
+    - Removidos aliases redundantes e atualizados clientes no frontend (`useAgentStream.ts` e `insightsApi.ts`).
+  - **Resiliência da Factory LLM e Configurações:**
+    - Implementado fallback inteligente por provedor em `factory.py` (modelos com prefixo no OpenRouter e padrão `gemini-2.5-flash-lite` no Google).
+    - Documentados exemplos de `OPENROUTER_API_KEY` e provedores no `.env.example`.
+  - **Tratamento de Exceções e Schema no Insights Service:**
+    - Validação de tipagem explícita para lista de strings em `insights` e texto em `resumo_executivo`, diferenciando logs de erro de decodificação JSON de falhas de conectividade.
+  - **Race Condition Corrigida no Streaming do Frontend (`useAgentStream.ts`):**
+    - Verificação de referência `abortControllerRef.current === abortController` no bloco `finally`, prevenindo interferência de cancelamentos em novas mensagens.
+  - **Parametrização do Benchmark (`evaluate_agent.py`):**
+    - Adicionado suporte a flags CLI `--provider` e `--model` (e variáveis de ambiente `EVAL_PROVIDER`), executado em loop único de eventos assíncronos.
+  - **Acessibilidade e Design System:**
+    - Removido `<div onClick>` redundante em volta do botão disparador do chat em `ChatWidgetTrigger.tsx`.
+    - Removido `!important` do `index.css` e adotada a variante `variant="embedded"` no `Input.tsx`.
+    - Documentada a sanitização do realce de sintaxe SQL via Shiki em `SqlCodeBlock.tsx`.
+    - Ajustado texto de integridade e política de não-alucinação em `catalog_prompt.py` para citar exatamente `"Região Metropolitana do Recife"`.
+    - Removida imagem órfã `issue-mini-chat.png` e script `populate_sqlite_from_landing.py` do versionamento Git (movido para pasta local com `.gitignore`).
+    - Registradas Decisões 003 e 004 em `docs/DECISOES.md`.
+- **Validação de Testes e Linters:**
+  - `make lint-all`: 100% verde (Ruff, Pylint 10.00/10, import-linter 4/4 contratos mantidos, ESLint, Fallow).
+  - `make test-all`: 100% verde (537 testes pytest + 185 testes vitest).
+
+---
+
 ### [2026-10-25] - Remoção Completa da Geração de Gráficos na Fatia 07 (Miguel)
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

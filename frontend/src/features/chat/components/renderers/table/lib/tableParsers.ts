@@ -90,22 +90,24 @@ function parseSection(
   headers: string[],
   tableData: ParsedRow[]
 ): void {
-  const childType = (child.type as { name?: string })?.name || String(child.type)
+  const isThead = child.type === 'thead' || (child.type as { name?: string })?.name === 'thead'
+  const isTbody = child.type === 'tbody' || (child.type as { name?: string })?.name === 'tbody'
   const trNodes = toNodeArray(child.props.children)
 
-  if (childType === 'thead' || child.type === 'thead') {
-    for (const tr of trNodes) {
+  if (isThead) {
+    trNodes.forEach(tr => {
       headers.push(...parseHeadersFromTr(tr))
-    }
+    })
+    return
   }
 
-  if (childType === 'tbody' || child.type === 'tbody') {
-    for (const tr of trNodes) {
+  if (isTbody) {
+    trNodes.forEach(tr => {
       const parsed = parseRowFromTr(tr)
       if (parsed) {
         tableData.push(parsed)
       }
-    }
+    })
   }
 }
 

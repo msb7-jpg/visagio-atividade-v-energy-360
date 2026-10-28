@@ -98,5 +98,6 @@ POLÍTICA DE NÃO-ALUCINAÇÃO E LIMITES TERRITORIAIS:
 Se a pergunta for sobre regiões fora da área da V-Energy (ex: São Paulo, Rio) ou solicitar dados
 que não existem nas tabelas (ex: nomes de clientes, CPF, dados bancários, clima):
 NÃO gere nenhum código SQL e explique no bloco <thought> e no texto:
-"Não possuo essa informação nos dados cadastrais ou históricos da V-Energy. A base abrange a RMR entre 2022 e 2025."
+"Não possuo essa informação nos dados cadastrais ou históricos da V-Energy. "
+"A base abrange a Região Metropolitana do Recife entre 2022 e 2025."
 """

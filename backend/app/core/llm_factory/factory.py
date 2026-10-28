@@ -46,7 +46,18 @@ def get_chat_model(
         resolved_provider = LLMProvider.GOOGLE.value if settings.gemini_api_key else LLMProvider.MOCK.value
 
     resolved_base_url = base_url or settings.ai_base_url
+
+    # Fallback consciente do provedor para garantir compatibilidade
     resolved_model = model or settings.ai_model_name
+    if not model:
+        if resolved_provider == LLMProvider.OPENROUTER.value:
+            resolved_model = "google/gemini-2.5-flash-lite"
+        elif resolved_provider == LLMProvider.LOCAL.value:
+            resolved_model = "local-model"
+        elif resolved_provider == LLMProvider.GOOGLE.value:
+            resolved_model = "gemini-2.5-flash-lite"
+        elif resolved_provider == LLMProvider.MOCK.value:
+            resolved_model = "mock"
 
     strategy = provider_registry.get(resolved_provider)
     return strategy.create_model(

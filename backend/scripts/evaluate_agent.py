@@ -1,8 +1,10 @@
 """Script de avaliação automatizada da qualidade do Agente Text-to-SQL (Golden Dataset)."""
 
+import argparse
 import asyncio
 import json
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -16,8 +18,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 
-async def _run_single_case(graph: Any, question_text: str, case_id: int) -> tuple[bool, int]:
-    """Executa uma pergunta no grafo FSM e mede se a execução concluiu sem erros e a latência em ms."""
+async def _run_single_case(
+    graph: Any,
+    question_text: str,
+    case_id: int,
+    provider: str,
+    model: str | None,
+) -> tuple[bool, int]:
+    """Executa uma pergunta no grafo FSM e afere a validade da execução e a latência em ms."""
     inputs = {
         "messages": [HumanMessage(content=question_text)],
         "route": None,
@@ -27,14 +35,13 @@ async def _run_single_case(graph: Any, question_text: str, case_id: int) -> tupl
         "error_count": 0,
         "last_error": None,
         "error_category": None,
-        "chart_spec": None,
         "steps": [],
         "command": None,
     }
     run_config = {
         "configurable": {
-            "provider": "mock",
-            "model": "mock",
+            "provider": provider,
+            "model": model,
             "thread_id": f"eval-case-{case_id}",
         }
     }
@@ -48,18 +55,12 @@ async def _run_single_case(graph: Any, question_text: str, case_id: int) -> tupl
     return execution_succeeded, elapsed_ms
 
 
-def evaluate_golden_dataset(dataset_path: Path) -> dict[str, float | int]:
-    """Itera sobre as perguntas de benchmark avaliando validade sintática, acurácia de execução e latência.
-
-    Args:
-        dataset_path: Caminho para o arquivo JSON contendo o golden dataset.
-
-    Returns:
-        Dicionário com métricas calculadas de avaliação:
-        - syntactic_validity_pct
-        - execution_accuracy_pct
-        - average_latency_ms
-    """
+async def evaluate_golden_dataset_async(
+    dataset_path: Path,
+    provider: str = "mock",
+    model: str | None = None,
+) -> dict[str, float | int]:
+    """Itera assincronamente sobre as perguntas de benchmark em um único loop de eventos."""
     with dataset_path.open(encoding="utf-8") as file_handle:
         test_cases = json.load(file_handle)
 
@@ -69,7 +70,11 @@ def evaluate_golden_dataset(dataset_path: Path) -> dict[str, float | int]:
     total_latency_ms = 0
 
     agent_graph = create_agent_graph()
-    logger.info("Iniciando avaliação do agente contra %d casos do Golden Dataset...", total_cases)
+    logger.info(
+        "Iniciando avaliação do agente contra %d casos do Golden Dataset (provedor=%s)...",
+        total_cases,
+        provider,
+    )
 
     for test_case in test_cases:
         case_id = int(test_case.get("id", 0))
@@ -82,7 +87,7 @@ def evaluate_golden_dataset(dataset_path: Path) -> dict[str, float | int]:
         else:
             logger.warning("Falha sintática no caso #%d: %s", case_id, error_msg)
 
-        exec_ok, latency_ms = asyncio.run(_run_single_case(agent_graph, question_text, case_id))
+        exec_ok, latency_ms = await _run_single_case(agent_graph, question_text, case_id, provider, model)
         total_latency_ms += latency_ms
         if exec_ok:
             execution_success_count += 1
@@ -104,6 +109,28 @@ def evaluate_golden_dataset(dataset_path: Path) -> dict[str, float | int]:
     return report
 
 
+def evaluate_golden_dataset(
+    dataset_path: Path,
+    provider: str = "mock",
+    model: str | None = None,
+) -> dict[str, float | int]:
+    """Ponto de entrada síncrono para execução do benchmark."""
+    return asyncio.run(evaluate_golden_dataset_async(dataset_path, provider=provider, model=model))
+
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Avaliação automatizada do Agente Text-to-SQL")
+    parser.add_argument(
+        "--provider",
+        default=os.getenv("EVAL_PROVIDER", "mock"),
+        help="Provedor de LLM para avaliação (mock, google, openrouter, local)",
+    )
+    parser.add_argument(
+        "--model",
+        default=os.getenv("EVAL_MODEL"),
+        help="Nome do modelo (opcional, fallback para o default do provedor)",
+    )
+    args = parser.parse_args()
+
     golden_path = Path(__file__).resolve().parent.parent / "tests" / "golden_dataset.json"
-    evaluate_golden_dataset(golden_path)
+    evaluate_golden_dataset(golden_path, provider=args.provider, model=args.model)

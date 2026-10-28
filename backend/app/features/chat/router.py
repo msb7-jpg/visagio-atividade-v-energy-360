@@ -34,8 +34,7 @@ memory_checkpointer = MemorySaver()
 agent_graph = create_agent_graph(checkpointer=memory_checkpointer)
 
 
-@router.post("/agent/chat/stream", summary="Conversar com o Agente Text-to-SQL via SSE")
-@router.post("/chat/stream", summary="Conversar com o Agente Text-to-SQL via SSE (Alias Canônico)")
+@router.post("/chat/stream", summary="Conversar com o Agente Text-to-SQL via SSE")
 async def chat_stream(
     request: ChatQueryRequest,
     current_user: CurrentUser,
@@ -46,12 +45,13 @@ async def chat_stream(
     e transmite os eventos via SSE: session -> step_end -> thought -> sql -> data -> answer -> done.
     """
     del db
-    thread_id = request.thread_id or str(uuid.uuid4())
+    raw_thread_id = request.thread_id or str(uuid.uuid4())
+    session_thread_id = f"{current_user.id}:{raw_thread_id}"
 
     async def event_generator() -> AsyncIterator[dict[str, str]]:
-        # 1. Handshake de sessão
+        # 1. Handshake de sessão emitindo o thread_id original para o cliente
         yield SSEEventDispatcher.emit_session(
-            thread_id=thread_id,
+            thread_id=raw_thread_id,
             provider=request.provider,
             model=request.model,
         )
@@ -71,10 +71,10 @@ async def chat_stream(
 
         runnable_config: RunnableConfig = {
             "configurable": {
-                "provider": request.provider or settings.ai_provider,
-                "model": request.model or settings.ai_model_name,
+                "provider": request.provider,
+                "model": request.model,
                 "base_url": settings.ai_base_url,
-                "thread_id": thread_id,
+                "thread_id": session_thread_id,
                 "role": current_user.role,
             }
         }
@@ -91,7 +91,7 @@ async def chat_stream(
                         yield evt
 
             # Sinalização de conclusão
-            yield SSEEventDispatcher.emit_done(thread_id=thread_id)
+            yield SSEEventDispatcher.emit_done(thread_id=raw_thread_id)
 
         except Exception as exc:
             logger.error("Falha no pipeline de execução do agente: %s", exc, exc_info=True)
@@ -106,8 +106,6 @@ async def chat_stream(
     return EventSourceResponse(event_generator())
 
 
-@router.post("/agent/insights", response_model=ProactiveInsightsResponse)
-@router.post("/agent/ai/insights", response_model=ProactiveInsightsResponse)
 @router.post("/ai/insights", response_model=ProactiveInsightsResponse)
 async def generate_proactive_insights(
     request: ProactiveInsightsRequest,
@@ -124,5 +122,3 @@ async def generate_proactive_insights(
     """
     del current_user  # Autenticação validada via injeção de dependência
     return await generate_proactive_insights_service(request)
-
-

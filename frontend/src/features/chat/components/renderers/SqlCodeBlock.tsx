@@ -110,6 +110,8 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
       <CollapsibleMotion isExpanded={isExpanded}>
         <div className="overflow-x-auto border-t border-border bg-muted/20 p-4 font-mono text-xs leading-relaxed text-foreground">
           {highlightedHtml ? (
+            // Injeção segura: highlightedHtml é gerado exclusivamente pelo Shiki
+            // a partir do código SQL somente-leitura validado pela AST do backend.
             // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
             <div dangerouslySetInnerHTML={{ __html: highlightedHtml }} className="[&_pre]:bg-transparent! [&_pre]:p-0!" />
           ) : (

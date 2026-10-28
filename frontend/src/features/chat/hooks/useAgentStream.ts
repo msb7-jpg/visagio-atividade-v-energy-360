@@ -68,7 +68,9 @@ export function useAgentStream() {
       abortControllerRef.current = abortController
 
       try {
-        const response = await fetch('/api/v1/agent/chat/stream', {
+        // O streaming SSE utiliza fetch direto (em vez de useQuery do TanStack Query)
+        // para permitir o consumo bidirecional de eventos incrementais em tempo real.
+        const response = await fetch('/api/v1/chat/stream', {
           method: 'POST',
           headers: buildStreamHeaders(),
           body: JSON.stringify({ pergunta: trimmed, thread_id: threadIdRef.current }),
@@ -84,8 +86,10 @@ export function useAgentStream() {
         if (err instanceof DOMException && err.name === 'AbortError') return
         setMessages(prev => applyStreamError(prev, assistantMessage.id, err))
       } finally {
-        setIsStreaming(false)
-        abortControllerRef.current = null
+        if (abortControllerRef.current === abortController) {
+          setIsStreaming(false)
+          abortControllerRef.current = null
+        }
       }
     },
     [isStreaming, processStreamEvents, stopStreaming]

@@ -23,7 +23,7 @@ export async function fetchProactiveInsights(
   signal?: AbortSignal
 ): Promise<ProactiveInsightsData> {
   const response = await apiClient.post<ProactiveInsightsData>(
-    '/agent/insights',
+    '/ai/insights',
     payload,
     { signal }
   )

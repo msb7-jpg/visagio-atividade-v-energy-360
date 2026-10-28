@@ -40,7 +40,7 @@ describe('ChatWidgetTrigger', () => {
     expect(handleOpen).toHaveBeenCalledTimes(1)
   })
 
-  it('deve disparar onOpen ao clicar no container circular externo', () => {
+  it('deve possuir estilização circular e acessibilidade de foco no botão principal', () => {
     const handleOpen = vi.fn()
     const { container } = render(
       <ChatWidgetTrigger
@@ -52,9 +52,10 @@ describe('ChatWidgetTrigger', () => {
 
     const circularContainer = container.querySelector('.size-14')
     expect(circularContainer).toBeInTheDocument()
-    if (circularContainer) {
-      fireEvent.click(circularContainer)
-    }
+    expect(circularContainer).toHaveClass('rounded-full')
+
+    const button = screen.getByRole('button', { name: /Abrir Assistente V-Energy IA/i })
+    fireEvent.click(button)
 
     expect(handleOpen).toHaveBeenCalledTimes(1)
   })

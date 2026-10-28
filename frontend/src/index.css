@@ -191,7 +191,7 @@ body {
 }
 
 .chat-widget-panel {
-  width: 28rem;
+  width: var(--container-xs, 28rem);
   max-width: calc(100vw - 2rem);
   height: 42rem;
   max-height: calc(100dvh - 5rem);
@@ -202,20 +202,6 @@ body {
   height: var(--widget-h, 42rem);
   max-width: calc(100vw - 2rem);
   max-height: calc(100dvh - 2rem);
-}
-
-.chat-embedded-input input {
-  border-width: 0 !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
-  padding-left: 0.5rem !important;
-  padding-right: 0.5rem !important;
-}
-
-.chat-embedded-input input:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
 }
 
 [data-chat-scroll-container]::-webkit-scrollbar {

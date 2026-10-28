@@ -57,29 +57,53 @@ function cleanupReader(reader: ReadableStreamDefaultReader<Uint8Array>, isAborte
   }
 }
 
+interface DrainState {
+  buffer: string
+  currentEvent: string
+}
+
+function processChunk(
+  state: DrainState,
+  decoder: TextDecoder,
+  value: Uint8Array
+): { nextState: DrainState; events: SseEvent[] } {
+  const extracted = extractSseEventsFromBuffer(state.buffer, decoder, value, state.currentEvent)
+  return {
+    nextState: {
+      buffer: extracted.remainingBuffer,
+      currentEvent: extracted.nextEvent
+    },
+    events: extracted.events
+  }
+}
+
+async function* emitChunkEvents(
+  events: SseEvent[],
+  signal?: AbortSignal
+): AsyncGenerator<SseEvent, void, unknown> {
+  for (let index = 0; index < events.length; index += 1) {
+    if (signal?.aborted) return
+    yield events[index]
+  }
+}
+
 async function* drainReader(
   reader: ReadableStreamDefaultReader<Uint8Array>,
   decoder: TextDecoder,
   signal?: AbortSignal
 ): AsyncGenerator<SseEvent, void, unknown> {
-  let buffer = ''
-  let currentEvent = 'message'
+  let state: DrainState = { buffer: '', currentEvent: 'message' }
 
   while (!signal?.aborted) {
-    const { value, done } = await reader.read()
-    if (done || !value) break
+    const readResult = await reader.read()
+    if (readResult.done || !readResult.value) break
 
-    const extracted = extractSseEventsFromBuffer(buffer, decoder, value, currentEvent)
-    buffer = extracted.remainingBuffer
-    currentEvent = extracted.nextEvent
-
-    for (const sseEvent of extracted.events) {
-      if (signal?.aborted) break
-      yield sseEvent
-    }
+    const { nextState, events } = processChunk(state, decoder, readResult.value)
+    state = nextState
+    yield* emitChunkEvents(events, signal)
   }
 
-  const trailing = processSseLine(buffer.trim(), currentEvent)
+  const trailing = processSseLine(state.buffer.trim(), state.currentEvent)
   if (!signal?.aborted && trailing.eventToYield) {
     yield trailing.eventToYield
   }

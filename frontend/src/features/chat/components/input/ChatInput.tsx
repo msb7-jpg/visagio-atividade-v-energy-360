@@ -100,10 +100,11 @@ export function ChatInput({
           <CommandPill command={activeCommand} onRemove={clearActiveCommand} />
         ) : null}
 
-        <div className="chat-embedded-input min-w-0 flex-1">
+        <div className="min-w-0 flex-1">
           <Input
             ref={inputRef}
             type="text"
+            variant="embedded"
             value={text}
             onChange={event => handleInputChange(event.target.value)}
             onKeyDown={handleKeyDown}

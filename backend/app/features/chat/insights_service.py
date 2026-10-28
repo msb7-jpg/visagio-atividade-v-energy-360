@@ -86,16 +86,35 @@ async def generate_proactive_insights_service(
             clean_json_str = clean_json_str.split("```", 1)[1].split("```", 1)[0].strip()
 
         parsed_data: dict[str, Any] = json.loads(clean_json_str)
-        insights_list = parsed_data.get("insights", [])
-        executive_summary = parsed_data.get("resumo_executivo", "")
+        raw_insights = parsed_data.get("insights")
+        executive_summary = parsed_data.get("resumo_executivo")
 
-        if not insights_list or not executive_summary:
+        if not isinstance(raw_insights, list) or not isinstance(executive_summary, str):
+            logger.error("LLM retornou JSON com tipagem incompatível: %s", clean_json_str)
+            raise ValueError(
+                "Resposta do LLM com estrutura inválida (insights deve ser lista e resumo_executivo texto)."
+            )
+
+        insights_list = [
+            str(insight_entry).strip()
+            for insight_entry in raw_insights
+            if str(insight_entry).strip()
+        ]
+        if not insights_list or not executive_summary.strip():
+            logger.warning("LLM retornou campos vazios para insights.")
             raise ValueError("Resposta do LLM com campos incompletos.")
 
         return ProactiveInsightsResponse(
             insights=insights_list,
-            resumo_executivo=executive_summary,
+            resumo_executivo=executive_summary.strip(),
         )
+    except json.JSONDecodeError as decode_err:
+        logger.error("JSON malformado retornado pelo LLM para insights: %s", decode_err)
+        raise ServiceUnavailableError(
+            "Falha na formatação da resposta pelo modelo de inteligência artificial."
+        ) from decode_err
+    except ServiceUnavailableError:
+        raise
     except Exception as exc:
-        logger.warning("Falha ao consultar LLM para insights proativos: %s", exc)
+        logger.warning("Falha operacional ao consultar LLM para insights proativos: %s", exc)
         raise ServiceUnavailableError("Falha na geração de insights proativos pelo LLM.") from exc

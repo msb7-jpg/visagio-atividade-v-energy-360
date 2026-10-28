@@ -62,44 +62,74 @@ function UserChatMessage({ message, className }: { message: ChatMessageType; cla
   )
 }
 
+interface AssistantMessageBodyProps {
+  message: ChatMessageData
+  onRetry?: () => void
+  isStreaming?: boolean
+}
+
+interface MessageArtifactsProps {
+  thought?: string | null
+  sql?: string | null
+  error?: string | null
+  onRetry?: () => void
+}
+
+function MessageArtifacts({ thought, sql, error, onRetry }: MessageArtifactsProps): JSX.Element {
+  return (
+    <>
+      {thought ? <ThoughtInspector thought={thought} /> : null}
+      {sql ? <SqlCodeBlock query={sql} /> : null}
+      {error ? <ChatErrorCard message={error} onRetry={onRetry} /> : null}
+    </>
+  )
+}
+
+function AssistantMessageBody({
+  message,
+  onRetry,
+  isStreaming = false
+}: AssistantMessageBodyProps): JSX.Element {
+  const hasSteps = Boolean(message.steps?.length || message.isStreaming)
+  const showActions = !message.isStreaming && Boolean(message.content || message.error)
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-3">
+      {hasSteps ? (
+        <NodeStepper steps={message.steps ?? []} isStreaming={message.isStreaming} />
+      ) : null}
+      <MessageArtifacts
+        thought={message.thought}
+        sql={message.sql}
+        error={message.error}
+        onRetry={onRetry}
+      />
+      {message.content ? <MarkdownRenderer content={message.content} /> : null}
+      {showActions ? (
+        <ChatMessageActions
+          content={message.content}
+          onRetry={onRetry}
+          isStreaming={isStreaming}
+        />
+      ) : null}
+    </div>
+  )
+}
+
 function AssistantChatMessage({
   message,
   onRetry,
   isStreaming = false,
   className
-}: ChatMessageProps) {
-  const hasSteps = (message.steps && message.steps.length > 0) || message.isStreaming
-  const showActions = !message.isStreaming && Boolean(message.content || message.error)
-
+}: ChatMessageProps): JSX.Element {
   return (
     <div className={cn('flex items-start gap-3.5', className)}>
       <AgentAvatar isStreaming={message.isStreaming} />
-
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
-        {hasSteps ? (
-          <NodeStepper steps={message.steps || []} isStreaming={message.isStreaming} />
-        ) : null}
-
-        {message.thought ? <ThoughtInspector thought={message.thought} /> : null}
-
-        {message.sql ? <SqlCodeBlock query={message.sql} /> : null}
-
-        {message.content ? (
-          <MarkdownRenderer content={message.content} />
-        ) : null}
-
-        {message.error ? (
-          <ChatErrorCard message={message.error} onRetry={onRetry} />
-        ) : null}
-
-        {showActions ? (
-          <ChatMessageActions
-            content={message.content}
-            onRetry={onRetry}
-            isStreaming={isStreaming}
-          />
-        ) : null}
-      </div>
+      <AssistantMessageBody
+        message={message}
+        onRetry={onRetry}
+        isStreaming={isStreaming}
+      />
     </div>
   )
 }
