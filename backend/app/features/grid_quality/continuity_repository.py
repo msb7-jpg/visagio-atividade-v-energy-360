@@ -9,13 +9,16 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.grid_quality.continuity_queries import (
+    affected_customers_query,
     cause_hours_query,
     feeder_ucs_query,
+    latest_competencias_query,
     monthly_feeder_query,
     scope_query,
     type_count_query,
 )
 from app.features.grid_quality.continuity_rules import MonthlyFeederRow
+from app.features.grid_quality.continuity_schemas import AffectedCustomerDTO
 from app.shared.exceptions import DatabaseReadError
 
 logger = logging.getLogger(__name__)
@@ -62,3 +65,25 @@ class ContinuityRepository:
         """Ocorrências por tipo nas competências e alimentadores informados."""
         result = await self._execute(type_count_query(competencias, feeder_ids))
         return {record["tipo_ocorrencia"]: record["occurrences"] for record in result.mappings()}
+
+    async def fetch_latest_competencias(self, meses: int) -> list[str]:
+        """As últimas `meses` competências da série, da mais recente para a mais antiga."""
+        result = await self._execute(latest_competencias_query(meses))
+        return list(result.scalars())
+
+    async def fetch_affected_customers(
+        self, feeder_id: str, competencias: Collection[str], limite: int
+    ) -> list[AffectedCustomerDTO]:
+        """UCs do alimentador por horas sem energia nas competências, maiores primeiro."""
+        result = await self._execute(affected_customers_query(feeder_id, competencias, limite))
+        return [
+            AffectedCustomerDTO(
+                id_uc=record["id_uc"],
+                nome_titular=record["nome_titular"],
+                bairro=record["bairro"],
+                municipio=record["municipio"],
+                horas_sem_energia=record["uc_hours"],
+                ocorrencias=record["occurrences"],
+            )
+            for record in result.mappings()
+        ]

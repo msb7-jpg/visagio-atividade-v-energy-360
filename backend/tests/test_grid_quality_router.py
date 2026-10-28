@@ -9,7 +9,12 @@ from httpx import ASGITransport, AsyncClient
 
 from app.core.config import get_settings
 from app.core.constants import UserRole
-from app.features.grid_quality.continuity_schemas import ContinuityKpisDTO, ContinuitySnapshotDTO, PeriodComparisonDTO
+from app.features.grid_quality.continuity_schemas import (
+    AffectedCustomerDTO,
+    ContinuityKpisDTO,
+    ContinuitySnapshotDTO,
+    PeriodComparisonDTO,
+)
 from app.features.grid_quality.dependencies import get_continuity_service, get_grid_quality_service
 from app.features.grid_quality.router import router
 from app.features.grid_quality.schemas import (
@@ -29,7 +34,16 @@ ROUTES = [
     "/quality/feeders",
     f"/quality/feeders/{FEEDER_ID}/history",
     "/quality/continuity",
+    f"/quality/feeders/{FEEDER_ID}/customers",
 ]
+AFFECTED_CUSTOMER = AffectedCustomerDTO(
+    id_uc="UC-TESTE-01",
+    nome_titular="TITULAR TESTE",
+    bairro="CENTRO",
+    municipio="RECIFE",
+    horas_sem_energia=8.0,
+    ocorrencias=2,
+)
 COMPARISON = PeriodComparisonDTO(current=2.0, previous=1.0, change_percent=100.0)
 CONTINUITY = ContinuitySnapshotDTO(
     kpis=ContinuityKpisDTO(dec=COMPARISON, fec=COMPARISON, interruptions=COMPARISON, average_duration_hours=COMPARISON),
@@ -103,6 +117,11 @@ class StubQualityService:
         """Registra o pedido e devolve uma Continuidade fixa."""
         self.calls.append(("continuity", municipio, incluir_evento))
         return CONTINUITY
+
+    async def get_affected_customers(self, id_alimentador, meses=12, limite=10):
+        """Registra o pedido e devolve um ranking fixo de clientes."""
+        self.calls.append(("customers", id_alimentador, meses, limite))
+        return [AFFECTED_CUSTOMER]
 
     async def get_feeder_history(self, id_alimentador, meses=48):
         """Registra o pedido; levanta NotFoundException para o alimentador inexistente."""
@@ -215,6 +234,24 @@ async def test_continuidade_inclui_o_evento_por_padrao(client, stub_service):
     assert stub_service.calls == [("continuity", None, True)]
 
 
+async def test_clientes_usam_12_meses_e_10_clientes_por_padrao(client, stub_service):
+    response = await client.get(f"/quality/feeders/{FEEDER_ID}/customers", headers=bearer_for_role(UserRole.DIRETOR))
+
+    assert response.status_code == 200
+    assert response.json() == [AFFECTED_CUSTOMER.model_dump()]
+    assert stub_service.calls == [("customers", FEEDER_ID, 12, 10)]
+
+
+async def test_clientes_repassam_meses_e_limite(client, stub_service):
+    await client.get(
+        f"/quality/feeders/{FEEDER_ID}/customers",
+        params={"meses": 48, "limite": 50},
+        headers=bearer_for_role(UserRole.GERENTE_OPERACAO),
+    )
+
+    assert stub_service.calls == [("customers", FEEDER_ID, 48, 50)]
+
+
 async def test_indicadores_devolvem_o_payload_do_servico(client, stub_service):
     response = await client.get("/quality/indicators", headers=bearer_for_role(UserRole.GERENTE_OPERACAO))
 
@@ -258,8 +295,22 @@ async def test_historico_de_alimentador_inexistente_retorna_404(client):
         ("/quality/feeders", {"status": "inexistente"}),
         (f"/quality/feeders/{FEEDER_ID}/history", {"meses": 0}),
         (f"/quality/feeders/{FEEDER_ID}/history", {"meses": 49}),
+        (f"/quality/feeders/{FEEDER_ID}/customers", {"meses": 0}),
+        (f"/quality/feeders/{FEEDER_ID}/customers", {"meses": 49}),
+        (f"/quality/feeders/{FEEDER_ID}/customers", {"limite": 0}),
+        (f"/quality/feeders/{FEEDER_ID}/customers", {"limite": 51}),
     ],
-    ids=["competencia_mes_13", "competencia_texto", "status_invalido", "meses_zero", "meses_acima_de_48"],
+    ids=[
+        "competencia_mes_13",
+        "competencia_texto",
+        "status_invalido",
+        "meses_zero",
+        "meses_acima_de_48",
+        "clientes_meses_zero",
+        "clientes_meses_acima_de_48",
+        "clientes_limite_zero",
+        "clientes_limite_acima_de_50",
+    ],
 )
 async def test_parametros_invalidos_retornam_422(client, invalid_query):
     route, params = invalid_query

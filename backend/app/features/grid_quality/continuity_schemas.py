@@ -85,3 +85,14 @@ class ContinuitySnapshotDTO(ContinuityModel):
     feeders: list[FeederUcHoursDTO]
     causes: list[CauseShareDTO]
     types: list[TypeShareDTO]
+
+
+class AffectedCustomerDTO(BaseModel):
+    """UC com mais horas sem energia em um alimentador, com o mínimo para identificá-la."""
+
+    id_uc: str
+    nome_titular: str | None
+    bairro: str | None
+    municipio: str | None
+    horas_sem_energia: float
+    ocorrencias: int

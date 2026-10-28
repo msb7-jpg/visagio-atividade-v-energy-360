@@ -4,7 +4,15 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 
-from app.features.grid_quality.continuity_schemas import ContinuitySnapshotDTO
+from app.features.grid_quality.continuity_schemas import AffectedCustomerDTO, ContinuitySnapshotDTO
+from app.features.grid_quality.continuity_service import (
+    LIMITE_CLIENTES_MAXIMO,
+    LIMITE_CLIENTES_MINIMO,
+    LIMITE_CLIENTES_PADRAO,
+    MESES_CLIENTES_MAXIMO,
+    MESES_CLIENTES_MINIMO,
+    MESES_CLIENTES_PADRAO,
+)
 from app.features.grid_quality.dependencies import ContinuitySvc, GridQualitySvc
 from app.features.grid_quality.schemas import (
     FeederRankingDTO,
@@ -132,3 +140,36 @@ async def get_continuity(
         KPIs, evento, municípios, alimentadores, causas e tipos.
     """
     return await service.get_snapshot(municipio, incluir_evento)
+
+
+@router.get(
+    "/feeders/{id_alimentador}/customers",
+    response_model=list[AffectedCustomerDTO],
+    summary="Clientes mais afetados de um alimentador",
+    description="UCs do alimentador por horas sem energia nos últimos meses da série; vazia se sem ocorrências.",
+)
+async def get_affected_customers(
+    id_alimentador: str,
+    service: ContinuitySvc,
+    _user: RequireOperacao,
+    meses: Annotated[
+        int,
+        Query(ge=MESES_CLIENTES_MINIMO, le=MESES_CLIENTES_MAXIMO, description="Janela em meses até a mais recente."),
+    ] = MESES_CLIENTES_PADRAO,
+    limite: Annotated[
+        int, Query(ge=LIMITE_CLIENTES_MINIMO, le=LIMITE_CLIENTES_MAXIMO, description="Quantidade máxima de UCs.")
+    ] = LIMITE_CLIENTES_PADRAO,
+) -> list[AffectedCustomerDTO]:
+    """Devolve as UCs do alimentador com mais horas sem energia na janela.
+
+    Args:
+        id_alimentador: Identificador do alimentador.
+        service: Serviço de Continuidade injetado.
+        _user: Usuário autorizado (perfis de operação); só valida o acesso.
+        meses: Janela em meses (1 a 48) até a competência mais recente.
+        limite: Quantidade máxima de UCs (1 a 50).
+
+    Returns:
+        UCs ordenadas pelas horas sem energia, da maior para a menor.
+    """
+    return await service.get_affected_customers(id_alimentador, meses, limite)

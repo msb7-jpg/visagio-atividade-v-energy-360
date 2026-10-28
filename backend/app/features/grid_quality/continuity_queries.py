@@ -15,12 +15,15 @@ fato_ocorrencias_rede = table(
     "fato_ocorrencias_rede",
     column("id_alimentador", String),
     column("tipo_ocorrencia", String),
+    column("id_uc", String),
     column("causa", String),
     column("duracao_horas", Float),
     column("competencia", String),
 )
 dim_unidade_consumidora = table(
     "dim_unidade_consumidora",
+    column("id_uc", String),
+    column("nome_titular", String),
     column("alimentador", String),
     column("municipio", String),
     column("bairro", String),
@@ -83,4 +86,35 @@ def type_count_query(competencias: Collection[str], feeder_ids: Collection[str])
         select(_occurrences.c.tipo_ocorrencia, func.count().label("occurrences"))
         .where(_occurrences.c.competencia.in_(competencias), _occurrences.c.id_alimentador.in_(feeder_ids))
         .group_by(_occurrences.c.tipo_ocorrencia)
+    )
+
+
+def latest_competencias_query(meses: int) -> Select:
+    """As últimas `meses` competências da série de ocorrências, da mais recente para a mais antiga."""
+    return (
+        select(_occurrences.c.competencia)
+        .group_by(_occurrences.c.competencia)
+        .order_by(_occurrences.c.competencia.desc())
+        .limit(meses)
+    )
+
+
+def affected_customers_query(feeder_id: str, competencias: Collection[str], limite: int) -> Select:
+    """UCs de um alimentador com mais horas sem energia nas competências informadas."""
+    customers = dim_unidade_consumidora
+    uc_hours = _uc_hours().label("uc_hours")
+    return (
+        select(
+            _occurrences.c.id_uc,
+            customers.c.nome_titular,
+            customers.c.bairro,
+            customers.c.municipio,
+            uc_hours,
+            func.count().label("occurrences"),
+        )
+        .join(customers, customers.c.id_uc == _occurrences.c.id_uc)
+        .where(_occurrences.c.id_alimentador == feeder_id, _occurrences.c.competencia.in_(competencias))
+        .group_by(_occurrences.c.id_uc, customers.c.nome_titular, customers.c.bairro, customers.c.municipio)
+        .order_by(uc_hours.desc(), _occurrences.c.id_uc)
+        .limit(limite)
     )

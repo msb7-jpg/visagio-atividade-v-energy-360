@@ -13,9 +13,16 @@ from app.features.grid_quality.continuity_rules import (
     split_periods,
     sum_rows,
 )
-from app.features.grid_quality.continuity_schemas import ContinuityEventDTO, ContinuitySnapshotDTO
+from app.features.grid_quality.continuity_schemas import AffectedCustomerDTO, ContinuityEventDTO, ContinuitySnapshotDTO
 from app.features.grid_quality.municipalities import MUNICIPALITY_REFERENCES, normalize_municipality
 from app.shared.exceptions import BadRequestException
+
+MESES_CLIENTES_MINIMO = 1
+MESES_CLIENTES_PADRAO = 12
+MESES_CLIENTES_MAXIMO = 48
+LIMITE_CLIENTES_MINIMO = 1
+LIMITE_CLIENTES_PADRAO = 10
+LIMITE_CLIENTES_MAXIMO = 50
 
 
 def _resolve_municipality(municipio: str | None) -> str | None:
@@ -86,3 +93,19 @@ class ContinuityService:
             causes=build_cause_shares(await self.repository.fetch_cause_hours(months_b, feeder_ids)),
             types=build_type_shares(await self.repository.fetch_type_counts(months_b, feeder_ids)),
         )
+
+    async def get_affected_customers(
+        self, id_alimentador: str, meses: int = MESES_CLIENTES_PADRAO, limite: int = LIMITE_CLIENTES_PADRAO
+    ) -> list[AffectedCustomerDTO]:
+        """Ranking das UCs de um alimentador por horas sem energia nos últimos meses da série.
+
+        Args:
+            id_alimentador: Identificador do alimentador.
+            meses: Janela, em meses, contada a partir da competência mais recente da série.
+            limite: Quantidade máxima de UCs.
+
+        Returns:
+            UCs com mais horas sem energia primeiro; lista vazia se o alimentador não tem ocorrências na janela.
+        """
+        competencias = await self.repository.fetch_latest_competencias(meses)
+        return await self.repository.fetch_affected_customers(id_alimentador, competencias, limite)
