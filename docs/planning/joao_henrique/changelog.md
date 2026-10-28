@@ -215,3 +215,15 @@
   - Teste novo `routes/__tests__/RbacMatrix.test.tsx`, sem navegador: Vitest + `MemoryRouter` percorre 5 papéis x 5 rotas (tela permitida ou "Acesso Restrito") e confere os itens do menu, com tabela esperada explícita.
 - **Validação de Testes:**
   - `make lint-all` aprovado; `make test-all`: 537 pytest e 342 vitest.
+
+
+### [2026-10-28] - Documentação de RBAC e atualização dos docs da fatia após o merge da Gold
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `ROADMAP.md`: Fatia 06 com "série 48m"; matriz de dependência de RBAC passou a citar os grupos reais de `role_groups.py` e os aliases `Require*` de `dependencies.py` (sem `UserRole.ATENDIMENTO`, `DIRETORIA` e `ADMIN`, que não existem); registrado que `CUSTOMER360_ACCESS` inclui `gerente_operacao`, a pedido do Bernardo, além de diretor, gerente_atendimento, atendente e gerente_perdas.
+  - `DECISOES.md`: ADR-010 (RBAC), sem conflito com os ADRs existentes (001 a 009, de Ryei e Renan).
+  - `qualidade_rede_rbac.md` e `plano_frontend_fatia_06.md`: Gold da Fatia 02 mesclada (PR #38), `fato_ocorrencias_rede` entregue e `v_energy.db` real recebido; o item "tipos de ocorrência" virou resolvido. Entradas antigas deste changelog ficam como histórico da época.
+  - Validação com o banco real iniciada: 5.856 linhas em `fato_qualidade_alimentador` e 180.000 em `fato_ocorrencias_rede`.
+- **Pendências:** a aba Continuidade ainda usa dados de exemplo; a troca do mock pelo banco real é a tarefa seguinte e atualizará a entrada de 27/10.
+- **Validação de Testes:**
+  - Só documentação, nenhum código alterado. `make lint-all` aprovado; `make test-all`: 537 pytest e 342 vitest.

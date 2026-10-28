@@ -38,22 +38,22 @@
 - **DEC** = soma das durações das interrupções (horas) ÷ UCs atendidas do alimentador; **FEC** = UCs interrompidas ÷ UCs atendidas. Denominador **fixo** (UCs por alimentador), conforme ADR-003 e a Gold da Fatia 02 (Ryei, branch ainda sem merge). B2 respondida.
 - **Grade completa de 48 meses:** meses sem interrupção têm DEC = FEC = 0. A coluna `ucs_atingidas` foi substituída por `ucs_atendidas` e `ucs_interrompidas`.
 - **Limite anual e acumulado no ano (ADR-003):** a ANEEL fixa limite anual por conjunto elétrico. A Gold traz DEC/FEC do mês **e** `dec_acumulado_ano_horas` / `fec_acumulado_ano_vezes`; a violação é apurada sobre o acumulado no ano. O backend classifica pelo acumulado (VIOLACAO acima do limite, ALERTA a partir de 85%) e recalcula em Python, sem ler `violou_meta`. B1 informada pelo ADR-003: limite por conjunto (`criterio_limite = CONJUNTO`) e mediana dos 10 conjuntos mapeados para Recife, Paulista, Abreu e Lima e Araçoiaba (`MEDIANA_RMR`).
-- **Pendente:** quais tipos de ocorrência contam como interrupção (hoje a fórmula conta todas as linhas da base).
+- **Resolvido:** `OSCILACAO` e os 5 tipos de ocorrência contam como interrupção.
 - **Observação:** números calculados sobre os dados BRUTOS, antes do pipeline; podem mudar após o Silver/Gold.
 - **B1 resolvida pelo ADR-003 revisado (26/10, Ryei, issue #23):** o limite aparece como "limite de referência", sem falar em multa nem violação regulatória real. Os nomes de coluna e campos do contrato (`dec_limite_aneel`, `fec_limite_aneel`, `VIOLACAO`, `percentual_violacao`, `alimentadores_em_violacao`, `violou_*`) permanecem.
 - **Ocorrências:** `fato_ocorrencias_rede` existe; `OSCILACAO` e os 5 tipos de ocorrência contam. `NAO INFORMADA` (causa vazia) é distinta de `NAO IDENTIFICADA`.
-- **Gold da Fatia 02:** ainda não mesclada na `main` (conferido em 27/10; vive em `origin/feat/fatia-02-faturamento`).
+- **Gold da Fatia 02:** mesclada na `main` (PR #38). O `v_energy.db` real chegou; a validação da fatia contra ele foi iniciada em 28/10: 5.856 linhas em `fato_qualidade_alimentador` e 180.000 em `fato_ocorrencias_rede`.
 
-### Contrato real de `fato_qualidade_alimentador` (Gold da Fatia 02, conferido em `origin/feat/fatia-02-faturamento`, commit `65ad127`)
+### Contrato real de `fato_qualidade_alimentador` (Gold da Fatia 02, mesclada na `main` pelo PR #38; contrato conferido antes no commit `65ad127`)
 
 `id_alimentador`, `competencia` (`YYYY-MM`), `conjunto_aneel`, `criterio_limite` (`CONJUNTO` ou `MEDIANA_RMR`), `ucs_atendidas`, `ucs_interrompidas`, `dec_apurado_horas`, `fec_apurado_vezes` (do mês), `dec_acumulado_ano_horas`, `fec_acumulado_ano_vezes`, `dec_limite_aneel`, `fec_limite_aneel` (anuais), `violou_dec`, `violou_fec`, `violou_meta`.
 
 ### Respostas do Bernardo (Fatia 03, issue #27)
 
-- RBAC da Visão 360: grupo `CUSTOMER360_ACCESS` (`diretor`, `gerente_atendimento`, `atendente`, `gerente_perdas`) e alias `RequireCustomer360`, criados em `role_groups.py` e `dependencies.py`.
+- RBAC da Visão 360: grupo `CUSTOMER360_ACCESS` (`diretor`, `gerente_atendimento`, `atendente`, `gerente_perdas` e, desde 28/10, `gerente_operacao`, a pedido dele para abrir a ficha do cliente a partir do ranking de circuitos) e alias `RequireCustomer360`, criados em `role_groups.py` e `dependencies.py`.
 - Usuário seed `gerente.atendimento@venergy.com` criado por ele no PR dele; esta fatia não cria usuários.
 - Rota do frontend: `/customers`.
-- Tabela de ocorrências ainda **pendente** (Ryei): `id_ocorrencia`, `id_uc`, `alimentador`, `tipo`, `causa`, `data_abertura`, `data_encerramento`, `duracao_min`, com índices em `id_uc` e `alimentador`; 100% das ocorrências são de UCs do mesmo alimentador.
+- Tabela de ocorrências `fato_ocorrencias_rede` **entregue** (Ryei, PR #38): `id_ocorrencia`, `id_uc`, `alimentador`, `tipo`, `causa`, `data_abertura`, `data_encerramento`, `duracao_min`, com índices em `id_uc` e `alimentador`; 100% das ocorrências são de UCs do mesmo alimentador.
 
 ---
 
@@ -138,7 +138,7 @@
    - Gráfico de linha dos últimos **48 meses** do alimentador selecionado:
      - Linha sólida azul: DEC apurado mensal.
      - Linha tracejada vermelha horizontal: Limite de referência.
-     - Lista das principais causas históricas das ocorrências (CLIMATICA, VEGETACAO, TERCEIROS, FALHA DE EQUIPAMENTO, SOBRECARGA, NAO IDENTIFICADA). Depende de tabela de ocorrências com causa, ainda pendente (ver 4.2).
+     - Lista das principais causas históricas das ocorrências (CLIMATICA, VEGETACAO, TERCEIROS, FALHA DE EQUIPAMENTO, SOBRECARGA, NAO IDENTIFICADA). Usa `fato_ocorrencias_rede` (causa), já disponível no banco real (ver 4.2).
 5. **Comportamento do Shell RBAC (`AppLayout.tsx` & `SidebarNav.tsx`):**
    - O componente `SidebarNav.tsx` consome o contexto de autenticação `useAuth()`.
    - Se perfil for `atendente` ou `gerente_atendimento` (grupo `ATENDIMENTO_ACCESS`): exibe no menu apenas "Visão 360 da UC" e o atalho do Chat. Oculta "Inteligência Comercial", "Gestão de Perdas" e "Qualidade da Rede".
@@ -156,7 +156,7 @@
   - Mecanismo de rota protegida `ProtectedRoute.tsx` em `frontend/src/routes/`.
 - **O que João Henrique RECEBE dos outros colegas:**
   - **De Ryei Estevan (Fatia 02):** Consome a tabela `fato_qualidade_alimentador` no SQLite `v_energy.db` para alimentar os cards e o ranking.
-    - **Dependência pendente:** tabela de ocorrências com causa (CLIMATICA, VEGETACAO, TERCEIROS, FALHA DE EQUIPAMENTO, SOBRECARGA, NAO IDENTIFICADA), com colunas `id_ocorrencia`, `id_uc`, `alimentador`, `tipo`, `causa`, `data_abertura`, `data_encerramento`, `duracao_min` e índices em `id_uc` e `alimentador`. O contrato de `fato_qualidade_alimentador` não tem causa.
+    - **Dependência atendida (PR #38, `fato_ocorrencias_rede`):** tabela de ocorrências com causa (CLIMATICA, VEGETACAO, TERCEIROS, FALHA DE EQUIPAMENTO, SOBRECARGA, NAO IDENTIFICADA), com colunas `id_ocorrencia`, `id_uc`, `alimentador`, `tipo`, `causa`, `data_abertura`, `data_encerramento`, `duracao_min` e índices em `id_uc` e `alimentador`. O contrato de `fato_qualidade_alimentador` não tem causa.
   - **De Renan (Fatia 01):** Consome `dim_unidade_consumidora` para contabilizar o número de UCs ativas ligadas a cada circuito elétrico, usadas como denominador do DEC e do FEC (fixo por alimentador, ADR-003; a Gold da Fatia 02 já traz `ucs_atendidas`). Provável origem do bairro: `dim_unidade_consumidora` (Renan), a confirmar.
   - **De Miguel (Fatia 07):**
     - Importa o componente `<ChatDrawer />` e insere o botão de disparo no cabeçalho (*Header*) global do `AppLayout.tsx`.
