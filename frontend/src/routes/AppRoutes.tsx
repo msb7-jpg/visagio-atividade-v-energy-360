@@ -9,12 +9,15 @@ import { homeRouteFor } from './homeRoute'
 const DashboardPage = lazy(() => import('@/features/auth/components/DashboardPage').then((module) => ({ default: module.DashboardPage })))
 const LossManagementPage = lazy(() => import('@/features/loss_management/components/LossManagementPage').then((module) => ({ default: module.LossManagementPage })))
 const GridQualityPage = lazy(() => import('@/features/grid_quality/components/GridQualityPage').then((module) => ({ default: module.GridQualityPage })))
+const RevenueDashboardPage = lazy(() => import('@/features/revenue/components/RevenueDashboardPage').then((module) => ({ default: module.RevenueDashboardPage })))
 const Customer360Page = lazy(() => import('@/features/customer360/components/Customer360Page').then((module) => ({ default: module.Customer360Page })))
 
 // Mesmo RBAC do backend (`LOSS_ROLES` em loss_management/router.py).
 const DASHBOARD_ROLES = ['diretor', 'gerente_operacao', 'gerente_perdas']
 const LOSS_ROLES = ['diretor', 'gerente_perdas']
 const QUALITY_ROLES = ['diretor', 'gerente_operacao']
+// Mesmo RBAC do backend (`RequireDiretoria` em revenue/router.py).
+const REVENUE_ROLES = ['diretor']
 const CUSTOMER360_ROLES = ['diretor', 'gerente_atendimento', 'atendente', 'gerente_perdas']
 
 /** Leva o usuário logado à tela inicial do cargo; sem sessão, o ProtectedRoute da rota destino manda ao login. */
@@ -45,6 +48,9 @@ export function AppRoutes() {
             </Route>
             <Route element={<ProtectedRoute allowedRoles={QUALITY_ROLES} />}>
               <Route path="/quality" element={<GridQualityPage />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={REVENUE_ROLES} />}>
+              <Route path="/revenue" element={<RevenueDashboardPage />} />
             </Route>
             <Route element={<ProtectedRoute allowedRoles={CUSTOMER360_ROLES} />}>
               <Route path="/customers" element={<Customer360Page />} />

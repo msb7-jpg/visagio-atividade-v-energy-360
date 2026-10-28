@@ -5,8 +5,8 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--card-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -19,6 +19,8 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -28,128 +30,107 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  --radius-sm: 12px;
-  --radius-md: 24px;
-  --radius-lg: 36px;
+  /* Escala de tipo (tamanho / altura de linha): nada abaixo de 12px. */
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 18px;
+  --text-base: 14px;
+  --text-base--line-height: 20px;
+  --text-lg: 16px;
+  --text-lg--line-height: 24px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+  --text-3xl: 30px;
+  --text-3xl--line-height: 36px;
+
+  /* Raio: base de 8px. sm = barras e selos de tabela; md = botões, campos e linhas; lg = cards e gaveta. */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
-:root,
+/* Tema claro: variação (o padrão do portal é escuro, via <html class="dark">). */
+:root {
+  color-scheme: light;
+  --background: #F2F5F8;
+  --foreground: #0F1B2D;
+  --card: #FFFFFF;
+  --card-foreground: #0F1B2D;
+  --muted: #F5F7FA;
+  --muted-foreground: #4C5A6D;
+  --primary: #0B5C7A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E9EEF4;
+  --secondary-foreground: #0F1B2D;
+  --accent: #E1EEF4;
+  --accent-foreground: #0B5C7A;
+  --destructive: #B8322A;
+  --destructive-foreground: #FFFFFF;
+  --success: #176B41;
+  --success-foreground: #FFFFFF;
+  --warning: #8A5A00;
+  --warning-foreground: #FFFFFF;
+  --border: #DCE2E9;
+  --input: #7C8BA0;
+  --ring: #0B5C7A;
+  --chart-1: #0B5C7A;
+  --chart-2: #C2410C;
+  --chart-3: #7B4FC4;
+  --chart-4: #8A5A00;
+  --chart-5: #0E8C80;
+  --radius: 8px;
+}
+
 .dark {
-  /* Paleta Base Dark por padrão (Dark Navy & Enterprise Analytics) */
-  --background: oklch(0.208 0.042 265.755);      /* Dark Navy #0F172A */
-  --foreground: oklch(0.985 0.002 247.839);      /* Light Grey #F8FAFC */
-  --card: oklch(0.25 0.04 265);                  /* Slate 800 translúcido */
-  --card-foreground: oklch(0.985 0.002 247.839);
-  --popover: oklch(0.25 0.04 265);
-  --popover-foreground: oklch(0.985 0.002 247.839);
-
-  /* Identidade Corporativa V-Energy (Corporate Blue & Glassmorphism) */
-  --primary: oklch(0.623 0.214 259.815);         /* Blue #3B82F6 */
-  --primary-foreground: oklch(1 0 0);
-
-  --secondary: oklch(0.28 0.04 265);
-  --secondary-foreground: oklch(0.95 0 0);
-
-  --muted: oklch(0.30 0.04 265);                 /* Dark Grey #334155 */
-  --muted-foreground: oklch(0.70 0.03 260);
-
-  --accent: oklch(0.32 0.05 265);
-  --accent-foreground: oklch(0.85 0.12 255);
-
-  --destructive: oklch(0.58 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
-
-  --warning: oklch(0.80 0.16 80);                /* Amber 400: atenção que não bloqueia */
-  --warning-foreground: oklch(0.208 0.042 265.755);
-
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.623 0.214 259.815 / 60%);
-
-  --radius: 0.75rem;                             /* Base corner radius: 12px per design.md */
-
-  /* Cores de Gráficos (Data Visualization) */
-  --chart-1: oklch(0.623 0.214 259.815);         /* Blue #3B82F6 */
-  --chart-2: oklch(0.746 0.160 255.436);         /* Light Blue #60A5FA */
-  --chart-3: oklch(0.424 0.199 265.638);         /* Royal Blue #1E40AF */
-  --chart-4: oklch(0.70 0.03 260);               /* Slate 400 */
-  --chart-5: oklch(0.985 0.002 247.839);         /* Light Grey #F8FAFC */
-
-  /* Semantic Brand Tokens (design.md) */
-  --brand-navy: #0F172A;
-  --brand-royal: #1E40AF;
-  --brand-blue: #3B82F6;
-  --brand-light-blue: #60A5FA;
-  --brand-surface: #FFFFFF;
-  --brand-light-grey: #F8FAFC;
-  --brand-dark-grey: #334155;
-}
-
-.light {
-  --background: oklch(0.985 0.002 247.839);      /* Light Grey #F8FAFC */
-  --foreground: oklch(0.208 0.042 265.755);      /* Dark Navy #0F172A */
-  --card: oklch(1 0 0);                           /* White #FFFFFF */
-  --card-foreground: oklch(0.208 0.042 265.755);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.208 0.042 265.755);
-
-  --primary: oklch(0.424 0.199 265.638);         /* Royal Blue #1E40AF */
-  --primary-foreground: oklch(1 0 0);
-
-  --secondary: oklch(0.96 0.01 250);             /* Slate 100 */
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-
-  --muted: oklch(0.96 0.01 250);
-  --muted-foreground: oklch(0.45 0.03 260);      /* Slate 500 */
-
-  --accent: oklch(0.93 0.03 260);
-  --accent-foreground: oklch(0.35 0.18 265);
-
-  --destructive: oklch(0.58 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
-
-  --warning: oklch(0.52 0.14 65);                /* Amber 700: contraste AA sobre fundo claro */
-  --warning-foreground: oklch(1 0 0);
-
-  --border: oklch(0.90 0.01 250);                /* Slate 200 */
-  --input: oklch(0.90 0.01 250);
-  --ring: oklch(0.424 0.199 265.638 / 50%);
-
-  --chart-1: oklch(0.424 0.199 265.638);         /* Royal Blue #1E40AF */
-  --chart-2: oklch(0.623 0.214 259.815);         /* Blue #3B82F6 */
-  --chart-3: oklch(0.746 0.160 255.436);         /* Light Blue #60A5FA */
-  --chart-4: oklch(0.372 0.044 257.287);         /* Dark Grey #334155 */
-  --chart-5: oklch(0.208 0.042 265.755);         /* Dark Navy #0F172A */
+  color-scheme: dark;
+  --background: #0A121E;
+  --foreground: #E7EDF4;
+  --card: #111B2A;
+  --card-foreground: #E7EDF4;
+  --muted: #172437;
+  --muted-foreground: #A8B6C8;
+  --primary: #5BB8DD;
+  --primary-foreground: #06121C;
+  --secondary: #1D2D44;
+  --secondary-foreground: #E7EDF4;
+  --accent: #123349;
+  --accent-foreground: #5BB8DD;
+  --destructive: #F28479;
+  --destructive-foreground: #1A0A09;
+  --success: #5BCB93;
+  --success-foreground: #06121C;
+  --warning: #F2B92B;
+  --warning-foreground: #1A1204;
+  --border: #24354D;
+  --input: #5A7396;
+  --ring: #5BB8DD;
+  --chart-1: #5BB8DD;
+  --chart-2: #F59A6B;
+  --chart-3: #B39DF0;
+  --chart-4: #F2B92B;
+  --chart-5: #4FD1C0;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
   font-feature-settings: "rlig" 1, "calt" 1;
-  line-height: 1.6;
 }
 
-/* Glassmorphism and Depth Effects (design.md) */
-.glass-card {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background-color: oklch(0.208 0.042 265.755 / 80%);
-  border: 1px solid oklch(1 0 0 / 12%);
-  box-shadow: 0 4px 20px oklch(0 0 0 / 30%);
-}
-
-.light .glass-card {
-  background-color: oklch(1 0 0 / 85%);
-  border: 1px solid oklch(0.90 0.01 250 / 80%);
-  box-shadow: 0 4px 20px oklch(0 0 0 / 6%);
-}
-
+/* Fundo da tela de login e banners hero, derivado só de tokens. */
 .glass-gradient {
-  background: linear-gradient(135deg, #0F172A 0%, #1E40AF 100%);
+  background: linear-gradient(135deg, var(--background) 0%, var(--accent) 100%);
 }
 
 @keyframes shimmer {

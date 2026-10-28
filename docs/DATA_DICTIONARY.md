@@ -18,7 +18,7 @@ Este dicionário descreve as tabelas que o pipeline Databricks publica em CSV (V
 
 ## Fatia 01 — Cadastro, Medição & GD (Renan)
 
-Notebooks associados: `Landing_to_Bronze`, `Bronze_to_Silver`, `fatia01_gold`, e `fatia01_export_sqlite`. Decisões: [`DECISOES.md`](DECISOES.md).
+Notebooks associados: `Landing_to_Bronze`, `Bronze_to_Silver`, `fatia01_gold`, e `fatia01_export_sqlite`. Decisões: [`DECISOES.md`](DECISOES.md) (ADR-006 a ADR-009).
 
 ### `dim_unidade_consumidora`
 
@@ -41,7 +41,7 @@ Notebooks associados: `Landing_to_Bronze`, `Bronze_to_Silver`, `fatia01_gold`, e
 | `subgrupo_tarifario` | TEXT | B1, B2, B3, A4 (trim e maiúsculas). |
 | `alimentador` | TEXT | Circuito da rede ao qual a UC está conectada. |
 | `subestacao` | TEXT | Projetado como Nulo na primeira versão. |
-| `numero_medidor_ativo` | TEXT | Número do medidor fisicamente instalado hoje (calculado via ADR-002: status = ATIVO ou retirada nula). |
+| `numero_medidor_ativo` | TEXT | Número do medidor fisicamente instalado hoje (calculado via ADR-007: status = ATIVO ou retirada nula). |
 | `possui_gd` | BOOLEAN | `1` se existe no cadastro de geração distribuída, senão `0`. |
 | `potencia_gd_kw` | REAL | Potência instalada de geração solar em kW (se aplicável). |
 | `data_conexao_gd` | TEXT | Data de ligação da geração própria. |
@@ -62,7 +62,7 @@ Notebooks associados: `Landing_to_Bronze`, `Bronze_to_Silver`, `fatia01_gold`, e
 | `data_leitura` | TEXT | Data real em que o relógio foi aferido (`yyyy-MM-dd`). |
 | `leitura_anterior` | REAL | Índice anterior do medidor. |
 | `leitura_atual` | REAL | Índice atual medido. |
-| `consumo_kwh` | REAL | Consumo real faturável. Tratado para cenários de *rollover* de relógio (ADR-001). Sem valores negativos. |
+| `consumo_kwh` | REAL | Consumo real faturável. Tratado para cenários de *rollover* de relógio (ADR-006). Sem valores negativos. |
 | `dias_faturamento` | INTEGER | `data_leitura` atual menos a `data_leitura` anterior. Padrão de 30 dias se nulo. |
 | `media_diaria_kwh` | REAL | Consumo / dias faturamento, útil para comparações independentemente de ciclos longos/curtos. |
 | `tipo_leitura` | TEXT | `REAL` (leiturista) ou `ESTIMADA` (fechado pela média por impossibilidade de acesso). |

@@ -18,7 +18,7 @@ function FactCard({ title, icon, value, detail }: FactCardProps) {
     <Card variant="interactive">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>{title}</CardTitle>
-        <div className="bg-primary/10 text-primary rounded-lg p-1.5">{icon}</div>
+        <div className="bg-primary/10 text-primary rounded-md p-1.5">{icon}</div>
       </CardHeader>
       <CardContent>
         {value === undefined

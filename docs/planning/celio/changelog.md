@@ -80,3 +80,39 @@
   - Base real (script ou banco do Bernardo), `EXPLAIN QUERY PLAN`, ADR e `EndpointDoc`; depois o frontend `/revenue`.
 - **Validação de Testes:**
   - `make test-all`: 310 testes no backend passando; lint sem erros novos (o `unsorted-imports` em `api/v1/router.py` vem da `main` e é corrigido no PR de integração do João).
+
+### [2026-10-23] - Frontend `/revenue` (PR #34)
+- **Autor:** Celio
+- **O que foi feito:**
+  - `frontend/src/features/revenue/`: página `RevenueDashboardPage`, filtros (período base e de comparação por data, município e classe), 4 cards de KPI, cascata Preço-Volume-Mix, ranking territorial (bairros, municípios e classes) ordenável e paginado, e gaveta com o histórico de 24 meses do bairro.
+  - Camada de dados com TanStack Query (`api/`, `queries/`, `hooks/`), controlador headless, tipos, formatadores e utilitários de datas, cascata e opções dos seletores.
+  - Rota `/revenue` (só diretor) em `AppRoutes.tsx` e item "Inteligência Comercial" no menu (`navItems.ts`), com o teste de menu do diretor atualizado.
+  - Testes Vitest de API, formatadores, filtros, cascata, ranking, gaveta e dashboard.
+- **Dificuldades / Desafios:**
+  - Decisão: gráficos feitos em HTML/CSS com `motion/react` (sem recharts) para controlar o eixo truncado da cascata, que é avisado na tela.
+  - Decisão: períodos escolhidos por data, mas a API trabalha por competência; qualquer dia vale como o mês inteiro.
+  - O `main` andou 74 commits durante o desenvolvimento (novo layout, menu e rotas lazy), então a tela foi adaptada ao layout novo.
+- **Próximos Passos:**
+  - Corrigir os pontos da revisão do PR #34 e escrever o `docs/DIAGNOSTICO_RECEITA.md` com os números do Renan.
+- **Validação de Testes:**
+  - `make lint-all` e `make test-all` passando.
+
+### [2026-10-27] - Correções da revisão do PR #34 e esqueleto do diagnóstico
+- **Autor:** Celio
+- **O que foi feito:**
+  - Filtro de bairro na barra de filtros: lista os bairros do município escolhido (o seletor só abre depois de escolher o município) e é limpo ao trocar de município. Também vale para KPIs, cascata e ranking.
+  - Ranking: nova coluna "Efeito cruzado" e rodapé explicando que preço + volume + cruzado = variação de cada linha (o volume da linha já inclui o mix).
+  - Tooltips acessíveis: títulos dos KPIs e colunas da cascata agora recebem foco do teclado e têm o texto lido por leitores de tela; o `Tooltip` compartilhado passou a abrir e fechar por toque (antes abria e fechava no mesmo toque) e a fechar ao tocar fora.
+  - Seta do seletor movida para `components/ui/select.tsx`, valendo para todas as telas; `color-scheme` por tema em `index.css` no lugar do `in-[.light]:scheme-light` (colchetes proibidos pelo `AGENTS.md`).
+  - Texto da fórmula do efeito-preço, volume, mix e cruzado alinhado ao cálculo do backend (por segmento, somado); comentário de premissa das janelas padrão removido.
+  - Paginação única em `components/ui/pagination.tsx`, usada pelo ranking (o `TablePagination` próprio foi removido).
+  - `docs/DIAGNOSTICO_RECEITA.md`: esqueleto com períodos, definições, método da decomposição, tabela das causas e consultas, sem números finais.
+  - Checklist da Fatia 04 atualizado.
+- **Dificuldades / Desafios:**
+  - `QueuePagination` (perdas) e o componente de paginação do chat continuam próprios porque são código de outros membros; ficam como sugestão de adoção do `Pagination` compartilhado em cada PR.
+  - Tooltip, select e `index.css` são arquivos compartilhados: as mudanças são pequenas e estão descritas no PR para revisão dos donos.
+- **Próximos Passos:**
+  - Preencher o diagnóstico com os números do Renan, usando as mesmas janelas e definições da tela.
+  - Conferir as janelas padrão com o banco real entregue pelo Ryei.
+- **Validação de Testes:**
+  - `make lint-all` e `make test-all` passando (frontend 302 testes; backend 537).

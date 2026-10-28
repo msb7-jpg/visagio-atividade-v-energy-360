@@ -136,7 +136,7 @@
 - [ ] Decidir com o time o limiar de ±10% de variação de consumo (`LIMIAR_VARIACAO_CONSUMO_PCT`).
 - [x] Diagnóstico de conta alta com 4 causas: consumo, dias faturados, bandeira e preço do kWh (2026-10-22).
 - [ ] Ciente: `status_pagamento = VENCIDA` é calculado na exportação da Fatia 02; pode ficar defasado até a próxima carga.
-- [x] Registrar as decisões da Fatia 03 em `docs/DECISOES.md` (formato ADR). (ADR-006 a ADR-012, em 2026-10-27)
+- [x] Registrar as decisões da Fatia 03 em `docs/DECISOES.md` (formato ADR). (ADR-017 a ADR-023, em 2026-10-27)
 - [ ] Levar as suposições da Fatia 03 para a seção de suposições do `README.md` (obrigatório no case), junto com as das outras fatias.
 - [ ] Após o merge da Fatia 05, adotar o `EndpointDoc` (`app/shared/docs.py`) com um `router_metadata.py`, no mesmo padrão do Adrian.
 - [x] No merge com `main`, resolver os conflitos esperados em `api/v1/router.py` e `pyproject.toml` mantendo as linhas de todas as fatias (simulado em 2026-10-21: 165 testes verdes).

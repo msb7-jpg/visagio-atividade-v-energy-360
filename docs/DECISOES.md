@@ -1,12 +1,7 @@
-aq vamos documentar as decisões que tomamos no formato adr
+# Registro de Decisões de Arquitetura (ADRs)
 
-qual decisao
+Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **V-Energy Grid 360**.
 
-impacto
-
-como garantir confirmidade
-
-etc etc...
 ---
 
 ## ADR-001 — Escala da nota de satisfação (CSAT) dos atendimentos mantida em 1–5
@@ -59,7 +54,38 @@ etc etc...
 - **Alternativa descartada:** excluir do cálculo, o que reduziria o DEC de 94 alimentadores com base numa data de cadastro de qualidade incerta.
 - **Conformidade:** teste na Gold: `fato_ocorrencias_rede` tem as mesmas 180.000 linhas da Silver, e a contagem por alimentador e mês bate com `ucs_interrompidas` de `fato_qualidade_alimentador`.
 
-## ADR-006 — Limiar de ±10% para dizer que o consumo "subiu" ou "caiu"
+## ADR-006 — Regra de Virada de Medidor (Rollover) vs. Fraude (Anomalia)
+
+- **Data:** 2026-10-22 · **Fatia:** 01 (Renan) · **Status:** Aceita
+- **Contexto:** Nos arquivos de leituras, há casos onde a `leitura_atual` é substancialmente menor que a `leitura_anterior`. Na vida real, isso pode ser um medidor que "virou" (chegou a 99999 e reiniciou em 0) ou uma irregularidade técnica (fraude, by-pass, religação invertida).
+- **Decisão:** Assumir **rollover de medidor de 5 dígitos** estrito se: `leitura_anterior >= 90000` E `leitura_atual <= 10000`. O consumo faturável nesses casos é recalculado como `(100000 - leitura_anterior) + leitura_atual`. Se a leitura recuar *fora* desses limiares, marcamos a flag `anomalia_leitura = True`.
+- **Impacto:** Protege a `fato_medicao` (e subsequentemente a `fato_faturamento` do Ryei) de faturar consumos negativos absurdos. Alimenta de forma limpa a Gestão de Perdas (Adrian) gerando a `fato_anomalia_leitura` de alta precisão. (Este dado justifica D5 das Decisões de Perda).
+- **Conformidade:** Testes de PySpark automatizados: `assert df.filter("consumo_kwh < 0").count() == 0` passa 100%.
+
+## ADR-007 — Identificação do Medidor Ativo na Dimensão de UC
+
+- **Data:** 2026-10-24 · **Fatia:** 01 (Renan) · **Status:** Aceita
+- **Contexto:** Uma mesma UC pode ter múltiplos registros na tabela `medidores.csv` referentes ao histórico de trocas de hardware. O Atendimento (Visão 360) precisa saber qual o medidor exato está lá *hoje*.
+- **Decisão:** A subquery que cruza com a UC fará uma partição (Window) por `id_uc`, ordenada pela `data_instalacao_medidor` descendente, retendo apenas a linha onde `data_retirada IS NULL` ou `status = 'ATIVO'`.
+- **Impacto:** Garante unicidade e relação 1:1 entre a UC e seu medidor fisicamente ativo. Evita explosão cartesiana de registros durante os JOINs.
+- **Conformidade:** Teste de unicidade validando que `count(distinct id_uc) == count(id_uc)` na `dim_unidade_consumidora`.
+
+## ADR-008 — Enriquecimento Ativo da Geração Distribuída (GD Solar)
+
+- **Data:** 2026-10-22 · **Fatia:** 01 (Renan) · **Status:** Aceita
+- **Contexto:** Para responder o dilema do Diretor Comercial (por que volume caiu 4% mesmo com base subindo?), precisamos rastrear quem gera própria energia via painéis solares.
+- **Decisão:** Executar um `LEFT JOIN` determinístico da tabela de cadastro principal contra o arquivo `geracao_distribuida.csv` injetando uma booleana explícita (`possui_gd`) na camada Gold. 
+- **Impacto:** É a métrica mais valiosa da modelagem. Permite ao módulo de Receita (Célio) filtrar o painel, comprovando matematicamente que o "consumo desaparecido" migrou para Geração Distribuída em bairros de alta classe. (Isso também valida D3 das decisões da fila de perdas, onde UCs com GD são cortadas da fila de fiscalização).
+- **Conformidade:** A flag booleana é validada. Valores nulos resultantes do left join são transformados em `False/0`.
+
+## ADR-009 — Normalização Resiliente de Datas e Textos (Silver)
+
+- **Data:** 2026-10-22 · **Fatia:** 01 (Renan) · **Status:** Aceita
+- **Contexto:** Devido à dispersão de exportação dos sistemas legados da V-Energy, o campo `data_leitura` aparece como `yyyy-MM-dd`, `dd/MM/yyyy`, `dd.MM.yyyy` e o preenchimento de endereço e UFs flutua.
+- **Decisão:** Uso do `safe_date_parse_v2` testando via `coalesce(try_to_date(...))` uma cascata de 6 formatos até encontrar padrão. Remoção de todos os acentos e padronização `UPPER()` nas colunas `bairro` e `municipio`. `PERNAMBUCO` convertido para a sigla canônica `PE`.
+- **Impacto:** Evita perda por falha de casting ou criação de bairros duplicados no dashboard gerencial de filtro.
+
+## ADR-017 — Limiar de ±10% para dizer que o consumo "subiu" ou "caiu"
 
 - **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
 - **Contexto:** O atendente precisa responder se o consumo do cliente "realmente subiu" (case, user story do atendente). Pequenas oscilações mês a mês são normais e não devem virar "subiu".
@@ -68,12 +94,12 @@ etc etc...
 - **Impacto:** a constante fica num só lugar do backend e pode ser ajustada pelo time sem mudar o frontend.
 - **Conformidade:** teste `test_classify_trend_uses_ten_percent_threshold` (±10% exatos são estáveis).
 
-## ADR-007 — Diagnóstico de conta alta com cinco causas
+## ADR-018 — Diagnóstico de conta alta com cinco causas
 
 - **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
 - **Contexto:** A conta pode subir sem o consumo subir. As tabelas Gold trazem o que explica isso: período faturado (`dias_faturamento`), bandeira e preço médio do kWh (`fato_faturamento`) e se a leitura foi estimada (`tipo_leitura`).
 - **Decisão:** O backend devolve o diagnóstico estruturado (sem texto) com cinco causas, e o frontend escreve as frases para o atendente:
-  1. **Consumo** contra o mesmo mês do ano anterior (ADR-006).
+  1. **Consumo** contra o mesmo mês do ano anterior (ADR-017).
   2. **Leitura estimada:** a leitura do mês foi fechada pela média, sem acesso ao medidor; a diferença é acertada na próxima leitura real.
   3. **Dias faturados:** só é citado com diferença de 3 dias ou mais e quando muda a conclusão (o total subiu, mas por dia ficou estável).
   4. **Bandeira tarifária:** diz se ficou mais cara ou mais barata.
@@ -82,7 +108,7 @@ etc etc...
 - **Alternativa descartada:** isolar o reajuste tarifário, que não existe como coluna na Gold e exigiria uma tabela de tarifas fora do escopo.
 - **Conformidade:** testes do serviço (`test_diagnosis_*`), do router (`test_history_*`) e do frontend (`diagnosisMessages.test.ts`, `Customer360Page.test.tsx`).
 
-## ADR-008 — Janela de 12 meses e totais só com meses comparáveis
+## ADR-019 — Janela de 12 meses e totais só com meses comparáveis
 
 - **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
 - **Contexto:** Cada UC tem sua última leitura em um mês diferente, e UCs ligadas há menos de dois anos não têm o ano anterior completo.
@@ -90,7 +116,7 @@ etc etc...
 - **Alternativa descartada:** somar todos os meses de cada ano, o que faria uma UC nova parecer ter "subido" só por ter mais meses no ano recente.
 - **Conformidade:** testes `test_history_builds_twelve_months_ending_at_latest_reading` e `test_totals_ignore_months_without_previous_year`.
 
-## ADR-009 — Falta de luz: interrupções da própria UC e comparação do alimentador com ele mesmo
+## ADR-020 — Falta de luz: interrupções da própria UC e comparação do alimentador com ele mesmo
 
 - **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
 - **Contexto:** O case pede que o atendente veja "se a rua dele teve falta de luz". O glossário diz que o DEC/FEC do case serve para comparar alimentadores e períodos entre si, não com limites regulatórios reais (ADR-003).
@@ -101,7 +127,7 @@ etc etc...
 - **Alternativa descartada:** usar `violou_meta` como alerta, o que contraria o glossário.
 - **Conformidade:** testes `test_events_list_unit_outages_after_connection_most_recent_first` e `outageAnalysis.test.ts`.
 
-## ADR-010 — Busca por número da UC, do medidor ou nome do titular
+## ADR-021 — Busca por número da UC, do medidor ou nome do titular
 
 - **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
 - **Contexto:** O atendente recebe o número da conta em vários formatos (`100004`, `uc 100004`, `UC-100004`), às vezes só o número do medidor ou só o nome.
@@ -112,14 +138,14 @@ etc etc...
 - **Impacto:** a busca por nome percorre a `dim_unidade_consumidora` (~45 mil linhas, poucos milissegundos). O `LIKE` do SQLite ignora maiúsculas só em letras sem acento.
 - **Conformidade:** testes `test_customer360_search_terms.py` e `test_search_*` do router.
 
-## ADR-011 — Quem acessa a Visão 360
+## ADR-022 — Quem acessa a Visão 360
 
 - **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
 - **Contexto:** O case diz que "o atendente, o analista de perdas e o diretor comercial" olham o mesmo cliente.
 - **Decisão:** Acesso pelo grupo central `CUSTOMER360_ACCESS` (Fatia 06): atendente, gerente de atendimento, gerente de perdas e diretor. Operação fica de fora (403). O histórico de inspeções de perdas aparece para todos esses perfis: o atendente precisa saber de uma inspeção recente quando o cliente liga sobre ela.
 - **Conformidade:** testes `test_operation_profile_is_forbidden` e `test_director_and_losses_analyst_can_access`.
 
-## ADR-012 — A Visão 360 só lê a Gold e falha de forma explícita
+## ADR-023 — A Visão 360 só lê a Gold e falha de forma explícita
 
 - **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
 - **Contexto:** As tabelas Gold vêm de duas fatias de dados e podem chegar em momentos diferentes.

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useUpdateInspectionMutation } from '@/features/loss_management/hooks/useLossMutations'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { getApiErrorMessage } from '@/features/loss_management/utils/apiErrorMessage'
+import { formatOrderCode } from '@/features/loss_management/utils/orderBoard'
 
 interface CancelOrderDialogProps {
   order: InspectionOrder
@@ -35,7 +37,12 @@ export function CancelOrderDialog({ order, onClose }: CancelOrderDialogProps) {
   const handleConfirm = () => {
     updateMutation.mutate(
       { idInspecao: order.id_inspecao, payload: { status: 'cancelada', justificativa_cancelamento: trimmedJustification } },
-      { onSuccess: onClose }
+      {
+        onSuccess: () => {
+          toast.success(`${formatOrderCode(order)} cancelada.`)
+          onClose()
+        }
+      }
     )
   }
 
@@ -43,7 +50,7 @@ export function CancelOrderDialog({ order, onClose }: CancelOrderDialogProps) {
     <AlertDialog open onOpenChange={(isOpen) => (isOpen ? undefined : onClose())}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Cancelar a ordem #{order.id_inspecao}?</AlertDialogTitle>
+          <AlertDialogTitle>Cancelar a ordem {formatOrderCode(order)}?</AlertDialogTitle>
           <AlertDialogDescription>
             Deseja realmente cancelar esta inspeção? A UC {order.id_uc} volta para a fila. Justifique o cancelamento.
           </AlertDialogDescription>

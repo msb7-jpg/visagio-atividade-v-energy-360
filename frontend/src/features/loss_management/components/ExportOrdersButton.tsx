@@ -25,7 +25,7 @@ export function ExportOrdersButton({ disabled = false, label = 'Exportar para ca
         {isPending ? <Spinner className="size-4" /> : <Download aria-hidden="true" />}
         {label}
       </Button>
-      {isError ? <p className="text-destructive text-sm" role="alert">{getApiErrorMessage(error)}</p> : null}
+      {isError ? <p className="text-destructive max-w-64 text-right text-sm" role="alert">{getApiErrorMessage(error)}</p> : null}
     </div>
   )
 }
