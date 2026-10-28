@@ -204,3 +204,14 @@
 - **Pendências:** trocar o mock pela API real depois do merge da Gold da Fatia 02; definir com o grupo a lista de causas atacáveis (premissa da referência); coordenadas dos municípios são fixas no mock.
 - **Validação de Testes:**
   - `make lint-all` aprovado; `make test-all`: 537 pytest e 174 vitest.
+
+
+### [2026-10-28] - Visão 360 da UC liberada para o gerente_operacao (pedido do Bernardo, Fatia 03)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Backend: `UserRole.GERENTE_OPERACAO` entrou em `CUSTOMER360_ACCESS` (`role_groups.py`), grupo usado por `RequireCustomer360` e pelo router de `customer360`; nenhuma lista duplicada. `gerente_operacao` segue 403 em `/perdas` e `/diretoria`.
+  - Frontend: `AppRoutes.tsx` deixou de ter listas próprias de papéis e passou a ler `NAV_ITEMS` (`rolesOf(path)`), fonte única do RBAC das telas; o item `/customers` ganhou `gerente_operacao`. A árvore de rotas foi extraída para `AppRouteTree` (sem roteador) para ser testável com `MemoryRouter`.
+  - Testes atualizados: `test_customer360_router.py` (`operacao@venergy.com` passa a receber 200, no teste dos perfis autorizados), `test_rbac.py` (`/customer360` inclui `GERENTE_OPERACAO`), `RbacNavigation.test.tsx` (menu do gerente_operacao inclui "Visão 360 da UC").
+  - Teste novo `routes/__tests__/RbacMatrix.test.tsx`, sem navegador: Vitest + `MemoryRouter` percorre 5 papéis x 5 rotas (tela permitida ou "Acesso Restrito") e confere os itens do menu, com tabela esperada explícita.
+- **Validação de Testes:**
+  - `make lint-all` aprovado; `make test-all`: 537 pytest e 342 vitest.
