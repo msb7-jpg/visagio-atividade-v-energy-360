@@ -80,7 +80,6 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 
 ## ADR-009 — Normalização Resiliente de Datas e Textos (Silver)
 
-- **Data:** 2026-10-22 · **Fatia:** 01 (Renan) · **Status:** Aceita
 - **Contexto:** Devido à dispersão de exportação dos sistemas legados da V-Energy, o campo `data_leitura` aparece como `yyyy-MM-dd`, `dd/MM/yyyy`, `dd.MM.yyyy` e o preenchimento de endereço e UFs flutua.
 - **Decisão:** Uso do `safe_date_parse_v2` testando via `coalesce(try_to_date(...))` uma cascata de 6 formatos até encontrar padrão. Remoção de todos os acentos e padronização `UPPER()` nas colunas `bairro` e `municipio`. `PERNAMBUCO` convertido para a sigla canônica `PE`.
 - **Impacto:** Evita perda por falha de casting ou criação de bairros duplicados no dashboard gerencial de filtro.
@@ -140,10 +139,10 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 
 ## ADR-022 — Quem acessa a Visão 360
 
-- **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
-- **Contexto:** O case diz que "o atendente, o analista de perdas e o diretor comercial" olham o mesmo cliente.
-- **Decisão:** Acesso pelo grupo central `CUSTOMER360_ACCESS` (Fatia 06): atendente, gerente de atendimento, gerente de perdas e diretor. Operação fica de fora (403). O histórico de inspeções de perdas aparece para todos esses perfis: o atendente precisa saber de uma inspeção recente quando o cliente liga sobre ela.
-- **Conformidade:** testes `test_operation_profile_is_forbidden` e `test_director_and_losses_analyst_can_access`.
+- **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita (revisada em 2026-10-28)
+- **Contexto:** O case diz que "o atendente, o analista de perdas e o diretor comercial" olham o mesmo cliente. Depois, a Qualidade da Rede (Fatia 06) passou a listar os clientes mais afetados de cada circuito, com link para a ficha.
+- **Decisão:** Acesso pelo grupo central `CUSTOMER360_ACCESS` (ADR-024): atendente, gerente de atendimento, gerente de perdas, gerente de operação e diretor. O gerente de operação entra para abrir a ficha do cliente a partir do ranking de circuitos. O histórico de inspeções de perdas aparece para todos esses perfis: o atendente precisa saber de uma inspeção recente quando o cliente liga sobre ela.
+- **Conformidade:** testes `test_authorized_profiles_can_access` (`test_customer360_router.py`) e a matriz papel x rota de `test_rbac.py`.
 
 ## ADR-023 — A Visão 360 só lê a Gold e falha de forma explícita
 
@@ -151,3 +150,94 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 - **Contexto:** As tabelas Gold vêm de duas fatias de dados e podem chegar em momentos diferentes.
 - **Decisão:** A feature só faz `SELECT`. Se uma tabela Gold estiver ausente, a API responde 500 com `DatabaseReadError`, nomeando a tabela, em vez de mostrar uma tela vazia que pareceria "cliente sem dados". A seed de desenvolvimento (`tests/customer360_seed.py`) reproduz o esquema exportado pelas Fatias 01 e 02 e se recusa a sobrescrever o `v_energy.db` real.
 - **Conformidade:** teste `test_missing_gold_tables_return_database_error`.
+- **Data:** 2026-10-22 · **Fatia:** 01 (Renan) · **Status:** Aceita (revisada em 2026-10-28)
+- **Contexto:** Devido à dispersão de exportação dos sistemas legados da V-Energy, o campo `data_leitura` aparece como `yyyy-MM-dd`, `dd/MM/yyyy`, `dd.MM.yyyy` e o preenchimento de endereço e UFs flutua. Além disso, o arquivo bruto `unidades_consumidoras.csv` mistura textos íntegros em UTF-8 com textos em dupla codificação (*mojibake*: UTF-8 lido como Latin-1/Windows-1252 e re-salvo em UTF-8), corrompendo 61 bairros em 348 UCs (ex.: `Brasília Teimosa` virando `BRASA\xadLIA TEIMOSA`).
+- **Decisão:**
+  1. **Datas e siglas:** Uso do `safe_date_parse_v2` testando via `coalesce(try_to_date(...))` uma cascata de 6 formatos até encontrar padrão. `PERNAMBUCO` convertido para a sigla canônica `PE`.
+  2. **Reversão de Mojibake e remoção de acentos:** Antes da remoção de acentos, reverter a dupla codificação com o UDF `fix_mojibake` (`texto.encode("latin-1").decode("utf-8")` com tratamento de erro `UnicodeEncodeError`/`UnicodeDecodeError`). Em seguida, aplicar remoção de acentos via `translate` e padronização `UPPER()` e `trim()` nos campos cadastrais (`bairro`, `municipio`, `logradouro` e `nome_titular`).
+- **Impacto:** Evita perda por falha de casting e unifica os 61 bairros duplicados, eliminando bairros "fantasmas" no filtro de bairro, no ranking da Receita e na Visão 360.
+- **Conformidade:** Teste no Spark `dim_unidade.filter(F.col("bairro").rlike(r"[^ -~]")).count() == 0` e no SQLite `SELECT count(*) FROM dim_unidade_consumidora WHERE bairro GLOB '*[^ -~]*' == 0`.
+
+## ADR-010 — Painel do Diretor: indicadores das cinco áreas e períodos padrão do case
+
+- **Data:** 2026-10-27 · **Fatia:** 03 / Painel (Bernardo H) · **Status:** Aceita
+- **Contexto:** A user story do diretor (seção 5.2) pede "os principais indicadores do negócio" comparados "entre períodos". A pergunta do diretor (seção 1) compara os últimos 12 meses com o primeiro ano da base.
+- **Decisão:**
+  - Onze indicadores em cinco grupos: **Comercial** (faturamento, energia faturada, tarifa média, UCs ativas), **Cobrança** (inadimplência), **Rede** (horas sem energia e interrupções por cliente), **Atendimento** (satisfação média e tempo médio de resolução) e **Medição** (leituras estimadas e clientes com painel solar). Perdas entram como retrato à parte (ADR-014).
+  - Períodos padrão: base 2022-07 a 2023-06 e atual 2025-07 a 2026-06, os mesmos da tela de Receita e do diagnóstico. O diretor pode trocar, e as janelas ficam na URL.
+  - Os indicadores comerciais reutilizam `RevenueRepository.fetch_period_totals` e `kpis.py` da Fatia 04, então são **idênticos** aos de `/revenue/kpis` nas mesmas janelas.
+- **Alternativa descartada:** comparar mês contra mês, que mistura sazonalidade e não responde à pergunta do diretor.
+- **Conformidade:** `test_commercial_indicators_match_revenue_kpis` e `test_defaults_to_case_periods_and_lists_all_groups`.
+
+## ADR-011 — Avaliação "melhorou / piorou / estável" calculada no backend
+
+- **Data:** 2026-10-27 · **Fatia:** 03 / Painel (Bernardo H) · **Status:** Aceita
+- **Contexto:** O diretor quer saber "rapidamente se estamos indo bem ou mal". Subir é bom para o faturamento e ruim para a inadimplência.
+- **Decisão:** Cada indicador tem um sentido (`MAIOR_MELHOR`, `MENOR_MELHOR` ou `NEUTRO`). A variação é (atual − base) ÷ base. Abaixo de 1% em módulo, `ESTAVEL`. Com base zero não há variação (`SEM_COMPARACAO`). Indicadores neutros (tarifa média e painel solar) são sempre `INFORMATIVO`, porque não são bons nem ruins por si só.
+- **Taxas em pontos percentuais (revisão de 2026-10-28):** indicadores em % (inadimplência e leituras estimadas) são avaliados pela diferença em pontos percentuais (`variacao_pp`), com `ESTAVEL` abaixo de 0,1 p.p. No banco real, a inadimplência foi de 3,55% para 3,60%: +1,4% relativo, que aparecia como "piorou", mas só +0,05 p.p. A tela escreve por extenso ("+0,05 ponto percentual") e, na inadimplência, mostra também o valor vencido em reais nos dois períodos (`detalhe`): a taxa diz se a cobrança piorou, e o valor mostra quanto dinheiro está em jogo (cerca de R$ 5,6 mi para R$ 6,1 mi, porque o faturamento cresceu).
+- **Impacto:** a regra fica num só lugar (`indicators.py`) e o frontend só exibe o selo.
+- **Conformidade:** `test_evaluate_uses_direction_and_one_percent_threshold` e `test_rates_are_evaluated_in_percentage_points`.
+
+## ADR-012 — DEC/FEC da área no Painel e aviso do temporal de jul/2025
+
+- **Data:** 2026-10-27 · **Fatia:** 03 / Painel (Bernardo H) · **Status:** Aceita
+- **Contexto:** O glossário diz que o DEC/FEC do case serve para comparar períodos entre si, não com limites ANEEL (ADR-003). O Painel precisa de um número da rede inteira por período.
+- **Decisão:** "Horas sem energia por cliente" = Σ `duracao_horas` de `fato_ocorrencias_rede` ÷ UCs ativas da janela. "Interrupções por cliente" = nº de linhas (uma por UC atingida) ÷ UCs ativas. Todas as ocorrências contam, inclusive as anteriores à ligação (ADR-005). Sem limite ANEEL. Quando um dos períodos contém jul/2025, os dois indicadores avisam que o temporal daquele mês concentra boa parte das interrupções.
+- **Alternativa descartada:** média do DEC dos alimentadores, que pesa igual um alimentador pequeno e um grande.
+- **Conformidade:** `test_storm_warning_only_when_period_contains_july_2025` e `test_area_indicators_from_seed`.
+
+## ADR-013 — Inadimplência como % do valor faturado vencido e não pago
+
+- **Data:** 2026-10-27 · **Fatia:** 03 / Painel (Bernardo H) · **Status:** Aceita
+- **Contexto:** A inadimplência pode ser medida por número de faturas ou por valor.
+- **Decisão:** Σ `valor_total_rs` das faturas com `status_pagamento = VENCIDA` ÷ Σ `valor_total_rs` faturado, por competência da fatura. Faturas `ABERTA` (ainda no prazo) não contam como inadimplência.
+- **Impacto:** mostra o dinheiro que não entrou. As faturas mais recentes ainda podem ser pagas, então o período atual tende a cair um pouco com o tempo.
+- **Conformidade:** `test_area_indicators_from_seed` (cenário de inadimplência).
+
+## ADR-014 — Perdas no Painel como retrato atual, sem comparação
+
+- **Data:** 2026-10-27 · **Fatia:** 03 / Painel (Bernardo H) · **Status:** Aceita
+- **Contexto:** O histórico de inspeções (`fato_inspecoes_perdas`) só cobre ago a dez/2025: não existe primeiro ano para comparar.
+- **Decisão:** Rota separada `GET /dashboard/losses` com UCs suspeitas, energia (kWh/mês) e valor (R$/ano) recuperáveis e a taxa de acerto das inspeções. Ela usa o mesmo ranking (`rank_suspicious_units`) e a mesma taxa (`hit_rate_dto`) da Fila de Perdas (Fatia 05). A tela mostra o selo "Retrato atual, sem histórico para comparar". A rota é separada porque o cálculo da fila é o mais pesado e não deve atrasar os demais cards.
+- **Conformidade:** `test_losses_snapshot_uses_loss_queue_ranking`.
+
+## ADR-015 — Painel só para o diretor; tela inicial pela ordem do menu
+
+- **Data:** 2026-10-27 · **Fatia:** 03 / Painel (Bernardo H) · **Status:** Aceita
+- **Contexto:** A user story é do diretor, e a API de receita já é restrita a ele (`RequireDiretoria`). Antes, o item "Painel" aparecia para os gerentes de operação e de perdas.
+- **Decisão:** `/dashboard` e `/api/v1/dashboard/*` só para o diretor. O menu (`navItems.ts`) foi reordenado para que a primeira tela de cada cargo seja a dele: o diretor abre no Painel, o gerente de perdas na Gestão de Perdas, o gerente de operação na Qualidade da Rede e o atendimento na Visão 360. O `DashboardPage` provisório foi removido.
+- **Conformidade:** `test_returns_403_for_profiles_other_than_director` e `RbacNavigation.test.tsx`.
+
+## ADR-016 — Desempenho do Painel: leitura sequencial, cache e pré-cálculo
+
+- **Data:** 2026-10-28 · **Fatia:** 03 / Painel (Bernardo H) · **Status:** Aceita
+- **Contexto:** No `v_energy.db` real (2,1 milhões de faturas e de leituras), a primeira versão do Painel levava cerca de 11 s. A meta era menos de 2 s.
+- **Decisão:**
+  1. As consultas do Painel e a de totais da Receita (`period_totals_query`, Fatia 04) não filtram a competência no `WHERE`: cada soma já limita a janela no `CASE`. Ler a tabela em sequência é mais rápido no SQLite do que ir pelo índice de `competencia` para metade das linhas (faturas: 2,9 s → 0,4 s; totais da Receita: 5,1 s → 2,8 s). Isso também acelera a `/revenue/kpis`.
+  2. Os resultados ficam em cache na memória por 30 minutos, por par de janelas, porque a Gold só muda a cada carga do pipeline. Erros não entram no cache.
+  3. Na subida da API, os períodos padrão e o retrato de perdas são calculados em segundo plano (cerca de 5 s). O diretor abre o Painel na hora.
+- **Impacto:** períodos padrão em 0,01 s; outro período em cerca de 2,6 s na primeira vez e instantâneo depois. Ao trocar o `v_energy.db`, reiniciar a API para limpar o cache.
+- **Conformidade:** `test_indicators_are_cached_per_window_pair`, `test_executive_dashboard_cache.py` e a medição registrada em `docs/planning/bernardo/painel_diretor.md` (seção 13).
+
+## ADR-024 — RBAC: papéis do `UserRole`, sem ADMIN, grupos centrais em `role_groups.py`
+
+- **Data:** 2026-10-28 · **Fatia:** 06 (Joao Henrique) · **Status:** Aceita
+- **Contexto:** O ROADMAP citava `UserRole.ATENDIMENTO`, `UserRole.DIRETORIA` e `UserRole.ADMIN`, que não existem. O enum real é `UserRole` (diretor, gerente_operacao, gerente_atendimento, atendente, gerente_perdas) e o grupo da Visão 360 precisou crescer a pedido da Fatia 03.
+- **Decisão:** Os papéis são os membros de `UserRole`; não há perfil ADMIN (decisão de 2026-10-21). Cada grupo de acesso vive em `backend/app/shared/role_groups.py` (`DIRETORIA_ONLY`, `OPERACAO_ACCESS`, `ATENDIMENTO_ACCESS`, `PERDAS_ACCESS`, `CUSTOMER360_ACCESS`), com os aliases `Require*` em `backend/app/shared/dependencies.py`. `require_role(allowed_roles: Sequence[UserRole | str])` aceita membros do enum ou suas strings; string fora do enum levanta `ValueError`. `CUSTOMER360_ACCESS` inclui diretor, gerente_atendimento, atendente, gerente_perdas e gerente_operacao (este último para abrir a ficha do cliente a partir do ranking de circuitos).
+- **Impacto:** Mudar quem acessa uma área é editar um único grupo. No frontend, `NAV_ITEMS` (`components/layout/navItems.ts`) é a fonte única dos papéis por tela e deve espelhar `role_groups.py`; as rotas de `AppRoutes.tsx` leem dele.
+- **Conformidade:** `backend/tests/test_rbac.py` (matriz papel x rota em `ROUTE_BY_GROUP`, 401/403/200), `test_customer360_router.py` e, no frontend, `RbacNavigation.test.tsx` e `routes/__tests__/RbacMatrix.test.tsx` (papéis x rotas, tabela explícita). Novo grupo ou papel exige atualizar os dois lados e esses testes.
+
+## ADR-025 — Continuidade: períodos de 12 meses, evento extremo (K=3) e causas atacáveis
+
+- **Data:** 2026-10-28 · **Fatia:** 06 (Joao Henrique) · **Status:** Aceita
+- **Contexto:** A aba Continuidade comparava dois períodos fixos de 4 meses sobre dados de exemplo. Com a Gold real (48 meses, 180.000 ocorrências), os períodos e o mês de evento precisam sair dos dados, e o cálculo precisa ser feito em SQL.
+- **Decisão:**
+  1. **Períodos:** A = primeiros 12 meses da série e B = últimos 12 (`MESES_POR_PERIODO`), sem datas fixas.
+  2. **Evento extremo:** mês cujas UC-horas na rede inteira passam de 3 vezes (`LIMIAR_EVENTO_EXTREMO`) a mediana mensal da série de 48 meses. É o mesmo mês para qualquer município; os números do cartão são os do escopo. `incluir_evento=false` remove o mês de A e de B; sem mês acima do limiar, `event` é nulo.
+  3. **Indicadores:** UC-horas = soma de `duracao_horas`. DEC = UC-horas ÷ soma de `ucs_atendidas` contada uma vez por alimentador no escopo; FEC = ocorrências ÷ a mesma soma. Sem limite ANEEL (ADR-003, ADR-012).
+  4. **Causas atacáveis (suposição de negócio, a validar com a Fatia 02):** `VEGETACAO`, `FALHA DE EQUIPAMENTO` e `SOBRECARGA`. `NAO INFORMADA` aparece como "Sem causa registrada" e não é atacável.
+  5. **Municípios no mapa:** coordenadas estáticas e aproximadas em `municipalities.py`, nunca dado do banco.
+  6. **Escopo:** o município é resolvido em `scope_query` (alimentadores do escopo); as agregações só filtram por `id_alimentador`. O bairro entra no mesmo ponto.
+- **Alternativa descartada:** denominador somando as linhas mensais de `fato_qualidade_alimentador`, que conta as mesmas UCs 12 vezes e divide o DEC por 12.
+- **Impacto:** `GET /quality/continuity` responde sem carregar as ocorrências em Python; trocar K ou o tamanho do período é mudar uma constante.
+- **Conformidade:** `backend/tests/test_grid_quality_continuity.py` (seed pequeno, valores à mão) e `test_grid_quality_router.py`.

@@ -163,3 +163,43 @@
 - **Validação de Testes:**
   - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (547) aprovados.
   - Frontend: ESLint, Fallow (sem duplicação), Vitest (318) e build aprovados.
+### [2026-10-27] - Planejamento do Painel do Diretor
+- **Autor:** Bernardo H
+- **Branch:** `feat/painel-diretor`
+- **O que foi feito:**
+  - Criado [`painel_diretor.md`](painel_diretor.md) com os requisitos do case, as decisões D1 a D6, os 12 indicadores e a regra de cálculo de cada um, o contrato da API para o Adrian, as etapas até 30/10, o checklist, a definição de pronto e os riscos.
+  - Conferido nos arquivos brutos que cada indicador existe nos dois períodos comparados. Perdas fica como retrato atual, porque as inspeções só cobrem ago a dez/2025.
+- **Decisões:**
+  - Painel só para o perfil diretor; gerente de perdas abre na Fila de Perdas e gerente de operação, na Qualidade da Rede.
+  - Períodos padrão do case (2022-07 a 2023-06 contra 2025-07 a 2026-06), com escolha livre.
+  - Inadimplência como % do valor faturado vencido e não pago.
+  - Quadro de IA do Miguel no Painel com os números reais, depois do merge do #35.
+- **Próximos Passos:**
+  - Enviar o contrato ao Adrian e implementar o backend (etapa 2).
+
+### [2026-10-27] - Painel do Diretor: backend, frontend e menu
+- **Autor:** Bernardo H
+- **Branch:** `feat/painel-diretor`
+- **O que foi feito:**
+  - Backend `app/features/executive_dashboard/`: `GET /api/v1/dashboard/indicators` (11 indicadores em 5 grupos, comparados entre a janela base e a atual, com variação, avaliação e aviso do temporal de jul/2025) e `GET /api/v1/dashboard/losses` (retrato atual da Fila de Perdas). Só o diretor acessa (`RequireDiretoria`).
+  - Receita, energia, tarifa e UCs saem da mesma consulta da tela de Receita (Fatia 04), e o retrato de perdas usa o mesmo ranking da Fila (Fatia 05).
+  - Frontend `features/executive_dashboard/`: Painel com seletor dos dois períodos (na URL, com volta ao padrão do case), cards por área no padrão da Receita 1 do `design.md`, selo melhorou/piorou/estável, explicação do cálculo ao passar o mouse e card de perdas sem comparação.
+  - Menu e rotas: Painel só para o diretor; menu reordenado para o gerente de perdas abrir na Gestão de Perdas e o de operação na Qualidade da Rede. O `DashboardPage` provisório foi removido.
+  - ADR-010 a ADR-015 em `docs/DECISOES.md`; checklist e pendências atualizados em `painel_diretor.md`.
+- **Pendências:** conferir com o banco real (etapa 4), revisão do Adrian e do João no PR, aviso ao Miguel sobre o #35 e o quadro de IA (etapa 7).
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (573) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (213) e build (`tsc -b` + Vite) aprovados.
+
+### [2026-10-28] - Painel do Diretor validado com o banco real
+- **Autor:** Bernardo H
+- **Branch:** `feat/painel-diretor`
+- **O que foi feito:**
+  - Números conferidos com o `v_energy.db` real e com `/revenue/kpis` (seção 13 do `painel_diretor.md`).
+  - Desempenho (ADR-016): consultas sem filtro de competência no `WHERE` (inclusive `period_totals_query` da Fatia 04), cache em memória por 30 minutos e pré-cálculo dos períodos padrão na subida da API. O Painel passou de cerca de 11 s para 0,01 s nos períodos padrão.
+  - Indicadores em % avaliados em pontos percentuais (`variacao_pp`, ADR-011 revisada): a inadimplência de 3,55% para 3,60% deixou de aparecer como "piorou".
+  - Card de perdas avisa quando a competência foi fixada para a demonstração e quando a fila está vazia (`competencia_fixada`).
+  - Variação das taxas escrita por extenso ("+0,05 ponto percentual") e valor vencido em reais no card de inadimplência (`detalhe`).
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (578) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (215) e build aprovados.

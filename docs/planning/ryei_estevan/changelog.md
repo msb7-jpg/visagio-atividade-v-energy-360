@@ -153,3 +153,18 @@
   - Os 10 notebooks importados do repositório (`import-dir`) e o job implantado pelo bundle: 10 tarefas SUCCESS em 8,7 min, na ordem acima.
   - `v_energy.db` final: 9 tabelas (4 da Fatia 01 + 5 da Fatia 02), `integrity_check=ok`, 0 violações de FK.
   - `make lint-all` e `make test-all`: 100% aprovados.
+
+### [2026-10-28] - Correção do status de pagamento das faturas (`docs/CORRECOES.md`, item 1)
+- **Autor:** Ryei Estevan (com apoio do Claude Code)
+- **Contexto:** apontado pelo Bernardo na lista de correções da branch `feat/painel-diretor`. No `faturas.csv`, fatura não paga vem com `status = EM ABERTO` e `data_pagamento` vazia (113.835) **ou** `9999-12-31` (61.333). A Silver só tratava a data vazia: o texto `9999-12-31` virava data válida e a fatura saía `PAGA`. Além disso, `VENCIDA` era decidida com `current_date()`, então nenhuma fatura ficava `ABERTA` e o resultado mudava conforme o dia da execução.
+- **O que foi feito:**
+  - `fatia02_silver`: `9999-12-31` vira nulo em `data_pagamento` (mesma regra da Fatia 01 em `data_retirada`) e `VENCIDA` x `ABERTA` compara o vencimento com `BASE_CUTOFF_DATE = 2026-06-30` (fim da última competência).
+  - Faturas com pagamento real continuam `PAGA` mesmo pagas depois do corte (a base registra pagamentos até 2026-08-06; 32.011 faturas pagas em jul–ago/2026).
+  - `fatia02_testes_qualidade`: 2 testes novos (26 no total): nenhum `9999-12-31` na Gold e `status_pagamento` coerente com o pagamento e com a data de corte.
+  - `docs/DATA_DICTIONARY.md` e regra do checklist atualizados.
+- **Impacto esperado (simulado no `v_energy.db` atual):** 60.394 faturas (R$ 12,9 mi, 33.142 UCs) deixam de ser `PAGA`. Distribuição nova: `PAGA` 1.979.783, `VENCIDA` 170.853, `ABERTA` 1.700. Inadimplência por valor passa de 3,6% para 5,5%.
+- **Validação de Testes:**
+  - `make lint-all` e `make test-all`: 100% aprovados.
+  - Consulta somente leitura no SQL Warehouse com as expressões novas sobre `bronze_faturas`: mesma distribuição da simulação, 0 marcadores e 0 status incoerentes.
+  - Notebooks importados no workspace e job executado de ponta a ponta: 10 tarefas SUCCESS em 8,5 min, com os 26 testes de `fatia02_testes_qualidade` aprovados.
+  - `v_energy.db` exportado: 9 tabelas, `integrity_check=ok`, 0 violações de FK, 0 faturas com `9999-12-31`, `PAGA` 1.979.783 / `VENCIDA` 170.853 / `ABERTA` 1.700, inadimplência por valor 5,45%.

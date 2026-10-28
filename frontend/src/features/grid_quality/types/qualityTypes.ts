@@ -45,3 +45,13 @@ export interface FeederHistory {
   id_alimentador: string
   pontos: FeederHistoryPoint[]
 }
+
+/** UC com mais horas sem energia em um alimentador (`GET /quality/feeders/{id}/customers`). */
+export interface AffectedCustomer {
+  id_uc: string
+  nome_titular: string | null
+  bairro: string | null
+  municipio: string | null
+  horas_sem_energia: number
+  ocorrencias: number
+}

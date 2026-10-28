@@ -4,7 +4,16 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 
-from app.features.grid_quality.dependencies import GridQualitySvc
+from app.features.grid_quality.continuity_schemas import AffectedCustomerDTO, ContinuitySnapshotDTO
+from app.features.grid_quality.continuity_service import (
+    LIMITE_CLIENTES_MAXIMO,
+    LIMITE_CLIENTES_MINIMO,
+    LIMITE_CLIENTES_PADRAO,
+    MESES_CLIENTES_MAXIMO,
+    MESES_CLIENTES_MINIMO,
+    MESES_CLIENTES_PADRAO,
+)
+from app.features.grid_quality.dependencies import ContinuitySvc, GridQualitySvc
 from app.features.grid_quality.schemas import (
     FeederRankingDTO,
     FeederTimeSeriesDTO,
@@ -102,3 +111,65 @@ async def get_feeder_history(
         Série histórica do alimentador.
     """
     return await service.get_feeder_history(id_alimentador, meses)
+
+
+@router.get(
+    "/continuity",
+    response_model=ContinuitySnapshotDTO,
+    summary="Continuidade: período B (últimos 12 meses) contra A (primeiros 12)",
+    description=(
+        "KPIs, evento extremo, DEC por município, maiores alimentadores em UC-horas, causas e tipos. "
+        "O mês do evento (UC-horas acima de 3x a mediana mensal da rede) sai dos agregados se incluir_evento=false."
+    ),
+)
+async def get_continuity(
+    service: ContinuitySvc,
+    _user: RequireOperacao,
+    municipio: Annotated[str | None, Query(description="Nome do município; vazio traz a rede inteira.")] = None,
+    incluir_evento: Annotated[bool, Query(description="Inclui o mês do evento extremo nos agregados.")] = True,
+) -> ContinuitySnapshotDTO:
+    """Devolve o snapshot de Continuidade do escopo informado.
+
+    Args:
+        service: Serviço de Continuidade injetado.
+        _user: Usuário autorizado (perfis de operação); só valida o acesso.
+        municipio: Município do escopo; sem valor usa a rede inteira.
+        incluir_evento: Se falso, remove o mês do evento dos períodos A e B.
+
+    Returns:
+        KPIs, evento, municípios, alimentadores, causas e tipos.
+    """
+    return await service.get_snapshot(municipio, incluir_evento)
+
+
+@router.get(
+    "/feeders/{id_alimentador}/customers",
+    response_model=list[AffectedCustomerDTO],
+    summary="Clientes mais afetados de um alimentador",
+    description="UCs do alimentador por horas sem energia nos últimos meses da série; vazia se sem ocorrências.",
+)
+async def get_affected_customers(
+    id_alimentador: str,
+    service: ContinuitySvc,
+    _user: RequireOperacao,
+    meses: Annotated[
+        int,
+        Query(ge=MESES_CLIENTES_MINIMO, le=MESES_CLIENTES_MAXIMO, description="Janela em meses até a mais recente."),
+    ] = MESES_CLIENTES_PADRAO,
+    limite: Annotated[
+        int, Query(ge=LIMITE_CLIENTES_MINIMO, le=LIMITE_CLIENTES_MAXIMO, description="Quantidade máxima de UCs.")
+    ] = LIMITE_CLIENTES_PADRAO,
+) -> list[AffectedCustomerDTO]:
+    """Devolve as UCs do alimentador com mais horas sem energia na janela.
+
+    Args:
+        id_alimentador: Identificador do alimentador.
+        service: Serviço de Continuidade injetado.
+        _user: Usuário autorizado (perfis de operação); só valida o acesso.
+        meses: Janela em meses (1 a 48) até a competência mais recente.
+        limite: Quantidade máxima de UCs (1 a 50).
+
+    Returns:
+        UCs ordenadas pelas horas sem energia, da maior para a menor.
+    """
+    return await service.get_affected_customers(id_alimentador, meses, limite)

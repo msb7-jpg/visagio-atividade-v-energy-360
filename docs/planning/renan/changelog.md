@@ -79,3 +79,18 @@
   - Atualização dos apontamentos no `DATA_DICTIONARY.md` para as novas ADR-006 e ADR-007.
 - **Validação:**
   - `job.yaml`, `DECISOES.md` e `DECISOES_PERDAS.md` revisados e validados.
+
+
+### [2026-10-28] - Correção: Reversão de Mojibake nos Nomes de Bairros (Silver e Testes)
+- **Autor:** Renan
+- **O que foi feito:**
+  - Identificada a causa da duplicação de 61 bairros em `dim_unidade_consumidora` (348 UCs corrompidas com dupla codificação UTF-8/Latin-1 no `unidades_consumidoras.csv`).
+  - Implementado o UDF `fix_mojibake` em `data-engineering/notebooks/fatia01_silver.ipynb`, revertendo strings double-encoded (`texto.encode("latin-1").decode("utf-8")`) com tratamento estrito de exceção antes da remoção de acentos.
+  - Integrado o `fix_mojibake` à função `clean_string`, corrigindo automaticamente `bairro`, `municipio`, `logradouro` e `nome_titular`.
+  - Adicionados testes de qualidade em `data-engineering/notebooks/fatia01_testes_qualidade.ipynb`:
+    - PySpark: asserção de que nenhum bairro possui caracteres fora do intervalo ASCII padrão `[^ -~]`.
+    - SQLite: conferência via `SELECT COUNT(*) FROM dim_unidade_consumidora WHERE bairro GLOB '*[^ -~]*'` retornando zero.
+  - Atualizada a especificação na **ADR-009** em `docs/DECISOES.md`.
+  - Movido o apontamento correspondente em `docs/CORRECOES.md` para "Já resolvido".
+- **Validação:**
+  - Simulação direta na base bruta confirmou a unificação exata de todos os bairros apontados (ex.: `Brasília Teimosa` unificada de 2.075 + 55 para 2.130 UCs; `Águas Compridas` de 224 + 12 para 236 UCs) e zero violações na consulta GLOB.

@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { qualityApi } from '@/features/grid_quality/api/qualityApi'
 import { GridQualityPage } from '@/features/grid_quality/components/GridQualityPage'
 import type {
+  AffectedCustomer,
   FeederHistory,
   FeederRanking,
   QualityIndicators
@@ -13,7 +15,8 @@ vi.mock('@/features/grid_quality/api/qualityApi', () => ({
   qualityApi: {
     getIndicators: vi.fn(),
     listFeeders: vi.fn(),
-    getFeederHistory: vi.fn()
+    getFeederHistory: vi.fn(),
+    getAffectedCustomers: vi.fn()
   }
 }))
 
@@ -64,11 +67,22 @@ const history: FeederHistory = {
   ]
 }
 
+const affectedCustomer: AffectedCustomer = {
+  id_uc: 'UC-TESTE-01',
+  nome_titular: 'TITULAR TESTE',
+  bairro: 'CENTRO',
+  municipio: 'RECIFE',
+  horas_sem_energia: 8,
+  ocorrencias: 2
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
-      <GridQualityPage />
+      <MemoryRouter>
+        <GridQualityPage />
+      </MemoryRouter>
     </QueryClientProvider>
   )
 }
@@ -89,6 +103,7 @@ describe('GridQualityPage', () => {
     mockedApi.getIndicators.mockResolvedValue(indicators)
     mockedApi.listFeeders.mockResolvedValue([violatingFeeder, approximateLimitFeeder])
     mockedApi.getFeederHistory.mockResolvedValue(history)
+    mockedApi.getAffectedCustomers.mockResolvedValue([affectedCustomer])
   })
 
   it('mostra os cards com a média do acumulado no ano e a contagem de violações', async () => {
@@ -110,7 +125,7 @@ describe('GridQualityPage', () => {
     expect(within(violatingRow).getByText('25')).toBeInTheDocument()
     expect(within(violatingRow).getByText('20')).toBeInTheDocument()
     expect(within(violatingRow).getByText('5')).toBeInTheDocument()
-    expect(within(violatingRow).getByText('Acima do limite de referência')).toBeInTheDocument()
+    expect(within(violatingRow).getByText('Acima do limite de referência')).toHaveClass('text-destructive')
     expect(within(violatingRow).queryByText('Limite aproximado')).not.toBeInTheDocument()
   })
 
@@ -120,7 +135,7 @@ describe('GridQualityPage', () => {
     const approximateRow = await screen.findByRole('row', { name: /ALIM-TESTE-02/ })
 
     expect(within(approximateRow).getByText('Limite aproximado')).toBeInTheDocument()
-    expect(within(approximateRow).getByText('Conforme')).toBeInTheDocument()
+    expect(within(approximateRow).getByText('Conforme')).toHaveClass('text-success')
     expect(screen.getAllByText('Limite aproximado')).toHaveLength(1)
   })
 
@@ -128,7 +143,7 @@ describe('GridQualityPage', () => {
     renderPage()
     await screen.findByRole('row', { name: /ALIM-TESTE-01/ })
 
-    fireEvent.change(screen.getByLabelText('Status regulatório'), { target: { value: 'violacao' } })
+    fireEvent.change(screen.getByLabelText('Situação em relação ao limite de referência'), { target: { value: 'violacao' } })
 
     await vi.waitFor(() => expect(mockedApi.listFeeders).toHaveBeenLastCalledWith('violacao', expect.anything()))
   })
@@ -141,6 +156,17 @@ describe('GridQualityPage', () => {
     expect(await screen.findByText('Alimentador ALIM-TESTE-01')).toBeInTheDocument()
     expect(await screen.findByText('DEC acumulado no ano (h)')).toBeInTheDocument()
     expect(mockedApi.getFeederHistory).toHaveBeenCalledWith('ALIM-TESTE-01', expect.anything())
+  })
+
+  it('lista os clientes mais afetados do alimentador com link para a ficha da UC', async () => {
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'ALIM-TESTE-01' }))
+
+    expect(await screen.findByText('Clientes mais afetados (últimos 12 meses)')).toBeInTheDocument()
+    expect(mockedApi.getAffectedCustomers).toHaveBeenCalledWith('ALIM-TESTE-01', expect.anything())
+    expect(await screen.findByText('TITULAR TESTE')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver ficha' })).toHaveAttribute('href', '/customers?uc=UC-TESTE-01')
   })
 
   it('explica quando nenhum alimentador atende ao filtro', async () => {

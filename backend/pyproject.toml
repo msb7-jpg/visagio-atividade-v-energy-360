@@ -276,6 +276,10 @@ source_modules = [
     "app.features.loss_management.service",
     "app.features.loss_management.scoring",
     "app.features.loss_management.queue_summary",
+    "app.features.executive_dashboard.service",
+    "app.features.executive_dashboard.indicators",
+    "app.features.executive_dashboard.catalog",
+    "app.features.executive_dashboard.cache",
 ]
 forbidden_modules = [
     "fastapi",
