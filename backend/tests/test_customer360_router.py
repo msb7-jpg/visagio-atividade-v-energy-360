@@ -3,7 +3,6 @@ from contextlib import asynccontextmanager
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -16,15 +15,12 @@ ATTENDANT_EMAIL = "atendimento@venergy.com"
 
 
 @asynccontextmanager
-async def seeded_client(with_gold_tables: bool = True, with_holder_name: bool = False) -> AsyncGenerator[AsyncClient]:
+async def seeded_client(with_gold_tables: bool = True) -> AsyncGenerator[AsyncClient]:
     """Cliente HTTP com o `get_db` apontando para um SQLite em memória populado pela seed."""
     engine = create_async_engine("sqlite+aiosqlite://", poolclass=StaticPool)
     async with engine.begin() as connection:
         if with_gold_tables:
             await seed_customer360_tables(connection)
-        if with_holder_name:
-            await connection.execute(text("ALTER TABLE dim_unidade_consumidora ADD COLUMN nome_titular TEXT"))
-            await connection.execute(text("UPDATE dim_unidade_consumidora SET nome_titular = 'Edvaldo Pereira'"))
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
     async def override_get_db():
@@ -65,15 +61,8 @@ async def test_summary_returns_registration_meter_and_solar(client, attendant_he
     assert body["numero_medidor_ativo"] == "MD500002"
     assert body["possui_gd"] is True
     assert body["potencia_gd_kw"] == pytest.approx(4.5)
-    assert body["nome_titular"] is None
-
-
-async def test_summary_exposes_holder_name_when_gold_has_column():
-    async with seeded_client(with_holder_name=True) as http_client:
-        headers = await login(http_client, ATTENDANT_EMAIL)
-        response = await http_client.get(f"{BASE_URL}/UC100001/summary", headers=headers)
-
-    assert response.json()["nome_titular"] == "Edvaldo Pereira"
+    assert body["nome_titular"] == "Jose Santos"
+    assert body["data_conexao_gd"] == "2025-09-15"
 
 
 async def test_history_answers_high_bill_by_consumption(client, attendant_headers):
@@ -106,6 +95,47 @@ async def test_events_return_feeder_quality_and_tickets(client, attendant_header
     assert [ticket["numero_protocolo"] for ticket in body["chamados"]] == ["PRT-2026-0002", "PRT-2026-0001"]
 
 
+async def test_events_list_unit_outages_after_connection_most_recent_first(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/UC100001/events", headers=attendant_headers)
+
+    outages = response.json()["interrupcoes_uc"]
+    assert [outage["id_ocorrencia"] for outage in outages] == ["OC000002", "OC000001"]
+    assert outages[0]["duracao_horas"] == pytest.approx(4.2)
+    assert (outages[0]["tipo_ocorrencia"], outages[0]["causa"]) == ("FIO PARTIDO", "VEGETACAO")
+    assert outages[1]["fim_interrupcao"] == "2025-07-14 20:50:00"
+
+
+async def test_events_summarize_every_unit_outage_even_beyond_the_list_limit(client, attendant_headers, monkeypatch):
+    monkeypatch.setattr("app.features.customer360.service.LIMITE_INTERRUPCOES_UC", 1)
+
+    response = await client.get(f"{BASE_URL}/UC100001/events", headers=attendant_headers)
+
+    body = response.json()
+    assert [outage["id_ocorrencia"] for outage in body["interrupcoes_uc"]] == ["OC000002"]
+    summary = body["resumo_interrupcoes_uc"]
+    assert summary["total_interrupcoes"] == 2
+    assert summary["total_horas"] == pytest.approx(6.7)
+    assert summary["mais_longa"]["id_ocorrencia"] == "OC000002"
+
+
+async def test_events_list_loss_inspections_most_recent_first(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/UC100003/events", headers=attendant_headers)
+
+    inspections = response.json()["inspecoes"]
+    assert [inspection["data_inspecao"] for inspection in inspections] == ["2025-11-04", "2025-08-12"]
+    assert inspections[0]["irregularidade_constatada"] is True
+    assert inspections[0]["tipo_irregularidade"] == "BY-PASS"
+    assert inspections[0]["kwh_recuperado"] == pytest.approx(1250.5)
+
+
+async def test_unit_without_outages_or_inspections_returns_empty_lists(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/UC100006/events", headers=attendant_headers)
+
+    body = response.json()
+    assert (body["interrupcoes_uc"], body["inspecoes"]) == ([], [])
+    assert body["resumo_interrupcoes_uc"] == {"total_interrupcoes": 0, "total_horas": 0.0, "mais_longa": None}
+
+
 async def test_events_of_feeder_without_quality_data_are_empty(client, attendant_headers):
     response = await client.get(f"{BASE_URL}/UC100005/events", headers=attendant_headers)
 
@@ -128,15 +158,16 @@ async def test_requires_authentication(client, endpoint):
     assert response.status_code == 401
 
 
-async def test_operation_profile_is_forbidden(client):
-    headers = await login(client, "operacao@venergy.com")
-    response = await client.get(f"{BASE_URL}/UC100001/summary", headers=headers)
-
-    assert response.status_code == 403
-
-
-@pytest.mark.parametrize("email", ["diretor@venergy.com", "gerente.atendimento@venergy.com", "perdas@venergy.com"])
-async def test_director_and_losses_analyst_can_access(client, email):
+@pytest.mark.parametrize(
+    "email",
+    [
+        "diretor@venergy.com",
+        "gerente.atendimento@venergy.com",
+        "perdas@venergy.com",
+        "operacao@venergy.com",
+    ],
+)
+async def test_authorized_profiles_can_access(client, email):
     headers = await login(client, email)
     response = await client.get(f"{BASE_URL}/UC100001/summary", headers=headers)
 
@@ -192,6 +223,20 @@ async def test_search_finds_unit_by_meter_number(client, attendant_headers):
     assert [suggestion["id_uc"] for suggestion in response.json()] == ["UC100002"]
 
 
+async def test_search_finds_units_by_part_of_holder_name(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/search", params={"q": "  silva "}, headers=attendant_headers)
+
+    suggestions = response.json()
+    assert [suggestion["id_uc"] for suggestion in suggestions] == ["UC100001", "UC100005"]
+    assert suggestions[0]["nome_titular"] == "Maria da Silva"
+
+
+async def test_search_treats_like_wildcards_as_text(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/search", params={"q": "%%%"}, headers=attendant_headers)
+
+    assert response.json() == []
+
+
 async def test_search_respects_limit_and_minimum_length(client, attendant_headers):
     limited = await client.get(f"{BASE_URL}/search", params={"q": "UC1", "limite": 2}, headers=attendant_headers)
     too_short = await client.get(f"{BASE_URL}/search", params={"q": "10"}, headers=attendant_headers)
@@ -205,6 +250,15 @@ async def test_digits_only_number_opens_the_unit(client, attendant_headers):
 
     assert response.status_code == 200
     assert response.json()["id_uc"] == "UC100004"
+
+
+async def test_history_flags_estimated_reading_of_reference_month(client, attendant_headers):
+    estimated = await client.get(f"{BASE_URL}/UC100003/history", headers=attendant_headers)
+    real = await client.get(f"{BASE_URL}/UC100004/history", headers=attendant_headers)
+
+    assert estimated.json()["diagnostico"]["leitura_estimada"] is True
+    assert estimated.json()["meses"][-1]["tipo_leitura"] == "ESTIMADA"
+    assert real.json()["diagnostico"]["leitura_estimada"] is False
 
 
 async def test_history_reports_payment_punctuality(client, attendant_headers):

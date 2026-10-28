@@ -7,18 +7,18 @@ export interface NavItem {
   icon?: LucideIcon
 }
 
-// Espelha `backend/app/shared/role_groups.py`; novas telas entram aqui, só por acréscimo.
+// Espelha `backend/app/shared/role_groups.py`; a ordem define a tela inicial de cada cargo (`homeRouteFor`).
 export const NAV_ITEMS: readonly NavItem[] = [
-  { label: 'Painel', path: '/dashboard', roles: ['diretor', 'gerente_operacao', 'gerente_perdas'] },
+  { label: 'Painel', path: '/dashboard', roles: ['diretor'] },
+  { label: 'Inteligência Comercial', path: '/revenue', roles: ['diretor'] },
+  { label: 'Gestão de Perdas', path: '/losses', roles: ['diretor', 'gerente_perdas'] },
+  { label: 'Qualidade da Rede', path: '/quality', roles: ['diretor', 'gerente_operacao'] },
   {
     label: 'Visão 360 da UC',
     path: '/customers',
-    roles: ['diretor', 'gerente_atendimento', 'atendente', 'gerente_perdas'],
+    roles: ['diretor', 'gerente_atendimento', 'atendente', 'gerente_perdas', 'gerente_operacao'],
     icon: UserSearch
-  },
-  { label: 'Gestão de Perdas', path: '/losses', roles: ['diretor', 'gerente_perdas'] },
-  { label: 'Qualidade da Rede', path: '/quality', roles: ['diretor', 'gerente_operacao'] },
-  { label: 'Inteligência Comercial', path: '/revenue', roles: ['diretor'] }
+  }
 ]
 
 /**

@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api-client'
 
 export interface ProactiveInsightsPayload {
-  context: 'customer360' | 'revenue' | 'losses' | 'quality'
+  context: 'customer360' | 'revenue' | 'losses' | 'quality' | 'executive'
   filtros?: Record<string, string | number | null>
   metricas?: Record<string, string | number>
 }

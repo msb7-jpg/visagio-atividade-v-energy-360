@@ -157,3 +157,24 @@ export function formatDate(isoDate: string | null): string {
 export function formatFlag(flag: string | null): string {
   return flag ? FLAG_LABELS[flag] ?? flag : EMPTY_VALUE
 }
+
+/**
+ * Converte data e hora 'YYYY-MM-DD HH:MM:SS' para o padrão brasileiro, sem depender de fuso horário.
+ *
+ * @param isoDateTime - Data e hora vindas da API, ou null.
+ * @returns Texto como "14/07/2025 às 18:20", só a data quando não há hora, ou travessão.
+ */
+export function formatDateTime(isoDateTime: string | null): string {
+  const time = isoDateTime?.slice(11, 16) ?? ''
+  return time.length === 5 ? `${formatDate(isoDateTime)} às ${time}` : formatDate(isoDateTime)
+}
+
+/**
+ * Competência 'YYYY-MM' de uma data 'YYYY-MM-DD' no formato curto da tela.
+ *
+ * @param isoDate - Data vinda da API, ex: '2025-09-15'.
+ * @returns Texto como "set/2025".
+ */
+export function formatMonthOfDate(isoDate: string): string {
+  return formatCompetencia(isoDate.slice(0, 7))
+}

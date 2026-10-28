@@ -24,11 +24,11 @@ router = APIRouter(
 @router.get(
     "/search",
     response_model=list[CustomerSearchResultDTO],
-    summary="Sugestões de UC pelo começo do número da UC ou do medidor",
+    summary="Sugestões de UC pelo começo do número da UC ou do medidor, ou por parte do nome do titular",
 )
 async def search_customers(
     service: Customer360Svc,
-    termo: Annotated[str, Query(alias="q", min_length=1, max_length=30)],
+    termo: Annotated[str, Query(alias="q", min_length=1, max_length=80)],
     limite: Annotated[int, Query(ge=1, le=20)] = 8,
 ) -> list[CustomerSearchResultDTO]:
     return await service.search(termo, limite)
@@ -51,7 +51,7 @@ async def get_customer_history(id_uc: str, service: Customer360Svc) -> CustomerH
 @router.get(
     "/{id_uc}/events",
     response_model=CustomerEventTimelineDTO,
-    summary="DEC/FEC do alimentador da UC e chamados abertos",
+    summary="Interrupções da UC e do alimentador, chamados e inspeções de perdas",
 )
 async def get_customer_events(id_uc: str, service: Customer360Svc) -> CustomerEventTimelineDTO:
     return await service.get_events(id_uc)

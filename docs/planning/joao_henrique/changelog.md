@@ -192,3 +192,55 @@
 - **Registro de dados:**
   - `fato_ocorrencias_rede` existe; `OSCILACAO` e os 5 tipos contam; `NAO INFORMADA` é distinta de `NAO IDENTIFICADA`.
   - A Gold da Fatia 02 ainda não foi mesclada na `main`.
+
+
+### [2026-10-27] - Aba Continuidade na tela de qualidade (frontend com dados de exemplo)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `/quality` continua a única rota; `GridQualityPage` virou abas "Visão atual" (padrão, movida para `CurrentQualityView` sem mudar comportamento) e "Continuidade".
+  - Continuidade, a partir de `design/continuidade_referencia.png`: aviso "Dados de exemplo, aguardando a Gold da Fatia 02", filtros (mês do evento 07/2025 e município), 4 cards B contra A, destaque do evento, mapa esquemático e DEC por município, tabela por UC-horas, causas e tipos de ocorrência. Só componentes de `ui/` e tokens do `design.md`.
+  - Dados: `mocks/continuityMock.ts` (único arquivo de mock, colunas reais de `fato_qualidade_alimentador` e `fato_ocorrencias_rede`, conferidas em `origin/feat/fatia-02-faturamento`) atrás de `api/continuityApi.ts`; agregações em `utils/continuityAggregations.ts`. Trocar a API não mexe nos componentes.
+- **Fora desta entrega:** bloco "Gerado por IA" (depende do agente do Miguel), lista de bairros (exige `dim_unidade_consumidora`), filtro de causa, seletor de período, exportar CSV, premissa de retorno da manutenção, detalhe ao clicar no alimentador.
+- **Pendências:** trocar o mock pela API real depois do merge da Gold da Fatia 02; definir com o grupo a lista de causas atacáveis (premissa da referência); coordenadas dos municípios são fixas no mock.
+- **Validação de Testes:**
+  - `make lint-all` aprovado; `make test-all`: 537 pytest e 174 vitest.
+
+
+### [2026-10-28] - Visão 360 da UC liberada para o gerente_operacao (pedido do Bernardo, Fatia 03)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Backend: `UserRole.GERENTE_OPERACAO` entrou em `CUSTOMER360_ACCESS` (`role_groups.py`), grupo usado por `RequireCustomer360` e pelo router de `customer360`; nenhuma lista duplicada. `gerente_operacao` segue 403 em `/perdas` e `/diretoria`.
+  - Frontend: `AppRoutes.tsx` deixou de ter listas próprias de papéis e passou a ler `NAV_ITEMS` (`rolesOf(path)`), fonte única do RBAC das telas; o item `/customers` ganhou `gerente_operacao`. A árvore de rotas foi extraída para `AppRouteTree` (sem roteador) para ser testável com `MemoryRouter`.
+  - Testes atualizados: `test_customer360_router.py` (`operacao@venergy.com` passa a receber 200, no teste dos perfis autorizados), `test_rbac.py` (`/customer360` inclui `GERENTE_OPERACAO`), `RbacNavigation.test.tsx` (menu do gerente_operacao inclui "Visão 360 da UC").
+  - Teste novo `routes/__tests__/RbacMatrix.test.tsx`, sem navegador: Vitest + `MemoryRouter` percorre 5 papéis x 5 rotas (tela permitida ou "Acesso Restrito") e confere os itens do menu, com tabela esperada explícita.
+- **Validação de Testes:**
+  - `make lint-all` aprovado; `make test-all`: 537 pytest e 342 vitest.
+
+
+### [2026-10-28] - Documentação de RBAC e atualização dos docs da fatia após o merge da Gold
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `ROADMAP.md`: Fatia 06 com "série 48m"; matriz de dependência de RBAC passou a citar os grupos reais de `role_groups.py` e os aliases `Require*` de `dependencies.py` (sem `UserRole.ATENDIMENTO`, `DIRETORIA` e `ADMIN`, que não existem); registrado que `CUSTOMER360_ACCESS` inclui `gerente_operacao`, a pedido do Bernardo, além de diretor, gerente_atendimento, atendente e gerente_perdas.
+  - `DECISOES.md`: ADR-024 (RBAC). Foi escrito como ADR-010 e renumerado em 28/10, porque o Painel do Diretor (Bernardo) usa ADR-010 a ADR-016 e a Visão 360 usa ADR-017 a ADR-023.
+  - `qualidade_rede_rbac.md` e `plano_frontend_fatia_06.md`: Gold da Fatia 02 mesclada (PR #38), `fato_ocorrencias_rede` entregue e `v_energy.db` real recebido; o item "tipos de ocorrência" virou resolvido. Entradas antigas deste changelog ficam como histórico da época.
+  - Validação com o banco real iniciada: 5.856 linhas em `fato_qualidade_alimentador` e 180.000 em `fato_ocorrencias_rede`.
+- **Pendências:** a aba Continuidade ainda usa dados de exemplo; a troca do mock pelo banco real é a tarefa seguinte e atualizará a entrada de 27/10.
+- **Validação de Testes:**
+  - Só documentação, nenhum código alterado. `make lint-all` aprovado; `make test-all`: 537 pytest e 342 vitest.
+
+
+### [2026-10-28] - Aba Continuidade com dados reais e clientes mais afetados por circuito
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Backend: `GET /quality/continuity?municipio=&incluir_evento=` (mesmo grupo `RequireOperacao`) devolve o `ContinuitySnapshot` agregado em SQL, sem carregar as 180 mil ocorrências. Arquivos novos em `grid_quality/`: `continuity_queries.py`, `continuity_rules.py`, `continuity_repository.py`, `continuity_service.py`, `continuity_schemas.py` (JSON em camelCase) e `municipalities.py`.
+  - Regras (constantes nomeadas em `continuity_rules.py`): período A = primeiros 12 meses e B = últimos 12 (`MESES_POR_PERIODO`), derivados da série; evento extremo = mês de UC-horas acima de 3 vezes a mediana mensal da rede inteira (`LIMIAR_EVENTO_EXTREMO`), igual para qualquer município; `incluir_evento=false` tira o mês de A e de B; sem mês acima do limiar, `event` vem nulo. UC-horas = soma de `duracao_horas`. DEC = UC-horas / soma de `ucs_atendidas` contada uma vez por alimentador no escopo; FEC = ocorrências / a mesma soma. Causa `NAO INFORMADA` vira "Sem causa registrada". Circuitos: os 20 maiores por UC-horas (`LIMITE_CIRCUITOS_RANKING`); amostra pequena = menos de 50 UCs.
+  - Causas atacáveis (suposição de negócio, a validar com a Fatia 02): `VEGETACAO`, `FALHA DE EQUIPAMENTO` e `SOBRECARGA`. As demais, inclusive "Sem causa registrada", não contam.
+  - Coordenadas dos 14 municípios: aproximação estática em `municipalities.py`, não vêm do banco.
+  - O filtro de escopo (município) está isolado em `scope_query` (`continuity_queries.py`): devolve os alimentadores do escopo e o resto só filtra por `id_alimentador`. O filtro de bairro entra ali, como parâmetro opcional sobre `dim_unidade_consumidora`, sem reescrever as agregações.
+  - Backend: `GET /quality/feeders/{id}/customers?meses=12&limite=10` (1 a 48 meses, 1 a 50 clientes) com as UCs de um circuito por horas sem energia.
+  - Frontend: `continuityApi` chama a API; removidos `continuityMock.ts`, `continuityAggregations.ts`, o banner de dados de exemplo e os tipos órfãos. Gaveta do circuito ganhou a tabela de clientes com "Ver ficha" para `/customers?uc=`. `QualityStatusBadge`: acima do limite = destructive, alerta = warning, conforme = success. Textos: "limite de referência" e "Situação em relação ao limite de referência".
+  - A lista de 14 municípios do filtro é constante no frontend (`continuityMunicipalities.ts`), porque o snapshot filtrado traz só o município escolhido.
+- **Fora desta entrega:** filtro de bairro (próxima etapa), bloco "Gerado por IA" e "causa principal por circuito".
+- **Pendências:** validar a lista de causas atacáveis com a Fatia 02. Nome de bairro sujo na Gold registrado em `docs/CORRECOES.md`.
+- **Validação de Testes:**
+  - `make lint-all` aprovado; `make test-all`: 644 pytest e 360 vitest. Testes novos: `test_grid_quality_continuity.py` e `test_grid_quality_customers.py` (seed pequeno, valores à mão) e rotas novas em `test_grid_quality_router.py`.

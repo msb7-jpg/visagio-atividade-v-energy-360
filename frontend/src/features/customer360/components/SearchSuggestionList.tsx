@@ -25,7 +25,7 @@ export function SearchSuggestionList({ suggestions, isLoading, onSelect }: Searc
     <CommandList label="Sugestões de unidades consumidoras" onMouseDown={(event) => event.preventDefault()}>
       {isLoading && suggestions.length === 0
         ? <div className="flex justify-center p-3"><Spinner size="sm" /></div>
-        : <CommandEmpty>Nenhuma UC começa com esse número.</CommandEmpty>}
+        : <CommandEmpty>Nenhuma UC encontrada por esse número ou nome.</CommandEmpty>}
       {suggestions.map((suggestion) => (
         <CommandItem key={suggestion.id_uc} value={suggestion.id_uc} onSelect={() => onSelect(suggestion.id_uc)}>
           <div className="flex min-w-0 flex-col">

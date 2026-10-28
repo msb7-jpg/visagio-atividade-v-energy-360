@@ -10,7 +10,7 @@ import { useDebouncedValue } from '@/features/customer360/hooks/useDebouncedValu
 import { isSearchable } from '@/features/customer360/utils/searchTerms'
 
 const SUGGESTION_DELAY_MS = 300
-const SEARCH_LABEL = 'Número da UC ou do medidor'
+const SEARCH_LABEL = 'Número da UC, do medidor ou nome do titular'
 
 interface CustomerSearchBarProps {
   initialText: string
@@ -19,7 +19,7 @@ interface CustomerSearchBarProps {
 }
 
 /**
- * Busca da UC pelo número da conta ou do medidor, em qualquer formato, com sugestões enquanto digita.
+ * Busca da UC pelo número da conta ou do medidor, em qualquer formato, ou pelo nome do titular, com sugestões enquanto digita.
  * A lista abre ao digitar. Enter abre a sugestão destacada; se as sugestões ainda não chegaram para o texto atual,
  * abre o texto digitado.
  *
@@ -77,7 +77,7 @@ export function CustomerSearchBar({ initialText, onSubmit, isSearching }: Custom
               setIsOpen(true)
             }}
             onBlur={() => setIsOpen(false)}
-            placeholder="Ex: 100004, UC100004 ou o número do medidor"
+            placeholder="Ex: 100004, UC100004, o número do medidor ou Maria da Silva"
             autoComplete="off"
             autoFocus
           />

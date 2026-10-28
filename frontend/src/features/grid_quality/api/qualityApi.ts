@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api-client'
 import type {
+  AffectedCustomer,
   FeederHistory,
   FeederRanking,
   QualityIndicators,
@@ -23,6 +24,14 @@ export const qualityApi = {
   async getFeederHistory(feederId: string, signal?: AbortSignal): Promise<FeederHistory> {
     const { data } = await apiClient.get<FeederHistory>(
       `/quality/feeders/${encodeURIComponent(feederId)}/history`,
+      { signal }
+    )
+    return data
+  },
+
+  async getAffectedCustomers(feederId: string, signal?: AbortSignal): Promise<AffectedCustomer[]> {
+    const { data } = await apiClient.get<AffectedCustomer[]>(
+      `/quality/feeders/${encodeURIComponent(feederId)}/customers`,
       { signal }
     )
     return data

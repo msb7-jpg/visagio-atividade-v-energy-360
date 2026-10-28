@@ -9,19 +9,26 @@
 ### [2026-10-28] - Resolução dos Comentários da 2ª Rodada de Revisão (Bernardo) & Sincronização com `main`
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**
-  - **Correção de Tipagem no Build do Frontend (`ChatMessage.tsx`):**
-    - Corrigido typo `ChatMessageData` para `ChatMessageType`, garantindo compilação TypeScript e Vite build sem erros.
+  - **Alinhamento Completo do Catálogo do Agente à Camada Gold Real (`catalog_prompt.py`):**
+    - Atualizados schemas das 7 tabelas analíticas conforme `DATA_DICTIONARY.md`: `dim_unidade_consumidora`, `fato_medicao`, `fato_faturamento`, `fato_qualidade_alimentador`, `fato_ocorrencias_rede`, `fato_atendimentos` e `fato_inspecoes_perdas`.
+    - Substituídas colunas inexistentes (`codigo_uc` -> `id_uc`, `mes_ano` -> `competencia`, `valor_faturado_reais` -> `valor_total_rs`, `dec_apurado` -> `dec_apurado_horas`, `fec_apurado` -> `fec_apurado_vezes`, `energia_recuperada_kwh` -> `kwh_recuperado`, `tipo_fraude` -> `tipo_irregularidade`).
+    - Enriquecido com os valores categóricos reais em MAIÚSCULAS e sem acentos (`RESIDENCIAL`, `JABOATAO DOS GUARARAPES`, `FATURA`, `FALTA DE ENERGIA`, `ENCERRADO`, etc.) e mapeamento semântico de termos cotidianos.
+  - **Reescrita e Validação do Golden Dataset (`tests/golden_dataset.json`):**
+    - Todas as 25 perguntas e queries analíticas reescritas e validadas contra o SQLite real `backend/v_energy.db`, retornando 100% de dados válidos e coerentes.
+  - **IA Embutida no Painel do Diretor (`ExecutiveDashboardPage.tsx`):**
+    - Integrado o `<SmartInsightCard context="executive" />` diretamente no Painel do Diretor (`features/executive_dashboard/components/ExecutiveDashboardPage.tsx`), alimentado com os indicadores reais recebidos de `GET /api/v1/dashboard/indicators`.
+    - Aceita a remoção do antigo `DashboardPage.tsx` consolidando o fluxo no Painel do Diretor.
+  - **Sincronização de Decisões de Arquitetura (`docs/DECISOES.md` e `ROADMAP.md`):**
+    - Preservadas as decisões ADR-001 a ADR-025 de toda a equipe e registradas as decisões da Fatia 07 no final como **ADR-026** (purgação de nós de gráficos na FSM) e **ADR-027** (assistente flutuante não-bloqueante).
+    - Preservada a linha e escopo da equipe no `docs/planning/ROADMAP.md`.
+  - **Estabilidade do Gerenciador de Pacotes e Lockfile (`frontend/bun.lock`):**
+    - Lockfile restaurado a partir da `origin/main` e pacotes `react-markdown`, `remark-gfm`, `shiki` reinstalados, sanando inconsistências de exportação do ESLint.
   - **Prioridade e Respeito a `AI_MODEL_NAME` na LLM Factory (`backend/app/core/`):**
-    - `config.py`: Definido `ai_model_name: str | None = Field(default=None, alias="AI_MODEL_NAME")` para leitura explícita do `.env`.
-    - `factory.py`: Refatorada resolução de modelo com `PROVIDER_DEFAULT_MODELS`. Caso `AI_MODEL_NAME` esteja definido no `.env` (ou passado como argumento), ele tem prioridade sobre o modelo padrão do provedor (ex: `Qwen3.5-4B-Q4_K_M` para provedor local).
-  - **Sincronização e Resolução de Conflitos com `origin/main`:**
-    - Resolvidos conflitos em `frontend/src/index.css`, `frontend/src/components/ui/input.tsx`, `frontend/src/components/layout/AppLayout.tsx`, `frontend/package.json`, `frontend/bun.lock` e `docs/DECISOES.md`.
-    - Preservadas as decisões ADR-001 até ADR-009 da equipe em `docs/DECISOES.md`, re-numerando as decisões da Fatia 07 para ADR-010 e ADR-011.
-  - **Alinhamento do Checklist de Integração (`agente_text_to_sql_ia.md`):**
-    - Atualizado item sobre `SmartInsightCard.tsx` para deixar claro o cumprimento da fatia como componente exportado e desacoplado, pronto para plug nas telas dos membros responsáveis (Fatia 03 - Bernardo e Fatia 04 - Célio).
+    - `config.py` e `factory.py` ajustados para garantir precedência do modelo especificado no `.env` (ex: `Qwen3.5-4B-Q4_K_M` em provedores locais).
 - **Validação:**
-  - `bun run build` aprovado com 0 erros.
-  - Linters e testes validados com 100% de aprovação.
+  - `bun run build`: 100% aprovado (0 erros).
+  - `make lint-all`: 100% aprovado (Ruff, Pylint 10.00/10, import-linter 4/4 contratos mantidos, ESLint, Fallow).
+  - `make test-all`: 100% aprovado (655 testes backend pytest + 391 testes frontend vitest).
 
 ---
 

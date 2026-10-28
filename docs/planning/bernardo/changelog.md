@@ -134,3 +134,72 @@
 - **Validação de Testes:**
   - Backend: Ruff e pytest (511) aprovados.
   - Frontend: ESLint, Fallow e Vitest (86) aprovados.
+
+### [2026-10-27] - Visão 360 com as tabelas novas da Gold
+- **Autor:** Bernardo H
+- **Branch:** `feat/fatia-03-visao360-gold`
+- **O que foi feito:**
+  - Aba "Interrupções e Chamados": nova seção "Falta de luz nesta unidade" com cada interrupção da própria UC (`fato_ocorrencias_rede`: início, duração, tipo e causa), mais recente primeiro, com total de horas e a interrupção mais longa. Interrupções anteriores à ligação da UC (`fl_anterior_ligacao`) ficam de fora.
+  - Nova aba "Inspeções" com o histórico de inspeções de perdas da UC (`fato_inspecoes_perdas`): data, inspetor, resultado, tipo de irregularidade e kWh recuperado.
+  - Diagnóstico de conta alta com a 5ª causa, leitura estimada (`tipo_leitura = ESTIMADA` no mês da conta).
+  - Geração solar: o selo mostra "desde mês/ano" (`data_conexao_gd`), e o diagnóstico avisa quando o painel foi ligado entre os dois meses comparados.
+  - Busca por nome do titular nas sugestões (`LIKE` com espaços normalizados e curingas escapados). O frontend deixou de juntar as palavras antes de enviar, e o limite do texto subiu de 30 para 80 caracteres.
+  - Seed `tests/customer360_seed.py` no esquema exato exportado pelas Fatias 01 e 02, com nomes, data de conexão da GD, leitura estimada, ocorrências e inspeções. A nota CSAT da seed passou para a escala 1–5 (ADR-001).
+  - ADR-017 a ADR-023 da Fatia 03 em `docs/DECISOES.md`.
+  - Checklist atualizado: pendências resolvidas pelo #38 marcadas.
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter e pytest (546) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (177) e build (`tsc -b` + Vite) aprovados.
+
+### [2026-10-28] - Visão 360 validada com o banco real
+- **Autor:** Bernardo H
+- **Branch:** `feat/fatia-03-visao360-gold`
+- **O que foi feito:**
+  - Validação com o `v_energy.db` real em 9 UCs (painel solar recente, leitura estimada, muitas interrupções, interrupção antes da ligação, inspeção, faturas vencidas, mês sem leitura, bairro corrompido e 50 dias faturados): todas as abas respondem em até 0,06 s, e interrupções, inspeções, chamados, faturas vencidas e leituras batem com consultas diretas no banco.
+  - Correção: o resumo de interrupções usava só as 50 listadas e dizia "teve 50 interrupções" em 33 UCs que têm mais (ex.: UC114218, com 81). O `/events` passou a devolver `resumo_interrupcoes_uc` (total, horas e a mais longa de todas), e a tela avisa quando a lista mostra só as mais recentes.
+  - Correção: com o mês atual sem leitura, o diagnóstico culpava o mês do ano anterior ("Não há leitura de jun/2025"). Agora aponta o mês que falta.
+  - Merge com a `main` (design novo e tela de Receita): conflito do `EventsTab.tsx` resolvido com os títulos na escala nova, e as ADRs da Fatia 03 renumeradas de ADR-006–012 para ADR-017–023, porque a `main` já usa 006–009 (Fatia 01) e o Painel do Diretor usa 010–016.
+  - Achado nos dados registrado em `docs/CORRECOES.md` (branch `feat/painel-diretor`): 60.394 faturas não pagas viraram "PAGA" na Gold, o que distorce a pontualidade e as faturas em aberto.
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (547) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (318) e build aprovados.
+### [2026-10-27] - Planejamento do Painel do Diretor
+- **Autor:** Bernardo H
+- **Branch:** `feat/painel-diretor`
+- **O que foi feito:**
+  - Criado [`painel_diretor.md`](painel_diretor.md) com os requisitos do case, as decisões D1 a D6, os 12 indicadores e a regra de cálculo de cada um, o contrato da API para o Adrian, as etapas até 30/10, o checklist, a definição de pronto e os riscos.
+  - Conferido nos arquivos brutos que cada indicador existe nos dois períodos comparados. Perdas fica como retrato atual, porque as inspeções só cobrem ago a dez/2025.
+- **Decisões:**
+  - Painel só para o perfil diretor; gerente de perdas abre na Fila de Perdas e gerente de operação, na Qualidade da Rede.
+  - Períodos padrão do case (2022-07 a 2023-06 contra 2025-07 a 2026-06), com escolha livre.
+  - Inadimplência como % do valor faturado vencido e não pago.
+  - Quadro de IA do Miguel no Painel com os números reais, depois do merge do #35.
+- **Próximos Passos:**
+  - Enviar o contrato ao Adrian e implementar o backend (etapa 2).
+
+### [2026-10-27] - Painel do Diretor: backend, frontend e menu
+- **Autor:** Bernardo H
+- **Branch:** `feat/painel-diretor`
+- **O que foi feito:**
+  - Backend `app/features/executive_dashboard/`: `GET /api/v1/dashboard/indicators` (11 indicadores em 5 grupos, comparados entre a janela base e a atual, com variação, avaliação e aviso do temporal de jul/2025) e `GET /api/v1/dashboard/losses` (retrato atual da Fila de Perdas). Só o diretor acessa (`RequireDiretoria`).
+  - Receita, energia, tarifa e UCs saem da mesma consulta da tela de Receita (Fatia 04), e o retrato de perdas usa o mesmo ranking da Fila (Fatia 05).
+  - Frontend `features/executive_dashboard/`: Painel com seletor dos dois períodos (na URL, com volta ao padrão do case), cards por área no padrão da Receita 1 do `design.md`, selo melhorou/piorou/estável, explicação do cálculo ao passar o mouse e card de perdas sem comparação.
+  - Menu e rotas: Painel só para o diretor; menu reordenado para o gerente de perdas abrir na Gestão de Perdas e o de operação na Qualidade da Rede. O `DashboardPage` provisório foi removido.
+  - ADR-010 a ADR-015 em `docs/DECISOES.md`; checklist e pendências atualizados em `painel_diretor.md`.
+- **Pendências:** conferir com o banco real (etapa 4), revisão do Adrian e do João no PR, aviso ao Miguel sobre o #35 e o quadro de IA (etapa 7).
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (573) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (213) e build (`tsc -b` + Vite) aprovados.
+
+### [2026-10-28] - Painel do Diretor validado com o banco real
+- **Autor:** Bernardo H
+- **Branch:** `feat/painel-diretor`
+- **O que foi feito:**
+  - Números conferidos com o `v_energy.db` real e com `/revenue/kpis` (seção 13 do `painel_diretor.md`).
+  - Desempenho (ADR-016): consultas sem filtro de competência no `WHERE` (inclusive `period_totals_query` da Fatia 04), cache em memória por 30 minutos e pré-cálculo dos períodos padrão na subida da API. O Painel passou de cerca de 11 s para 0,01 s nos períodos padrão.
+  - Indicadores em % avaliados em pontos percentuais (`variacao_pp`, ADR-011 revisada): a inadimplência de 3,55% para 3,60% deixou de aparecer como "piorou".
+  - Card de perdas avisa quando a competência foi fixada para a demonstração e quando a fila está vazia (`competencia_fixada`).
+  - Variação das taxas escrita por extenso ("+0,05 ponto percentual") e valor vencido em reais no card de inadimplência (`detalhe`).
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (578) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (215) e build aprovados.

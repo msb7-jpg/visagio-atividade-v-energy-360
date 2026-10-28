@@ -1,4 +1,4 @@
-import { BarChart3, FileSearch, Receipt, Zap } from 'lucide-react'
+import { BarChart3, FileSearch, Receipt, ShieldCheck, Zap } from 'lucide-react'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConsumptionYoYChart } from '@/features/customer360/components/ConsumptionYoYChart'
@@ -6,22 +6,24 @@ import { CustomerQuickFacts } from '@/features/customer360/components/CustomerQu
 import { EventsTab } from '@/features/customer360/components/EventsTab'
 import { HighBillDiagnosisBanner } from '@/features/customer360/components/HighBillDiagnosisBanner'
 import { InvoicesTab } from '@/features/customer360/components/InvoicesTab'
+import { LossInspectionsList } from '@/features/customer360/components/LossInspectionsList'
 import { useCustomerEventsQuery, useCustomerHistoryQuery } from '@/features/customer360/hooks/useCustomer360Queries'
+import type { SolarGeneration } from '@/features/customer360/types/customer360Types'
 
 const RETRY_HINT = 'Verifique a conexão com a API e tente buscar a unidade novamente.'
 
 interface Customer360DetailsProps {
   idUc: string
-  hasSolar: boolean
+  solar: SolarGeneration
 }
 
 /**
- * Diagnóstico de conta alta, resumo rápido e abas de consumo, faturas, interrupções e chamados da UC.
+ * Diagnóstico de conta alta, resumo rápido e abas de consumo, faturas, interrupções, chamados e inspeções da UC.
  *
- * @param props - Número da UC já encontrada e se ela possui geração solar.
+ * @param props - Número da UC já encontrada e a geração solar dela.
  * @returns Aviso de conta alta, cards de resumo e abas da Visão 360.
  */
-export function Customer360Details({ idUc, hasSolar }: Customer360DetailsProps) {
+export function Customer360Details({ idUc, solar }: Customer360DetailsProps) {
   const historyQuery = useCustomerHistoryQuery(idUc)
   const eventsQuery = useCustomerEventsQuery(idUc)
   const history = historyQuery.data
@@ -32,7 +34,7 @@ export function Customer360Details({ idUc, hasSolar }: Customer360DetailsProps) 
 
   return (
     <div className="flex flex-col gap-4">
-      {diagnosis ? <HighBillDiagnosisBanner diagnosis={diagnosis} hasSolar={hasSolar} /> : null}
+      {diagnosis ? <HighBillDiagnosisBanner diagnosis={diagnosis} solar={solar} /> : null}
       <CustomerQuickFacts history={history} events={events} />
       <Tabs defaultValue="consumption">
         <TabsList className="flex-wrap">
@@ -52,6 +54,9 @@ export function Customer360Details({ idUc, hasSolar }: Customer360DetailsProps) 
               <Zap className="size-4" />
               <span>Interrupções<span className="hidden sm:inline"> e Chamados</span></span>
             </span>
+          </TabsTrigger>
+          <TabsTrigger value="inspections">
+            <span className="flex items-center gap-1.5"><ShieldCheck className="size-4" /> Inspeções</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="consumption" className="mt-4 min-w-0">
@@ -81,6 +86,11 @@ export function Customer360Details({ idUc, hasSolar }: Customer360DetailsProps) 
             errorDescription={RETRY_HINT}
           >
             {events ? <EventsTab events={events} /> : null}
+          </AsyncState>
+        </TabsContent>
+        <TabsContent value="inspections" className="mt-4 min-w-0">
+          <AsyncState isLoading={!events && !eventsQuery.isError} isError={eventsQuery.isError} errorTitle="Não foi possível carregar as inspeções" errorDescription={RETRY_HINT}>
+            {events ? <LossInspectionsList inspections={events.inspecoes} /> : null}
           </AsyncState>
         </TabsContent>
       </Tabs>

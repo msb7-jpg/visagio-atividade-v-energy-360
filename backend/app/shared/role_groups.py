@@ -15,4 +15,5 @@ CUSTOMER360_ACCESS: tuple[UserRole, ...] = (
     UserRole.GERENTE_ATENDIMENTO,
     UserRole.ATENDENTE,
     UserRole.GERENTE_PERDAS,
+    UserRole.GERENTE_OPERACAO,
 )

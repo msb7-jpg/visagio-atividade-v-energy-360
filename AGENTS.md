@@ -29,6 +29,7 @@ Ao interagir com o repositório ou iniciar qualquer tarefa, **o desenvolvedor ou
 - **Validação:** Rodar `make lint-all` e `make test-all`.
 - **Conclusão:** Marcar `[x]` no checklist e registrar a entrega no seu diário exclusivo `docs/planning/<membro>/changelog.md`.
 - **Isolamento:** Nunca edite arquivos de planejamento de outro membro para evitar conflitos de merge.
+- **Pendências transversais:** problema encontrado em código ou dado de **outra fatia**, ou que depende de **mais de um membro** (bug, dado errado na Gold, conflito entre PRs, apontamento de revisão ainda aberto), vai para [`docs/CORRECOES.md`](docs/CORRECOES.md), na seção do responsável, com prioridade (🔴/🟡/⚪), evidência e correção sugerida. Quem resolve marca `[x]` com data e PR e registra a entrega no próprio `changelog.md`. Pendências só da sua fatia continuam no seu checklist; o `changelog.md` registra apenas o que já foi entregue.
 
 ---
 

@@ -29,7 +29,9 @@ export function describeConsumption(diagnosis: HighBillDiagnosis): string {
   const currentMonth = formatCompetencia(diagnosis.competencia_referencia)
   const previousMonth = formatCompetencia(diagnosis.competencia_comparada)
   if (diagnosis.tendencia_consumo === 'SEM_COMPARACAO') {
-    return `Não há leitura de ${previousMonth} para comparar com ${currentMonth}.`
+    const missingMonth = diagnosis.consumo_kwh === null ? currentMonth : previousMonth
+    const otherMonth = diagnosis.consumo_kwh === null ? previousMonth : currentMonth
+    return `Não há leitura de ${missingMonth} para comparar com ${otherMonth}.`
   }
   const variation = formatPercent(diagnosis.variacao_consumo_pct)
   const readings = `${formatKwh(diagnosis.consumo_kwh)} vs ${formatKwh(diagnosis.consumo_kwh_ano_anterior)}`
@@ -89,4 +91,37 @@ export function describeTariffChange(diagnosis: HighBillDiagnosis): string | nul
   const direction = variation > 0 ? 'subiu' : 'caiu'
   const prices = `${formatTariff(diagnosis.tarifa_rs_kwh)} vs ${formatTariff(diagnosis.tarifa_rs_kwh_ano_anterior)}`
   return `O preço médio do kWh ${direction} ${formatPercentMagnitude(variation)} (${prices}), somando reajuste, bandeira e tributos.`
+}
+
+/**
+ * Frase sobre a leitura do mês de referência ter sido estimada pela média, sem o leiturista acessar o medidor.
+ *
+ * @param diagnosis - Diagnóstico de conta alta retornado por `/history`.
+ * @returns Frase da leitura estimada, ou null quando a leitura foi real.
+ */
+export function describeEstimatedReading(diagnosis: HighBillDiagnosis): string | null {
+  if (!diagnosis.leitura_estimada) {
+    return null
+  }
+  const month = formatCompetencia(diagnosis.competencia_referencia)
+  return `A leitura de ${month} foi estimada pela média, sem leitura no medidor; a diferença para o consumo real é acertada na próxima leitura.`
+}
+
+/**
+ * Frase sobre o efeito da geração solar, destacando quando o painel foi ligado entre os dois meses comparados.
+ *
+ * @param diagnosis - Diagnóstico de conta alta retornado por `/history`.
+ * @param solarConnectedAt - Data de ligação da geração própria ('YYYY-MM-DD'), ou null se não informada.
+ * @returns Frase da geração solar.
+ */
+export function describeSolar(diagnosis: HighBillDiagnosis, solarConnectedAt: string | null): string {
+  const connectionMonth = solarConnectedAt?.slice(0, 7)
+  const isBetweenCompared = connectionMonth !== undefined
+    && connectionMonth > diagnosis.competencia_comparada
+    && connectionMonth <= diagnosis.competencia_referencia
+  if (!isBetweenCompared) {
+    return 'A UC tem geração solar: a energia gerada é abatida do consumo faturado.'
+  }
+  const previousMonth = formatCompetencia(diagnosis.competencia_comparada)
+  return `O painel solar foi ligado em ${formatCompetencia(connectionMonth)}, depois de ${previousMonth}: a energia gerada passou a ser abatida, então é esperado que o consumo faturado caia frente ao ano anterior.`
 }

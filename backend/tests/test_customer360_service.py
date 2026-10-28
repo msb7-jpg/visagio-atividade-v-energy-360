@@ -13,9 +13,12 @@ from app.features.customer360.schemas import (
     CustomerSummaryDTO,
     FeederQualityMonthDTO,
     InvoiceDTO,
+    LossInspectionDTO,
     MeasurementDTO,
     MonthlyComparisonDTO,
     ServiceTicketDTO,
+    UnitOutageDTO,
+    UnitOutageSummaryDTO,
 )
 from app.features.customer360.service import Customer360Service
 from app.features.customer360.yoy_totals import summarize_window
@@ -35,6 +38,7 @@ class FakeCustomer360Repository:
         self.invoices = invoices or []
         self.requested_feeder: str | None = None
         self.searched_range = None
+        self.searched_holder_pattern: str | None = None
 
     async def fetch_unit(self, id_uc: str) -> CustomerSummaryDTO | None:
         return self.unit if self.unit and self.unit.id_uc == id_uc else None
@@ -59,9 +63,25 @@ class FakeCustomer360Repository:
         del id_uc
         return [ServiceTicketDTO(id_atendimento="AT1", motivo_chamado="FATURA")]
 
-    async def search_units(self, uc_range, meter_range, limite: int) -> list[CustomerSearchResultDTO]:
+    async def fetch_unit_outages(self, id_uc: str, limite: int) -> list[UnitOutageDTO]:
+        del id_uc, limite
+        return [UnitOutageDTO(id_ocorrencia="OC1", duracao_horas=2.5, causa="CLIMATICA")]
+
+    async def fetch_unit_outage_summary(self, id_uc: str) -> UnitOutageSummaryDTO:
+        del id_uc
+        longest = UnitOutageDTO(id_ocorrencia="OC9", duracao_horas=9.0, causa="CLIMATICA")
+        return UnitOutageSummaryDTO(total_interrupcoes=81, total_horas=132.1, mais_longa=longest)
+
+    async def fetch_loss_inspections(self, id_uc: str) -> list[LossInspectionDTO]:
+        del id_uc
+        return [LossInspectionDTO(id_inspecao="INS1", irregularidade_constatada=True)]
+
+    async def search_units(
+        self, uc_range, meter_range, holder_pattern: str, limite: int
+    ) -> list[CustomerSearchResultDTO]:
         del meter_range, limite
         self.searched_range = uc_range
+        self.searched_holder_pattern = holder_pattern
         return [CustomerSearchResultDTO(id_uc="UC100000")]
 
 
@@ -179,6 +199,23 @@ async def test_events_query_quality_of_the_unit_feeder():
     assert events.alimentador == "ALM-REC-004"
     assert len(events.qualidade_alimentador) == 1
     assert events.chamados[0].motivo_chamado == "FATURA"
+    assert events.interrupcoes_uc[0].causa == "CLIMATICA"
+    assert events.resumo_interrupcoes_uc.total_interrupcoes == 81
+    assert events.inspecoes[0].irregularidade_constatada is True
+
+
+async def test_diagnosis_flags_estimated_reading_only_in_reference_month():
+    measurements = [
+        MeasurementDTO(competencia="2025-06", consumo_kwh=200.0, tipo_leitura="ESTIMADA"),
+        MeasurementDTO(competencia="2026-06", consumo_kwh=260.0, tipo_leitura="ESTIMADA"),
+    ]
+    estimated = await Customer360Service(FakeCustomer360Repository(UNIT, measurements)).get_history("UC100000")
+    measurements[1] = MeasurementDTO(competencia="2026-06", consumo_kwh=260.0, tipo_leitura="REAL")
+    real = await Customer360Service(FakeCustomer360Repository(UNIT, measurements)).get_history("UC100000")
+
+    assert estimated.diagnostico.leitura_estimada is True
+    assert estimated.meses[-1].tipo_leitura == "ESTIMADA"
+    assert real.diagnostico.leitura_estimada is False
 
 
 @pytest.mark.parametrize("method_name", ["get_summary", "get_history", "get_events"])
@@ -257,3 +294,5 @@ async def test_search_ignores_short_text_and_normalizes_digits():
     assert repository.searched_range is None
     await service.search("10000", 8)
     assert repository.searched_range.start == "UC10000"
+    await service.search(" maria   silva ", 8)
+    assert repository.searched_holder_pattern == "%maria silva%"

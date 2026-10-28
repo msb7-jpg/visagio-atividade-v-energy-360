@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useProactiveInsights } from '@/features/insights/queries/useProactiveInsights'
 
 interface SmartInsightCardProps {
-  context: 'customer360' | 'revenue' | 'losses' | 'quality'
+  context: 'customer360' | 'revenue' | 'losses' | 'quality' | 'executive'
   filters?: Record<string, string | number | null>
   metrics?: Record<string, string | number>
 }

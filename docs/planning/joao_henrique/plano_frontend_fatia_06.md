@@ -56,11 +56,14 @@ Pasta `frontend/src/features/grid_quality/` no mesmo padrão de `loss_management
 
 | Risco | Efeito | Mitigação |
 |---|---|---|
-| `v_energy.db` real ainda sem `fato_qualidade_alimentador` | Tela só testada com mock | Validar com o banco real assim que o pipeline (Ryei) entregar; avisar o grupo |
+| `v_energy.db` real chegou com `fato_qualidade_alimentador` (5.856 linhas) e `fato_ocorrencias_rede` (180.000), Gold mesclada no PR #38 | A tela de ranking e histórico ainda foi testada só com mock | Validação contra o banco real iniciada em 28/10; conferir cards, ranking e histórico e avisar o grupo |
 | B1 e B2 resolvidas (ADR-003 revisado) | Limite é de referência, sem multa nem violação real | Usar o rótulo "limite de referência" |
-| Tabela de causas e bairro pendentes | Sem lista de causas e sem visão por região | Fora do escopo desta entrega; listado nas pendências |
+| Tabela de causas disponível (`fato_ocorrencias_rede`); bairro ainda depende de `dim_unidade_consumidora` | Sem lista de causas e sem visão por região na tela atual | Fora do escopo desta entrega; listado nas pendências |
 | Conflitos em `AppRoutes.tsx` / nav com Fatias 03, 05, 07 | Merge manual | Só acréscimos; `navItems.ts` único; combinar com o grupo antes do push |
 | `ChatDrawer` (Miguel) ainda não existe | Slot vazio no header | Deixar só o ponto de encaixe |
 
+### Etapa 3b: aba Continuidade com dados reais (2026-10-28)
+`continuityApi` chama `GET /quality/continuity` (`municipio`, `incluir_evento`); mock e agregações no cliente removidos. Períodos A e B de 12 meses vêm da série; evento extremo com K = 3 sobre a mediana mensal da rede inteira; causas atacáveis (`VEGETACAO`, `FALHA DE EQUIPAMENTO`, `SOBRECARGA`) são suposição a validar com a Fatia 02; coordenadas do mapa são estáticas e aproximadas. A lista de 14 municípios do filtro é constante (o snapshot filtrado traz só um). A gaveta do circuito lista os clientes mais afetados (`GET /quality/feeders/{id}/customers`) com "Ver ficha" para `/customers?uc=`.
+
 ## Fora do escopo (decisão sobre perguntas B1 a B10 é do grupo)
-Município/bairro como filtros, aba de região, retorno da manutenção preventiva, lista de causas, UCs expostas (Card 4).
+Bairro como filtro (próxima etapa), aba de região, retorno da manutenção preventiva, lista de causas, UCs expostas (Card 4).
