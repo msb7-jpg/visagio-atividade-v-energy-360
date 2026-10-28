@@ -15,6 +15,7 @@ from app.features.customer360.schemas import (
     MeasurementDTO,
     ServiceTicketDTO,
     UnitOutageDTO,
+    UnitOutageSummaryDTO,
 )
 from app.features.customer360.search_terms import LIKE_ESCAPE, PrefixRange
 from app.shared.exceptions import DatabaseReadError
@@ -69,6 +70,20 @@ FROM fato_ocorrencias_rede
 WHERE id_uc = :id_uc AND COALESCE(fl_anterior_ligacao, 0) = 0
 ORDER BY inicio_interrupcao DESC
 LIMIT :limite
+""")
+
+UNIT_OUTAGE_TOTALS_SQL = text("""
+SELECT COUNT(*) AS total_interrupcoes, COALESCE(SUM(duracao_horas), 0) AS total_horas
+FROM fato_ocorrencias_rede
+WHERE id_uc = :id_uc AND COALESCE(fl_anterior_ligacao, 0) = 0
+""")
+
+UNIT_LONGEST_OUTAGE_SQL = text("""
+SELECT id_ocorrencia, competencia, inicio_interrupcao, fim_interrupcao, duracao_horas, tipo_ocorrencia, causa
+FROM fato_ocorrencias_rede
+WHERE id_uc = :id_uc AND COALESCE(fl_anterior_ligacao, 0) = 0
+ORDER BY duracao_horas DESC, inicio_interrupcao DESC
+LIMIT 1
 """)
 
 LOSS_INSPECTIONS_SQL = text("""
@@ -137,6 +152,17 @@ class Customer360Repository:
         params = {"id_uc": id_uc, "limite": limite}
         rows = await self._fetch_rows(UNIT_OUTAGES_SQL, params, "fato_ocorrencias_rede")
         return [UnitOutageDTO.model_validate(row) for row in rows]
+
+    async def fetch_unit_outage_summary(self, id_uc: str) -> UnitOutageSummaryDTO:
+        """Total, horas somadas e a mais longa de todas as interrupções da UC depois da ligação."""
+        params = {"id_uc": id_uc}
+        totals = (await self._fetch_rows(UNIT_OUTAGE_TOTALS_SQL, params, "fato_ocorrencias_rede"))[0]
+        longest = await self._fetch_rows(UNIT_LONGEST_OUTAGE_SQL, params, "fato_ocorrencias_rede")
+        return UnitOutageSummaryDTO(
+            total_interrupcoes=int(totals["total_interrupcoes"]),
+            total_horas=round(float(totals["total_horas"]), 2),
+            mais_longa=UnitOutageDTO.model_validate(longest[0]) if longest else None,
+        )
 
     async def fetch_loss_inspections(self, id_uc: str) -> list[LossInspectionDTO]:
         """Inspeções de perdas feitas na UC, mais recente primeiro."""

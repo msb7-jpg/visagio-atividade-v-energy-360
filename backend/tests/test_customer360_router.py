@@ -105,6 +105,19 @@ async def test_events_list_unit_outages_after_connection_most_recent_first(clien
     assert outages[1]["fim_interrupcao"] == "2025-07-14 20:50:00"
 
 
+async def test_events_summarize_every_unit_outage_even_beyond_the_list_limit(client, attendant_headers, monkeypatch):
+    monkeypatch.setattr("app.features.customer360.service.LIMITE_INTERRUPCOES_UC", 1)
+
+    response = await client.get(f"{BASE_URL}/UC100001/events", headers=attendant_headers)
+
+    body = response.json()
+    assert [outage["id_ocorrencia"] for outage in body["interrupcoes_uc"]] == ["OC000002"]
+    summary = body["resumo_interrupcoes_uc"]
+    assert summary["total_interrupcoes"] == 2
+    assert summary["total_horas"] == pytest.approx(6.7)
+    assert summary["mais_longa"]["id_ocorrencia"] == "OC000002"
+
+
 async def test_events_list_loss_inspections_most_recent_first(client, attendant_headers):
     response = await client.get(f"{BASE_URL}/UC100003/events", headers=attendant_headers)
 
@@ -120,6 +133,7 @@ async def test_unit_without_outages_or_inspections_returns_empty_lists(client, a
 
     body = response.json()
     assert (body["interrupcoes_uc"], body["inspecoes"]) == ([], [])
+    assert body["resumo_interrupcoes_uc"] == {"total_interrupcoes": 0, "total_horas": 0.0, "mais_longa": None}
 
 
 async def test_events_of_feeder_without_quality_data_are_empty(client, attendant_headers):

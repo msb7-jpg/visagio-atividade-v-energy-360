@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { HighBillDiagnosis } from '@/features/customer360/types/customer360Types'
 import {
   describeBillingDays,
+  describeConsumption,
   describeEstimatedReading,
   describeFlagChange,
   describeSolar
@@ -40,6 +41,20 @@ describe('describeBillingDays', () => {
 
   it('não comenta quando o consumo por dia segue a mesma tendência do total', () => {
     expect(describeBillingDays({ ...base, tendencia_media_diaria: 'SUBIU' })).toBeNull()
+  })
+})
+
+describe('describeConsumption', () => {
+  it('aponta o mês atual quando é ele que está sem leitura', () => {
+    const missingCurrent = { ...base, consumo_kwh: null, variacao_consumo_pct: null, tendencia_consumo: 'SEM_COMPARACAO' as const }
+
+    expect(describeConsumption(missingCurrent)).toBe('Não há leitura de jun/2026 para comparar com jun/2025.')
+  })
+
+  it('aponta o ano anterior quando é ele que está sem leitura', () => {
+    const missingPrevious = { ...base, consumo_kwh_ano_anterior: null, variacao_consumo_pct: null, tendencia_consumo: 'SEM_COMPARACAO' as const }
+
+    expect(describeConsumption(missingPrevious)).toBe('Não há leitura de jun/2025 para comparar com jun/2026.')
   })
 })
 

@@ -23,6 +23,7 @@ from app.features.customer360.schemas import (
     MonthlyComparisonDTO,
     ServiceTicketDTO,
     UnitOutageDTO,
+    UnitOutageSummaryDTO,
 )
 from app.features.customer360.search_terms import (
     PrefixRange,
@@ -48,6 +49,8 @@ class Customer360Reader(Protocol):
     async def fetch_feeder_quality(self, id_alimentador: str, limite_meses: int) -> list[FeederQualityMonthDTO]: ...
     async def fetch_service_tickets(self, id_uc: str) -> list[ServiceTicketDTO]: ...
     async def fetch_unit_outages(self, id_uc: str, limite: int) -> list[UnitOutageDTO]: ...
+
+    async def fetch_unit_outage_summary(self, id_uc: str) -> UnitOutageSummaryDTO: ...
     async def fetch_loss_inspections(self, id_uc: str) -> list[LossInspectionDTO]: ...
     async def search_units(
         self, uc_range: PrefixRange, meter_range: PrefixRange, holder_pattern: str, limite: int
@@ -150,6 +153,7 @@ class Customer360Service:
             alimentador=unit.alimentador,
             qualidade_alimentador=feeder_quality,
             interrupcoes_uc=await self.repository.fetch_unit_outages(unit.id_uc, LIMITE_INTERRUPCOES_UC),
+            resumo_interrupcoes_uc=await self.repository.fetch_unit_outage_summary(unit.id_uc),
             chamados=await self.repository.fetch_service_tickets(unit.id_uc),
             inspecoes=await self.repository.fetch_loss_inspections(unit.id_uc),
         )

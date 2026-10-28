@@ -29,7 +29,9 @@ export function describeConsumption(diagnosis: HighBillDiagnosis): string {
   const currentMonth = formatCompetencia(diagnosis.competencia_referencia)
   const previousMonth = formatCompetencia(diagnosis.competencia_comparada)
   if (diagnosis.tendencia_consumo === 'SEM_COMPARACAO') {
-    return `Não há leitura de ${previousMonth} para comparar com ${currentMonth}.`
+    const missingMonth = diagnosis.consumo_kwh === null ? currentMonth : previousMonth
+    const otherMonth = diagnosis.consumo_kwh === null ? previousMonth : currentMonth
+    return `Não há leitura de ${missingMonth} para comparar com ${otherMonth}.`
   }
   const variation = formatPercent(diagnosis.variacao_consumo_pct)
   const readings = `${formatKwh(diagnosis.consumo_kwh)} vs ${formatKwh(diagnosis.consumo_kwh_ano_anterior)}`

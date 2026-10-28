@@ -18,6 +18,7 @@ from app.features.customer360.schemas import (
     MonthlyComparisonDTO,
     ServiceTicketDTO,
     UnitOutageDTO,
+    UnitOutageSummaryDTO,
 )
 from app.features.customer360.service import Customer360Service
 from app.features.customer360.yoy_totals import summarize_window
@@ -65,6 +66,11 @@ class FakeCustomer360Repository:
     async def fetch_unit_outages(self, id_uc: str, limite: int) -> list[UnitOutageDTO]:
         del id_uc, limite
         return [UnitOutageDTO(id_ocorrencia="OC1", duracao_horas=2.5, causa="CLIMATICA")]
+
+    async def fetch_unit_outage_summary(self, id_uc: str) -> UnitOutageSummaryDTO:
+        del id_uc
+        longest = UnitOutageDTO(id_ocorrencia="OC9", duracao_horas=9.0, causa="CLIMATICA")
+        return UnitOutageSummaryDTO(total_interrupcoes=81, total_horas=132.1, mais_longa=longest)
 
     async def fetch_loss_inspections(self, id_uc: str) -> list[LossInspectionDTO]:
         del id_uc
@@ -194,6 +200,7 @@ async def test_events_query_quality_of_the_unit_feeder():
     assert len(events.qualidade_alimentador) == 1
     assert events.chamados[0].motivo_chamado == "FATURA"
     assert events.interrupcoes_uc[0].causa == "CLIMATICA"
+    assert events.resumo_interrupcoes_uc.total_interrupcoes == 81
     assert events.inspecoes[0].irregularidade_constatada is True
 
 

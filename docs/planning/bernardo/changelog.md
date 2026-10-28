@@ -145,8 +145,21 @@
   - Geração solar: o selo mostra "desde mês/ano" (`data_conexao_gd`), e o diagnóstico avisa quando o painel foi ligado entre os dois meses comparados.
   - Busca por nome do titular nas sugestões (`LIKE` com espaços normalizados e curingas escapados). O frontend deixou de juntar as palavras antes de enviar, e o limite do texto subiu de 30 para 80 caracteres.
   - Seed `tests/customer360_seed.py` no esquema exato exportado pelas Fatias 01 e 02, com nomes, data de conexão da GD, leitura estimada, ocorrências e inspeções. A nota CSAT da seed passou para a escala 1–5 (ADR-001).
-  - ADR-006 a ADR-012 da Fatia 03 em `docs/DECISOES.md`.
+  - ADR-017 a ADR-023 da Fatia 03 em `docs/DECISOES.md`.
   - Checklist atualizado: pendências resolvidas pelo #38 marcadas.
 - **Validação de Testes:**
   - Backend: Ruff, Pylint 10/10, import-linter e pytest (546) aprovados.
   - Frontend: ESLint, Fallow (sem duplicação), Vitest (177) e build (`tsc -b` + Vite) aprovados.
+
+### [2026-10-28] - Visão 360 validada com o banco real
+- **Autor:** Bernardo H
+- **Branch:** `feat/fatia-03-visao360-gold`
+- **O que foi feito:**
+  - Validação com o `v_energy.db` real em 9 UCs (painel solar recente, leitura estimada, muitas interrupções, interrupção antes da ligação, inspeção, faturas vencidas, mês sem leitura, bairro corrompido e 50 dias faturados): todas as abas respondem em até 0,06 s, e interrupções, inspeções, chamados, faturas vencidas e leituras batem com consultas diretas no banco.
+  - Correção: o resumo de interrupções usava só as 50 listadas e dizia "teve 50 interrupções" em 33 UCs que têm mais (ex.: UC114218, com 81). O `/events` passou a devolver `resumo_interrupcoes_uc` (total, horas e a mais longa de todas), e a tela avisa quando a lista mostra só as mais recentes.
+  - Correção: com o mês atual sem leitura, o diagnóstico culpava o mês do ano anterior ("Não há leitura de jun/2025"). Agora aponta o mês que falta.
+  - Merge com a `main` (design novo e tela de Receita): conflito do `EventsTab.tsx` resolvido com os títulos na escala nova, e as ADRs da Fatia 03 renumeradas de ADR-006–012 para ADR-017–023, porque a `main` já usa 006–009 (Fatia 01) e o Painel do Diretor usa 010–016.
+  - Achado nos dados registrado em `docs/CORRECOES.md` (branch `feat/painel-diretor`): 60.394 faturas não pagas viraram "PAGA" na Gold, o que distorce a pontualidade e as faturas em aberto.
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (547) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (318) e build aprovados.

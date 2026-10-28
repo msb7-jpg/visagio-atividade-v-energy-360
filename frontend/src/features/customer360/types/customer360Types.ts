@@ -144,6 +144,13 @@ export interface UnitOutage {
   causa: string | null
 }
 
+/** Totais de todas as interrupções da UC, e não só das listadas (a lista traz as 50 mais recentes). */
+export interface UnitOutageSummary {
+  total_interrupcoes: number
+  total_horas: number
+  mais_longa: UnitOutage | null
+}
+
 export interface LossInspection {
   id_inspecao: string
   data_inspecao: string | null
@@ -158,6 +165,7 @@ export interface CustomerEventTimeline {
   alimentador: string | null
   qualidade_alimentador: FeederQualityMonth[]
   interrupcoes_uc: UnitOutage[]
+  resumo_interrupcoes_uc: UnitOutageSummary
   chamados: ServiceTicket[]
   inspecoes: LossInspection[]
 }

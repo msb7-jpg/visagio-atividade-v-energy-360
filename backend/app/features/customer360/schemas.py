@@ -2,7 +2,7 @@
 
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ConsumptionTrend(StrEnum):
@@ -190,6 +190,14 @@ class UnitOutageDTO(GoldRowModel):
     causa: str | None = None
 
 
+class UnitOutageSummaryDTO(BaseModel):
+    """Totais de todas as interrupções da UC depois da ligação, e não só das listadas."""
+
+    total_interrupcoes: int = 0
+    total_horas: float = 0.0
+    mais_longa: UnitOutageDTO | None = None
+
+
 class LossInspectionDTO(GoldRowModel):
     """Inspeção de campo feita na UC pela equipe de perdas, lida de `fato_inspecoes_perdas`."""
 
@@ -208,5 +216,6 @@ class CustomerEventTimelineDTO(BaseModel):
     alimentador: str | None = None
     qualidade_alimentador: list[FeederQualityMonthDTO]
     interrupcoes_uc: list[UnitOutageDTO] = []
+    resumo_interrupcoes_uc: UnitOutageSummaryDTO = Field(default_factory=UnitOutageSummaryDTO)
     chamados: list[ServiceTicketDTO]
     inspecoes: list[LossInspectionDTO] = []

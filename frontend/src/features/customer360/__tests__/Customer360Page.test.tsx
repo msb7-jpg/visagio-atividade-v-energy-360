@@ -146,6 +146,19 @@ const events: CustomerEventTimeline = {
       causa: 'CLIMATICA'
     }
   ],
+  resumo_interrupcoes_uc: {
+    total_interrupcoes: 2,
+    total_horas: 6.7,
+    mais_longa: {
+      id_ocorrencia: 'OC2',
+      competencia: '2026-03',
+      inicio_interrupcao: '2026-03-02 07:05:00',
+      fim_interrupcao: '2026-03-02 11:17:00',
+      duracao_horas: 4.2,
+      tipo_ocorrencia: 'FIO PARTIDO',
+      causa: 'VEGETACAO'
+    }
+  },
   inspecoes: [
     {
       id_inspecao: 'INS2',
@@ -319,6 +332,20 @@ describe('Customer360Page', () => {
     const tickets = screen.getByRole('list', { name: 'Chamados abertos' })
     expect(within(tickets).getByText('PRT-2026-0003')).toBeInTheDocument()
     expect(within(tickets).getByText('Nota 4.5')).toBeInTheDocument()
+  })
+
+  it('usa o total real quando a UC tem mais interrupções do que a lista mostra', async () => {
+    mockedApi.getEvents.mockResolvedValue({
+      ...events,
+      resumo_interrupcoes_uc: { ...events.resumo_interrupcoes_uc, total_interrupcoes: 81, total_horas: 132.1 }
+    })
+    renderPage()
+    searchFor('UC100004')
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Interrupções/ }))
+
+    expect(await screen.findByText(/Esta unidade teve 81 interrupções registradas, somando 132,1 h sem energia/)).toBeInTheDocument()
+    expect(screen.getByText(/A lista abaixo mostra as 2 mais recentes/)).toBeInTheDocument()
   })
 
   it('lista cada interrupção que atingiu a própria UC', async () => {
