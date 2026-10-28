@@ -8,7 +8,7 @@ function SnapshotFigure({ label, value }: { label: string, value: string }) {
   return (
     <div className="flex flex-col gap-1">
       <CardDescription>{label}</CardDescription>
-      <div className="text-foreground text-2xl font-bold tracking-tight">{value}</div>
+      <div className="text-foreground font-mono tabular-nums text-2xl font-bold tracking-tight">{value}</div>
     </div>
   )
 }
@@ -27,7 +27,7 @@ export function LossesSnapshotCard({ snapshot }: { snapshot: LossesSnapshot }) {
   ].filter((note) => note !== null)
   const inspections = snapshot.inspecoes_avaliadas === null
     ? 'taxa geral de referência, sem histórico de campo'
-    : `${formatIndicatorValue(snapshot.inspecoes_avaliadas, 'UCS')} inspeções avaliadas`
+    : `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(snapshot.inspecoes_avaliadas)} inspeções avaliadas`
 
   return (
     <Card variant="interactive" data-testid="losses-snapshot">

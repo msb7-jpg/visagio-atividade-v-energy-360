@@ -44,13 +44,14 @@ describe('dashboardPeriods', () => {
 
 describe('indicatorFormatters', () => {
   it('formata pela unidade e mostra travessão sem valor', () => {
-    expect(formatIndicatorValue(8.04, 'PCT')).toBe('8%')
-    expect(formatIndicatorValue(3.9, 'NOTA')).toBe('3,90')
+    expect(formatIndicatorValue(8.04, 'PCT')).toBe('8,0%')
+    expect(formatIndicatorValue(3.9, 'NOTA')).toBe('3,90 / 5')
+    expect(formatIndicatorValue(45000, 'UCS')).toBe('45.000 UCs')
     expect(formatIndicatorValue(null, 'RS')).toBe('—')
     expect(formatVariation(-3.8)).toBe('-3,8%')
     expect(formatVariation(null)).toBe('—')
-    expect(formatIndicatorChange(1.4, 0.05)).toBe('+0,05 ponto percentual')
-    expect(formatIndicatorChange(-16.4, -3.1)).toBe('-3,1 pontos percentuais')
+    expect(formatIndicatorChange(1.4, 0.05)).toBe('+0,05 p.p.')
+    expect(formatIndicatorChange(-16.4, -3.1)).toBe('-3,1 p.p.')
     expect(formatIndicatorChange(8, null)).toBe('+8%')
   })
 })
