@@ -85,6 +85,9 @@
   - DEC $\ge 0$ e FEC $\ge 0$ em todos os alimentadores.
   - Ausência de registros órfãos entre faturas e cadastro.
 
+### Fase 6: Correções pós-integração (`docs/CORRECOES.md`)
+- [x] Faturas não pagas com `data_pagamento = 9999-12-31` marcadas como `PAGA` e `VENCIDA` decidida por `current_date()`: corrigido na Silver, com 2 testes novos (2026-10-28).
+
 ---
 
 ## 4. Regras Concretas dos Dados & Contratos de Integração (Fatia 02)
@@ -96,7 +99,7 @@
 1. **Regra de Faturamento e Bandeira Tarifária:**
    - Padronizar bandeiras tarifárias para string canônica: `'VERDE'`, `'AMARELA'`, `'VERMELHA_P1'`, `'VERMELHA_P2'`.
    - Calcular tarifa aplicada: `tarifa_aplicada_rs_kwh = valor_total_rs / consumo_faturado_kwh`.
-   - Adimplência: se `data_pagamento IS NULL` e `data_vencimento < CURRENT_DATE`, `status_pagamento = 'VENCIDA'`; se `data_pagamento IS NULL`, `'ABERTA'`; se preenchida, `'PAGA'`.
+   - Adimplência: `data_pagamento = 9999-12-31` (marcador do legado) é tratada como nula. Se `data_pagamento IS NULL` e `data_vencimento < 2026-06-30` (data de corte da base), `status_pagamento = 'VENCIDA'`; se `data_pagamento IS NULL`, `'ABERTA'`; se preenchida, `'PAGA'`.
 2. **Regra do Cálculo Oficial de DEC e FEC:**
    - Para cada `id_alimentador` e `competencia`:
      $$\text{DEC} = \frac{\sum (\text{duracao\_horas} \times \text{ucs\_atingidas})}{C_{\text{total\_alimentador}}}$$
