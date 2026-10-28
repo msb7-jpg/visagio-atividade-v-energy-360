@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, text
 from app.features.loss_management.models import InspectionOrder
 from app.features.loss_management.queries import SuspicionFilters, build_windows
 from app.features.loss_management.queue_query import suspicious_profiles_query
-from app.features.loss_management.queue_summary import FieldHitRate, hit_rate_dto
+from app.features.loss_management.queue_summary import FieldHitRate, build_queue_summary, hit_rate_dto
 from app.features.loss_management.schemas import (
     InspectionStatus,
     QueueSituation,
@@ -257,7 +257,32 @@ async def test_summary_reports_capacity_selected_energy_and_expected_return(clie
         "periodo_inicio": "2023-05",
         "periodo_fim": "2025-08",
     }
-    assert summary["retorno_esperado_kwh_mes"] == pytest.approx(75.0)
+    # UC_INSPECAO_ANTIGA é queda súbita (75%): 150 kWh/mês x 93%, e não x 50% (taxa histórica do seed).
+    assert summary["retorno_esperado_kwh_mes"] == pytest.approx(150.0 * 0.93)
+    assert summary["retorno_esperado_valor_ano_rs"] == pytest.approx(150.0 * 12 * 0.714 * 0.93, abs=0.01)
+
+
+def test_expected_return_sums_each_selected_unit_with_its_own_hit_chance():
+    # A: queda de 40% (chance 42%), déficit de 80 kWh/mês. B: queda de 25% (chance 7%), déficit de 50 kWh/mês.
+    unit_a = build_suspicious_unit(make_profile("UC_A", 200.0, 120.0))
+    unit_b = build_suspicious_unit(make_profile("UC_B", 200.0, 150.0))
+    global_hit_rate = hit_rate_dto(FieldHitRate(total=1389, confirmed=871, first_date=None, last_date=None))
+
+    summary = build_queue_summary([unit_a, unit_b], scheduled_orders=0, hit_rate=global_hit_rate)
+
+    assert (unit_a.probabilidade_acerto, unit_b.probabilidade_acerto) == (0.42, 0.07)
+    # 80 x 0,42 + 50 x 0,07 = 33,6 + 3,5 = 37,1 kWh/mês; x 12 meses x R$ 0,714 = R$ 317,87/ano.
+    assert summary.retorno_esperado_kwh_mes == pytest.approx(37.1)
+    assert summary.retorno_esperado_valor_ano_rs == pytest.approx(317.87)
+    # Aplicar a taxa global de 62,7% às duas daria 81,5 kWh/mês e R$ 698,35/ano: mais que o dobro.
+    assert summary.retorno_esperado_kwh_mes != pytest.approx(summary.kwh_mes_selecionadas * 0.627, abs=1)
+    assert summary.taxa_acerto.taxa == pytest.approx(0.6271)
+
+
+def test_expected_return_is_zero_without_selected_units():
+    summary = build_queue_summary([], scheduled_orders=3, hit_rate=hit_rate_dto(None))
+
+    assert (summary.retorno_esperado_kwh_mes, summary.retorno_esperado_valor_ano_rs) == (0, 0)
 
 
 async def test_summary_without_selection_has_zero_energy(client: AsyncClient):

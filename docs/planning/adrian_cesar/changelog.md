@@ -585,3 +585,30 @@
 - **Validação de Testes:**
   - Pytest novos/ajustados: migração roda duas vezes e preserva as 7 ordens; resultado grava data e inspetor; inspetor inválido e data futura retornam 422; cancelamento sem motivo ou fora da lista retorna 422; motivo válido é gravado; `diretor` segue com 403.
   - `make lint-all` sem erros; `make test-all`: 572 passed (backend) e 278 passed (frontend); `tsc` do app sem erros. **Não conferido no navegador.**
+
+### [2026-10-28] - Fila de Inspeção: passo 5 (inspetores e território nas ordens) e P13 (retorno esperado por UC)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Novo `GET /losses/inspectors` (leitura: `gerente_perdas` e `diretor`). A fonte real é `fato_inspecoes_perdas.id_inspetor` (40 códigos, `INSP-001` a `INSP-040`). A base **não tem nome de exibição** (nenhuma tabela de inspetores, nenhuma coluna de nome), então a resposta é só `[{"codigo": "INSP-001"}, ...]`. Sem a tabela de histórico responde 500, como os demais `GET` que leem a Gold.
+  - `GET /losses/inspections` passa a trazer `municipio`, `bairro` e `classe_consumo` da UC, por um único LEFT JOIN com `dim_unidade_consumidora` (sem N+1; ordem de UC fora do cadastro vem com os três nulos). `POST`/`PATCH`/upload e a planilha de campo continuam sem esses campos. Frontend: o cartão do quadro mostra "Bairro · Município" (formatados como na fila) e "—" quando não há dado.
+  - P13: `retorno_esperado_kwh_mes` e o novo `retorno_esperado_valor_ano_rs` passam a ser a soma, por UC selecionada, de `kwh_mes_recuperavel × probabilidade_acerto` (e de `valor_ano_rs × probabilidade_acerto`), não mais a taxa histórica global. O cálculo mora só no backend (`queue_summary.expected_return`); o front antes multiplicava `valor_ano × taxa` por conta própria e agora só exibe o valor do servidor. O card "Taxa de acerto" segue com a taxa histórica (62,7%). A tarifa continua a constante de hoje (R$ 0,714); a troca é o passo 12.
+  - Correção pequena: `_distinct_values` usava `distinct(coluna)`, que gerava `SAWarning`; passou a `select(coluna).distinct()`.
+- **Exemplo numérico do P13:** UC A com queda de 40% (chance 42%, déficit 80 kWh/mês) e UC B com queda de 25% (chance 7%, déficit 50 kWh/mês). Retorno por UC: 80 × 0,42 + 50 × 0,07 = 33,6 + 3,5 = **37,1 kWh/mês**, ou 685,44 × 0,42 + 428,40 × 0,07 = **R$ 317,87/ano** (a R$ 0,714). Com a taxa global de 62,7% o mesmo par daria 81,5 kWh/mês e R$ 698,35/ano, mais que o dobro.
+- **Divergência registrada (não alterada):** sem UC selecionada, o resumo **não** mostra o retorno da fila filtrada: `GET /queue-summary` sem `ucs` devolve energia e retorno **zero** (há teste para isso), e o resumo ignora os filtros da tela. Mantido como está, à espera de decisão.
+- **Fora desta entrega:** cliente da API de inspetores no front (entra no passo 9, com os diálogos); passo 6 em diante.
+- **Validação de Testes:**
+  - Pytest novos: inspetores (200, `diretor` 200, perfil sem permissão 403, sem tabela de histórico 500), ordens com bairro/município/classe e ordem de UC fora do cadastro, retorno esperado com o exemplo acima e com seleção vazia. O teste do resumo existente passou de 75,0 (150 × 50%) para 139,5 (150 × 93%, a UC é queda súbita).
+  - Vitest novos: cartão com bairro e município, sem os dois ("—") e só com um; card "Retorno esperado" usa o valor do servidor.
+  - `make lint-all` exit 0; `make test-all` exit 0: backend **580 passed**, frontend **281 passed**. **Não conferido no navegador.**
+
+### [2026-10-28] - Fila de Inspeção: passo 8 (painel lateral de detalhe da UC)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Clicar na linha da Fila (ou Enter com a linha focada) abre um `Sheet` com o detalhe da UC, lido de `GET /losses/suspicious-units/{id_uc}` e guardado em cache por UC. Clicar no link da UC ou no checkbox não abre o painel.
+  - Conteúdo: cabeçalho (UC, bairro, município, classe, situação); "Por que está na fila" (motivo e frase da API); "Como o score é calculado" com os números (kWh/mês × meses da janela × chance de acerto = kWh esperado, relativo ao topo da fila = score); consumo dos 12 meses com `recharts` e token `chart-1`, mês sem leitura como lacuna; inspeções anteriores (data dd/mm/aaaa, resultado, inspetor).
+  - Estados: skeleton, erro em pt-BR com "Tentar novamente", vazio (404) e "Nenhuma inspeção anterior para esta UC.".
+  - Rodapé: "Gerar ordem desta UC" marca só essa UC e abre o diálogo de lote existente; desligado se a UC já tem ordem; oculto para o `diretor`.
+- **Diferenças do protótipo:** sem pontos por motivo (P1) e sem linha dos vizinhos (fora da entrega); a conta mostra a janela de meses porque o backend calcula `kWh/mês × meses × chance`; sem rótulo "Gerado por IA", pois a frase é calculada por regra; foco visível da linha é o padrão do navegador (o lint proíbe estilizar `TableRow`).
+- **Dificuldades / Desafios:** o resumo do diálogo é omitido ao gerar pelo painel, porque ele congela o valor ao abrir e o resumo da nova seleção ainda carrega.
+- **Fora desta entrega:** passo 9 em diante; captura em modo escuro (o screenshot do Chrome expirou).
+- **Validação de Testes:** Vitest novos (`UnitDetailSheet.test.tsx`, `UnitConsumptionChart.test.tsx`): abre por clique e por Enter, Esc fecha, checkbox não abre, carregando/erro/vazio, cache ao reabrir, gerar ordem, botão desligado com ordem, `diretor` sem o botão, lacuna no gráfico. `make lint-all` exit 0; `make test-all`: backend 607 passed, frontend 296 passed. Conferido no navegador com dados reais (UC106967), sem captura.

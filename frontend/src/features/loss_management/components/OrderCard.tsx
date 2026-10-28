@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card'
 import { useCanWriteLosses } from '@/features/loss_management/hooks/useCanWriteLosses'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { formatDate } from '@/features/loss_management/utils/lossFormatters'
+import { formatPlaceName } from '@/features/loss_management/utils/textFormat'
 import {
   ACTION_LABELS,
   ACTIONS_BY_STATUS,
@@ -28,6 +29,19 @@ function describeInspector(order: InspectionOrder): string {
 }
 
 /**
+ * Linha de território do cartão: bairro e município da UC, ou "—" quando o cadastro não os traz.
+ *
+ * @param order - Ordem de inspeção.
+ * @returns Texto como "Boa Viagem · Recife"; só uma parte presente mostra "—" no lugar da outra; nenhuma, só "—".
+ */
+function describeLocation(order: InspectionOrder): string {
+  if (!order.bairro && !order.municipio) return '—'
+  const district = order.bairro ? formatPlaceName(order.bairro) : '—'
+  const municipality = order.municipio ? formatPlaceName(order.municipio) : '—'
+  return `${district} · ${municipality}`
+}
+
+/**
  * Cartão de uma ordem de inspeção no quadro, com código, UC, inspetor, resultado e ações da etapa.
  *
  * @param props - Ordem e callback das ações (enviar a campo, registrar resultado, cancelar).
@@ -46,6 +60,7 @@ export function OrderCard({ order, onAction }: OrderCardProps) {
           <span className="text-muted-foreground text-xs tabular-nums">{formatDate(order.criado_em)}</span>
         </div>
         <p className="text-foreground text-sm tabular-nums">{order.id_uc}</p>
+        <p className="text-muted-foreground text-xs">{describeLocation(order)}</p>
         <p className="text-muted-foreground text-xs">{describeInspector(order)}</p>
         {resultSummary ? (
           <Badge variant={resultSummary.tone} className="h-auto self-start whitespace-normal">{resultSummary.text}</Badge>

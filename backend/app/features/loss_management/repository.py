@@ -1,6 +1,7 @@
 """Acesso a dados da gestão de perdas: perfis de consumo (Gold) e ordens de inspeção."""
 
 import logging
+from collections.abc import Mapping
 
 from sqlalchemy import RowMapping, exists, inspect, select
 from sqlalchemy.exc import IntegrityError
@@ -11,6 +12,7 @@ from app.features.loss_management.models import ACTIVE_STATUSES, InspectionOrder
 from app.features.loss_management.queries import (
     SuspicionFilters,
     build_windows,
+    dim_unidade_consumidora,
     fato_inspecoes_perdas,
     latest_competencia_query,
     registered_unit_query,
@@ -34,17 +36,20 @@ from app.shared.exceptions import DatabaseReadError
 
 logger = logging.getLogger(__name__)
 
+UNIT_LOCATION_FIELDS = ("municipio", "bairro", "classe_consumo")
 
-def to_order_dto(order: InspectionOrder) -> InspectionOrderDTO:
+
+def to_order_dto(order: InspectionOrder, unit_location: Mapping[str, str | None] | None = None) -> InspectionOrderDTO:
     """Converte o modelo ORM em DTO, isolando o ORM dentro do repositório.
 
     Args:
         order: Ordem de inspeção carregada pela sessão.
+        unit_location: Município, bairro e classe da UC no cadastro; None quando a ordem é lida sem o JOIN.
 
     Returns:
         Representação da ordem para as camadas de serviço e transporte.
     """
-    return InspectionOrderDTO.model_validate(order)
+    return InspectionOrderDTO.model_validate(order).model_copy(update=dict(unit_location or {}))
 
 
 def to_registered_unit(row: RowMapping) -> RegisteredUnit:
@@ -170,18 +175,37 @@ class LossRepository(FieldUploadRepositoryMixin, QueueSummaryRepositoryMixin):
         return to_registered_unit(row) if row else None
 
     async def list_orders(self, status: InspectionStatus | None) -> list[InspectionOrderDTO]:
-        """Lista as ordens de inspeção da mais recente para a mais antiga.
+        """Lista as ordens de inspeção da mais recente para a mais antiga, com o território da UC.
+
+        Município, bairro e classe vêm de um único LEFT JOIN com o cadastro; ordem de UC ausente dele vem sem eles.
 
         Args:
             status: Status para filtrar; None devolve todas as ordens.
 
         Returns:
             Ordens de inspeção encontradas.
+
+        Raises:
+            DatabaseReadError: Se o cadastro de UCs estiver ausente ou fora do contrato.
         """
-        query = select(InspectionOrder).order_by(InspectionOrder.criado_em.desc())
+        query = (
+            select(
+                InspectionOrder,
+                *(dim_unidade_consumidora.c[field_name] for field_name in UNIT_LOCATION_FIELDS),
+            )
+            .outerjoin(dim_unidade_consumidora, dim_unidade_consumidora.c.id_uc == InspectionOrder.id_uc)
+            .order_by(InspectionOrder.criado_em.desc())
+        )
         filtered_query = query.where(InspectionOrder.status == status.value) if status else query
-        result = await self.session.scalars(filtered_query)
-        return [to_order_dto(order) for order in result.all()]
+        try:
+            result = await self.session.execute(filtered_query)
+        except GOLD_QUERY_ERRORS as e:
+            logger.exception("Falha ao consultar o cadastro de UCs para listar as ordens.")
+            raise DatabaseReadError(GOLD_TABLES_ERROR_MESSAGE) from e
+        return [
+            to_order_dto(order, dict(zip(UNIT_LOCATION_FIELDS, location, strict=True)))
+            for order, *location in result.all()
+        ]
 
     async def list_active_orders(self) -> list[InspectionOrderDTO]:
         """Lista as ordens que seguem para campo (geradas e pendentes), da mais antiga para a mais nova.

@@ -192,6 +192,15 @@ class InspectionOrderDTO(BaseModel):
     criado_por: str
     criado_em: datetime
     atualizado_em: datetime
+    municipio: str | None = Field(default=None, description="Município da UC no cadastro; preenchido só na listagem")
+    bairro: str | None = Field(default=None, description="Bairro da UC no cadastro; preenchido só na listagem")
+    classe_consumo: str | None = Field(default=None, description="Classe da UC no cadastro; preenchido só na listagem")
+
+
+class InspectorDTO(BaseModel):
+    """Inspetor de campo do histórico de inspeções; a base não guarda nome, só o código."""
+
+    codigo: str = Field(description="Código do inspetor, de INSP-001 a INSP-040")
 
 
 class RejectedRowDTO(BaseModel):
@@ -231,7 +240,12 @@ class QueueSummaryDTO(BaseModel):
     kwh_mes_selecionadas: float
     valor_ano_selecionadas_rs: float
     tarifa_rs_kwh: float
-    retorno_esperado_kwh_mes: float = Field(description="Energia das selecionadas x taxa histórica de acerto")
+    retorno_esperado_kwh_mes: float = Field(
+        description="Soma, por UC selecionada, de kWh/mês recuperável x chance de acerto da UC"
+    )
+    retorno_esperado_valor_ano_rs: float = Field(
+        description="Soma, por UC selecionada, de valor anual recuperável x chance de acerto da UC"
+    )
     taxa_acerto: HitRateDTO
 
 

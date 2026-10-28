@@ -46,6 +46,24 @@ function renderBoard(orders: InspectionOrder[], overrides: Partial<Parameters<ty
 }
 
 describe('OrderBoard', () => {
+  it('mostra bairro e município da UC no cartão, com os acentos restaurados', () => {
+    renderBoard([buildOrder({ bairro: 'BOA VIAGEM', municipio: 'JABOATAO DOS GUARARAPES' })])
+
+    expect(screen.getByText('Boa Viagem · Jaboatão dos Guararapes')).toBeInTheDocument()
+  })
+
+  it('mostra "—" no cartão quando a ordem vem sem bairro e município', () => {
+    renderBoard([buildOrder({ bairro: null, municipio: null }), buildOrder({ id_inspecao: 2 })])
+
+    expect(screen.getAllByText('—')).toHaveLength(2)
+  })
+
+  it('mostra "—" só no lado que falta quando há apenas um dos dois', () => {
+    renderBoard([buildOrder({ bairro: null, municipio: 'RECIFE' })])
+
+    expect(screen.getByText('— · Recife')).toBeInTheDocument()
+  })
+
   it('mostra as quatro etapas com contagem e aviso nas vazias', () => {
     renderBoard([buildOrder({ id_inspecao: 1 }), buildOrder({ id_inspecao: 2 })])
 

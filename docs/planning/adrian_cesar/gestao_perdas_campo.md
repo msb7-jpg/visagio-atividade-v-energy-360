@@ -79,8 +79,8 @@
 > Prioridade: **obrigatórios do PDF primeiro, diferenciais depois** ("qualidade acima de quantidade", `atividade.pdf` §7).
 
 ### Fase 0 — Alinhamentos com outras fatias (sem código)
-- [ ] Confirmar com **Renan** que `fato_medicao.competencia` sai como `'YYYY-MM'` (o checklist dele também cita `MM/YYYY` na `dim_calendario`; o backend de perdas assume `YYYY-MM`).
-- [ ] Confirmar com **Ryei** as colunas de `fato_inspecoes_perdas` (`id_inspecao`, `id_uc`, `data_inspecao`, `irregularidade_constatada`, `tipo_irregularidade`, `kwh_recuperado`).
+- [x] Confirmar com **Renan** que `fato_medicao.competencia` sai como `'YYYY-MM'` (o checklist dele também cita `MM/YYYY` na `dim_calendario`; o backend de perdas assume `YYYY-MM`). (Conferido no `v_energy.db` real em 2026-10-28: 2.152.336 de 2.152.336 linhas em `YYYY-MM`, de 2022-07 a 2026-06. Verificado na base, não por resposta do Renan; a `dim_calendario` não foi conferida.)
+- [x] Confirmar com **Ryei** as colunas de `fato_inspecoes_perdas` (`id_inspecao`, `id_uc`, `data_inspecao`, `irregularidade_constatada`, `tipo_irregularidade`, `kwh_recuperado`). (Conferido no `v_energy.db` real em 2026-10-28: as seis colunas existem, mais `id_inspetor`. Verificado na base, não por resposta do Ryei.)
 
 ### Fase 1 — ⚠️ Script PROVISÓRIO de dados de desenvolvimento
 > [!WARNING]
@@ -183,6 +183,10 @@
 
 ### Fase 13 — Filtros da fila enxutos (2026-10-27)
 - [x] **13.1 — Remover o filtro "Score mínimo"** da Fila de Inspeção: as abas por chance de acerto já cortam a fila. A explicação do score passa para o cabeçalho da coluna. Backend (`score_minimo`) fica por compatibilidade. (Adrian César, 2026-10-27)
+
+### Fase 14 — Painel de detalhe da UC (2026-10-28)
+- [x] **14.1 — Passo 8: `Sheet` de detalhe da UC** na Fila de Inspeção (`UnitDetailSheet`, `UnitDetailBody`, `UnitScoreCalculation`, `UnitConsumptionChart`, `PriorInspectionsList`, `useUnitDetailQuery`). Abre por clique ou Enter na linha; mostra motivo, conta do score, consumo de 12 meses (mês sem leitura = lacuna) e inspeções anteriores; carregando, erro com "Tentar novamente" e vazio; "Gerar ordem desta UC" reaproveita o diálogo de lote e não aparece para o `diretor`. (Adrian César, 2026-10-28)
+- [ ] **14.2 — Pendências:** captura do painel em modo escuro em `assets/fila-inspecao-atual/` e conferência no navegador do retorno de foco à linha ao fechar. Passo 9 em diante não iniciado.
 
 ---
 

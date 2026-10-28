@@ -5,6 +5,7 @@ import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/los
 export const lossKeys = {
   all: ['losses'] as const,
   suspiciousUnits: (filters: SuspiciousUnitsFilter) => [...lossKeys.all, 'suspicious-units', filters] as const,
+  unitDetail: (idUc: string) => [...lossKeys.all, 'unit-detail', idUc] as const,
   inspections: () => [...lossKeys.all, 'inspections'] as const,
   queueSummary: (selectedIds: string[]) => [...lossKeys.all, 'queue-summary', selectedIds] as const,
   queueFilters: () => [...lossKeys.all, 'queue-filters'] as const
@@ -40,6 +41,20 @@ export function suspiciousUnitsQueryOptions(filters: SuspiciousUnitsFilter) {
     staleTime: LOSS_STALE_TIME_MS,
     // Mantém fila e avisos na tela enquanto o novo filtro carrega, sem piscar nem reanunciar o banner.
     placeholderData: keepPreviousData
+  })
+}
+
+/**
+ * Opções reutilizáveis do detalhe de uma UC da fila; o cache é por UC, então reabrir a mesma UC não refaz a chamada.
+ *
+ * @param idUc - UC aberta no painel.
+ * @returns Opções de query com chave por UC e cancelamento via signal.
+ */
+export function unitDetailQueryOptions(idUc: string) {
+  return queryOptions({
+    queryKey: lossKeys.unitDetail(idUc),
+    queryFn: ({ signal }) => lossApi.getUnitDetail(idUc, signal),
+    staleTime: LOSS_STALE_TIME_MS
   })
 }
 

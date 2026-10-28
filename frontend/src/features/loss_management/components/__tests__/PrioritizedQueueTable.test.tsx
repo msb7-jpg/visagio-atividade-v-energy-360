@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { PrioritizedQueueTable } from '@/features/loss_management/components/PrioritizedQueueTable'
 import { ScoreBar } from '@/features/loss_management/components/ScoreBar'
 import { useQueueSelection } from '@/features/loss_management/hooks/useQueueSelection'
@@ -29,7 +29,7 @@ function buildUnit(idUc: string, overrides: Partial<SuspiciousUnit> = {}): Suspi
 
 function Harness({ units, total = units.length }: { units: SuspiciousUnit[]; total?: number }) {
   const selection = useQueueSelection(units)
-  return <PrioritizedQueueTable units={units} total={total} selection={selection} />
+  return <PrioritizedQueueTable units={units} total={total} selection={selection} onOpenDetail={vi.fn()} />
 }
 
 function renderTable(units: SuspiciousUnit[], total?: number) {

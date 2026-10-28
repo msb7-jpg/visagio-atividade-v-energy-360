@@ -4,7 +4,7 @@ import { CapacityCard } from '@/features/loss_management/components/CapacityCard
 import { HitRateCard } from '@/features/loss_management/components/HitRateCard'
 import { SummaryCard } from '@/features/loss_management/components/SummaryCard'
 import type { QueueSummary } from '@/features/loss_management/types/lossTypes'
-import { formatCompactCurrency, formatInteger, formatPercent } from '@/features/loss_management/utils/lossFormatters'
+import { formatCompactCurrency, formatInteger } from '@/features/loss_management/utils/lossFormatters'
 import { cn } from '@/lib/utils'
 
 interface QueueSummaryCardsProps {
@@ -34,8 +34,6 @@ export function QueueSummaryCards({ summary, isUpdating, isError, onRetry }: Que
       <LoadingSkeleton count={4} className="h-24" />
     )
   }
-  const { taxa } = summary.taxa_acerto
-  const expectedValueRs = summary.valor_ano_selecionadas_rs * taxa
 
   return (
     <section
@@ -59,7 +57,7 @@ export function QueueSummaryCards({ summary, isUpdating, isError, onRetry }: Que
           <span className="text-muted-foreground text-sm">kWh/mês</span>
         </p>
         <p className="text-muted-foreground text-xs">
-          {formatCompactCurrency(expectedValueRs)}/ano · aplica a taxa histórica de {formatPercent(taxa)}
+          {formatCompactCurrency(summary.retorno_esperado_valor_ano_rs)}/ano · soma da energia × chance de acerto de cada UC
         </p>
       </SummaryCard>
       <HitRateCard hitRate={summary.taxa_acerto} />

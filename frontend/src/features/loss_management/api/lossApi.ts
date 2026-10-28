@@ -11,6 +11,7 @@ import type {
   SuspiciousUnitsFilter,
   UploadResult
 } from '@/features/loss_management/types/lossTypes'
+import type { UnitDetail } from '@/features/loss_management/types/unitDetailTypes'
 
 export const lossApi = {
   async listSuspiciousUnits(filters: SuspiciousUnitsFilter, signal?: AbortSignal): Promise<SuspiciousQueue> {
@@ -18,6 +19,11 @@ export const lossApi = {
       params: filters,
       signal
     })
+    return data
+  },
+
+  async getUnitDetail(idUc: string, signal?: AbortSignal): Promise<UnitDetail> {
+    const { data } = await apiClient.get<UnitDetail>(`/losses/suspicious-units/${encodeURIComponent(idUc)}`, { signal })
     return data
   },
 

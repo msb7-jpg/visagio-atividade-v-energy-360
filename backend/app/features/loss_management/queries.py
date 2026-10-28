@@ -49,6 +49,7 @@ dim_unidade_consumidora = table(
 fato_inspecoes_perdas = table(
     "fato_inspecoes_perdas",
     column("id_uc", String),
+    column("id_inspetor", String),
     column("data_inspecao", String),
     column("irregularidade_constatada", Boolean),
 )

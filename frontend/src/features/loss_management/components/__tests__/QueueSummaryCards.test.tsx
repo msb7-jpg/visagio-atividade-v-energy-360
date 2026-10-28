@@ -19,6 +19,7 @@ const summary: QueueSummary = {
   valor_ano_selecionadas_rs: 61939.6,
   tarifa_rs_kwh: 0.714,
   retorno_esperado_kwh_mes: 4532,
+  retorno_esperado_valor_ano_rs: 21500.4,
   taxa_acerto: hitRate
 }
 
@@ -30,11 +31,13 @@ describe('QueueSummaryCards', () => {
     expect(screen.getByText('R$ 61,9 mil/ano a R$ 0,714/kWh')).toBeInTheDocument()
   })
 
-  it('mostra o retorno esperado aplicando a taxa histórica ao valor anual', () => {
+  it('mostra o retorno esperado vindo do servidor, sem reaplicar a taxa histórica global', () => {
     render(<QueueSummaryCards summary={summary} isUpdating={false} isError={false} onRetry={vi.fn()} />)
 
     expect(screen.getByText('4.532')).toBeInTheDocument()
-    expect(screen.getByText('R$ 38,8 mil/ano · aplica a taxa histórica de 62,7%')).toBeInTheDocument()
+    expect(screen.getByText('R$ 21,5 mil/ano · soma da energia × chance de acerto de cada UC')).toBeInTheDocument()
+    // 61.939,6 x 62,7% daria R$ 38,8 mil: o valor do card é o do servidor, não esse.
+    expect(screen.queryByText(/R\$ 38,8 mil/)).not.toBeInTheDocument()
   })
 
   it('mostra o esqueleto enquanto o primeiro resumo não chega', () => {

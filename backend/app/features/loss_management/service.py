@@ -12,6 +12,7 @@ from app.features.loss_management.schemas import (
     InspectionOrderDTO,
     InspectionOrderUpdateDTO,
     InspectionStatus,
+    InspectorDTO,
     QueueFiltersDTO,
     QueueSituation,
     QueueSummaryDTO,
@@ -169,6 +170,17 @@ class LossService:
         """
         return await self.repository.fetch_filter_options()
 
+    async def list_inspectors(self) -> list[InspectorDTO]:
+        """Lista os inspetores de campo para os seletores de inspetor.
+
+        Returns:
+            Inspetores do histórico de inspeções, em ordem de código.
+
+        Raises:
+            DatabaseReadError: Se o histórico de inspeções não puder ser consultado.
+        """
+        return await self.repository.list_inspectors()
+
     async def list_inspections(self, status: InspectionStatus | None) -> list[InspectionOrderDTO]:
         """Lista as ordens de inspeção, opcionalmente filtradas por status.
 
@@ -176,7 +188,10 @@ class LossService:
             status: Status para filtrar; None devolve todas.
 
         Returns:
-            Ordens da mais recente para a mais antiga.
+            Ordens da mais recente para a mais antiga, com município, bairro e classe da UC.
+
+        Raises:
+            DatabaseReadError: Se o cadastro de UCs não puder ser consultado.
         """
         return await self.repository.list_orders(status)
 

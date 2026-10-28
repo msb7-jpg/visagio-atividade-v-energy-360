@@ -40,19 +40,22 @@ interface PrioritizedQueueTableProps {
   /** Nome acessível da tabela; as duas faixas da fila usam nomes diferentes. */
   label?: string
   selection: ReturnType<typeof useQueueSelection>
+  /** Abre o painel de detalhe da UC (clique ou Enter na linha). */
+  onOpenDetail: (idUc: string) => void
 }
 
 /**
  * Fila priorizada com seleção em massa: a ordem é a do backend (kWh esperado, da mais promissora para a menos).
  *
- * @param props - UCs visíveis, total da fila (opcional), nome da tabela e controle de seleção.
+ * @param props - UCs visíveis, total da fila (opcional), nome da tabela, controle de seleção e abertura do detalhe.
  * @returns Tabela com marcação por linha e "marcar as UCs livres da página" no cabeçalho.
  */
 export function PrioritizedQueueTable({
   units,
   total,
   label = 'Fila priorizada de UCs suspeitas',
-  selection
+  selection,
+  onOpenDetail
 }: PrioritizedQueueTableProps) {
   const [requestedPage, setRequestedPage] = useState(0)
   const pageCount = Math.max(1, Math.ceil(units.length / PAGE_SIZE))
@@ -66,7 +69,7 @@ export function PrioritizedQueueTable({
     <div className="flex flex-col gap-2">
       <p className="text-muted-foreground text-xs">
         Mostrando {firstRank + 1}–{firstRank + pageUnits.length} de {formatInteger(units.length)} UCs carregadas
-        {total === undefined ? '' : ` (${formatInteger(total)} na fila)`} · clique no número da UC para ver por que
+        {total === undefined ? '' : ` (${formatInteger(total)} na fila)`} · clique na linha da UC para ver por que
         ela está na fila
       </p>
       <Table aria-label={label}>
@@ -100,6 +103,7 @@ export function PrioritizedQueueTable({
               isSelected={selection.isSelected(unit.id_uc)}
               isSelectable={selection.isSelectable(unit)}
               onToggle={selection.toggle}
+              onOpen={onOpenDetail}
             />
           ))}
         </TableBody>

@@ -18,6 +18,7 @@ const summary: QueueSummary = {
   valor_ano_selecionadas_rs: 61939.6,
   tarifa_rs_kwh: 0.714,
   retorno_esperado_kwh_mes: 4532,
+  retorno_esperado_valor_ano_rs: 0,
   taxa_acerto: {
     inspecoes_total: 1389,
     irregularidades_confirmadas: 871,

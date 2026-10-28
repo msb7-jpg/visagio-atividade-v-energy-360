@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { QueueBandTabs } from '@/features/loss_management/components/QueueBandTabs'
 import { useQueueSelection } from '@/features/loss_management/hooks/useQueueSelection'
 import type { SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
@@ -27,7 +27,7 @@ function buildUnit(idUc: string, hitProbability: number): SuspiciousUnit {
 
 function Harness({ units, total = units.length }: { units: SuspiciousUnit[]; total?: number }) {
   const selection = useQueueSelection(units)
-  return <QueueBandTabs units={units} total={total} selection={selection} />
+  return <QueueBandTabs units={units} total={total} selection={selection} onOpenDetail={vi.fn()} />
 }
 
 function renderTabs(units: SuspiciousUnit[], total?: number) {

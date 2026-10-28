@@ -3,7 +3,8 @@ import {
   inspectionsQueryOptions,
   queueFiltersQueryOptions,
   queueSummaryQueryOptions,
-  suspiciousUnitsQueryOptions
+  suspiciousUnitsQueryOptions,
+  unitDetailQueryOptions
 } from '@/features/loss_management/queries/lossQueries'
 import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
 
@@ -15,6 +16,19 @@ import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/los
  */
 export function useSuspiciousUnitsQuery(filters: SuspiciousUnitsFilter) {
   return useQuery(suspiciousUnitsQueryOptions(filters))
+}
+
+/**
+ * Detalhe de uma UC da fila (conta do score, consumo de 12 meses e inspeções anteriores), em cache por UC.
+ *
+ * @param idUc - UC aberta no painel; nulo mantém a consulta desligada.
+ * @returns Estado da query do detalhe.
+ */
+export function useUnitDetailQuery(idUc: string | null) {
+  return useQuery({
+    ...unitDetailQueryOptions(idUc ?? ''),
+    enabled: idUc !== null
+  })
 }
 
 /**

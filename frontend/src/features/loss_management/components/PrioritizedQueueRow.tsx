@@ -1,3 +1,4 @@
+import type { KeyboardEvent, MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Checkbox } from '@/components/ui/checkbox'
 import { TableCell, TableRow } from '@/components/ui/table'
@@ -12,24 +13,42 @@ import {
 } from '@/features/loss_management/utils/lossFormatters'
 import { formatPlaceName } from '@/features/loss_management/utils/textFormat'
 
+/** Controles dentro da linha que têm ação própria e não devem abrir o painel de detalhe. */
+const INTERACTIVE_SELECTOR = 'a, button, input, [role="checkbox"]'
+
 interface PrioritizedQueueRowProps {
   unit: SuspiciousUnit
   rank: number
   isSelected: boolean
   isSelectable: boolean
   onToggle: (idUc: string) => void
+  onOpen: (idUc: string) => void
 }
 
 /**
  * Linha da fila priorizada: marcação, posição, UC (link para a Visão 360), território, score, queda de consumo,
- * chance de acerto e situação.
+ * chance de acerto e situação. Clicar na linha, ou Enter com ela focada, abre o painel de detalhe da UC.
  *
- * @param props - UC, posição, estado de seleção e callback de marcação.
+ * @param props - UC, posição, estado de seleção e callbacks de marcação e de abertura do detalhe.
  * @returns Linha da tabela; UCs com ordem gerada ou em campo não podem ser marcadas.
  */
-export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onToggle }: PrioritizedQueueRowProps) {
+export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onToggle, onOpen }: PrioritizedQueueRowProps) {
+  const handleClick = (event: MouseEvent<HTMLTableRowElement>) => {
+    if (event.target instanceof Element && event.target.closest(INTERACTIVE_SELECTOR)) return
+    onOpen(unit.id_uc)
+  }
+  const handleKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {
+    if (event.key === 'Enter' && event.target === event.currentTarget) onOpen(unit.id_uc)
+  }
+
   return (
-    <TableRow data-state={isSelected ? 'selected' : undefined}>
+    <TableRow
+      className="cursor-pointer"
+      data-state={isSelected ? 'selected' : undefined}
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
       <TableCell>
         <Checkbox
           aria-label={`Selecionar ${unit.id_uc}`}

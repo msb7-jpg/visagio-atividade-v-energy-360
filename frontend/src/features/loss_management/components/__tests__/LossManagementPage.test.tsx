@@ -58,6 +58,7 @@ const summaryFixture: QueueSummary = {
   valor_ano_selecionadas_rs: 0,
   tarifa_rs_kwh: 0.714,
   retorno_esperado_kwh_mes: 0,
+  retorno_esperado_valor_ano_rs: 0,
   taxa_acerto: { inspecoes_total: null, irregularidades_confirmadas: null, taxa: 0.627, periodo_inicio: null, periodo_fim: null }
 }
 

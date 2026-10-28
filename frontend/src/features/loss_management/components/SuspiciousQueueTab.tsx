@@ -8,6 +8,7 @@ import { QueueBandTabs } from '@/features/loss_management/components/QueueBandTa
 import { QueueFilters } from '@/features/loss_management/components/QueueFilters'
 import { QueueSummaryCards } from '@/features/loss_management/components/QueueSummaryCards'
 import { QueueWarnings } from '@/features/loss_management/components/QueueWarnings'
+import { UnitDetailSheet } from '@/features/loss_management/components/UnitDetailSheet'
 import type { SuspiciousQueueController } from '@/features/loss_management/hooks/useSuspiciousQueueController'
 import { isPriorityUnit } from '@/features/loss_management/utils/queueBands'
 
@@ -68,13 +69,15 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
             units={units}
             total={queue.total ?? units.length}
             selection={selection}
+            onOpenDetail={queue.openDetail}
           />
         </AsyncState>
       )}
+      <UnitDetailSheet idUc={queue.detailUcId} onClose={queue.closeDetail} onGenerateOrder={queue.generateForUnit} />
       {queue.isDialogOpen ? (
         <GenerateOrdersDialog
           units={queue.selectedUnits}
-          summary={summary}
+          summary={queue.isSummaryUpdating ? undefined : summary}
           onClose={queue.closeDialog}
           onDone={queue.finishGeneration}
         />

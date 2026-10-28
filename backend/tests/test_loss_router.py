@@ -30,6 +30,8 @@ SEED_INSPECTIONS = [
     ("IN1", "UC_INSPECIONADA", "2025-08-10", 1),
     ("IN2", "UC_INSPECAO_ANTIGA", "2023-05-02", 0),
 ]
+# Inspetor de cada inspeção acima, na mesma ordem; fora de ordem de propósito para provar a ordenação da lista.
+SEED_INSPECTOR_CODES = ["INSP-002", "INSP-001"]
 
 
 def build_measurement_rows() -> list[dict[str, object]]:
@@ -48,13 +50,23 @@ def build_measurement_rows() -> list[dict[str, object]]:
 async def seed_field_history_table(connection) -> None:
     await connection.execute(text(
         "CREATE TABLE fato_inspecoes_perdas (id_inspecao TEXT PRIMARY KEY, id_uc TEXT, data_inspecao TEXT, "
-        "irregularidade_constatada BOOLEAN)"
+        "irregularidade_constatada BOOLEAN, id_inspetor TEXT)"
     ))
     await connection.execute(
-        text("INSERT INTO fato_inspecoes_perdas VALUES (:id_inspecao, :id_uc, :data_inspecao, :irregular)"),
+        text(
+            "INSERT INTO fato_inspecoes_perdas VALUES (:id_inspecao, :id_uc, :data_inspecao, :irregular, :inspetor)"
+        ),
         [
-            {"id_inspecao": id_inspecao, "id_uc": id_uc, "data_inspecao": data_inspecao, "irregular": irregular}
-            for id_inspecao, id_uc, data_inspecao, irregular in SEED_INSPECTIONS
+            {
+                "id_inspecao": id_inspecao,
+                "id_uc": id_uc,
+                "data_inspecao": data_inspecao,
+                "irregular": irregular,
+                "inspetor": inspetor,
+            }
+            for (id_inspecao, id_uc, data_inspecao, irregular), inspetor in zip(
+                SEED_INSPECTIONS, SEED_INSPECTOR_CODES, strict=True
+            )
         ],
     )
 
@@ -136,6 +148,73 @@ async def test_director_can_read_every_loss_endpoint(client, path):
     response = await client.get(f"{BASE_URL}{path}", headers=headers)
 
     assert response.status_code == 200
+
+
+async def test_inspectors_are_listed_by_code_from_the_field_history(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    response = await client.get(f"{BASE_URL}/inspectors", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json() == [{"codigo": "INSP-001"}, {"codigo": "INSP-002"}]
+
+
+async def test_director_can_read_the_inspectors(client):
+    headers = await auth_headers(client, "diretor@venergy.com")
+
+    response = await client.get(f"{BASE_URL}/inspectors", headers=headers)
+
+    assert response.status_code == 200
+
+
+async def test_role_without_permission_cannot_read_the_inspectors(client):
+    headers = await auth_headers(client, "atendimento@venergy.com")
+
+    response = await client.get(f"{BASE_URL}/inspectors", headers=headers)
+
+    assert response.status_code == 403
+
+
+async def test_inspectors_without_the_field_history_table_is_a_clear_error():
+    engine, http_client = await open_client(with_gold_tables=True, with_field_history=False)
+    async with http_client:
+        headers = await auth_headers(http_client, "perdas@venergy.com")
+        response = await http_client.get(f"{BASE_URL}/inspectors", headers=headers)
+    app.dependency_overrides.clear()
+    await engine.dispose()
+
+    assert response.status_code == 500
+
+
+async def test_orders_list_carries_neighborhood_municipality_and_class_of_the_unit(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_INSPECAO_ANTIGA"})
+    await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+
+    response = await client.get(f"{BASE_URL}/inspections", headers=headers)
+
+    assert response.status_code == 200
+    location_by_unit = {
+        order["id_uc"]: (order["bairro"], order["municipio"], order["classe_consumo"]) for order in response.json()
+    }
+    assert location_by_unit == {
+        "UC_INSPECAO_ANTIGA": ("Boa Viagem", "Recife", "Residencial"),
+        "UC_FRAUDE": ("Centro", "Recife", "Residencial"),
+    }
+
+
+async def test_orders_list_keeps_an_order_whose_unit_is_not_in_the_registry(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+    async for session in app.dependency_overrides[get_db]():
+        await session.execute(text("DELETE FROM dim_unidade_consumidora WHERE id_uc = 'UC_FRAUDE'"))
+        await session.commit()
+
+    response = await client.get(f"{BASE_URL}/inspections", headers=headers)
+
+    (order,) = response.json()
+    location = (order["bairro"], order["municipio"], order["classe_consumo"])
+    assert (order["id_uc"], location) == ("UC_FRAUDE", (None, None, None))
 
 
 async def test_director_cannot_create_or_update_orders(client):

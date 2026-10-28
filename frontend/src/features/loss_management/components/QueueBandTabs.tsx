@@ -13,6 +13,7 @@ interface QueueBandTabsProps {
   /** UCs que passam nos filtros, antes do corte da fila. */
   total: number
   selection: ReturnType<typeof useQueueSelection>
+  onOpenDetail: (idUc: string) => void
 }
 
 function firstBandWithUnits(priorityCount: number, lowChanceCount: number): BandKey {
@@ -28,7 +29,7 @@ function firstBandWithUnits(priorityCount: number, lowChanceCount: number): Band
  * @param props - UCs carregadas, total da fila e controle de seleção.
  * @returns Abas acima da tabela; abre nas prioritárias, ou na primeira aba com UCs quando elas não existem.
  */
-export function QueueBandTabs({ units, total, selection }: QueueBandTabsProps) {
+export function QueueBandTabs({ units, total, selection, onOpenDetail }: QueueBandTabsProps) {
   const { priority, lowChance } = splitQueueBands(units)
   const [band, setBand] = useState<BandKey>(() => firstBandWithUnits(priority.length, lowChance.length))
   const minHitLabel = formatPercent(PRIORITY_MIN_HIT_PROBABILITY)
@@ -61,6 +62,7 @@ export function QueueBandTabs({ units, total, selection }: QueueBandTabsProps) {
                 units={item.units}
                 label={`Fila: ${item.label.toLowerCase()}`}
                 selection={selection}
+                onOpenDetail={onOpenDetail}
               />
             </div>
           </TabsContent>

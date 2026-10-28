@@ -72,7 +72,10 @@ export interface QueueSummary {
   kwh_mes_selecionadas: number
   valor_ano_selecionadas_rs: number
   tarifa_rs_kwh: number
+  /** Soma, por UC selecionada, de kWh/mês recuperável x chance de acerto da UC. */
   retorno_esperado_kwh_mes: number
+  /** Soma, por UC selecionada, de R$/ano recuperável x chance de acerto da UC. */
+  retorno_esperado_valor_ano_rs: number
   taxa_acerto: HitRate
 }
 
@@ -123,6 +126,10 @@ export interface InspectionOrder {
   criado_por: string
   criado_em: string
   atualizado_em: string
+  /** Território da UC no cadastro; só a listagem de ordens preenche, nulo se a UC não estiver nele. */
+  municipio?: string | null
+  bairro?: string | null
+  classe_consumo?: string | null
 }
 
 /** Payload de abertura de ordem a partir da fila (o kWh estimado é calculado pelo servidor). */
