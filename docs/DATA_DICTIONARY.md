@@ -116,8 +116,8 @@ Notebooks: `fatia02_bronze`, `fatia02_silver`, `fatia02_gold`, `fatia02_testes_q
 | `tarifa_aplicada_rs_kwh` | REAL | `valor_total_rs / consumo_faturado_kwh`. Só calculada quando o consumo é maior que zero; caso contrário, nula. |
 | `data_emissao` | TEXT | Data de emissão. A origem mistura 4 formatos; quando dia e mês são ambíguos, vale a leitura cujo mês bate com a competência. |
 | `data_vencimento` | TEXT | Data de vencimento. |
-| `data_pagamento` | TEXT | Data do pagamento; nula se não paga. |
-| `status_pagamento` | TEXT | Recalculado pelas datas: `PAGA` (tem pagamento), `VENCIDA` (sem pagamento e vencimento já passou), `ABERTA` (sem pagamento e ainda no prazo). A origem trazia `EM ABERTO` com pagamento registrado, por isso não é usada. |
+| `data_pagamento` | TEXT | Data do pagamento; nula se não paga. O marcador `9999-12-31` do legado (fatura não paga) vira nulo. |
+| `status_pagamento` | TEXT | Recalculado pelas datas: `PAGA` (tem pagamento), `VENCIDA` (sem pagamento e vencimento já passou), `ABERTA` (sem pagamento e ainda no prazo). O prazo é comparado com a data de corte da base (2026-06-30), não com a data da execução. A origem trazia `EM ABERTO` com pagamento registrado, por isso não é usada. |
 
 **Decisões de limpeza que afetam a tabela**
 
@@ -214,4 +214,4 @@ Notebooks: `fatia02_bronze`, `fatia02_silver`, `fatia02_gold`, `fatia02_testes_q
 
 ### Testes de qualidade da Fatia 02
 
-O notebook `fatia02_testes_qualidade` roda antes da exportação e interrompe o job se qualquer regra falhar (24 testes): totais das faturas, ausência de órfãs, chaves únicas, DEC/FEC ≥ 0, limites ANEEL preenchidos, grade alimentador × mês completa, CSAT entre 1 e 5, datas das inspeções na campanha e contagens iguais às da Silver. Os 5 testes de `fato_ocorrencias_rede` conferem chave única, contagem igual à Silver, UC no cadastro e no mesmo alimentador, campos obrigatórios e a soma por alimentador e mês contra `fato_qualidade_alimentador`. O `fatia02_export_sqlite` confere ainda contagens SQLite = Gold, chaves estrangeiras e `PRAGMA integrity_check`.
+O notebook `fatia02_testes_qualidade` roda antes da exportação e interrompe o job se qualquer regra falhar (26 testes): totais das faturas, marcador `9999-12-31` ausente, `status_pagamento` coerente com o pagamento e a data de corte, ausência de órfãs, chaves únicas, DEC/FEC ≥ 0, limites ANEEL preenchidos, grade alimentador × mês completa, CSAT entre 1 e 5, datas das inspeções na campanha e contagens iguais às da Silver. Os 5 testes de `fato_ocorrencias_rede` conferem chave única, contagem igual à Silver, UC no cadastro e no mesmo alimentador, campos obrigatórios e a soma por alimentador e mês contra `fato_qualidade_alimentador`. O `fatia02_export_sqlite` confere ainda contagens SQLite = Gold, chaves estrangeiras e `PRAGMA integrity_check`.
