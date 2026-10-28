@@ -13,6 +13,12 @@ export interface CustomerSummary {
   numero_medidor_ativo: string | null
   possui_gd: boolean
   potencia_gd_kw: number | null
+  data_conexao_gd: string | null
+}
+
+export interface SolarGeneration {
+  hasSolar: boolean
+  connectedAt: string | null
 }
 
 export interface CustomerSearchResult {
@@ -55,6 +61,7 @@ export interface MonthlyComparison {
   tarifa_rs_kwh: number | null
   tarifa_rs_kwh_ano_anterior: number | null
   variacao_tarifa_pct: number | null
+  tipo_leitura: string | null
 }
 
 export interface HighBillDiagnosis {
@@ -76,6 +83,7 @@ export interface HighBillDiagnosis {
   tarifa_rs_kwh: number | null
   tarifa_rs_kwh_ano_anterior: number | null
   variacao_tarifa_pct: number | null
+  leitura_estimada: boolean
 }
 
 export interface YearOverYearTotals {
@@ -126,9 +134,38 @@ export interface ServiceTicket {
   nota_csat: number | null
 }
 
+export interface UnitOutage {
+  id_ocorrencia: string
+  competencia: string | null
+  inicio_interrupcao: string | null
+  fim_interrupcao: string | null
+  duracao_horas: number | null
+  tipo_ocorrencia: string | null
+  causa: string | null
+}
+
+/** Totais de todas as interrupções da UC, e não só das listadas (a lista traz as 50 mais recentes). */
+export interface UnitOutageSummary {
+  total_interrupcoes: number
+  total_horas: number
+  mais_longa: UnitOutage | null
+}
+
+export interface LossInspection {
+  id_inspecao: string
+  data_inspecao: string | null
+  id_inspetor: string | null
+  irregularidade_constatada: boolean | null
+  tipo_irregularidade: string | null
+  kwh_recuperado: number | null
+}
+
 export interface CustomerEventTimeline {
   id_uc: string
   alimentador: string | null
   qualidade_alimentador: FeederQualityMonth[]
+  interrupcoes_uc: UnitOutage[]
+  resumo_interrupcoes_uc: UnitOutageSummary
   chamados: ServiceTicket[]
+  inspecoes: LossInspection[]
 }

@@ -8,7 +8,7 @@ const SEPARATORS = /[\s\-_./]/g
  * @param typedText - Texto digitado, ex: ` uc-100 004 `.
  * @returns Texto compacto, ex: `UC100004`.
  */
-export function compactTerm(typedText: string): string {
+function compactTerm(typedText: string): string {
   return typedText.replace(SEPARATORS, '').toUpperCase()
 }
 
@@ -31,4 +31,14 @@ export function normalizeIdUc(typedText: string): string {
  */
 export function isSearchable(typedText: string): boolean {
   return compactTerm(typedText).length >= MIN_SEARCH_LENGTH
+}
+
+/**
+ * Prepara o texto para pedir sugestões, mantendo os espaços internos que separam as palavras de um nome.
+ *
+ * @param typedText - Texto digitado, ex: `  maria   da silva `.
+ * @returns Texto sem espaços repetidos nem nas pontas, ex: `maria da silva`.
+ */
+export function normalizeSearchText(typedText: string): string {
+  return typedText.replace(/\s+/g, ' ').trim()
 }

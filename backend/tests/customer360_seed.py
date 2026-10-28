@@ -1,4 +1,4 @@
-"""Seed das tabelas Gold usadas pela Visão 360, no formato documentado pelas Fatias 01 e 02.
+"""Seed das tabelas Gold usadas pela Visão 360, com o mesmo esquema exportado pelas Fatias 01 e 02.
 
 Uso nos testes: `await seed_customer360_tables(connection)` numa conexão SQLAlchemy assíncrona.
 Uso no desenvolvimento: `uv run python -m tests.customer360_seed` gera `v_energy_dev.db`
@@ -9,6 +9,7 @@ import sqlite3
 import sys
 from contextlib import closing
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import text
@@ -24,27 +25,44 @@ ADICIONAL_BANDEIRA = {"VERDE": 0.0, "AMARELA": 0.02, "VERMELHA_P1": 0.05, "VERME
 
 CREATE_TABLES = (
     (
-        "CREATE TABLE dim_unidade_consumidora (id_uc TEXT PRIMARY KEY, codigo_cliente TEXT, classe_consumo TEXT, "
-        "subgrupo_tarifario TEXT, municipio TEXT, bairro TEXT, alimentador TEXT, subestacao TEXT, "
-        "numero_medidor_ativo TEXT, possui_gd BOOLEAN, potencia_gd_kw REAL)"
+        "CREATE TABLE dim_unidade_consumidora (id_uc TEXT PRIMARY KEY, codigo_cliente TEXT, nome_titular TEXT, "
+        "logradouro TEXT, numero TEXT, bairro TEXT, municipio TEXT, uf TEXT, cep TEXT, classe_consumo TEXT, "
+        "subgrupo_tarifario TEXT, alimentador TEXT, subestacao TEXT, numero_medidor_ativo TEXT, possui_gd BOOLEAN, "
+        "potencia_gd_kw REAL, data_conexao_gd TEXT, status TEXT)"
     ),
     (
-        "CREATE TABLE fato_medicao (id_medicao TEXT PRIMARY KEY, id_uc TEXT, competencia TEXT, "
-        "leitura_anterior REAL, leitura_atual REAL, consumo_kwh REAL, dias_faturamento INT)"
+        "CREATE TABLE fato_medicao (id_medicao TEXT PRIMARY KEY, id_uc TEXT NOT NULL, id_medidor TEXT, "
+        "competencia TEXT NOT NULL, data_leitura TEXT, leitura_anterior REAL, leitura_atual REAL, consumo_kwh REAL, "
+        "dias_faturamento INTEGER, media_diaria_kwh REAL, tipo_leitura TEXT)"
     ),
     (
-        "CREATE TABLE fato_faturamento (id_fatura TEXT PRIMARY KEY, id_uc TEXT, competencia TEXT, valor_total_rs REAL, "
-        "consumo_faturado_kwh REAL, bandeira_tarifaria TEXT, tarifa_aplicada_rs_kwh REAL, data_vencimento TEXT, "
+        "CREATE TABLE fato_faturamento (id_fatura TEXT PRIMARY KEY, id_uc TEXT NOT NULL, competencia TEXT NOT NULL, "
+        "valor_energia_rs REAL, tributos_rs REAL, valor_total_rs REAL, consumo_faturado_kwh REAL, "
+        "bandeira_tarifaria TEXT, tarifa_aplicada_rs_kwh REAL, data_emissao TEXT, data_vencimento TEXT, "
         "data_pagamento TEXT, status_pagamento TEXT)"
     ),
     (
-        "CREATE TABLE fato_qualidade_alimentador (id_alimentador TEXT, competencia TEXT, dec_apurado_horas REAL, "
-        "fec_apurado_vezes REAL, dec_limite_aneel REAL, fec_limite_aneel REAL, violou_meta BOOLEAN, "
+        "CREATE TABLE fato_qualidade_alimentador (id_alimentador TEXT NOT NULL, competencia TEXT NOT NULL, "
+        "conjunto_aneel TEXT, criterio_limite TEXT, ucs_atendidas INTEGER, ucs_interrompidas INTEGER, "
+        "dec_apurado_horas REAL, fec_apurado_vezes REAL, dec_acumulado_ano_horas REAL, fec_acumulado_ano_vezes REAL, "
+        "dec_limite_aneel REAL, fec_limite_aneel REAL, violou_dec BOOLEAN, violou_fec BOOLEAN, violou_meta BOOLEAN, "
         "PRIMARY KEY (id_alimentador, competencia))"
     ),
     (
+        "CREATE TABLE fato_ocorrencias_rede (id_ocorrencia TEXT PRIMARY KEY, id_uc TEXT NOT NULL, "
+        "id_alimentador TEXT NOT NULL, tipo_ocorrencia TEXT, causa TEXT, inicio_interrupcao TEXT, "
+        "fim_interrupcao TEXT, duracao_min INTEGER, duracao_horas REAL, competencia TEXT, "
+        "fl_anterior_ligacao BOOLEAN)"
+    ),
+    (
         "CREATE TABLE fato_atendimentos (id_atendimento TEXT PRIMARY KEY, id_uc TEXT, numero_protocolo TEXT, "
-        "motivo_chamado TEXT, data_abertura TEXT, status_chamado TEXT, nota_csat INT)"
+        "motivo_chamado TEXT, submotivo_chamado TEXT, canal_atendimento TEXT, data_abertura TEXT, "
+        "data_fechamento TEXT, status_chamado TEXT, tempo_resolucao_horas REAL, qtd_tratativas INTEGER, "
+        "nota_csat REAL)"
+    ),
+    (
+        "CREATE TABLE fato_inspecoes_perdas (id_inspecao TEXT PRIMARY KEY, id_uc TEXT, data_inspecao TEXT, "
+        "id_inspetor TEXT, irregularidade_constatada BOOLEAN, tipo_irregularidade TEXT, kwh_recuperado REAL)"
     ),
 )
 
@@ -54,6 +72,7 @@ class SeedUnit:
     """Cenário de UC: consumo constante no ano anterior e no ano recente (últimos 12 meses)."""
 
     id_uc: str
+    nome_titular: str
     alimentador: str
     possui_gd: bool
     potencia_gd_kw: float
@@ -63,18 +82,22 @@ class SeedUnit:
 
 
 SEED_UNITS = (
-    SeedUnit("UC100001", "ALM-REC-004", False, 0.0, 200.0, 205.0),
-    SeedUnit("UC100002", "ALM-REC-004", True, 4.5, 300.0, 150.0),
-    SeedUnit("UC100003", "ALM-REC-004", False, 0.0, 200.0, 280.0),
-    SeedUnit("UC100004", "ALM-REC-004", False, 0.0, 200.0, 200.0),
-    SeedUnit("UC100005", "ALM-OLI-002", False, 0.0, 150.0, 150.0, meses_historico=6),
-    SeedUnit("UC100006", "ALM-REC-004", False, 0.0, 200.0, 200.0),
+    SeedUnit("UC100001", "Maria da Silva", "ALM-REC-004", False, 0.0, 200.0, 205.0),
+    SeedUnit("UC100002", "Jose Santos", "ALM-REC-004", True, 4.5, 300.0, 150.0),
+    SeedUnit("UC100003", "Ana Souza", "ALM-REC-004", False, 0.0, 200.0, 280.0),
+    SeedUnit("UC100004", "Carlos Lima", "ALM-REC-004", False, 0.0, 200.0, 200.0),
+    SeedUnit("UC100005", "Paula Silva", "ALM-OLI-002", False, 0.0, 150.0, 150.0, meses_historico=6),
+    SeedUnit("UC100006", "Pedro Alves", "ALM-REC-004", False, 0.0, 200.0, 200.0),
 )
+
+GD_CONNECTION_DATES = {"UC100002": "2025-09-15"}
 
 DIAS_PADRAO = 30
 MEASUREMENT_OVERRIDES = {
     ("UC100006", "2026-06"): (240.0, 36),
 }
+
+ESTIMATED_READINGS = frozenset({("UC100003", "2026-06")})
 
 INVOICE_OVERRIDES = {
     ("UC100004", "2026-06"): ("VERMELHA_P2", "ABERTA"),
@@ -88,9 +111,21 @@ PAYMENT_DATE_OVERRIDES = {
 }
 
 SERVICE_TICKETS = (
-    ("AT000000001", "UC100001", "PRT-2026-0001", "FALTA DE ENERGIA", "2026-03-12 10:00:00", "ENCERRADO", 8),
+    ("AT000000001", "UC100001", "PRT-2026-0001", "FALTA DE ENERGIA", "2026-03-12 10:00:00", "ENCERRADO", 4.5),
     ("AT000000002", "UC100001", "PRT-2026-0002", "FATURA", "2026-05-02 14:30:00", "EM ANDAMENTO", None),
     ("AT000000003", "UC100004", "PRT-2026-0003", "FATURA", "2026-06-25 09:15:00", "ABERTO", None),
+)
+
+UNIT_OUTAGES = (
+    ("OC000001", "UC100001", "FALTA DE ENERGIA", "CLIMATICA", "2025-07-14 18:20:00", 150, False),
+    ("OC000002", "UC100001", "FIO PARTIDO", "VEGETACAO", "2026-03-02 07:05:00", 252, False),
+    ("OC000003", "UC100001", "OSCILACAO", "NAO INFORMADA", "2022-01-10 10:00:00", 30, True),
+    ("OC000004", "UC100004", "FALTA DE ENERGIA", "TERCEIROS", "2026-05-20 13:00:00", 90, False),
+)
+
+LOSS_INSPECTIONS = (
+    ("INS000001", "UC100003", "2025-08-12", "INSP-07", False, None, 0.0),
+    ("INS000002", "UC100003", "2025-11-04", "INSP-02", True, "BY-PASS", 1250.5),
 )
 
 
@@ -114,10 +149,11 @@ def monthly_kwh(unit: SeedUnit, competencia: str) -> float:
 def unit_rows() -> list[dict[str, object]]:
     return [
         {
-            "id_uc": unit.id_uc, "codigo_cliente": f"CLI{unit.id_uc[2:]}", "classe_consumo": "Residencial",
-            "subgrupo_tarifario": "B1", "municipio": "Recife", "bairro": "Arruda", "alimentador": unit.alimentador,
-            "subestacao": None, "numero_medidor_ativo": f"MD5{unit.id_uc[3:]}", "possui_gd": unit.possui_gd,
-            "potencia_gd_kw": unit.potencia_gd_kw,
+            "id_uc": unit.id_uc, "codigo_cliente": f"CLI{unit.id_uc[2:]}", "nome_titular": unit.nome_titular,
+            "classe_consumo": "Residencial", "subgrupo_tarifario": "B1", "municipio": "Recife", "bairro": "Arruda",
+            "alimentador": unit.alimentador, "subestacao": None, "numero_medidor_ativo": f"MD5{unit.id_uc[3:]}",
+            "possui_gd": unit.possui_gd, "potencia_gd_kw": unit.potencia_gd_kw,
+            "data_conexao_gd": GD_CONNECTION_DATES.get(unit.id_uc), "status": "ATIVA",
         }
         for unit in SEED_UNITS
     ]
@@ -133,6 +169,7 @@ def measurement_rows() -> list[dict[str, object]]:
                 "id_medicao": f"LT-{unit.id_uc}-{competencia}", "id_uc": unit.id_uc, "competencia": competencia,
                 "leitura_anterior": accumulated_reading, "leitura_atual": accumulated_reading + consumption,
                 "consumo_kwh": consumption, "dias_faturamento": monthly_days(unit, competencia),
+                "tipo_leitura": "ESTIMADA" if (unit.id_uc, competencia) in ESTIMATED_READINGS else "REAL",
             })
             accumulated_reading += consumption
     return rows
@@ -172,10 +209,29 @@ def feeder_quality_rows() -> list[dict[str, object]]:
     return rows
 
 
+def outage_rows() -> list[dict[str, object]]:
+    rows = []
+    for id_ocorrencia, id_uc, kind, cause, start, minutes, before_connection in UNIT_OUTAGES:
+        end_moment = datetime.fromisoformat(start) + timedelta(minutes=minutes)
+        rows.append({
+            "id_ocorrencia": id_ocorrencia, "id_uc": id_uc, "id_alimentador": "ALM-REC-004",
+            "tipo_ocorrencia": kind, "causa": cause, "inicio_interrupcao": start,
+            "fim_interrupcao": f"{end_moment:%Y-%m-%d %H:%M:%S}", "duracao_min": minutes,
+            "duracao_horas": round(minutes / 60, 2), "competencia": start[:7], "fl_anterior_ligacao": before_connection,
+        })
+    return rows
+
+
 def ticket_rows() -> list[dict[str, object]]:
     columns = ("id_atendimento", "id_uc", "numero_protocolo", "motivo_chamado", "data_abertura", "status_chamado",
                "nota_csat")
     return [dict(zip(columns, ticket, strict=True)) for ticket in SERVICE_TICKETS]
+
+
+def inspection_rows() -> list[dict[str, object]]:
+    columns = ("id_inspecao", "id_uc", "data_inspecao", "id_inspetor", "irregularidade_constatada",
+               "tipo_irregularidade", "kwh_recuperado")
+    return [dict(zip(columns, inspection, strict=True)) for inspection in LOSS_INSPECTIONS]
 
 
 def insert_statements() -> list[tuple[str, list[dict[str, object]]]]:
@@ -184,7 +240,9 @@ def insert_statements() -> list[tuple[str, list[dict[str, object]]]]:
         "fato_medicao": measurement_rows(),
         "fato_faturamento": invoice_rows(),
         "fato_qualidade_alimentador": feeder_quality_rows(),
+        "fato_ocorrencias_rede": outage_rows(),
         "fato_atendimentos": ticket_rows(),
+        "fato_inspecoes_perdas": inspection_rows(),
     }
     statements = []
     for table_name, rows in tables.items():

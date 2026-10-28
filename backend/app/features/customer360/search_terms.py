@@ -7,6 +7,9 @@ UC_PREFIX = "UC"
 METER_PREFIX = "MD"
 MIN_SEARCH_LENGTH = 3
 SEPARATORS = re.compile(r"[\s\-_./]")
+WHITESPACE = re.compile(r"\s+")
+LIKE_ESCAPE = "!"
+LIKE_WILDCARDS = re.compile(r"([!%_])")
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,6 +56,20 @@ def normalize_meter(typed_text: str) -> str:
     """
     compact = compact_term(typed_text)
     return f"{METER_PREFIX}{compact}" if compact.isdigit() else compact
+
+
+def name_pattern(typed_text: str) -> str:
+    """Monta o padrão LIKE que encontra o texto digitado em qualquer parte do nome do titular.
+
+    Args:
+        typed_text: Nome ou parte dele, ex: ` maria  silva `.
+
+    Returns:
+        Padrão com espaços normalizados e curingas escapados por `LIKE_ESCAPE`, ex: `%maria silva%`.
+    """
+    collapsed = WHITESPACE.sub(" ", typed_text).strip()
+    escaped = LIKE_WILDCARDS.sub(rf"{LIKE_ESCAPE}\1", collapsed)
+    return f"%{escaped}%"
 
 
 def prefix_range(prefix: str) -> PrefixRange:

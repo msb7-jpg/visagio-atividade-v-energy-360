@@ -2,6 +2,7 @@ import pytest
 
 from app.features.customer360.search_terms import (
     is_searchable,
+    name_pattern,
     normalize_id_uc,
     normalize_meter,
     prefix_range,
@@ -28,3 +29,11 @@ def test_prefix_range_covers_everything_that_starts_with_prefix():
 @pytest.mark.parametrize(("typed_text", "expected"), [("10", False), (" u c ", False), ("100", True), ("UC1", True)])
 def test_search_requires_three_useful_characters(typed_text, expected):
     assert is_searchable(typed_text) is expected
+
+
+@pytest.mark.parametrize(
+    ("typed_text", "expected"),
+    [(" maria   da silva ", "%maria da silva%"), ("50%", "%50!%%"), ("a_b!", "%a!_b!!%")],
+)
+def test_name_pattern_collapses_spaces_and_escapes_wildcards(typed_text, expected):
+    assert name_pattern(typed_text) == expected

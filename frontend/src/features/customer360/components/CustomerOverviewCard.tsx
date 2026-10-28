@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tooltip } from '@/components/ui/tooltip-card'
 import type { CustomerSummary } from '@/features/customer360/types/customer360Types'
-import { formatPower } from '@/features/customer360/utils/customer360Formatters'
+import { formatMonthOfDate, formatPower } from '@/features/customer360/utils/customer360Formatters'
 
 const NOT_INFORMED = 'Não informado'
 
@@ -39,6 +39,7 @@ function SolarBadge({ summary }: { summary: CustomerSummary }) {
       <Badge variant="secondary">
         <span className="flex items-center gap-1">
           <Sun className="size-3" /> GD Solar ({formatPower(summary.potencia_gd_kw)})
+          {summary.data_conexao_gd ? ` · desde ${formatMonthOfDate(summary.data_conexao_gd)}` : null}
         </span>
       </Badge>
     </Tooltip>
