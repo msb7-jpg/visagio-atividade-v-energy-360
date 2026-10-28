@@ -9,7 +9,8 @@ from httpx import ASGITransport, AsyncClient
 
 from app.core.config import get_settings
 from app.core.constants import UserRole
-from app.features.grid_quality.dependencies import get_grid_quality_service
+from app.features.grid_quality.continuity_schemas import ContinuityKpisDTO, ContinuitySnapshotDTO, PeriodComparisonDTO
+from app.features.grid_quality.dependencies import get_continuity_service, get_grid_quality_service
 from app.features.grid_quality.router import router
 from app.features.grid_quality.schemas import (
     FeederRankingDTO,
@@ -23,7 +24,21 @@ from app.shared.exceptions import NotFoundException
 
 FEEDER_ID = "ALIM-TESTE-01"
 MISSING_FEEDER_ID = "ALIM-TESTE-99"
-ROUTES = ["/quality/indicators", "/quality/feeders", f"/quality/feeders/{FEEDER_ID}/history"]
+ROUTES = [
+    "/quality/indicators",
+    "/quality/feeders",
+    f"/quality/feeders/{FEEDER_ID}/history",
+    "/quality/continuity",
+]
+COMPARISON = PeriodComparisonDTO(current=2.0, previous=1.0, change_percent=100.0)
+CONTINUITY = ContinuitySnapshotDTO(
+    kpis=ContinuityKpisDTO(dec=COMPARISON, fec=COMPARISON, interruptions=COMPARISON, average_duration_hours=COMPARISON),
+    event=None,
+    municipalities=[],
+    feeders=[],
+    causes=[],
+    types=[],
+)
 
 # Valores fictícios e redondos: não representam nenhum dado do case.
 INDICATORS = QualityIndicatorsDTO(
@@ -84,6 +99,11 @@ class StubQualityService:
         self.calls.append(("feeders", competencia, status))
         return [RANKING_ENTRY]
 
+    async def get_snapshot(self, municipio=None, incluir_evento=True):
+        """Registra o pedido e devolve uma Continuidade fixa."""
+        self.calls.append(("continuity", municipio, incluir_evento))
+        return CONTINUITY
+
     async def get_feeder_history(self, id_alimentador, meses=48):
         """Registra o pedido; levanta NotFoundException para o alimentador inexistente."""
         self.calls.append(("history", id_alimentador, meses))
@@ -119,6 +139,7 @@ async def client(stub_service):
     register_exception_handlers(quality_app)
     quality_app.include_router(router)
     quality_app.dependency_overrides[get_grid_quality_service] = lambda: stub_service
+    quality_app.dependency_overrides[get_continuity_service] = lambda: stub_service
     async with AsyncClient(transport=ASGITransport(app=quality_app), base_url="http://test") as http_client:
         yield http_client
 
@@ -156,6 +177,42 @@ async def test_matriz_de_papeis_nos_indicadores(client, role, expected_status):
     response = await client.get("/quality/indicators", headers=bearer_for_role(role))
 
     assert response.status_code == expected_status
+
+
+@pytest.mark.parametrize("route", ROUTES)
+@pytest.mark.parametrize(
+    ("role", "expected_status"),
+    [
+        (UserRole.DIRETOR, 200),
+        (UserRole.GERENTE_OPERACAO, 200),
+        (UserRole.GERENTE_PERDAS, 403),
+        (UserRole.GERENTE_ATENDIMENTO, 403),
+        (UserRole.ATENDENTE, 403),
+    ],
+)
+async def test_matriz_de_papeis_em_todas_as_rotas(client, route, role, expected_status):
+    response = await client.get(route, headers=bearer_for_role(role))
+
+    assert response.status_code == expected_status
+
+
+async def test_continuidade_repassa_filtros_e_responde_em_camel_case(client, stub_service):
+    response = await client.get(
+        "/quality/continuity",
+        params={"municipio": "Recife", "incluir_evento": "false"},
+        headers=bearer_for_role(UserRole.GERENTE_OPERACAO),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["kpis"]["averageDurationHours"]["changePercent"] == pytest.approx(100.0)
+    assert response.json()["event"] is None
+    assert stub_service.calls == [("continuity", "Recife", False)]
+
+
+async def test_continuidade_inclui_o_evento_por_padrao(client, stub_service):
+    await client.get("/quality/continuity", headers=bearer_for_role(UserRole.DIRETOR))
+
+    assert stub_service.calls == [("continuity", None, True)]
 
 
 async def test_indicadores_devolvem_o_payload_do_servico(client, stub_service):

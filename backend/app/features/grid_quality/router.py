@@ -4,7 +4,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 
-from app.features.grid_quality.dependencies import GridQualitySvc
+from app.features.grid_quality.continuity_schemas import ContinuitySnapshotDTO
+from app.features.grid_quality.dependencies import ContinuitySvc, GridQualitySvc
 from app.features.grid_quality.schemas import (
     FeederRankingDTO,
     FeederTimeSeriesDTO,
@@ -102,3 +103,32 @@ async def get_feeder_history(
         Série histórica do alimentador.
     """
     return await service.get_feeder_history(id_alimentador, meses)
+
+
+@router.get(
+    "/continuity",
+    response_model=ContinuitySnapshotDTO,
+    summary="Continuidade: período B (últimos 12 meses) contra A (primeiros 12)",
+    description=(
+        "KPIs, evento extremo, DEC por município, maiores alimentadores em UC-horas, causas e tipos. "
+        "O mês do evento (UC-horas acima de 3x a mediana mensal da rede) sai dos agregados se incluir_evento=false."
+    ),
+)
+async def get_continuity(
+    service: ContinuitySvc,
+    _user: RequireOperacao,
+    municipio: Annotated[str | None, Query(description="Nome do município; vazio traz a rede inteira.")] = None,
+    incluir_evento: Annotated[bool, Query(description="Inclui o mês do evento extremo nos agregados.")] = True,
+) -> ContinuitySnapshotDTO:
+    """Devolve o snapshot de Continuidade do escopo informado.
+
+    Args:
+        service: Serviço de Continuidade injetado.
+        _user: Usuário autorizado (perfis de operação); só valida o acesso.
+        municipio: Município do escopo; sem valor usa a rede inteira.
+        incluir_evento: Se falso, remove o mês do evento dos períodos A e B.
+
+    Returns:
+        KPIs, evento, municípios, alimentadores, causas e tipos.
+    """
+    return await service.get_snapshot(municipio, incluir_evento)
