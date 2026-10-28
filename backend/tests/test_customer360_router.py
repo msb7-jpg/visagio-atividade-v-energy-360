@@ -128,15 +128,16 @@ async def test_requires_authentication(client, endpoint):
     assert response.status_code == 401
 
 
-async def test_operation_profile_is_forbidden(client):
-    headers = await login(client, "operacao@venergy.com")
-    response = await client.get(f"{BASE_URL}/UC100001/summary", headers=headers)
-
-    assert response.status_code == 403
-
-
-@pytest.mark.parametrize("email", ["diretor@venergy.com", "gerente.atendimento@venergy.com", "perdas@venergy.com"])
-async def test_director_and_losses_analyst_can_access(client, email):
+@pytest.mark.parametrize(
+    "email",
+    [
+        "diretor@venergy.com",
+        "gerente.atendimento@venergy.com",
+        "perdas@venergy.com",
+        "operacao@venergy.com",
+    ],
+)
+async def test_authorized_profiles_can_access(client, email):
     headers = await login(client, email)
     response = await client.get(f"{BASE_URL}/UC100001/summary", headers=headers)
 

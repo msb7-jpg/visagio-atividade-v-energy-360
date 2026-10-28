@@ -16,7 +16,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   {
     label: 'Visão 360 da UC',
     path: '/customers',
-    roles: ['diretor', 'gerente_atendimento', 'atendente', 'gerente_perdas'],
+    roles: ['diretor', 'gerente_atendimento', 'atendente', 'gerente_perdas', 'gerente_operacao'],
     icon: UserSearch
   }
 ]

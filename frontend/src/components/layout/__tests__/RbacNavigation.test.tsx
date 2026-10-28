@@ -24,7 +24,7 @@ describe('RBAC da navegação', () => {
   it.each([
     ['atendente', ['Visão 360 da UC']],
     ['gerente_atendimento', ['Visão 360 da UC']],
-    ['gerente_operacao', ['Qualidade da Rede']],
+    ['gerente_operacao', ['Qualidade da Rede', 'Visão 360 da UC']],
     ['gerente_perdas', ['Gestão de Perdas', 'Visão 360 da UC']],
     ['diretor', ['Painel', 'Inteligência Comercial', 'Gestão de Perdas', 'Qualidade da Rede', 'Visão 360 da UC']],
     ['papel_desconhecido', []]

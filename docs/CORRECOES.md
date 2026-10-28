@@ -28,6 +28,11 @@
 
 - [ ] 🟡 **Volume da Gold diferente do texto do case.** A energia faturada cai **5,1%** entre jul/22–jun/23 e jul/25–jun/26, e o case fala em "quase 4%". A receita bate (+8,0%). Sem as 3.510 UCs com painel solar, o volume fica estável (−0,2%): a queda inteira vem da geração solar. Confirmar se a diferença vem da limpeza ou é só arredondamento da fala do diretor, e registrar como suposição no README.
 
+- [ ] ⚪ **Bairros com hífen suave (U+00AD) na `dim_unidade_consumidora`.** Dois bairros (56 UCs) trazem o caractere invisível no lugar do acento: `BRASA<U+00AD>LIA TEIMOSA` e `SA<U+00AD>TIO DOS PINTOS` (grafias certas: `BRASILIA TEIMOSA` e `SITIO DOS PINTOS`).
+  - **Impacto:** o mesmo bairro aparece com duas grafias; pesa no filtro de bairro da Continuidade e na tabela de clientes mais afetados.
+  - **Evidência:** `SELECT DISTINCT bairro FROM dim_unidade_consumidora WHERE bairro LIKE '%' || char(173) || '%'` (descoberto no ranking de clientes do ALM-REC-008).
+  - **Correção sugerida:** remover U+00AD na normalização de texto da Silver (ADR-009).
+
 ## 2. Diagnóstico da receita (Renan e Célio)
 
 - [ ] 🔴 **`docs/DIAGNOSTICO_RECEITA.md` ainda é um esqueleto,** com os números `[a preencher]`. É entregável obrigatório do case (seção 5.4): explicar a variação, sustentar as causas com dados e terminar em recomendações com ordem de grandeza do impacto.
