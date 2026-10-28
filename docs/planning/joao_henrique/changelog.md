@@ -221,7 +221,7 @@
 - **Autor:** Joao Henrique
 - **O que foi feito:**
   - `ROADMAP.md`: Fatia 06 com "série 48m"; matriz de dependência de RBAC passou a citar os grupos reais de `role_groups.py` e os aliases `Require*` de `dependencies.py` (sem `UserRole.ATENDIMENTO`, `DIRETORIA` e `ADMIN`, que não existem); registrado que `CUSTOMER360_ACCESS` inclui `gerente_operacao`, a pedido do Bernardo, além de diretor, gerente_atendimento, atendente e gerente_perdas.
-  - `DECISOES.md`: ADR-010 (RBAC), sem conflito com os ADRs existentes (001 a 009, de Ryei e Renan).
+  - `DECISOES.md`: ADR-024 (RBAC). Foi escrito como ADR-010 e renumerado em 28/10, porque o Painel do Diretor (Bernardo) usa ADR-010 a ADR-016 e a Visão 360 usa ADR-017 a ADR-023.
   - `qualidade_rede_rbac.md` e `plano_frontend_fatia_06.md`: Gold da Fatia 02 mesclada (PR #38), `fato_ocorrencias_rede` entregue e `v_energy.db` real recebido; o item "tipos de ocorrência" virou resolvido. Entradas antigas deste changelog ficam como histórico da época.
   - Validação com o banco real iniciada: 5.856 linhas em `fato_qualidade_alimentador` e 180.000 em `fato_ocorrencias_rede`.
 - **Pendências:** a aba Continuidade ainda usa dados de exemplo; a troca do mock pelo banco real é a tarefa seguinte e atualizará a entrada de 27/10.

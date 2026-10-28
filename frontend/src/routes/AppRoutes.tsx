@@ -7,7 +7,7 @@ import { NAV_ITEMS } from '@/components/layout/navItems'
 import { ProtectedRoute } from './ProtectedRoute'
 import { homeRouteFor } from './homeRoute'
 
-const DashboardPage = lazy(() => import('@/features/auth/components/DashboardPage').then((module) => ({ default: module.DashboardPage })))
+const ExecutiveDashboardPage = lazy(() => import('@/features/executive_dashboard/components/ExecutiveDashboardPage').then((module) => ({ default: module.ExecutiveDashboardPage })))
 const LossManagementPage = lazy(() => import('@/features/loss_management/components/LossManagementPage').then((module) => ({ default: module.LossManagementPage })))
 const GridQualityPage = lazy(() => import('@/features/grid_quality/components/GridQualityPage').then((module) => ({ default: module.GridQualityPage })))
 const RevenueDashboardPage = lazy(() => import('@/features/revenue/components/RevenueDashboardPage').then((module) => ({ default: module.RevenueDashboardPage })))
@@ -36,7 +36,7 @@ export function AppRouteTree() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route element={<ProtectedRoute allowedRoles={rolesOf('/dashboard')} />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<ExecutiveDashboardPage />} />
           </Route>
           <Route element={<ProtectedRoute allowedRoles={rolesOf('/losses')} />}>
             <Route path="/losses" element={<LossManagementPage />} />
