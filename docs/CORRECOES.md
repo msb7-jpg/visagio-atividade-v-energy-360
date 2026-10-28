@@ -26,22 +26,6 @@
   - **Correção:** na Silver, tratar `9999-12-31` como data ausente. `EM ABERTO` vira `VENCIDA` quando o vencimento é anterior à data de corte da base, e `ABERTA` quando ainda está no prazo. Depois, regerar o `v_energy.db`.
   - **Conferência:** `SELECT count(*) FROM fato_faturamento WHERE data_pagamento = '9999-12-31'` deve voltar 0, e `status_pagamento` deve ter `ABERTA` nas faturas com vencimento depois de jun/2026.
 
-- [ ] 🔴 **Bairros com o nome corrompido na Gold.** 61 bairros de `dim_unidade_consumidora` chegam com erro de acentuação, e o mesmo bairro aparece com dois nomes. Exemplos:
-
-  | Bairro | Nome correto | Nome corrompido |
-  |---|---|---|
-  | Brasília Teimosa (Recife) | 2.075 UCs | 55 UCs (`BRASA\xadLIA TEIMOSA`) |
-  | Águas Compridas (Olinda) | 224 UCs | 12 UCs (`A\x81GUAS COMPRIDAS`) |
-  | Várzea (Recife) | 98 UCs | 5 UCs (`VA¡RZEA`) |
-  | Jordão (Recife) | 78 UCs | 2 UCs (`JORDA£O`) |
-  | Graças (Recife) | 52 UCs | 1 UC (`GRAA§AS`) |
-
-  - **Tamanho:** 348 UCs (0,8% da base) em bairros "fantasmas", em 12 municípios.
-  - **Causa:** o arquivo bruto `unidades_consumidoras.csv` mistura textos certos (`Jordão`) com textos em UTF-8 lido como Latin-1 (`Jardim JordÃ£o`). A Silver tira os acentos e põe em maiúsculas (ADR-009), mas não conserta essa codificação antes.
-  - **Impacto:** o ranking da Receita, o filtro de bairro, a Visão 360 e os números por bairro do diagnóstico dividem esses bairros em dois.
-  - **Correção:** na Silver, antes de tirar os acentos, reverter a codificação quando o texto tiver esse padrão (ex.: `texto.encode("latin-1").decode("utf-8")` com tratamento de erro, ou a biblioteca `ftfy`). Depois, regerar o `v_energy.db`. Aplicar também a `municipio`, `logradouro` e `nome_titular`.
-  - **Conferência:** `SELECT bairro FROM dim_unidade_consumidora WHERE bairro GLOB '*[^ -~]*'` deve voltar vazio.
-
 - [ ] 🟡 **Volume da Gold diferente do texto do case.** A energia faturada cai **5,1%** entre jul/22–jun/23 e jul/25–jun/26, e o case fala em "quase 4%". A receita bate (+8,0%). Sem as 3.510 UCs com painel solar, o volume fica estável (−0,2%): a queda inteira vem da geração solar. Confirmar se a diferença vem da limpeza ou é só arredondamento da fala do diretor, e registrar como suposição no README.
 
 ## 2. Diagnóstico da receita (Renan e Célio)
@@ -98,3 +82,4 @@
 - [x] Visão 360: o resumo de interrupções dizia "teve 50" em 33 UCs com mais de 50 (agora usa o total real), e o diagnóstico do mês sem leitura apontava o mês errado. Corrigido na branch `feat/fatia-03-visao360-gold` em 2026-10-28.
 - [x] Painel do Diretor: conflito com a `main` depois do merge do #34 (`navItems.ts` e `RbacNavigation.test.tsx`). Menu do diretor: Painel, Inteligência Comercial, Gestão de Perdas, Qualidade da Rede, Visão 360. Resolvido na branch `feat/painel-diretor` em 2026-10-28.
 - [x] Painel do Diretor: lentidão (de 11 s para 0,01 s) e inadimplência marcada como "piorou" por +0,05 ponto percentual (ADR-011 e ADR-016), em 2026-10-28.
+- [x] Bairros com o nome corrompido na Gold: UDF `fix_mojibake` implementado na Silver (`fatia01_silver.ipynb`) para reverter dupla codificação UTF-8/Latin-1 antes da remoção de acentos em `bairro`, `municipio`, `logradouro` e `nome_titular`. 61 bairros (348 UCs) unificados; conferência GLOB `*[^ -~]*` validada com zero falhas; testes de qualidade adicionados em `fatia01_testes_qualidade.ipynb` e ADR-009 atualizada. Resolvido na branch `feat/fatia-01-cadastro` em 2026-10-28.
