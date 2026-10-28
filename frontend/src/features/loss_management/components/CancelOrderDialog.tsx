@@ -52,7 +52,7 @@ export function CancelOrderDialog({ order, onClose }: CancelOrderDialogProps) {
         <AlertDialogHeader>
           <AlertDialogTitle>Cancelar a ordem {formatOrderCode(order)}?</AlertDialogTitle>
           <AlertDialogDescription>
-            Deseja realmente cancelar esta inspeção? A UC {order.id_uc} volta para a fila. Justifique o cancelamento.
+            Deseja realmente cancelar esta inspeção? A UC {order.id_uc} volta para a fila e o score é recalculado no próximo processamento. Justifique o cancelamento.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="flex flex-col gap-1.5">

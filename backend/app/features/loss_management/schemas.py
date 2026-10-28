@@ -1,9 +1,15 @@
 """Schemas Pydantic da gestão de perdas não técnicas e ordens de inspeção."""
 
-from datetime import datetime
+import re
+from datetime import UTC, date, datetime
 from enum import StrEnum
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+INSPECTOR_CODE = re.compile(r"INSP-(\d{3})")
+FIRST_INSPECTOR_NUMBER = 1
+LAST_INSPECTOR_NUMBER = 40
 
 
 class InspectionStatus(StrEnum):
@@ -13,6 +19,16 @@ class InspectionStatus(StrEnum):
     PENDENTE = "pendente"
     CONCLUIDA = "concluida"
     CANCELADA = "cancelada"
+
+
+class CancellationReason(StrEnum):
+    """Lista fechada de motivos para cancelar uma ordem (a única fonte; o rótulo em pt-BR fica no frontend)."""
+
+    CLIENTE_REGULARIZOU = "cliente_regularizou"
+    ORDEM_DUPLICADA = "ordem_duplicada"
+    ENDERECO_NAO_LOCALIZADO = "endereco_nao_localizado"
+    REPRIORIZACAO_EQUIPE = "repriorizacao_equipe"
+    OUTRO = "outro"
 
 
 class SuspicionReason(StrEnum):
@@ -101,14 +117,59 @@ class InspectionOrderCreateDTO(BaseModel):
     fiscal_responsavel: str | None = Field(default=None, max_length=120)
 
 
+def normalize_inspector_code(raw: str) -> str:
+    """Padroniza e valida o código do inspetor (INSP-001 a INSP-040).
+
+    Raises:
+        ValueError: Se o código não estiver no formato ou fora da faixa de inspetores.
+    """
+    code = raw.strip().upper()
+    code_match = INSPECTOR_CODE.fullmatch(code)
+    if code_match is None or not FIRST_INSPECTOR_NUMBER <= int(code_match.group(1)) <= LAST_INSPECTOR_NUMBER:
+        raise ValueError(f"Inspetor '{raw.strip()}' inválido: use um código de INSP-001 a INSP-040.")
+    return code
+
+
+def ensure_not_future_date(inspection_date: date) -> date:
+    """Garante que a data da inspeção não é posterior a hoje (UTC, o mesmo relógio de `criado_em`).
+
+    Raises:
+        ValueError: Se a data for futura.
+    """
+    if inspection_date > datetime.now(UTC).date():
+        raise ValueError("A data da inspeção não pode ser futura.")
+    return inspection_date
+
+
 class InspectionOrderUpdateDTO(BaseModel):
     status: InspectionStatus
     fiscal_responsavel: str | None = Field(default=None, max_length=120)
+    inspetor: str | None = Field(default=None, description="Código do inspetor, de INSP-001 a INSP-040")
+    data_inspecao: date | None = Field(default=None, description="Data em que a inspeção foi feita (não futura)")
     irregularidade_constatada: bool | None = None
     tipo_irregularidade: str | None = Field(default=None, max_length=80)
     kwh_recuperado: float | None = Field(default=None, ge=0)
     numero_toi: str | None = Field(default=None, max_length=40)
     justificativa_cancelamento: str | None = Field(default=None, max_length=500)
+    motivo_cancelamento: CancellationReason | None = Field(
+        default=None, description="Obrigatório ao cancelar; vem da lista fechada de motivos"
+    )
+
+    @field_validator("inspetor")
+    @classmethod
+    def _validate_inspector(cls, inspector: str | None) -> str | None:
+        return None if inspector is None else normalize_inspector_code(inspector)
+
+    @field_validator("data_inspecao")
+    @classmethod
+    def _validate_inspection_date(cls, inspection_date: date | None) -> date | None:
+        return None if inspection_date is None else ensure_not_future_date(inspection_date)
+
+    @model_validator(mode="after")
+    def _require_cancellation_reason(self) -> Self:
+        if self.status == InspectionStatus.CANCELADA and self.motivo_cancelamento is None:
+            raise ValueError("Informe o motivo do cancelamento.")
+        return self
 
 
 class InspectionOrderDTO(BaseModel):
@@ -120,11 +181,14 @@ class InspectionOrderDTO(BaseModel):
     motivo: str | None
     kwh_estimado: float
     fiscal_responsavel: str | None
+    inspetor: str | None
+    data_inspecao: date | None
     irregularidade_constatada: bool | None
     tipo_irregularidade: str | None
     kwh_recuperado: float | None
     numero_toi: str | None
     justificativa_cancelamento: str | None
+    motivo_cancelamento: CancellationReason | None
     criado_por: str
     criado_em: datetime
     atualizado_em: datetime

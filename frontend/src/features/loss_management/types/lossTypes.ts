@@ -94,6 +94,14 @@ export interface BatchResult {
   failed: BatchFailure[]
 }
 
+/** Motivos fechados de cancelamento aceitos pela API (os rótulos em pt-BR entram no passo 9). */
+export type CancellationReason =
+  | 'cliente_regularizou'
+  | 'ordem_duplicada'
+  | 'endereco_nao_localizado'
+  | 'repriorizacao_equipe'
+  | 'outro'
+
 /** Ordem de inspeção (`GET /losses/inspections`). */
 export interface InspectionOrder {
   id_inspecao: number
@@ -102,11 +110,16 @@ export interface InspectionOrder {
   motivo: string | null
   kwh_estimado: number
   fiscal_responsavel: string | null
+  /** Código INSP-001 a INSP-040; a API sempre envia, nulo nas ordens anteriores à coluna. */
+  inspetor?: string | null
+  /** Data da inspeção (AAAA-MM-DD); nula até o resultado ser registrado. */
+  data_inspecao?: string | null
   irregularidade_constatada: boolean | null
   tipo_irregularidade: string | null
   kwh_recuperado: number | null
   numero_toi: string | null
   justificativa_cancelamento: string | null
+  motivo_cancelamento?: CancellationReason | null
   criado_por: string
   criado_em: string
   atualizado_em: string
@@ -122,11 +135,15 @@ export interface InspectionOrderCreate {
 export interface InspectionOrderUpdate {
   status: InspectionStatus
   fiscal_responsavel?: string
+  inspetor?: string
+  data_inspecao?: string
   irregularidade_constatada?: boolean
   tipo_irregularidade?: string
   kwh_recuperado?: number
   numero_toi?: string
   justificativa_cancelamento?: string
+  /** A API exige este campo ao cancelar (422 sem ele); o diálogo passa a enviá-lo no passo 9. */
+  motivo_cancelamento?: CancellationReason
 }
 
 /** Linha da planilha de campo que não foi conciliada. */

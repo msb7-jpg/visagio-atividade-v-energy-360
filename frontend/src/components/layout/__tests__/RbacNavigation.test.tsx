@@ -25,8 +25,8 @@ describe('RBAC da navegação', () => {
     ['atendente', ['Visão 360 da UC']],
     ['gerente_atendimento', ['Visão 360 da UC']],
     ['gerente_operacao', ['Painel', 'Qualidade da Rede']],
-    ['gerente_perdas', ['Painel', 'Visão 360 da UC', 'Gestão de Perdas']],
-    ['diretor', ['Painel', 'Visão 360 da UC', 'Gestão de Perdas', 'Qualidade da Rede']],
+    ['gerente_perdas', ['Painel', 'Visão 360 da UC', 'Fila de Inspeção']],
+    ['diretor', ['Painel', 'Visão 360 da UC', 'Fila de Inspeção', 'Qualidade da Rede']],
     ['papel_desconhecido', []]
   ])('%s vê apenas os itens permitidos', (role, labels) => {
     expect(navItemsFor(role).map((item) => item.label)).toEqual(labels)
@@ -36,7 +36,7 @@ describe('RBAC da navegação', () => {
     renderSidebarAs('atendente')
     expect(screen.getByRole('link', { name: 'Visão 360 da UC' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Qualidade da Rede' })).toBeNull()
-    expect(screen.queryByRole('link', { name: 'Gestão de Perdas' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Fila de Inspeção' })).toBeNull()
   })
 
   it.each([

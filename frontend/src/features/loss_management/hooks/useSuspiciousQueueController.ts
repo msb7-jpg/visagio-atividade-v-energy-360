@@ -6,6 +6,7 @@ import {
   useSuspiciousUnitsQuery
 } from '@/features/loss_management/hooks/useLossQueries'
 import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
+import { hasActiveFilters } from '@/features/loss_management/utils/queueFilters'
 
 /**
  * Controlador headless da Fila de Inspeção: filtros, fila, seleção em massa, resumo dos cartões e diálogo de lote.
@@ -31,6 +32,10 @@ export function useSuspiciousQueueController() {
   return {
     filters,
     setFilters,
+    clearFilters: () => setFilters({}),
+    hasActiveFilters: hasActiveFilters(filters),
+    retryQueue: () => void queueQuery.refetch(),
+    retrySummary: () => void summaryQuery.refetch(),
     filterOptions: filterOptionsQuery.data,
     units,
     total: queueQuery.data?.total,

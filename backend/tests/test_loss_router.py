@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
@@ -124,6 +126,35 @@ async def test_role_without_permission_is_forbidden(client):
     assert response.status_code == 403
 
 
+@pytest.mark.parametrize(
+    "path",
+    ["/suspicious-units", "/queue-summary", "/queue-filters", "/inspections", "/inspections/export"],
+)
+async def test_director_can_read_every_loss_endpoint(client, path):
+    headers = await auth_headers(client, "diretor@venergy.com")
+
+    response = await client.get(f"{BASE_URL}{path}", headers=headers)
+
+    assert response.status_code == 200
+
+
+async def test_director_cannot_create_or_update_orders(client):
+    director = await auth_headers(client, "diretor@venergy.com")
+    manager = await auth_headers(client, "perdas@venergy.com")
+    created = await client.post(f"{BASE_URL}/inspections", headers=manager, json={"id_uc": "UC_FRAUDE"})
+    id_inspecao = created.json()["id_inspecao"]
+
+    create_response = await client.post(f"{BASE_URL}/inspections", headers=director, json={"id_uc": "UC_ZERADA"})
+    update_response = await client.patch(
+        f"{BASE_URL}/inspections/{id_inspecao}", headers=director, json={"status": "pendente"}
+    )
+
+    assert create_response.status_code == 403
+    assert update_response.status_code == 403
+    orders = (await client.get(f"{BASE_URL}/inspections", headers=manager)).json()
+    assert [(order["id_uc"], order["status"]) for order in orders] == [("UC_FRAUDE", "gerada")]
+
+
 async def test_inspection_lifecycle(client):
     headers = await auth_headers(client, "perdas@venergy.com")
 
@@ -199,26 +230,90 @@ async def test_registered_unit_outside_queue_gets_manual_order_with_zero_kwh(cli
     assert created.json()["kwh_estimado"] == pytest.approx(0.0)
 
 
-async def test_cancel_requires_justification_and_unknown_order_is_404(client):
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"status": "cancelada"},
+        {"status": "cancelada", "justificativa_cancelamento": "Cliente regularizou"},
+        {"status": "cancelada", "motivo_cancelamento": "porque sim"},
+        {"status": "cancelada", "motivo_cancelamento": ""},
+    ],
+)
+async def test_cancel_without_a_listed_reason_is_422_and_keeps_the_order_open(client, payload):
     headers = await auth_headers(client, "perdas@venergy.com")
     created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_ZERADA"})
     order_url = f"{BASE_URL}/inspections/{created.json()['id_inspecao']}"
 
-    without_reason = await client.patch(order_url, headers=headers, json={"status": "cancelada"})
+    response = await client.patch(order_url, headers=headers, json=payload)
+
+    assert response.status_code == 422
+    orders = (await client.get(f"{BASE_URL}/inspections", headers=headers)).json()
+    assert [order["status"] for order in orders] == ["gerada"]
+
+
+async def test_cancel_with_listed_reason_records_it_and_unknown_order_is_404(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_ZERADA"})
+    order_url = f"{BASE_URL}/inspections/{created.json()['id_inspecao']}"
+
     cancelled = await client.patch(
-        order_url, headers=headers, json={"status": "cancelada", "justificativa_cancelamento": "Cliente regularizou"}
+        order_url, headers=headers, json={"status": "cancelada", "motivo_cancelamento": "cliente_regularizou"}
     )
     missing = await client.patch(f"{BASE_URL}/inspections/9999", headers=headers, json={"status": "pendente"})
 
-    assert without_reason.status_code == 400
+    assert cancelled.status_code == 200
     assert cancelled.json()["status"] == "cancelada"
+    assert cancelled.json()["motivo_cancelamento"] == "cliente_regularizou"
     assert missing.status_code == 404
+
+
+async def test_result_records_inspector_and_inspection_date(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+    order_url = f"{BASE_URL}/inspections/{created.json()['id_inspecao']}"
+    await client.patch(order_url, headers=headers, json={"status": "pendente"})
+    result = {
+        "status": "concluida",
+        "irregularidade_constatada": True,
+        "kwh_recuperado": 120.5,
+        "inspetor": "INSP-007",
+        "data_inspecao": "2026-10-20",
+    }
+
+    response = await client.patch(order_url, headers=headers, json=result)
+
+    assert response.status_code == 200
+    assert (response.json()["inspetor"], response.json()["data_inspecao"]) == ("INSP-007", "2026-10-20")
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("inspetor", "INSP-041"),
+        ("inspetor", "INSP-000"),
+        ("inspetor", "Maria"),
+        ("data_inspecao", (date.today() + timedelta(days=3)).isoformat()),
+    ],
+)
+async def test_result_with_invalid_inspector_or_future_date_is_422(client, field, value):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+    order_url = f"{BASE_URL}/inspections/{created.json()['id_inspecao']}"
+    await client.patch(order_url, headers=headers, json={"status": "pendente"})
+    result = {"status": "concluida", "irregularidade_constatada": False, field: value}
+
+    response = await client.patch(order_url, headers=headers, json=result)
+
+    assert response.status_code == 422
+    assert "Value error" in response.text
+    orders = (await client.get(f"{BASE_URL}/inspections", headers=headers)).json()
+    assert [order["status"] for order in orders] == ["pendente"]
 
 
 async def test_cancelled_order_returns_unit_to_queue(client):
     headers = await auth_headers(client, "perdas@venergy.com")
     created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_ZERADA"})
-    cancel = {"status": "cancelada", "justificativa_cancelamento": "Equipe realocada"}
+    cancel = {"status": "cancelada", "motivo_cancelamento": "repriorizacao_equipe"}
     await client.patch(f"{BASE_URL}/inspections/{created.json()['id_inspecao']}", headers=headers, json=cancel)
 
     queue = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)

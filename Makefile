@@ -2,7 +2,7 @@
 # V-Energy Grid 360 -- Monorepo Management Makefile
 # ==============================================================================
 
-.PHONY: help setup-all data-unzip run-backend run-frontend test-all lint-all lint-backend lint-frontend
+.PHONY: help setup-all data-unzip db-upgrade run-backend run-frontend test-all lint-all lint-backend lint-frontend
 
 help:
 	@echo "======================================================================"
@@ -10,6 +10,7 @@ help:
 	@echo "======================================================================"
 	@echo "  make setup-all      - Configura ambientes (uv no backend, bun no frontend)"
 	@echo "  make data-unzip     - Extrai as bases de dados para data/landing/"
+	@echo "  make db-upgrade     - Adiciona ao banco existente as colunas novas de ordem_inspecao (idempotente)"
 	@echo "  make run-backend    - Inicia API FastAPI com Agente de IA integrado (:8000)"
 	@echo "  make run-frontend   - Inicia Portal Web React 19 com Vite (:5173)"
 	@echo "  make test-all       - Executa testes no backend (pytest) e frontend (vitest)"
@@ -27,6 +28,9 @@ setup-all:
 
 data-unzip:
 	@bash scripts/data_sync.sh
+
+db-upgrade:
+	@cd backend && uv run python -m app.features.loss_management.schema_upgrade
 
 run-backend:
 	@cd backend && uv run uvicorn app.main:app --reload --port 8000

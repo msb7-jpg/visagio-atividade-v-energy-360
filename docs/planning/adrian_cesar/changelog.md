@@ -544,3 +544,44 @@
 - **Backend (removido no mesmo dia, depois de conferir que ninguém mais usava):** `score_minimo` saiu de `SuspiciousUnitsFilterDTO` e de `GET /losses/suspicious-units` (a documentação OpenAPI foi ajustada); `min_score` saiu de `rank_suspicious_units` e do `LossService.list_suspicious_units`. O `score` de cada UC continua calculado sobre todas as candidatas, antes do filtro de motivo. Um cliente antigo que ainda mande `?score_minimo=` não recebe erro: o parâmetro é ignorado.
   - Testes removidos: corte por score mínimo no ranking e validação de `score_minimo` acima de 100. Os casos de motivo no serviço e na rota ficaram, sem o `score_minimo`.
 - **Validação:** `make lint-all` exit 0; `make test-all` exit 0: backend **541 passed** (543 antes, menos os 2 testes removidos), frontend **228 passed** (1 novo). **Não conferido no navegador.**
+
+### [2026-10-28] - Fila de Inspeção: passos 1 e 2 do raio-x (textos, formatação, kWh) e P5
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Menu "Gestão de Perdas" renomeado para "Fila de Inspeção".
+  - Município, classe e tipo de irregularidade exibidos com acento e sem caixa alta (`utils/textFormat.ts`); o valor enviado à API continua o do banco.
+  - Botão "Limpar filtros" e estado vazio "Nenhuma UC com esses filtros." com ação de limpar.
+  - Toast "N ordens geradas." ao concluir o lote sem falhas; texto do cancelamento informa que o score é recalculado no próximo processamento.
+  - `ErrorState` com "Tentar novamente" na fila e no resumo dos cartões.
+  - Campo de kWh do resultado passou a texto com `inputMode="decimal"`; `parseKwh` aceita "1.240", "1240,5" e "1.240,5" e rejeita entradas ambíguas. Mensagem: "Informe o kWh recuperado (número maior que zero)."
+  - P5: removido o botão "Exportar fila" da aba Fila; "Exportar planilha de campo" permanece na aba Ordens.
+- **Fora desta entrega:** passo 3 em diante (RBAC de escrita, novas colunas, detalhe da UC) e atualização do protótipo.
+- **Validação de Testes:**
+  - `make lint-all` sem erros; `make test-all`: 541 passed (backend) e 268 passed (frontend).
+
+### [2026-10-28] - Fila de Inspeção: passo 3, escrita só para o gerente de perdas (P10)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Backend: novo grupo `PERDAS_WRITE` (só `gerente_perdas`) em `shared/role_groups.py`; `POST /inspections`, `PATCH /inspections/{id}` e `POST /inspections/upload` passam a exigi-lo (403 para `diretor`). Os `GET`, inclusive a exportação da planilha de campo, seguem com `PERDAS_ACCESS`.
+  - Frontend: hook `useCanWriteLosses`; para quem só consulta somem "Gerar N ordens", "Importar resultados de campo" e as ações dos cartões (enviar a campo, registrar resultado, cancelar). Seleção de UCs e cartões de resumo continuam visíveis.
+- **Validação de Testes:**
+  - Pytest: `diretor` lê os 5 `GET`, recebe 403 em `POST`/`PATCH`/upload e a ordem existente não muda. Vitest: hook por papel, botões escondidos para `diretor` e presentes para `gerente_perdas`.
+
+### [2026-10-28] - Fila de Inspeção: passo 4 reduzido, colunas novas em `ordem_inspecao` (P3)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Banco: `ordem_inspecao` ganhou 3 colunas anuláveis: `data_inspecao` (data), `inspetor` (código `INSP-001` a `INSP-040`) e `motivo_cancelamento` (lista fechada). As 7 ordens existentes seguem válidas, com as colunas novas nulas. Sem `executar_ate`, distribuição e observações (fora da entrega).
+  - Migração: o projeto não usa Alembic e não foi instalado. Novo `schema_upgrade.py`, idempotente (`ALTER TABLE ... ADD COLUMN` só se a coluna não existir), chamado na subida da API (`main.py`) e por `make db-upgrade`. Passo para bancos já criados documentado em `backend/README.md`.
+  - Motivos de cancelamento (enum `CancellationReason`, única fonte, vinda do protótipo): `cliente_regularizou`, `ordem_duplicada`, `endereco_nao_localizado`, `repriorizacao_equipe`, `outro`. Os rótulos em pt-BR ficam para o passo 9.
+  - Registrar resultado e importar planilha agora gravam `data_inspecao` e `inspetor` (antes a data era validada e descartada). O servidor rejeita inspetor fora de `INSP-001` a `INSP-040` e data futura (422 na API; na planilha, a linha é rejeitada com mensagem em pt-BR). O código do inspetor é normalizado (`insp-001` vira `INSP-001`).
+  - Cancelar exige `motivo_cancelamento` da lista (422 se faltar ou for outro valor). A `justificativa_cancelamento` em texto livre continua aceita, mas deixou de ser obrigatória.
+  - Planilha de campo: a coluna `inspetor` passou a gravar em `inspetor` (antes ia para `fiscal_responsavel`); a planilha exportada ganhou a coluna `inspetor`, em branco.
+  - Permissões do passo 3 mantidas: só `gerente_perdas` escreve; `diretor` segue com 403.
+  - Frontend: só tipos em `lossTypes.ts` (`CancellationReason` e campos novos opcionais). Nenhuma interface alterada.
+- **Dificuldades / Desafios:**
+  - O `uvicorn --reload` que estava rodando recarregou ao editar o `main.py` e aplicou a atualização no `v_energy.db` real, sem comando manual. Conferido depois: as 7 ordens seguem `gerada`, as 3 colunas estão nulas e o índice único parcial está intacto. O script foi validado também numa cópia do banco devolvida ao formato antigo (1ª execução adiciona as colunas, 2ª não faz nada, 7 ordens preservadas).
+  - **Cancelar pela tela retorna 422 até o passo 9**: o `CancelOrderDialog` ainda envia só a justificativa em texto livre, e o servidor agora exige o motivo da lista.
+- **Fora desta entrega:** passo 5 em diante (diálogos com lista de inspetor e motivo, endpoint de inspetores, detalhe da UC).
+- **Validação de Testes:**
+  - Pytest novos/ajustados: migração roda duas vezes e preserva as 7 ordens; resultado grava data e inspetor; inspetor inválido e data futura retornam 422; cancelamento sem motivo ou fora da lista retorna 422; motivo válido é gravado; `diretor` segue com 403.
+  - `make lint-all` sem erros; `make test-all`: 572 passed (backend) e 278 passed (frontend); `tsc` do app sem erros. **Não conferido no navegador.**

@@ -10,6 +10,7 @@ import {
   formatInteger,
   formatPercent
 } from '@/features/loss_management/utils/lossFormatters'
+import { formatPlaceName } from '@/features/loss_management/utils/textFormat'
 
 interface PrioritizedQueueRowProps {
   unit: SuspiciousUnit
@@ -46,10 +47,10 @@ export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onTo
       <TableCell>
         <div className="flex flex-col">
           <span>{unit.bairro ?? '—'}</span>
-          <span className="text-muted-foreground text-xs">{unit.municipio ?? '—'}</span>
+          <span className="text-muted-foreground text-xs">{unit.municipio ? formatPlaceName(unit.municipio) : '—'}</span>
         </div>
       </TableCell>
-      <TableCell>{unit.classe_consumo ?? '—'}</TableCell>
+      <TableCell>{unit.classe_consumo ? formatPlaceName(unit.classe_consumo) : '—'}</TableCell>
       <TableCell><ScoreBar score={unit.score} /></TableCell>
       <TableCell>
         <div className="flex flex-col">

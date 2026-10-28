@@ -21,6 +21,7 @@ PREFILLED_COLUMNS = (
 )
 FIELD_RESULT_COLUMNS = (
     "data_inspecao",
+    "inspetor",
     "irregularidade_constatada",
     "tipo_irregularidade",
     "kwh_recuperado",

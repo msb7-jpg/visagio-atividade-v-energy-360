@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { useCanWriteLosses } from '@/features/loss_management/hooks/useCanWriteLosses'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { formatDate } from '@/features/loss_management/utils/lossFormatters'
 import {
@@ -34,7 +35,8 @@ function describeInspector(order: InspectionOrder): string {
  */
 export function OrderCard({ order, onAction }: OrderCardProps) {
   const resultSummary = summarizeFieldResult(order)
-  const actions = ACTIONS_BY_STATUS[order.status]
+  const canWrite = useCanWriteLosses()
+  const actions = canWrite ? ACTIONS_BY_STATUS[order.status] : []
 
   return (
     <li>

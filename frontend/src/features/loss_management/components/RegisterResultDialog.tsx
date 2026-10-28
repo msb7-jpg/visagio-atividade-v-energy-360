@@ -7,6 +7,7 @@ import { useResultFormController } from '@/features/loss_management/hooks/useRes
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { IRREGULARITY_TYPES } from '@/features/loss_management/utils/lossFormatters'
 import { formatOrderCode } from '@/features/loss_management/utils/orderBoard'
+import { formatIrregularityType } from '@/features/loss_management/utils/textFormat'
 
 interface FieldErrorProps {
   id: string
@@ -56,14 +57,14 @@ export function RegisterResultDialog({ order, onClose }: RegisterResultDialogPro
           <Select id="tipo-irregularidade" value={form.tipo} onChange={updateField('tipo')} disabled={!isIrregular} error={Boolean(errors.tipo)} aria-invalid={Boolean(errors.tipo)} aria-describedby="tipo-erro">
             <option value="">Selecione</option>
             {IRREGULARITY_TYPES.map((irregularityType) => (
-              <option key={irregularityType} value={irregularityType}>{irregularityType}</option>
+              <option key={irregularityType} value={irregularityType}>{formatIrregularityType(irregularityType)}</option>
             ))}
           </Select>
           <FieldError id="tipo-erro" message={errors.tipo} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="kwh-recuperado" required={isIrregular}>kWh recuperado</Label>
-          <Input id="kwh-recuperado" type="number" min={0} step="0.1" value={form.kwh} onChange={updateField('kwh')} disabled={!isIrregular} error={Boolean(errors.kwh)} aria-invalid={Boolean(errors.kwh)} aria-describedby="kwh-erro" />
+          <Input id="kwh-recuperado" type="text" inputMode="decimal" value={form.kwh} onChange={updateField('kwh')} disabled={!isIrregular} error={Boolean(errors.kwh)} aria-invalid={Boolean(errors.kwh)} aria-describedby="kwh-erro" />
           <FieldError id="kwh-erro" message={errors.kwh} />
         </div>
         <div className="flex flex-col gap-1.5">

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { DialogFooter } from '@/components/ui/dialog'
 import { ActionDialog } from '@/features/loss_management/components/ActionDialog'
@@ -39,7 +40,14 @@ export function GenerateOrdersDialog({ units: selectedUnits, summary: currentSum
 
   const handleConfirm = () => {
     const payloads = units.map((unit) => ({ id_uc: unit.id_uc, motivo: describeReasons(unit.motivos) }))
-    batchMutation.mutate(payloads, { onSuccess: (result) => (result.failed.length === 0 ? onDone() : undefined) })
+    batchMutation.mutate(payloads, {
+      onSuccess: (result) => {
+        if (result.failed.length > 0) return
+        const generatedCount = result.created.length
+        toast.success(`${generatedCount} ${ordersLabel(generatedCount)} ${generatedCount === 1 ? 'gerada' : 'geradas'}.`)
+        onDone()
+      }
+    })
   }
 
   // Com o lote em andamento o diálogo não fecha: fechar esconderia as falhas e deixaria a seleção desatualizada.

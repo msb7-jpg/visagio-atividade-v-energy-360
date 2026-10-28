@@ -15,6 +15,9 @@ import type {
 } from '@/features/loss_management/types/lossTypes'
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn() } }))
+vi.mock('@/features/auth/hooks/useAuth', () => ({
+  useAuth: () => ({ user: { role: 'gerente_perdas' } })
+}))
 
 vi.mock('@/features/loss_management/api/lossApi', () => ({
   lossApi: {

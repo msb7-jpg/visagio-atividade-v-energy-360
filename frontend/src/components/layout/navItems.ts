@@ -16,7 +16,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     roles: ['diretor', 'gerente_atendimento', 'atendente', 'gerente_perdas'],
     icon: UserSearch
   },
-  { label: 'Gestão de Perdas', path: '/losses', roles: ['diretor', 'gerente_perdas'] },
+  { label: 'Fila de Inspeção', path: '/losses', roles: ['diretor', 'gerente_perdas'] },
   { label: 'Qualidade da Rede', path: '/quality', roles: ['diretor', 'gerente_operacao'] }
 ]
 

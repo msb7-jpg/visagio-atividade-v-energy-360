@@ -1,9 +1,23 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { lossApi } from '@/features/loss_management/api/lossApi'
+import { CancelOrderDialog } from '@/features/loss_management/components/CancelOrderDialog'
 import { OrderBoard } from '@/features/loss_management/components/OrderBoard'
 import { RegisterResultDialog } from '@/features/loss_management/components/RegisterResultDialog'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
+
+vi.mock('@/features/loss_management/api/lossApi', () => ({
+  lossApi: { updateInspection: vi.fn() }
+}))
+vi.mock('@/features/auth/hooks/useAuth')
+
+function signInAs(role: string) {
+  vi.mocked(useAuth).mockReturnValue({ user: { role } } as ReturnType<typeof useAuth>)
+}
+
+beforeEach(() => signInAs('gerente_perdas'))
 
 function buildOrder(overrides: Partial<InspectionOrder>): InspectionOrder {
   return {
@@ -73,6 +87,18 @@ describe('OrderBoard', () => {
     expect(onAction).toHaveBeenCalledWith('dispatch', order)
   })
 
+  it('esconde as ações dos cartões para quem só consulta, mas mantém o resumo do resultado', () => {
+    signInAs('diretor')
+    renderBoard([
+      buildOrder({ id_inspecao: 1, status: 'gerada' }),
+      buildOrder({ id_inspecao: 2, id_uc: 'UC200', status: 'pendente' }),
+      buildOrder({ id_inspecao: 3, id_uc: 'UC300', status: 'concluida', irregularidade_constatada: false })
+    ])
+
+    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByText('UC300')).toBeInTheDocument()
+  })
+
   it('mostra um esqueleto com uma coluna por etapa enquanto carrega', () => {
     renderBoard([], { isLoading: true })
 
@@ -113,6 +139,40 @@ describe('RegisterResultDialog', () => {
     expect(kwhField).toHaveAttribute('aria-invalid', 'true')
     expect(kwhField).toHaveClass('border-destructive')
     expect(screen.getByLabelText(/Tipo de irregularidade/)).toHaveClass('border-destructive')
-    expect(document.getElementById('kwh-erro')).toHaveTextContent('maior que zero')
+    expect(document.getElementById('kwh-erro')).toHaveTextContent('Informe o kWh recuperado (número maior que zero).')
+  })
+
+  it('mostra os tipos de irregularidade com acento e sem caixa alta', async () => {
+    renderDialog()
+
+    const typeField = await screen.findByLabelText(/Tipo de irregularidade/)
+
+    expect(within(typeField).getByRole('option', { name: 'Ligação clandestina' })).toHaveValue('LIGACAO CLANDESTINA')
+    expect(within(typeField).getByRole('option', { name: 'By-pass' })).toHaveValue('BY-PASS')
+  })
+
+  it('aceita o kWh digitado como texto decimal e envia o número ao salvar', async () => {
+    vi.mocked(lossApi.updateInspection).mockResolvedValue(buildOrder({ status: 'concluida' }))
+    renderDialog()
+
+    fireEvent.change(await screen.findByLabelText(/Irregularidade constatada\?/), { target: { value: 'sim' } })
+    fireEvent.change(screen.getByLabelText(/Tipo de irregularidade/), { target: { value: 'BY-PASS' } })
+    const kwhField = screen.getByLabelText(/kWh recuperado/)
+    expect(kwhField).toHaveAttribute('type', 'text')
+    expect(kwhField).toHaveAttribute('inputmode', 'decimal')
+    fireEvent.change(kwhField, { target: { value: '1.240' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar resultado' }))
+
+    await waitFor(() => expect(lossApi.updateInspection).toHaveBeenCalledOnce())
+    expect(lossApi.updateInspection).toHaveBeenCalledWith(1, expect.objectContaining({ kwh_recuperado: 1240 }))
+    expect(document.getElementById('kwh-erro')).toBeNull()
+  })
+})
+
+describe('CancelOrderDialog', () => {
+  it('avisa que a UC volta para a fila e que o score é recalculado', () => {
+    render(<QueryClientProvider client={new QueryClient()}><CancelOrderDialog order={buildOrder({})} onClose={vi.fn()} /></QueryClientProvider>)
+
+    expect(screen.getByText(/A UC UC131844 volta para a fila e o score é recalculado no próximo processamento\./)).toBeInTheDocument()
   })
 })

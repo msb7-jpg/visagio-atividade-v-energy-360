@@ -9,15 +9,21 @@ export type FieldResultErrors = Partial<Record<'irregularidade' | 'tipo' | 'kwh'
 
 export const EMPTY_RESULT_FORM: FieldResultForm = { irregularidade: '', tipo: '', kwh: '', toi: '' }
 
+const THOUSANDS_GROUPED = /^-?\d{1,3}(\.\d{3})+(,\d+)?$/
+const PLAIN_DECIMAL = /^-?\d+([.,]\d+)?$/
+
 /**
- * Converte o texto de kWh digitado (aceita vírgula decimal) em número.
+ * Converte o texto de kWh digitado em número. Aceita "1240", "1240,5", "1240.5" e "1.240" (milhar com ponto).
  *
  * @param kwhText - Texto do campo.
  * @returns Número, ou NaN se o texto estiver vazio ou inválido.
  */
 export function parseKwh(kwhText: string): number {
-  const normalizedText = kwhText.trim().replace(',', '.')
-  return normalizedText === '' ? Number.NaN : Number(normalizedText)
+  const trimmedText = kwhText.trim()
+  if (THOUSANDS_GROUPED.test(trimmedText)) {
+    return Number(trimmedText.replaceAll('.', '').replace(',', '.'))
+  }
+  return PLAIN_DECIMAL.test(trimmedText) ? Number(trimmedText.replace(',', '.')) : Number.NaN
 }
 
 /**
@@ -36,6 +42,6 @@ export function validateResultForm(form: FieldResultForm): FieldResultErrors {
   const kwhRecovered = parseKwh(form.kwh)
   return {
     ...(form.tipo === '' ? { tipo: 'Informe o tipo de irregularidade.' } : {}),
-    ...(kwhRecovered > 0 ? {} : { kwh: 'Informe um kWh recuperado maior que zero.' })
+    ...(kwhRecovered > 0 ? {} : { kwh: 'Informe o kWh recuperado (número maior que zero).' })
   }
 }

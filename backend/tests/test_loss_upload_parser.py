@@ -1,6 +1,7 @@
 import io
 import re
 import zipfile
+from datetime import date
 
 import pytest
 from openpyxl import Workbook
@@ -95,7 +96,7 @@ def test_field_sheet_column_names_are_read_as_the_portal_columns():
         "id_inspecao",
         "id_uc",
         "data_inspecao",
-        "fiscal_responsavel",
+        "inspetor",
         "irregularidade_constatada",
         "tipo_irregularidade",
         "kwh_recuperado",
@@ -157,7 +158,9 @@ def test_external_id_is_matched_to_the_active_order_of_the_unit():
 
     update = plan.updates[5]
     assert update.status == InspectionStatus.CONCLUIDA
-    assert update.fiscal_responsavel == "INSP-028"
+    assert update.inspetor == "INSP-028"
+    assert update.data_inspecao == date(2025, 9, 25)
+    assert update.fiscal_responsavel is None
     assert update.irregularidade_constatada is True
     assert update.tipo_irregularidade == "BY-PASS"
     assert update.kwh_recuperado == pytest.approx(838.1)

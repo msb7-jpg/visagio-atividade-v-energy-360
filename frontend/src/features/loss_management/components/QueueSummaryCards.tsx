@@ -1,3 +1,4 @@
+import { ErrorState } from '@/components/feedback/ErrorState'
 import { LoadingSkeleton } from '@/components/feedback/LoadingSkeleton'
 import { CapacityCard } from '@/features/loss_management/components/CapacityCard'
 import { HitRateCard } from '@/features/loss_management/components/HitRateCard'
@@ -12,20 +13,23 @@ interface QueueSummaryCardsProps {
   isUpdating: boolean
   /** True quando a consulta do resumo falhou e não há números anteriores para mostrar. */
   isError: boolean
+  onRetry: () => void
 }
 
 /**
  * Quatro cartões do topo: capacidade, energia das selecionadas, retorno esperado e taxa histórica de acerto.
  *
- * @param props - Resumo da seleção atual, se ele está sendo atualizado e se a consulta falhou.
- * @returns Grade de cartões; esqueleto enquanto o primeiro resumo não chega, ou aviso se ele falhar.
+ * @param props - Resumo da seleção atual, se ele está sendo atualizado, se a consulta falhou e a nova tentativa.
+ * @returns Grade de cartões; esqueleto enquanto o primeiro resumo não chega, ou `ErrorState` se ele falhar.
  */
-export function QueueSummaryCards({ summary, isUpdating, isError }: QueueSummaryCardsProps) {
+export function QueueSummaryCards({ summary, isUpdating, isError, onRetry }: QueueSummaryCardsProps) {
   if (!summary) {
     return isError ? (
-      <p role="alert" className="text-destructive text-sm">
-        Não foi possível carregar o resumo da capacidade e do retorno. A fila continua disponível.
-      </p>
+      <ErrorState
+        title="Não foi possível carregar o resumo da capacidade e do retorno"
+        description="A fila continua disponível."
+        onRetry={onRetry}
+      />
     ) : (
       <LoadingSkeleton count={4} className="h-24" />
     )

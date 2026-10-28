@@ -1,10 +1,12 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
+from pydantic import ValidationError
 
 from app.features.loss_management.exceptions import InspectionConflictError
 from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.schemas import (
+    CancellationReason,
     InspectionOrderCreateDTO,
     InspectionOrderDTO,
     InspectionOrderUpdateDTO,
@@ -209,11 +211,46 @@ def test_conclusion_requires_field_result():
         validate_transition(InspectionStatus.PENDENTE, payload)
 
 
-def test_cancellation_requires_non_blank_justification():
-    payload = InspectionOrderUpdateDTO(status=InspectionStatus.CANCELADA, justificativa_cancelamento="   ")
+def test_cancellation_requires_a_reason_from_the_closed_list():
+    with pytest.raises(ValidationError, match="Informe o motivo do cancelamento"):
+        InspectionOrderUpdateDTO(status=InspectionStatus.CANCELADA, justificativa_cancelamento="Equipe realocada")
+    with pytest.raises(ValidationError):
+        InspectionOrderUpdateDTO(status=InspectionStatus.CANCELADA, motivo_cancelamento="porque sim")
 
-    with pytest.raises(BadRequestException):
-        validate_transition(InspectionStatus.GERADA, payload)
+
+def test_cancellation_with_listed_reason_is_valid_without_free_text():
+    payload = InspectionOrderUpdateDTO(
+        status=InspectionStatus.CANCELADA, motivo_cancelamento=CancellationReason.ORDEM_DUPLICADA
+    )
+
+    validate_transition(InspectionStatus.GERADA, payload)
+
+
+@pytest.mark.parametrize("code", ["INSP-000", "INSP-041", "INSP-1", "FISCAL-3", "insp 001", ""])
+def test_inspector_outside_the_roster_is_rejected(code):
+    with pytest.raises(ValidationError, match="INSP-001 a INSP-040"):
+        InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE, inspetor=code)
+
+
+def test_inspector_code_is_normalized_and_accepted_at_the_roster_edges():
+    first = InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE, inspetor=" insp-001 ")
+    last = InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE, inspetor="INSP-040")
+
+    assert (first.inspetor, last.inspetor) == ("INSP-001", "INSP-040")
+
+
+def test_future_inspection_date_is_rejected_but_today_is_accepted():
+    today = datetime.now(UTC).date()
+
+    accepted = InspectionOrderUpdateDTO(
+        status=InspectionStatus.CONCLUIDA, irregularidade_constatada=False, data_inspecao=today
+    )
+    with pytest.raises(ValidationError, match="não pode ser futura"):
+        InspectionOrderUpdateDTO(
+            status=InspectionStatus.CONCLUIDA, irregularidade_constatada=False, data_inspecao=today + timedelta(days=1)
+        )
+
+    assert accepted.data_inspecao == today
 
 
 def test_order_kwh_matches_queue_for_suspicious_unit():
@@ -297,8 +334,9 @@ async def test_create_saves_kwh_computed_by_server():
 def make_order_dto(status: InspectionStatus, **overrides: object) -> InspectionOrderDTO:
     order_fields = {
         "id_inspecao": 7, "id_uc": "UC1", "status": status, "motivo": None, "kwh_estimado": 750.0,
-        "fiscal_responsavel": None, "irregularidade_constatada": None, "tipo_irregularidade": None,
-        "kwh_recuperado": None, "numero_toi": None, "justificativa_cancelamento": None,
+        "fiscal_responsavel": None, "inspetor": None, "data_inspecao": None, "irregularidade_constatada": None,
+        "tipo_irregularidade": None, "kwh_recuperado": None, "numero_toi": None,
+        "justificativa_cancelamento": None, "motivo_cancelamento": None,
         "criado_por": "perdas@venergy.com", "criado_em": datetime(2026, 10, 20, tzinfo=UTC),
         "atualizado_em": datetime(2026, 10, 20, tzinfo=UTC),
     }
@@ -355,7 +393,9 @@ async def test_update_unknown_inspection_raises_not_found():
         (
             InspectionStatus.GERADA,
             InspectionOrderUpdateDTO(
-                status=InspectionStatus.CANCELADA, justificativa_cancelamento="Equipe realocada", kwh_recuperado=10
+                status=InspectionStatus.CANCELADA,
+                motivo_cancelamento=CancellationReason.REPRIORIZACAO_EQUIPE,
+                kwh_recuperado=10,
             ),
         ),
     ],
