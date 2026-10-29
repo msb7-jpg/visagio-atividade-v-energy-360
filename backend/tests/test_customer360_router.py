@@ -76,15 +76,6 @@ async def test_history_answers_high_bill_by_consumption(client, attendant_header
     assert body["diagnostico"]["variacao_consumo_pct"] == pytest.approx(40.0)
 
 
-async def test_history_answers_high_bill_by_tariff_flag(client, attendant_headers):
-    response = await client.get(f"{BASE_URL}/UC100004/history", headers=attendant_headers)
-
-    body = response.json()
-    assert body["diagnostico"]["tendencia_consumo"] == "ESTAVEL"
-    assert body["diagnostico"]["bandeira_mudou"] is True
-    assert {invoice["status_pagamento"] for invoice in body["faturas_em_aberto"]} == {"ABERTA", "VENCIDA"}
-
-
 async def test_events_return_feeder_quality_and_tickets(client, attendant_headers):
     response = await client.get(f"{BASE_URL}/UC100001/events", headers=attendant_headers)
 
@@ -143,32 +134,21 @@ async def test_events_of_feeder_without_quality_data_are_empty(client, attendant
     assert response.json()["qualidade_alimentador"] == []
 
 
-@pytest.mark.parametrize("endpoint", ["summary", "history", "events"])
-async def test_unknown_unit_returns_404(client, attendant_headers, endpoint):
-    response = await client.get(f"{BASE_URL}/UC999999/{endpoint}", headers=attendant_headers)
+async def test_unknown_unit_returns_404(client, attendant_headers):
+    response = await client.get(f"{BASE_URL}/UC999999/summary", headers=attendant_headers)
 
     assert response.status_code == 404
     assert response.json()["error_type"] == "CustomerNotFoundError"
 
 
-@pytest.mark.parametrize("endpoint", ["summary", "history", "events"])
-async def test_requires_authentication(client, endpoint):
-    response = await client.get(f"{BASE_URL}/UC100001/{endpoint}")
+async def test_requires_authentication(client):
+    response = await client.get(f"{BASE_URL}/UC100001/summary")
 
     assert response.status_code == 401
 
 
-@pytest.mark.parametrize(
-    "email",
-    [
-        "diretor@venergy.com",
-        "gerente.atendimento@venergy.com",
-        "perdas@venergy.com",
-        "operacao@venergy.com",
-    ],
-)
-async def test_authorized_profiles_can_access(client, email):
-    headers = await login(client, email)
+async def test_director_can_access(client):
+    headers = await login(client, "diretor@venergy.com")
     response = await client.get(f"{BASE_URL}/UC100001/summary", headers=headers)
 
     assert response.status_code == 200
@@ -188,24 +168,6 @@ async def test_missing_gold_tables_return_database_error():
 
     assert response.status_code == 500
     assert response.json()["error_type"] == "DatabaseReadError"
-
-
-async def test_history_explains_longer_billing_period(client, attendant_headers):
-    response = await client.get(f"{BASE_URL}/UC100006/history", headers=attendant_headers)
-
-    diagnosis = response.json()["diagnostico"]
-    assert diagnosis["tendencia_consumo"] == "SUBIU"
-    assert (diagnosis["dias_faturamento"], diagnosis["dias_faturamento_ano_anterior"]) == (36, 30)
-    assert diagnosis["tendencia_media_diaria"] == "ESTAVEL"
-
-
-async def test_history_returns_twelve_month_totals_and_tariff(client, attendant_headers):
-    response = await client.get(f"{BASE_URL}/UC100003/history", headers=attendant_headers)
-
-    body = response.json()
-    assert body["resumo_12_meses"]["meses_comparados"] == 12
-    assert body["resumo_12_meses"]["variacao_consumo_pct"] == pytest.approx(40.0)
-    assert body["diagnostico"]["variacao_tarifa_pct"] == pytest.approx(10.0)
 
 
 async def test_search_suggests_units_by_number_prefix(client, attendant_headers):
@@ -250,15 +212,6 @@ async def test_digits_only_number_opens_the_unit(client, attendant_headers):
 
     assert response.status_code == 200
     assert response.json()["id_uc"] == "UC100004"
-
-
-async def test_history_flags_estimated_reading_of_reference_month(client, attendant_headers):
-    estimated = await client.get(f"{BASE_URL}/UC100003/history", headers=attendant_headers)
-    real = await client.get(f"{BASE_URL}/UC100004/history", headers=attendant_headers)
-
-    assert estimated.json()["diagnostico"]["leitura_estimada"] is True
-    assert estimated.json()["meses"][-1]["tipo_leitura"] == "ESTIMADA"
-    assert real.json()["diagnostico"]["leitura_estimada"] is False
 
 
 async def test_history_reports_payment_punctuality(client, attendant_headers):

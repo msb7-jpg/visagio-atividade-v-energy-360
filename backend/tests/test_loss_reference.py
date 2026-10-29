@@ -148,7 +148,3 @@ def test_environment_variable_sets_the_reference(monkeypatch):
     monkeypatch.setenv("LOSS_REFERENCE_COMPETENCIA", "2025-08")
 
     assert Settings().loss_reference_competencia == "2025-08"
-
-
-def test_reference_is_optional():
-    assert Settings(loss_reference_competencia=None).loss_reference_competencia is None

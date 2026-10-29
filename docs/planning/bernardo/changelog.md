@@ -215,3 +215,16 @@
 - **Validação de Testes:**
   - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (655) aprovados.
   - Frontend: ESLint, Fallow (sem duplicação), Vitest (391) e build aprovados.
+
+### [2026-10-29] - Testes repetidos removidos do backend e do frontend
+- **Autor:** Bernardo H
+- **Branch:** `chore/enxuga-testes`
+- **O que foi feito:**
+  - Removidos só os casos que já estavam cobertos em outro lugar; nenhuma regra de negócio ficou sem teste. Backend de 776 para 697 casos e frontend de 556 para 539.
+  - Permissões: as rotas de Perdas e da Visão 360 exigem o perfil uma vez para o grupo inteiro de endpoints, e `test_rbac.py` já confere a matriz completa. Ficou um teste de 403 por grupo de rotas, e a matriz da Qualidade da Rede passou a cobrir só diretor, gerente de operação e atendente.
+  - Validações repetidas entre rota e serviço (motivo de cancelamento, inspetor fora da lista, UC sem cadastro, janelas sobrepostas ou invertidas, 404 sem faturamento) ficaram em uma camada só.
+  - Frontend: saíram os testes da tela que repetiam o teste do componente ou da função (diagnóstico da Visão 360, avisos da fila, cancelamento de ordem, menu por perfil já coberto por `RbacMatrix`).
+  - Também saíram os testes que conferiam a própria semente de testes e o contrato de imports da Qualidade da Rede que o import-linter já cobre.
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (697) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (539) e build aprovados.

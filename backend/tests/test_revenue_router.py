@@ -28,21 +28,6 @@ async def director_headers(client):
     return await login(client, DIRECTOR_EMAIL)
 
 
-async def test_returns_401_without_token(client):
-    response = await client.get(URL, params=WINDOWS)
-
-    assert response.status_code == 401
-
-
-@pytest.mark.parametrize("email", ["operacao@venergy.com", "atendimento@venergy.com", "perdas@venergy.com"])
-async def test_returns_403_for_profiles_other_than_director(client, email):
-    headers = await login(client, email)
-
-    response = await client.get(URL, params=WINDOWS, headers=headers)
-
-    assert response.status_code == 403
-
-
 async def test_director_gets_total_decomposition_from_seed(client, director_headers):
     response = await client.get(URL, params=WINDOWS, headers=director_headers)
 
@@ -89,14 +74,6 @@ async def test_returns_400_when_windows_overlap(client, director_headers):
     assert response.status_code == 400
 
 
-async def test_returns_400_when_window_starts_after_it_ends(client, director_headers):
-    params = {**WINDOWS, "base_inicio": "2023-06", "base_fim": "2022-07"}
-
-    response = await client.get(URL, params=params, headers=director_headers)
-
-    assert response.status_code == 400
-
-
 async def test_returns_422_when_competencia_has_wrong_format(client, director_headers):
     params = {**WINDOWS, "base_inicio": "2022-7"}
 
@@ -124,7 +101,7 @@ async def test_kpis_return_404_when_filters_match_no_billing(client, director_he
     assert response.status_code == 404
 
 
-@pytest.mark.parametrize("url", [KPIS_URL, BREAKDOWN_URL])
+@pytest.mark.parametrize("url", [URL, KPIS_URL, BREAKDOWN_URL])
 async def test_kpis_and_breakdown_require_director(client, url):
     assert (await client.get(url, params=WINDOWS)).status_code == 401
     operacao_headers = await login(client, "operacao@venergy.com")
@@ -170,14 +147,6 @@ async def test_breakdown_returns_422_for_invalid_query(client, director_headers,
     response = await client.get(BREAKDOWN_URL, params={**WINDOWS, **extra}, headers=director_headers)
 
     assert response.status_code == 422
-
-
-async def test_breakdown_returns_400_when_windows_overlap(client, director_headers):
-    params = {**WINDOWS, "atual_inicio": "2023-01", "atual_fim": "2023-12"}
-
-    response = await client.get(BREAKDOWN_URL, params=params, headers=director_headers)
-
-    assert response.status_code == 400
 
 
 async def test_history_returns_continuous_monthly_series_with_gaps_filled(client, director_headers):

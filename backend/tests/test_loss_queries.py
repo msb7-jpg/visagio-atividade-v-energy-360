@@ -49,20 +49,13 @@ def test_optional_filters_only_added_when_informed():
     windows = build_windows("2026-01")
 
     without_filters = str(suspicious_profiles_query(windows, SuspicionFilters(limiar_queda=0.5)))
-    with_filters = str(suspicious_profiles_query(windows, SuspicionFilters(limiar_queda=0.5, municipio="Recife")))
+    with_filters = str(
+        suspicious_profiles_query(windows, SuspicionFilters(limiar_queda=0.5, municipio="Recife", bairro="Boa Viagem"))
+    )
 
-    assert "dim_unidade_consumidora.municipio =" not in without_filters
-    assert "dim_unidade_consumidora.municipio =" in with_filters
-
-
-def test_bairro_filter_only_added_when_informed():
-    windows = build_windows("2026-01")
-
-    without_filters = str(suspicious_profiles_query(windows, SuspicionFilters(limiar_queda=0.5)))
-    with_filters = str(suspicious_profiles_query(windows, SuspicionFilters(limiar_queda=0.5, bairro="Boa Viagem")))
-
-    assert "dim_unidade_consumidora.bairro =" not in without_filters
-    assert "dim_unidade_consumidora.bairro =" in with_filters
+    for column in ("municipio", "bairro"):
+        assert f"dim_unidade_consumidora.{column} =" not in without_filters
+        assert f"dim_unidade_consumidora.{column} =" in with_filters
 
 
 def test_inspection_cutoff_is_first_day_of_analysis_window():

@@ -2,7 +2,7 @@ import pytest
 
 from app.features.revenue.breakdown import build_breakdown, group_key, sort_rows
 from app.features.revenue.decomposition import SegmentTotals
-from app.features.revenue.exceptions import InvalidPeriodError, RevenueDataNotFoundError
+from app.features.revenue.exceptions import RevenueDataNotFoundError
 from app.features.revenue.kpis import PeriodTotals, WindowTotals, build_kpis, kpi_value, safe_ratio
 from app.features.revenue.schemas import (
     BreakdownLevel,
@@ -159,21 +159,3 @@ async def test_service_breakdown_without_segments_raises_not_found():
 
     with pytest.raises(RevenueDataNotFoundError):
         await service.get_breakdown(BASE, CURRENT, NO_FILTERS, BreakdownQuery())
-
-
-async def test_service_kpis_without_billing_raises_not_found():
-    empty = PeriodTotals(base=window_totals(0.0, 0.0, 0, 0), current=window_totals(0.0, 0.0, 0, 0))
-    service = RevenueService(FakeRevenueRepository(totals=empty))
-
-    with pytest.raises(RevenueDataNotFoundError):
-        await service.get_kpis(BASE, CURRENT, NO_FILTERS)
-
-
-async def test_service_kpis_and_breakdown_reject_overlapping_windows():
-    overlapping = PeriodWindow(competencia_inicio="2023-01", competencia_fim="2023-12")
-    service = RevenueService(FakeRevenueRepository())
-
-    with pytest.raises(InvalidPeriodError):
-        await service.get_kpis(BASE, overlapping, NO_FILTERS)
-    with pytest.raises(InvalidPeriodError):
-        await service.get_breakdown(BASE, overlapping, NO_FILTERS, BreakdownQuery())
