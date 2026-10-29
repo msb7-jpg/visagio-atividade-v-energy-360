@@ -1,11 +1,12 @@
 import { spawn } from 'child_process'
-import { writeFileSync } from 'fs'
-import { resolve } from 'path'
+import { existsSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
+import { join, resolve } from 'path'
 
 const targetDir = process.argv[2] || 'before'
 const outDir = resolve(process.cwd(), 'docs/screenshots', targetDir)
+const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
 
-// 1. Obter token de autenticação
 const loginRes = await fetch('http://127.0.0.1:8000/api/v1/auth/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -14,16 +15,29 @@ const loginRes = await fetch('http://127.0.0.1:8000/api/v1/auth/login', {
 const { access_token } = await loginRes.json()
 console.log('Login efetuado com sucesso!')
 
-// 2. Iniciar Chromium com porta CDP 9333
-const chrome = spawn('/usr/bin/chromium', [
+const BROWSER_CANDIDATES: Record<string, string[]> = {
+  win32: [
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
+  ],
+  darwin: ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'],
+  linux: ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome']
+}
+const browserPath = process.env.CHROME_PATH
+  ?? (BROWSER_CANDIDATES[process.platform] ?? []).find((candidate) => existsSync(candidate))
+if (!browserPath) {
+  throw new Error('Navegador não encontrado: defina CHROME_PATH com o caminho do Chrome ou do Chromium')
+}
+
+const chrome = spawn(browserPath, [
   '--headless',
+  `--user-data-dir=${join(tmpdir(), 'venergy-capture')}`,
   '--disable-gpu',
   '--no-sandbox',
   '--remote-debugging-port=9333',
   '--window-size=1440,900'
 ], { stdio: 'ignore' })
 
-// Aguardar porta 9333 abrir
 let versionData: any = null
 for (let attempt = 0; attempt < 20; attempt++) {
   try {
@@ -67,7 +81,6 @@ function send(method: string, params: any = {}): Promise<any> {
   })
 }
 
-// Criar nova página
 const { targetId } = await send('Target.createTarget', { url: 'about:blank' })
 const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true })
 
@@ -92,27 +105,26 @@ async function capture(urlPath: string, filename: string, options: { auth?: bool
   console.log(`Capturando ${filename} (${urlPath})...`)
   
   if (options.auth) {
-    await sendSession('Page.navigate', { url: 'http://localhost:5173/login' })
+    await sendSession('Page.navigate', { url: `${frontendUrl}/login` })
     await new Promise((r) => setTimeout(r, 800))
     await sendSession('Runtime.evaluate', {
       expression: `localStorage.setItem('venergy_access_token', ${JSON.stringify(access_token)});`
     })
   } else {
-    await sendSession('Page.navigate', { url: 'http://localhost:5173/login' })
+    await sendSession('Page.navigate', { url: `${frontendUrl}/login` })
     await new Promise((r) => setTimeout(r, 800))
     await sendSession('Runtime.evaluate', {
       expression: `localStorage.removeItem('venergy_access_token');`
     })
   }
 
-  await sendSession('Page.navigate', { url: `http://localhost:5173${urlPath}` })
+  await sendSession('Page.navigate', { url: `${frontendUrl}${urlPath}` })
   await new Promise((r) => setTimeout(r, options.waitMs ?? 2500))
 
   if (options.openChat) {
     await sendSession('Runtime.evaluate', {
       expression: `
-        const btn = document.querySelector('button[aria-label="Abrir Assistente IA"]') || document.querySelector('header button');
-        if (btn) btn.click();
+        document.querySelector('[aria-label="Abrir Assistente V-Energy IA"]')?.click();
       `
     })
     await new Promise((r) => setTimeout(r, 1200))
