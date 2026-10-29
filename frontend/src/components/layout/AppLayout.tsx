@@ -46,12 +46,7 @@ export function AppLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-white/10 bg-card/50 backdrop-blur-2xl sticky top-0 z-40 flex items-center justify-between gap-3 border-b px-6 py-2.5 shadow-sm">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="size-2 rounded-full bg-success inline-block shadow-xs animate-pulse" />
-            <span className="font-medium text-foreground/80">Rede Elétrica Conectada</span>
-          </div>
-
+        <header className="border-white/10 bg-card/50 backdrop-blur-2xl sticky top-0 z-40 flex items-center justify-end gap-3 border-b px-6 py-2.5 shadow-sm">
           <div className="flex items-center gap-3">
             <ChatDrawer />
             <div className="flex items-center gap-2.5 pl-3 border-l border-white/10">
