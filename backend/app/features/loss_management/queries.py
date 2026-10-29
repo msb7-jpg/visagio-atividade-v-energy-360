@@ -46,6 +46,13 @@ dim_unidade_consumidora = table(
     column("possui_gd", Boolean),
 )
 
+fato_faturamento = table(
+    "fato_faturamento",
+    column("competencia", String),
+    column("valor_total_rs", Float),
+    column("consumo_faturado_kwh", Float),
+)
+
 fato_inspecoes_perdas = table(
     "fato_inspecoes_perdas",
     column("id_uc", String),

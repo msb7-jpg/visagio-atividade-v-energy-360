@@ -8,7 +8,6 @@ LIMIAR_QUEDA_SUBITA = 0.5
 LIMIAR_QUEDA_MODERADA_FORTE = 0.3
 LIMIAR_QUEDA_MODERADA = 0.2  # piso da fila classificada: abaixo disso a UC não entra
 JANELA_RECUPERACAO_MESES = 3
-TARIFA_MEDIA_RS_KWH = 0.714  # tarifa de referência do desenho da tela; a real virá de fato_faturamento (Fatia 02)
 MESES_POR_ANO = 12
 PESO_QUEDA_CONSUMO = 80.0
 BONUS_LEITURA_ZERADA = 20.0
@@ -169,11 +168,12 @@ def estimated_recoverable_kwh(profile: ConsumptionProfile) -> float:
     return round(recoverable_kwh, 1)
 
 
-def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | None:
+def build_suspicious_unit(profile: ConsumptionProfile, tariff_rs_kwh: float) -> SuspiciousUnitDTO | None:
     """Converte um perfil de consumo em item da fila de suspeitas.
 
     Args:
         profile: Consumo médio da UC nas janelas base e recente.
+        tariff_rs_kwh: Tarifa média da base (R$/kWh) que converte kWh em R$.
 
     Returns:
         O item da fila com motivos, score e energia a recuperar, ou None se não há suspeita.
@@ -182,9 +182,9 @@ def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | No
     if not reasons:
         return None
     recoverable_kwh = estimated_recoverable_kwh(profile)
-    recoverable_value_rs = recoverable_kwh * TARIFA_MEDIA_RS_KWH
+    recoverable_value_rs = recoverable_kwh * tariff_rs_kwh
     monthly_kwh = monthly_deficit_kwh(profile)
-    annual_value_rs = monthly_kwh * MESES_POR_ANO * TARIFA_MEDIA_RS_KWH
+    annual_value_rs = monthly_kwh * MESES_POR_ANO * tariff_rs_kwh
     return SuspiciousUnitDTO(
         id_uc=profile.id_uc,
         municipio=profile.municipio,
@@ -214,7 +214,7 @@ def order_estimated_kwh(unit: RegisteredUnit) -> float:
     """
     if unit.possui_gd or not unit.has_recent_reading:
         return 0.0
-    suspicious_unit = build_suspicious_unit(unit.profile)
+    suspicious_unit = build_suspicious_unit(unit.profile, tariff_rs_kwh=0.0)  # só o kWh interessa aqui
     return suspicious_unit.kwh_estimado_recuperar if suspicious_unit else 0.0
 
 
@@ -256,6 +256,7 @@ def rank_suspicious_units(
     profiles: list[ConsumptionProfile],
     limit: int | None,
     *,
+    tariff_rs_kwh: float,
     reason: SuspicionReason | None = None,
 ) -> list[SuspiciousUnitDTO]:
     """Monta a fila priorizada pelo kWh esperado (kWh a recuperar x taxa de acerto do sinal).
@@ -266,12 +267,13 @@ def rank_suspicious_units(
     Args:
         profiles: Perfis de consumo candidatos.
         limit: Tamanho máximo da fila; None devolve todas as que passam nos filtros.
+        tariff_rs_kwh: Tarifa média da base (R$/kWh) usada nos valores em R$.
         reason: Mantém só as UCs com este motivo; None não filtra.
 
     Returns:
         Itens suspeitos em ordem decrescente de kWh esperado (desempate por score de risco), até `limit` itens.
     """
-    candidates = [unit for profile in profiles if (unit := build_suspicious_unit(profile)) is not None]
+    candidates = [unit for profile in profiles if (unit := build_suspicious_unit(profile, tariff_rs_kwh)) is not None]
     candidates_by_id = sorted(candidates, key=lambda unit: unit.id_uc)
     ranked = sorted(candidates_by_id, key=priority_key, reverse=True)
     top_expected_kwh = priority_key(ranked[0])[0] if ranked else 0.0

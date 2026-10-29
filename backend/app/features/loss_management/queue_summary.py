@@ -10,7 +10,8 @@ from app.features.loss_management.schemas import (
     QueueSummaryDTO,
     SuspiciousUnitDTO,
 )
-from app.features.loss_management.scoring import TARIFA_MEDIA_RS_KWH, TAXA_ACERTO_GERAL
+from app.features.loss_management.scoring import TAXA_ACERTO_GERAL
+from app.features.loss_management.tariff import AverageTariff
 
 SITUATION_BY_ORDER_STATUS = {
     InspectionStatus.GERADA: QueueSituation.ORDEM_GERADA,
@@ -101,7 +102,7 @@ def expected_return(selected_units: list[SuspiciousUnitDTO]) -> tuple[float, flo
 
 
 def build_queue_summary(
-    selected_units: list[SuspiciousUnitDTO], scheduled_orders: int, hit_rate: HitRateDTO
+    selected_units: list[SuspiciousUnitDTO], scheduled_orders: int, hit_rate: HitRateDTO, tariff: AverageTariff
 ) -> QueueSummaryDTO:
     """Calcula os cartões do topo para as UCs selecionadas.
 
@@ -109,6 +110,7 @@ def build_queue_summary(
         selected_units: UCs selecionadas que ainda estão na fila (sem ordem).
         scheduled_orders: Ordens ativas (geradas ou em campo).
         hit_rate: Taxa histórica de acerto.
+        tariff: Tarifa média da base e seu período, já usada para valorar as UCs selecionadas.
 
     Returns:
         Capacidade, energia e valor das selecionadas e retorno esperado (soma de energia x chance de acerto por UC).
@@ -122,7 +124,9 @@ def build_queue_summary(
         selecionadas=len(selected_units),
         kwh_mes_selecionadas=round(monthly_kwh, 1),
         valor_ano_selecionadas_rs=round(annual_value_rs, 2),
-        tarifa_rs_kwh=TARIFA_MEDIA_RS_KWH,
+        tarifa_rs_kwh=tariff.rs_per_kwh,
+        tarifa_periodo_inicio=tariff.period_start,
+        tarifa_periodo_fim=tariff.period_end,
         retorno_esperado_kwh_mes=round(expected_kwh, 1),
         retorno_esperado_valor_ano_rs=round(expected_value_rs, 2),
         taxa_acerto=hit_rate,

@@ -7,6 +7,7 @@ const dateFormatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' })
 const integerFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
 const compactFormatter = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
+const NON_BREAKING_SPACE = String.fromCodePoint(0xa0)
 const PERCENT_SCALE = 100
 const THOUSAND = 1000
 const MILLION = 1_000_000
@@ -125,6 +126,19 @@ export function formatPeriod(start: string, end: string): string {
   const startLabel = MONTH_ABBREVIATIONS[Number(startMonth) - 1]
   const endLabel = MONTH_ABBREVIATIONS[Number(endMonth) - 1]
   return startYear === endYear ? `${startLabel}–${endLabel}/${endYear}` : `${startLabel}/${startYear}–${endLabel}/${endYear}`
+}
+
+/**
+ * Descreve a tarifa média usada para converter kWh em R$ nos cartões.
+ *
+ * @param tariffRsKwh - Tarifa média ponderada, em R$/kWh.
+ * @param periodStart - Primeira competência da tarifa ('YYYY-MM').
+ * @param periodEnd - Última competência da tarifa ('YYYY-MM').
+ * @returns Texto como "Tarifa média de 12 meses: R$ 0,79/kWh (jul/2025–jun/2026)".
+ */
+export function formatTariffNote(tariffRsKwh: number, periodStart: string, periodEnd: string): string {
+  const tariffText = currencyFormatter.format(tariffRsKwh).replaceAll(NON_BREAKING_SPACE, ' ')
+  return `Tarifa média de 12 meses: ${tariffText}/kWh (${formatPeriod(periodStart, periodEnd)})`
 }
 
 /**

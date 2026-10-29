@@ -17,18 +17,21 @@ const summary: QueueSummary = {
   selecionadas: 3,
   kwh_mes_selecionadas: 7228,
   valor_ano_selecionadas_rs: 61939.6,
-  tarifa_rs_kwh: 0.714,
+  tarifa_rs_kwh: 0.7876,
+  tarifa_periodo_inicio: '2025-07',
+  tarifa_periodo_fim: '2026-06',
   retorno_esperado_kwh_mes: 4532,
   retorno_esperado_valor_ano_rs: 21500.4,
   taxa_acerto: hitRate
 }
 
 describe('QueueSummaryCards', () => {
-  it('mostra a energia das selecionadas e o valor anual com a tarifa de referência', () => {
+  it('mostra a energia das selecionadas, o valor anual e a tarifa média de 12 meses do servidor', () => {
     render(<QueueSummaryCards summary={summary} isUpdating={false} isError={false} onRetry={vi.fn()} />)
 
     expect(screen.getByText('7.228')).toBeInTheDocument()
-    expect(screen.getByText('R$ 61,9 mil/ano a R$ 0,714/kWh')).toBeInTheDocument()
+    expect(screen.getByText('R$ 61,9 mil/ano')).toBeInTheDocument()
+    expect(screen.getByText('Tarifa média de 12 meses: R$ 0,79/kWh (jul/2025–jun/2026)')).toBeInTheDocument()
   })
 
   it('mostra o retorno esperado vindo do servidor, sem reaplicar a taxa histórica global', () => {

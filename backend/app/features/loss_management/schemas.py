@@ -239,7 +239,11 @@ class QueueSummaryDTO(BaseModel):
     selecionadas: int = Field(description="UCs selecionadas que ainda estão na fila, sem ordem")
     kwh_mes_selecionadas: float
     valor_ano_selecionadas_rs: float
-    tarifa_rs_kwh: float
+    tarifa_rs_kwh: float = Field(
+        description="Tarifa média ponderada (receita ÷ energia faturada) dos 12 meses de referência, em R$/kWh"
+    )
+    tarifa_periodo_inicio: str = Field(description="Primeira competência da tarifa ('YYYY-MM')")
+    tarifa_periodo_fim: str = Field(description="Última competência da tarifa ('YYYY-MM')")
     retorno_esperado_kwh_mes: float = Field(
         description="Soma, por UC selecionada, de kWh/mês recuperável x chance de acerto da UC"
     )

@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 from app.db.session import get_db
 from app.features.loss_management.models import InspectionOrder
 from app.main import app
+from tests.loss_tariff import BILLING_ROWS
 
 BASE_URL = "/api/v1/losses"
 COMPETENCIAS = [f"{year}-{month:02d}" for year in (2024, 2025) for month in range(1, 13)] + ["2026-01"]
@@ -77,6 +78,12 @@ async def seed_gold_tables(connection, *, with_field_history: bool = True) -> No
         "municipio TEXT, bairro TEXT, possui_gd BOOLEAN)"
     ))
     await connection.execute(text("CREATE TABLE fato_medicao (id_uc TEXT, competencia TEXT, consumo_kwh REAL)"))
+    await connection.execute(text(
+        "CREATE TABLE fato_faturamento (competencia TEXT, valor_total_rs REAL, consumo_faturado_kwh REAL)"
+    ))
+    await connection.execute(
+        text("INSERT INTO fato_faturamento VALUES (:competencia, :valor_total_rs, :consumo_faturado_kwh)"), BILLING_ROWS
+    )
     await connection.execute(
         text("INSERT INTO dim_unidade_consumidora VALUES (:id_uc, 'Residencial', 'Recife', :bairro, :possui_gd)"),
         [{"id_uc": id_uc, "possui_gd": possui_gd, "bairro": bairro} for id_uc, possui_gd, bairro, _, _ in SEED_UNITS],

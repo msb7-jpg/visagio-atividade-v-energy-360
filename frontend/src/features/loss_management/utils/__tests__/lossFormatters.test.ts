@@ -6,6 +6,7 @@ import {
   formatInteger,
   formatPercent,
   formatPeriod,
+  formatTariffNote,
   ordersLabel
 } from '@/features/loss_management/utils/lossFormatters'
 
@@ -70,5 +71,15 @@ describe('describeReasons', () => {
     expect(describeReasons(['queda_subita', 'leitura_zerada'])).toBe(
       'Queda abrupta de consumo, Consumo zero com medidor ativo'
     )
+  })
+})
+
+describe('formatTariffNote', () => {
+  it('formata a tarifa em pt-BR com duas casas e o período de 12 meses', () => {
+    expect(formatTariffNote(0.7876, '2025-07', '2026-06')).toBe('Tarifa média de 12 meses: R$ 0,79/kWh (jul/2025–jun/2026)')
+  })
+
+  it('usa vírgula decimal e arredonda para o centavo', () => {
+    expect(formatTariffNote(0.7138, '2025-02', '2026-01')).toBe('Tarifa média de 12 meses: R$ 0,71/kWh (fev/2025–jan/2026)')
   })
 })

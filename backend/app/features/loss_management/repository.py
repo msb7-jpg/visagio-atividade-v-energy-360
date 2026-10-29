@@ -31,6 +31,7 @@ from app.features.loss_management.schemas import (
     InspectionStatus,
 )
 from app.features.loss_management.scoring import ConsumptionProfile, QueueCandidates, RegisteredUnit
+from app.features.loss_management.tariff_repository import TariffRepositoryMixin
 from app.features.loss_management.upload_repository import FieldUploadRepositoryMixin
 from app.shared.exceptions import DatabaseReadError
 
@@ -74,7 +75,7 @@ def to_registered_unit(row: RowMapping) -> RegisteredUnit:
     return RegisteredUnit(profile=profile, possui_gd=bool(row["possui_gd"]), has_recent_reading=has_recent_reading)
 
 
-class LossRepository(FieldUploadRepositoryMixin, QueueSummaryRepositoryMixin):
+class LossRepository(FieldUploadRepositoryMixin, QueueSummaryRepositoryMixin, TariffRepositoryMixin):
     """Consultas analíticas de consumo e persistência das ordens de inspeção."""
 
     def __init__(self, session: AsyncSession, reference_competencia: str | None = None) -> None:
@@ -88,11 +89,7 @@ class LossRepository(FieldUploadRepositoryMixin, QueueSummaryRepositoryMixin):
         self.reference_competencia = reference_competencia
 
     async def has_field_history_table(self) -> bool:
-        """Indica se `fato_inspecoes_perdas` (Fatia 02) já foi exportada para o banco Gold.
-
-        Returns:
-            True se a tabela existe; só a ausência da tabela é tolerada, colunas fora do contrato não.
-        """
+        """Indica se `fato_inspecoes_perdas` (Fatia 02) já foi exportada; só a ausência da tabela é tolerada."""
         return await self.session.run_sync(
             lambda sync_session: inspect(sync_session.connection()).has_table(fato_inspecoes_perdas.name)
         )

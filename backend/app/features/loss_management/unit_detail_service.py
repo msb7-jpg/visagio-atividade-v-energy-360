@@ -81,7 +81,8 @@ class UnitDetailService:
             raise await self._not_in_queue_error(id_uc)
         queue_filters = suspicion_filters(SuspiciousUnitsFilterDTO())
         candidates = await self.queue_repository.fetch_consumption_profiles(queue_filters)
-        ranked_units = rank_suspicious_units(candidates.profiles, limit=None)
+        tariff = await self.queue_repository.fetch_average_tariff()
+        ranked_units = rank_suspicious_units(candidates.profiles, limit=None, tariff_rs_kwh=tariff.rs_per_kwh)
         found_unit = next((unit for unit in ranked_units if unit.id_uc == id_uc), None)
         if found_unit is None:
             raise await self._not_in_queue_error(id_uc)

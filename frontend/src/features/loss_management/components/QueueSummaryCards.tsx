@@ -4,7 +4,7 @@ import { CapacityCard } from '@/features/loss_management/components/CapacityCard
 import { HitRateCard } from '@/features/loss_management/components/HitRateCard'
 import { SummaryCard } from '@/features/loss_management/components/SummaryCard'
 import type { QueueSummary } from '@/features/loss_management/types/lossTypes'
-import { formatCompactCurrency, formatInteger } from '@/features/loss_management/utils/lossFormatters'
+import { formatCompactCurrency, formatInteger, formatTariffNote } from '@/features/loss_management/utils/lossFormatters'
 import { cn } from '@/lib/utils'
 
 interface QueueSummaryCardsProps {
@@ -48,7 +48,10 @@ export function QueueSummaryCards({ summary, isUpdating, isError, onRetry }: Que
           <span className="text-muted-foreground text-sm">kWh/mês</span>
         </p>
         <p className="text-muted-foreground text-xs">
-          {formatCompactCurrency(summary.valor_ano_selecionadas_rs)}/ano a R$ {summary.tarifa_rs_kwh.toFixed(3).replace('.', ',')}/kWh
+          {formatCompactCurrency(summary.valor_ano_selecionadas_rs)}/ano
+        </p>
+        <p className="text-muted-foreground text-xs">
+          {formatTariffNote(summary.tarifa_rs_kwh, summary.tarifa_periodo_inicio, summary.tarifa_periodo_fim)}
         </p>
       </SummaryCard>
       <SummaryCard title="Retorno esperado">

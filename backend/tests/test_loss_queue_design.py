@@ -15,7 +15,6 @@ from app.features.loss_management.schemas import (
     SuspiciousUnitsFilterDTO,
 )
 from app.features.loss_management.scoring import (
-    TARIFA_MEDIA_RS_KWH,
     TAXA_ACERTO_GERAL,
     ConsumptionProfile,
     QueueCandidates,
@@ -23,7 +22,9 @@ from app.features.loss_management.scoring import (
     rank_suspicious_units,
 )
 from app.features.loss_management.service import LossService
+from app.features.loss_management.tariff import AverageTariff
 from app.main import app
+from tests.loss_tariff import TARIFF_RS_KWH, TEST_TARIFF
 from tests.test_loss_router import BASE_URL, auth_headers, open_client
 
 
@@ -47,22 +48,18 @@ ZERO_ONLY = make_profile("UC_ZERADA", base_kwh=100, recent_kwh=90, zero_months=1
 # --- contrato de cada item da fila -------------------------------------------------------------------------------
 
 
-def test_reference_tariff_matches_the_design():
-    assert pytest.approx(0.714) == TARIFA_MEDIA_RS_KWH
-
-
 def test_unit_exposes_monthly_energy_and_annual_value():
-    unit = build_suspicious_unit(BIG_DROP)
+    unit = build_suspicious_unit(BIG_DROP, TARIFF_RS_KWH)
 
     assert unit is not None
     assert unit.kwh_mes_recuperavel == pytest.approx(250.0)
-    assert unit.valor_ano_rs == pytest.approx(250.0 * 12 * 0.714)
+    assert unit.valor_ano_rs == pytest.approx(250.0 * 12 * TARIFF_RS_KWH)
     assert unit.kwh_estimado_recuperar == pytest.approx(750.0)
-    assert unit.valor_estimado_recuperar_rs == pytest.approx(750.0 * 0.714)
+    assert unit.valor_estimado_recuperar_rs == pytest.approx(750.0 * TARIFF_RS_KWH)
 
 
 def test_unit_starts_in_the_queue_without_an_order():
-    unit = build_suspicious_unit(BIG_DROP)
+    unit = build_suspicious_unit(BIG_DROP, TARIFF_RS_KWH)
 
     assert unit is not None
     assert unit.situacao == QueueSituation.NA_FILA
@@ -72,25 +69,29 @@ def test_unit_starts_in_the_queue_without_an_order():
 
 
 def test_score_is_the_expected_kwh_relative_to_the_top_of_the_queue():
-    ranked = rank_suspicious_units([SMALL_DROP, BIG_DROP], limit=10)
+    ranked = rank_suspicious_units([SMALL_DROP, BIG_DROP], limit=10, tariff_rs_kwh=TARIFF_RS_KWH)
 
     assert [(unit.id_uc, unit.score) for unit in ranked] == [("UC_GRANDE", 100), ("UC_MEDIA", 48)]
 
 
 def test_score_is_never_below_zero_or_above_one_hundred():
-    ranked = rank_suspicious_units([BIG_DROP, SMALL_DROP, ZERO_ONLY], limit=10)
+    ranked = rank_suspicious_units([BIG_DROP, SMALL_DROP, ZERO_ONLY], limit=10, tariff_rs_kwh=TARIFF_RS_KWH)
 
     assert all(0 <= unit.score <= 100 for unit in ranked)
 
 
 def test_motive_filter_keeps_only_units_with_that_motive():
-    ranked = rank_suspicious_units([BIG_DROP, ZERO_ONLY], limit=10, reason=SuspicionReason.LEITURA_ZERADA)
+    ranked = rank_suspicious_units(
+        [BIG_DROP, ZERO_ONLY], limit=10, reason=SuspicionReason.LEITURA_ZERADA, tariff_rs_kwh=TARIFF_RS_KWH
+    )
 
     assert [unit.id_uc for unit in ranked] == ["UC_ZERADA"]
 
 
 def test_score_does_not_change_when_a_filter_hides_the_top_unit():
-    ranked = rank_suspicious_units([BIG_DROP, ZERO_ONLY], limit=10, reason=SuspicionReason.LEITURA_ZERADA)
+    ranked = rank_suspicious_units(
+        [BIG_DROP, ZERO_ONLY], limit=10, reason=SuspicionReason.LEITURA_ZERADA, tariff_rs_kwh=TARIFF_RS_KWH
+    )
 
     assert ranked[0].score == 3  # 18,8 / 697,5, e não 100 só porque a maior saiu da lista
 
@@ -98,7 +99,9 @@ def test_score_does_not_change_when_a_filter_hides_the_top_unit():
 def test_limit_is_applied_after_the_filters():
     profiles = [BIG_DROP, SMALL_DROP, ZERO_ONLY]
 
-    ranked = rank_suspicious_units(profiles, limit=1, reason=SuspicionReason.LEITURA_ZERADA)
+    ranked = rank_suspicious_units(
+        profiles, limit=1, reason=SuspicionReason.LEITURA_ZERADA, tariff_rs_kwh=TARIFF_RS_KWH
+    )
 
     assert [unit.id_uc for unit in ranked] == ["UC_ZERADA"]
 
@@ -113,6 +116,9 @@ class FakeQueueRepository:
     async def fetch_consumption_profiles(self, filters: SuspicionFilters) -> QueueCandidates:
         del filters
         return self.candidates
+
+    async def fetch_average_tariff(self) -> AverageTariff:
+        return TEST_TARIFF
 
 
 async def test_units_with_an_active_order_are_marked_by_the_order_status():
@@ -248,8 +254,8 @@ async def test_summary_reports_capacity_selected_energy_and_expected_return(clie
     # UC_FRAUDE já tem ordem e não conta como selecionada; UC_INSPECAO_ANTIGA: déficit de 150 kWh/mês.
     assert summary["selecionadas"] == 1
     assert summary["kwh_mes_selecionadas"] == pytest.approx(150.0)
-    assert summary["valor_ano_selecionadas_rs"] == pytest.approx(150.0 * 12 * 0.714)
-    assert summary["tarifa_rs_kwh"] == pytest.approx(0.714)
+    assert summary["valor_ano_selecionadas_rs"] == pytest.approx(150.0 * 12 * TARIFF_RS_KWH)
+    assert summary["tarifa_rs_kwh"] == pytest.approx(TARIFF_RS_KWH)
     assert summary["taxa_acerto"] == {
         "inspecoes_total": 2,
         "irregularidades_confirmadas": 1,
@@ -259,28 +265,28 @@ async def test_summary_reports_capacity_selected_energy_and_expected_return(clie
     }
     # UC_INSPECAO_ANTIGA é queda súbita (75%): 150 kWh/mês x 93%, e não x 50% (taxa histórica do seed).
     assert summary["retorno_esperado_kwh_mes"] == pytest.approx(150.0 * 0.93)
-    assert summary["retorno_esperado_valor_ano_rs"] == pytest.approx(150.0 * 12 * 0.714 * 0.93, abs=0.01)
+    assert summary["retorno_esperado_valor_ano_rs"] == pytest.approx(150.0 * 12 * TARIFF_RS_KWH * 0.93, abs=0.01)
 
 
 def test_expected_return_sums_each_selected_unit_with_its_own_hit_chance():
     # A: queda de 40% (chance 42%), déficit de 80 kWh/mês. B: queda de 25% (chance 7%), déficit de 50 kWh/mês.
-    unit_a = build_suspicious_unit(make_profile("UC_A", 200.0, 120.0))
-    unit_b = build_suspicious_unit(make_profile("UC_B", 200.0, 150.0))
+    unit_a = build_suspicious_unit(make_profile("UC_A", 200.0, 120.0), TARIFF_RS_KWH)
+    unit_b = build_suspicious_unit(make_profile("UC_B", 200.0, 150.0), TARIFF_RS_KWH)
     global_hit_rate = hit_rate_dto(FieldHitRate(total=1389, confirmed=871, first_date=None, last_date=None))
 
-    summary = build_queue_summary([unit_a, unit_b], scheduled_orders=0, hit_rate=global_hit_rate)
+    summary = build_queue_summary([unit_a, unit_b], scheduled_orders=0, hit_rate=global_hit_rate, tariff=TEST_TARIFF)
 
     assert (unit_a.probabilidade_acerto, unit_b.probabilidade_acerto) == (0.42, 0.07)
-    # 80 x 0,42 + 50 x 0,07 = 33,6 + 3,5 = 37,1 kWh/mês; x 12 meses x R$ 0,714 = R$ 317,87/ano.
+    # 80 x 0,42 + 50 x 0,07 = 33,6 + 3,5 = 37,1 kWh/mês; x 12 meses x R$ 0,75 = R$ 333,90/ano.
     assert summary.retorno_esperado_kwh_mes == pytest.approx(37.1)
-    assert summary.retorno_esperado_valor_ano_rs == pytest.approx(317.87)
-    # Aplicar a taxa global de 62,7% às duas daria 81,5 kWh/mês e R$ 698,35/ano: mais que o dobro.
+    assert summary.retorno_esperado_valor_ano_rs == pytest.approx(333.9)
+    # Aplicar a taxa global de 62,7% às duas daria 81,5 kWh/mês e R$ 733,5/ano: mais que o dobro.
     assert summary.retorno_esperado_kwh_mes != pytest.approx(summary.kwh_mes_selecionadas * 0.627, abs=1)
     assert summary.taxa_acerto.taxa == pytest.approx(0.6271)
 
 
 def test_expected_return_is_zero_without_selected_units():
-    summary = build_queue_summary([], scheduled_orders=3, hit_rate=hit_rate_dto(None))
+    summary = build_queue_summary([], scheduled_orders=3, hit_rate=hit_rate_dto(None), tariff=TEST_TARIFF)
 
     assert (summary.retorno_esperado_kwh_mes, summary.retorno_esperado_valor_ano_rs) == (0, 0)
 
@@ -313,8 +319,8 @@ async def test_new_endpoints_are_forbidden_for_other_roles(client: AsyncClient):
 
 
 def test_ranking_without_limit_returns_every_unit_and_an_empty_queue_has_no_score():
-    assert len(rank_suspicious_units([BIG_DROP, SMALL_DROP, ZERO_ONLY], limit=None)) == 3
-    assert rank_suspicious_units([], limit=None) == []
+    assert len(rank_suspicious_units([BIG_DROP, SMALL_DROP, ZERO_ONLY], limit=None, tariff_rs_kwh=TARIFF_RS_KWH)) == 3
+    assert rank_suspicious_units([], limit=None, tariff_rs_kwh=TARIFF_RS_KWH) == []
 
 
 @pytest.mark.parametrize("rate", [None, FieldHitRate(total=0, confirmed=0, first_date=None, last_date=None)])

@@ -25,7 +25,9 @@ from app.features.loss_management.scoring import (
     rank_suspicious_units,
 )
 from app.features.loss_management.service import LossService, validate_transition
+from app.features.loss_management.tariff import AverageTariff
 from app.shared.exceptions import BadRequestException, NotFoundException
+from tests.loss_tariff import TARIFF_RS_KWH, TEST_TARIFF
 
 
 def make_profile(id_uc: str, base_kwh: float, recent_kwh: float, zero_months: int = 0) -> ConsumptionProfile:
@@ -46,21 +48,21 @@ def make_unit(base_kwh: float, recent_kwh: float, possui_gd: bool = False) -> Re
 
 
 def test_sudden_drop_is_flagged_with_recoverable_energy():
-    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=50))
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=50), TARIFF_RS_KWH)
 
     assert unit is not None
     assert unit.motivos == [SuspicionReason.QUEDA_SUBITA]
     assert unit.kwh_estimado_recuperar == pytest.approx(750.0)
-    assert unit.valor_estimado_recuperar_rs == pytest.approx(535.5)
+    assert unit.valor_estimado_recuperar_rs == pytest.approx(562.5)
     assert unit.score_risco == pytest.approx(66.7)
 
 
 def test_stable_consumption_is_not_suspicious():
-    assert build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=190)) is None
+    assert build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=190), TARIFF_RS_KWH) is None
 
 
 def test_moderate_drop_enters_the_ranked_queue_with_its_own_reason():
-    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=195))
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=195), TARIFF_RS_KWH)
 
     assert unit is not None
     assert unit.motivos == [SuspicionReason.QUEDA_MODERADA]
@@ -68,11 +70,11 @@ def test_moderate_drop_enters_the_ranked_queue_with_its_own_reason():
 
 
 def test_drop_just_below_the_floor_is_not_suspicious():
-    assert build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=170)) is None
+    assert build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=170), TARIFF_RS_KWH) is None
 
 
 def test_drop_of_exactly_half_is_a_sudden_drop_not_a_moderate_one():
-    unit = build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=100))
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=100), TARIFF_RS_KWH)
 
     assert unit is not None
     assert unit.motivos == [SuspicionReason.QUEDA_SUBITA]
@@ -84,8 +86,8 @@ def test_hit_probability_of_a_moderate_drop_depends_on_its_band():
 
 
 def test_unit_exposes_the_calibrated_probability_of_its_drop_band():
-    strong_moderate = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=195))
-    weak_moderate = build_suspicious_unit(make_profile("UC2", base_kwh=300, recent_kwh=225))
+    strong_moderate = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=195), TARIFF_RS_KWH)
+    weak_moderate = build_suspicious_unit(make_profile("UC2", base_kwh=300, recent_kwh=225), TARIFF_RS_KWH)
 
     assert strong_moderate is not None
     assert weak_moderate is not None
@@ -97,20 +99,20 @@ def test_ranking_puts_a_sudden_drop_ahead_of_a_larger_but_unlikelier_moderate_dr
     large_weak_drop = make_profile("UC_QUEDA_FRACA_GRANDE", base_kwh=2000, recent_kwh=1500)
     small_sudden_drop = make_profile("UC_QUEDA_SUBITA", base_kwh=300, recent_kwh=100)
 
-    ranked = rank_suspicious_units([large_weak_drop, small_sudden_drop], limit=2)
+    ranked = rank_suspicious_units([large_weak_drop, small_sudden_drop], limit=2, tariff_rs_kwh=TARIFF_RS_KWH)
 
     assert [unit.id_uc for unit in ranked] == ["UC_QUEDA_SUBITA", "UC_QUEDA_FRACA_GRANDE"]
 
 
 def test_zero_reading_is_flagged_even_without_large_drop():
-    unit = build_suspicious_unit(make_profile("UC1", base_kwh=150, recent_kwh=130, zero_months=1))
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=150, recent_kwh=130, zero_months=1), TARIFF_RS_KWH)
 
     assert unit is not None
     assert unit.motivos == [SuspicionReason.LEITURA_ZERADA]
 
 
 def test_score_is_capped_at_100():
-    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=0, zero_months=3))
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=0, zero_months=3), TARIFF_RS_KWH)
 
     assert unit is not None
     assert unit.score_risco == pytest.approx(100.0)
@@ -123,7 +125,7 @@ def test_ranking_orders_by_recoverable_kwh_and_applies_limit():
         make_profile("UC_NORMAL", base_kwh=100, recent_kwh=100),
     ]
 
-    ranked = rank_suspicious_units(profiles, limit=1)
+    ranked = rank_suspicious_units(profiles, limit=1, tariff_rs_kwh=TARIFF_RS_KWH)
 
     assert [unit.id_uc for unit in ranked] == ["UC_GRANDE"]
 
@@ -132,7 +134,9 @@ def test_ranking_does_not_count_the_drop_twice_through_score_and_kwh():
     deep_drop_small_base = make_profile("UC_QUEDA_TOTAL", base_kwh=300, recent_kwh=0)
     moderate_drop_large_base = make_profile("UC_BASE_GRANDE", base_kwh=1000, recent_kwh=480)
 
-    ranked = rank_suspicious_units([deep_drop_small_base, moderate_drop_large_base], limit=2)
+    ranked = rank_suspicious_units(
+        [deep_drop_small_base, moderate_drop_large_base], limit=2, tariff_rs_kwh=TARIFF_RS_KWH
+    )
 
     assert [unit.id_uc for unit in ranked] == ["UC_BASE_GRANDE", "UC_QUEDA_TOTAL"]
 
@@ -141,7 +145,7 @@ def test_ranking_breaks_kwh_ties_by_risk_score():
     lower_risk = make_profile("UC_RISCO_MENOR", base_kwh=300, recent_kwh=100)
     higher_risk = make_profile("UC_RISCO_MAIOR", base_kwh=300, recent_kwh=100, zero_months=1)
 
-    ranked = rank_suspicious_units([lower_risk, higher_risk], limit=2)
+    ranked = rank_suspicious_units([lower_risk, higher_risk], limit=2, tariff_rs_kwh=TARIFF_RS_KWH)
 
     assert [unit.id_uc for unit in ranked] == ["UC_RISCO_MAIOR", "UC_RISCO_MENOR"]
 
@@ -161,8 +165,8 @@ def test_hit_probability_takes_the_strongest_signal_when_both_apply():
 
 
 def test_unit_exposes_the_hit_probability_of_its_signals():
-    drop_unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=100))
-    zero_unit = build_suspicious_unit(make_profile("UC2", base_kwh=150, recent_kwh=100, zero_months=1))
+    drop_unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=100), TARIFF_RS_KWH)
+    zero_unit = build_suspicious_unit(make_profile("UC2", base_kwh=150, recent_kwh=100, zero_months=1), TARIFF_RS_KWH)
 
     assert drop_unit is not None
     assert zero_unit is not None
@@ -174,7 +178,7 @@ def test_ranking_prefers_the_likelier_hit_over_more_recoverable_kwh():
     more_kwh_less_likely = make_profile("UC_ZERADA_ISOLADA", base_kwh=1000, recent_kwh=700, zero_months=1)
     less_kwh_more_likely = make_profile("UC_QUEDA_SUBITA", base_kwh=330, recent_kwh=100)
 
-    ranked = rank_suspicious_units([more_kwh_less_likely, less_kwh_more_likely], limit=2)
+    ranked = rank_suspicious_units([more_kwh_less_likely, less_kwh_more_likely], limit=2, tariff_rs_kwh=TARIFF_RS_KWH)
 
     assert ranked[0].kwh_estimado_recuperar < ranked[1].kwh_estimado_recuperar
     assert [unit.id_uc for unit in ranked] == ["UC_QUEDA_SUBITA", "UC_ZERADA_ISOLADA"]
@@ -183,8 +187,8 @@ def test_ranking_prefers_the_likelier_hit_over_more_recoverable_kwh():
 def test_ranking_is_deterministic_when_kwh_and_score_tie():
     profiles = [make_profile(id_uc, base_kwh=300, recent_kwh=100) for id_uc in ("UC_C", "UC_A", "UC_B")]
 
-    ranked = rank_suspicious_units(profiles, limit=3)
-    reversed_ranked = rank_suspicious_units(list(reversed(profiles)), limit=3)
+    ranked = rank_suspicious_units(profiles, limit=3, tariff_rs_kwh=TARIFF_RS_KWH)
+    reversed_ranked = rank_suspicious_units(list(reversed(profiles)), limit=3, tariff_rs_kwh=TARIFF_RS_KWH)
 
     assert [unit.id_uc for unit in ranked] == [unit.id_uc for unit in reversed_ranked] == ["UC_A", "UC_B", "UC_C"]
 
@@ -436,6 +440,9 @@ class FakeQueueRepository:
     async def fetch_consumption_profiles(self, filters: SuspicionFilters) -> QueueCandidates:
         del filters
         return self.candidates
+
+    async def fetch_average_tariff(self) -> AverageTariff:
+        return TEST_TARIFF
 
 
 async def test_queue_warns_when_field_history_was_not_applied():

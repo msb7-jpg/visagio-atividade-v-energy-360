@@ -71,7 +71,12 @@ export interface QueueSummary {
   selecionadas: number
   kwh_mes_selecionadas: number
   valor_ano_selecionadas_rs: number
+  /** Tarifa média ponderada (receita ÷ energia faturada) dos 12 meses de referência, em R$/kWh. */
   tarifa_rs_kwh: number
+  /** Primeira competência da tarifa ('YYYY-MM'). */
+  tarifa_periodo_inicio: string
+  /** Última competência da tarifa ('YYYY-MM'). */
+  tarifa_periodo_fim: string
   /** Soma, por UC selecionada, de kWh/mês recuperável x chance de acerto da UC. */
   retorno_esperado_kwh_mes: number
   /** Soma, por UC selecionada, de R$/ano recuperável x chance de acerto da UC. */
