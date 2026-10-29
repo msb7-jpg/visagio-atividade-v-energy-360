@@ -139,7 +139,7 @@
 - [x] Fila rodada contra os dados reais e números conferidos: 45.000 UCs, 2.152.336 medições (2022-07 a 2026-06), 1.389 inspeções (871 irregulares, 62,7%). Fila em tempo real (2026-06): **0 UCs** (as 559 quedas ≥ 50% são todas de UCs com GD, que a regra exclui); com a competência fixada em 2025-07: **827 UCs**, top 200 com **94,6%** de acerto nas inspeções dos 3 meses seguintes.
 - [x] Taxa geral 0,627 confirmada (871/1.389). Taxa da queda súbita (0,93): o backtest na Gold real dá 91 a 95% por competência, então a constante segue defensável.
 - [x] Tarifa: definida na P4 como `valor_total_rs / consumo_faturado_kwh` dos últimos 12 meses (R$ 0,7876/kWh); as medidas de 0,774 e 0,561 foram descartadas. Ver `DECISOES_PERDAS.md` D8.
-- [ ] Remedir na Gold real os números que ainda vêm do seed: limiar de 50% (92,6%, D2), exclusão de GD (3,2%, D3) e a taxa da leitura zerada isolada (usa a geral).
+- [x] Remedir na Gold real os números que ainda vêm do seed: limiar de 50% (92,6%, D2), exclusão de GD (3,2%, D3) e a taxa da leitura zerada isolada (usa a geral). Feito na Fase 15.4 (D12, 2026-10-28): 50% e GD confirmados; a leitura zerada não é mensurável (0 leituras zeradas na Gold real) e segue como suposição.
 
 ### Fase 11 — Fila classificada (2026-10-27)
 > Pedido do dono da fatia: em vez de cortar a fila no limiar de 50%, classificar as UCs e deixar a chance de acerto por faixa mostrar o quanto cada uma vale a inspeção. Detalhes no `changelog.md`.
@@ -158,6 +158,8 @@
 - [x] Exclusão de UCs com GD: **3,2%** de acerto nas 31 inspeções em UCs com painel solar. (D3)
 - [x] Fila quase vazia na competência mais recente (2026-06) é esperada: a onda de quedas de meados de 2025 já foi inspecionada. (D9)
 - [x] Fórmula da energia estimada a recuperar (déficit mensal × 3 meses) como suposição. Medido: o recuperado foi 1,87× o estimado (mediana), com correlação de 0,87. (D7)
+- [x] **README da Fatia 05** (seção "Suposições e Demonstração por Fatia"): como a fila é montada, passo a passo da demonstração com `LOSS_REFERENCE_COMPETENCIA="2025-09"`, tabela de suposições e limites. (Adrian César, 2026-10-29)
+- [x] **Decisões de 2026-10-29 registradas** em `DECISOES_PERDAS.md`: competência da demonstração (D9), score sem efeito dos filtros territoriais (D15), D4 e seção 5 corrigidos; contraste do `--warning` em `design.md`. (Adrian César, 2026-10-29)
 
 ### Fase 9 — Nova tela "Fila de Inspeção" (desenho de 2026-10-24)
 > Referência visual: [`assets/fila-inspecao-escuro.png`](assets/fila-inspecao-escuro.png) e [`assets/fila-inspecao-claro.png`](assets/fila-inspecao-claro.png) (mesmo layout, temas escuro e claro). Branch: `feat/fatia-05-fila-inspecao-nova-tela`.

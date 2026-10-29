@@ -89,6 +89,7 @@
 ## 9. Fechamento (todos)
 
 - [ ] 🔴 **README:** suposições de cada fatia, passo a passo de execução (incluindo `LOSS_REFERENCE_COMPETENCIA`), print do Workflow no Databricks e links para o dicionário de dados e o diagnóstico (case, seção 6).
+  - **Andamento (2026-10-29):** a seção da Fatia 05 está no README (suposições, passo a passo com `LOSS_REFERENCE_COMPETENCIA="2025-09"` e limites), em "Suposições e Demonstração por Fatia". O print do Workflow e o dicionário de dados já estavam. Faltam as seções das outras fatias nesse mesmo lugar e o link para o diagnóstico (hoje um esqueleto, seção 2).
 - [ ] 🟡 Rodar `make lint-all`, `make test-all` e `bun run build` na `main` depois de cada merge (o `make` não roda o `tsc`).
 - [ ] ⚪ **Componentes do design novo sem dono: `KpiCard`, `DeltaBadge`, `DataTable` e `FilterBar`** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Os `componentes-*.png` os preveem, mas nenhum existe em `frontend/src/components/ui/`: cada fatia tem a sua versão.
   - **Evidência:** cartões de KPI em `revenue/RevenueKpiCard(s).tsx`, `grid_quality/ContinuityKpiCards.tsx` e `grid_quality/QualityKpiCards.tsx`; variação em `revenue/VariationBadge.tsx`; tabelas em `grid_quality/FeederRankingTable.tsx`, `FeederUcHoursTable.tsx`, `FeederCustomersTable.tsx` e `loss_management/PrioritizedQueueTable.tsx`; filtros em `revenue/RevenueFiltersBar.tsx`, `grid_quality/ContinuityFilters.tsx` e `loss_management/QueueFilters.tsx`.
