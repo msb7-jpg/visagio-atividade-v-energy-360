@@ -107,6 +107,46 @@ Execução de ponta a ponta do Workflow no Databricks, com todas as tarefas conc
 
 ---
 
+## 📋 Suposições e Demonstração por Fatia
+
+Cada fatia descreve aqui o que assumiu e como demonstrar o que entregou. As decisões completas, com números e alternativas descartadas, ficam em `docs/`.
+
+### 🔎 Fatia 05: Gestão de Perdas e Fila de Inspeção
+
+Responde ao gerente de perdas: **quais UCs mandar a campo primeiro**. No portal (`/losses`, perfil `gerente_perdas`; os usuários de teste estão em [`backend/app/core/config.py`](backend/app/core/config.py)) o gerente vê a fila priorizada, abre cada UC para entender por que ela está lá (motivo, conta do score, consumo de 12 meses e inspeções anteriores), gera ordens de inspeção, exporta a planilha para a equipe de campo e importa os resultados de volta.
+
+**Como a fila é montada**
+1. Entra a UC **sem geração distribuída** (painel solar) cujo consumo médio dos 3 últimos meses caiu **20% ou mais** frente aos 12 anteriores, ou que tem leitura zerada, e que não teve inspeção concluída nos últimos 15 meses.
+2. Cada UC recebe uma **chance de acerto histórica**, e a fila ordena pelo **kWh esperado** (kWh a recuperar × chance). O score de 0 a 100 é relativo à primeira UC da fila inteira e não muda com os filtros.
+3. A tela separa **Prioritárias** (chance de 30% ou mais), **Baixa chance** e **Todas**, e avisa quando as prioritárias passam da capacidade de 200 inspeções por mês.
+
+**Como demonstrar**
+
+- **Sem configurar nada**, a fila usa a competência mais recente dos dados (2026-06): **165 UCs, 7 prioritárias e 158 de baixa chance**. É curta de propósito: as 559 maiores quedas do mês são de UCs com painel solar, que a fila exclui, e 491 das 656 candidatas restantes já foram inspecionadas pelo campo em 2025.
+- **Para ver a fila na onda de quedas de 2025**, em `backend/.env` (copie de [`backend/.env.example`](backend/.env.example)) descomente `LOSS_REFERENCE_COMPETENCIA="2025-09"` e reinicie o backend. A tela mostra o aviso "Competência de referência fixada". Nessa competência a fila tem **39.243 UCs**, quase todas de baixa chance, e cada página leva alguns segundos. Das 200 primeiras, **196 foram inspecionadas depois, com 93,9% de acerto**, contra 62,7% de todas as inspeções do período. Para voltar ao tempo real, comente a linha e reinicie.
+- **Roteiro:** "Selecionar top 10 prioritárias" → "Gerar ordens" → aba "Ordens de inspeção" → "Exportar planilha de campo" → "Importar resultados de campo" (a planilha `inspecoes.xlsx` do case ou a exportada pelo portal). As ordens ficam na tabela `ordem_inspecao` do `backend/v_energy.db`, que não vai para o Git.
+
+**Suposições**
+
+| Suposição | Valor | Onde está o detalhe |
+|---|---|---|
+| Entrada na fila | queda de 20% ou mais (3 meses contra 12), UC sem GD | D2 e D3 |
+| Chance de acerto | 93% na queda de 50% ou mais; 91,5% na queda moderada quando a queda além da carteira é de 20% ou mais, e 7,6% abaixo disso | D2 e D12 |
+| Leitura zerada | 62,7% (a taxa geral): **suposição**, o sinal nunca ocorre nos dados | D2 e D12 |
+| Ligação recente | menos de 11 meses de base recebe só 7,6%: prudência, não medição | D14 |
+| Energia a recuperar | déficit mensal × 3 meses; em campo o recuperado foi 1,87× o estimado (mediana), então subestima o valor absoluto | D7 |
+| Valor em R$ | tarifa média ponderada dos 12 últimos meses de faturamento: R$ 0,7876/kWh | D8 |
+| Capacidade | 200 inspeções por mês, a fala do gerente | D6 |
+| Dados | consumo negativo é descartado; datas com hífen na planilha do campo são mês-dia-ano | D5 e D10 |
+
+**O que a fila não garante**
+- As taxas de acerto vêm de UCs que o campo **já escolhera** inspecionar. Ninguém de fora da fila foi visitado, então não se sabe o que ela deixa de ver. Há um protocolo de piloto proposto (D13), não executado.
+- **Reincidência:** nenhuma UC foi inspecionada duas vezes, então o prazo para uma UC voltar à fila depois de uma irregularidade segue em aberto, à espera da equipe.
+
+Detalhes e medições: [`docs/DECISOES_PERDAS.md`](docs/DECISOES_PERDAS.md) (D1 a D15) e o plano da fatia em [`docs/planning/adrian_cesar/`](docs/planning/adrian_cesar/gestao_perdas_campo.md).
+
+---
+
 ## 🧪 Testes e Qualidade
 
 O repositório possui uma suíte completa de testes automatizados e análise estática:
