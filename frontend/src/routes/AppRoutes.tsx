@@ -53,7 +53,6 @@ export function AppRouteTree() {
         </Route>
       </Route>
 
-      {/* Fallback */}
       <Route path="*" element={<HomeRedirect />} />
     </Routes>
   )

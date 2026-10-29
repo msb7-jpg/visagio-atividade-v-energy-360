@@ -18,7 +18,7 @@ def twelve_months(first_year: int) -> tuple[str, ...]:
     return second_half + first_half
  
  
-# Premissa a confirmar com os dados reais: primeiro ano da base e últimos 12 meses.
+# Janelas padrão do case: primeiro ano da base e últimos 12 meses.
 JANELA_BASE = twelve_months(2022)
 JANELA_ATUAL = twelve_months(2025)
  
@@ -65,7 +65,6 @@ class SeedUnit:
     tarifa_atual: float
  
  
-# Premissa a confirmar: classe_consumo traz o nome e subgrupo_tarifario traz B1, B3 ou A4.
 UNIDADES = (
     # Exemplo-ouro: por mês 800 vira 792 (preço +80, volume -80, cruzado -8); na janela de 12 meses, 9600 vira 9504.
     SeedUnit("UC200001", "Residencial", "B1", "RECIFE", "BOA VIAGEM", 1000.0, 0.80, 900.0, 0.88),

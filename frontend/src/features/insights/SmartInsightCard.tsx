@@ -30,7 +30,6 @@ export function SmartInsightCard({ context, filters, metrics }: SmartInsightCard
     return null
   }
 
-  // Durante o carregamento inicial proativo
   if (isLoading) {
     return (
       <Card variant="glass" className="my-4">

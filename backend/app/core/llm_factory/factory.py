@@ -13,7 +13,6 @@ from app.core.llm_factory.providers import (
 )
 from app.core.llm_factory.registry import LLMProviderRegistry
 
-# Instância global do registry pré-populada com todos os provedores suportados
 provider_registry = LLMProviderRegistry()
 provider_registry.register(LLMProvider.GOOGLE.value, GoogleGenAIProviderStrategy())
 provider_registry.register(LLMProvider.GROQ.value, GroqProviderStrategy())
@@ -55,7 +54,6 @@ def get_chat_model(
 
     resolved_base_url = base_url or settings.ai_base_url
 
-    # Fallback consciente do provedor para garantir compatibilidade
     resolved_model = (
         model or settings.ai_model_name or PROVIDER_DEFAULT_MODELS.get(resolved_provider)
     )

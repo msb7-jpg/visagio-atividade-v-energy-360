@@ -28,38 +28,32 @@ class GroundedMockChatModel(SimpleChatModel):
         if self.custom_response:
             return self.custom_response
 
-        # Analisa o contexto da mensagem para emitir respostas semânticas adequadas
         all_text = " ".join(str(m.content) for m in messages).lower()
 
-        # 1. Roteamento de intenção
         if "classifique-a estritamente" in all_text or "classificador de intenção" in all_text:
             user_text = str(messages[-1].content).lower() if messages else ""
             if any(term in user_text for term in ("olá", "ajuda", "quem é você", "bom dia", "hello", "hi")):
                 return "direct"
             return "sql"
 
-        # 2. Correção de SQL
         if "consulta anterior com falha" in all_text or "auto-recuperação" in all_text:
             return (
                 "<thought>Ajustando a sintaxe da consulta com base no erro reportado.</thought>\n\n"
                 "```sql\nSELECT 'Corrigido' AS status, 150 AS valor;\n```"
             )
 
-        # 3. Geração de SQL
         if "agente analítico especialista em sql" in all_text or "schema do banco" in all_text:
             return (
                 "<thought>Analisando solicitação analítica e formulando consulta SQL.</thought>\n\n"
                 "```sql\nSELECT 'Operacional' AS categoria, 25000 AS consumo;\n```"
             )
 
-        # 4. Avaliação de Gráficos
         if "visualização gráfica" in all_text or "chartjsconfigdto" in all_text:
             return (
                 '{"type": "bar", "title": "Distribuição de Consumo", "labels": ["Residencial", "Comercial"], '
                 '"datasets": [{"label": "Consumo kWh", "data": [12000, 13000]}]}'
             )
 
-        # 5. Geração de Insights Proativos
         if "insights executivos de alto impacto" in all_text or "diagnóstico executivo em json" in all_text:
             return (
                 "```json\n"
@@ -73,7 +67,6 @@ class GroundedMockChatModel(SimpleChatModel):
                 "```"
             )
 
-        # 6. Síntese final
         return (
             "### Análise Operacional e Executiva\n\n"
             "Com base nas informações consolidadas no banco de dados, os indicadores operacionais "

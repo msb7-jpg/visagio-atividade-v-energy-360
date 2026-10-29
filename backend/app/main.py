@@ -44,7 +44,6 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Middlewares
     app.add_middleware(QueryProfilerMiddleware)
     app.add_middleware(
         CORSMiddleware,
@@ -54,10 +53,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Handlers de Exceção
     register_exception_handlers(app)
 
-    # Rotas
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
     @app.get("/health", tags=["Saúde do Sistema"])
