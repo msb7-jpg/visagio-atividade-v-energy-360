@@ -4,6 +4,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import create_engine, text
 
+from app.features.loss_management.hit_rate import TAXA_ACERTO_GERAL
 from app.features.loss_management.models import InspectionOrder
 from app.features.loss_management.queries import SuspicionFilters, build_windows
 from app.features.loss_management.queue_query import suspicious_profiles_query
@@ -15,7 +16,6 @@ from app.features.loss_management.schemas import (
     SuspiciousUnitsFilterDTO,
 )
 from app.features.loss_management.scoring import (
-    TAXA_ACERTO_GERAL,
     ConsumptionProfile,
     QueueCandidates,
     build_suspicious_unit,
@@ -269,17 +269,18 @@ async def test_summary_reports_capacity_selected_energy_and_expected_return(clie
 
 
 def test_expected_return_sums_each_selected_unit_with_its_own_hit_chance():
-    # A: queda de 40% (chance 42%), déficit de 80 kWh/mês. B: queda de 25% (chance 7%), déficit de 50 kWh/mês.
-    unit_a = build_suspicious_unit(make_profile("UC_A", 200.0, 120.0), TARIFF_RS_KWH)
-    unit_b = build_suspicious_unit(make_profile("UC_B", 200.0, 150.0), TARIFF_RS_KWH)
+    # Carteira em 90% da base. A: queda de 40% (relativa 33%, chance 91,5%), déficit de 80 kWh/mês.
+    # B: queda de 25% (relativa 17%, chance 7,6%), déficit de 50 kWh/mês.
+    unit_a = build_suspicious_unit(make_profile("UC_A", 200.0, 120.0), TARIFF_RS_KWH, portfolio_ratio=0.9)
+    unit_b = build_suspicious_unit(make_profile("UC_B", 200.0, 150.0), TARIFF_RS_KWH, portfolio_ratio=0.9)
     global_hit_rate = hit_rate_dto(FieldHitRate(total=1389, confirmed=871, first_date=None, last_date=None))
 
     summary = build_queue_summary([unit_a, unit_b], scheduled_orders=0, hit_rate=global_hit_rate, tariff=TEST_TARIFF)
 
-    assert (unit_a.probabilidade_acerto, unit_b.probabilidade_acerto) == (0.42, 0.07)
-    # 80 x 0,42 + 50 x 0,07 = 33,6 + 3,5 = 37,1 kWh/mês; x 12 meses x R$ 0,75 = R$ 333,90/ano.
-    assert summary.retorno_esperado_kwh_mes == pytest.approx(37.1)
-    assert summary.retorno_esperado_valor_ano_rs == pytest.approx(333.9)
+    assert (unit_a.probabilidade_acerto, unit_b.probabilidade_acerto) == (0.915, 0.076)
+    # 80 x 0,915 + 50 x 0,076 = 73,2 + 3,8 = 77,0 kWh/mês; x 12 meses x R$ 0,75 = R$ 693,00/ano.
+    assert summary.retorno_esperado_kwh_mes == pytest.approx(77.0)
+    assert summary.retorno_esperado_valor_ano_rs == pytest.approx(693.0)
     # Aplicar a taxa global de 62,7% às duas daria 81,5 kWh/mês e R$ 733,5/ano: mais que o dobro.
     assert summary.retorno_esperado_kwh_mes != pytest.approx(summary.kwh_mes_selecionadas * 0.627, abs=1)
     assert summary.taxa_acerto.taxa == pytest.approx(0.6271)

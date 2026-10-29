@@ -7,15 +7,15 @@ from app.features.loss_management.detail_schemas import (
     PriorInspectionDTO,
     ScoreBreakdownDTO,
 )
+from app.features.loss_management.hit_rate import reason_hit_rate
 from app.features.loss_management.queries import MESES_JANELA_BASE, MESES_JANELA_RECENTE, shift_competencia
 from app.features.loss_management.schemas import SuspicionReason, SuspiciousUnitDTO
 from app.features.loss_management.scoring import (
     JANELA_RECUPERACAO_MESES,
     ConsumptionProfile,
     consumption_drop_ratio,
-    drop_band_label,
+    normalized_drop_ratio,
     priority_key,
-    reason_hit_rate,
 )
 
 MESES_SERIE = 12
@@ -58,23 +58,25 @@ def format_kwh(value: float) -> str:
     return f"{value:,.0f}".replace(",", ".")
 
 
-def _drop_band_sentence(profile: ConsumptionProfile, reasons: list[SuspicionReason]) -> str:
-    """Diz em qual faixa de queda a UC está e quantas inspeções históricas nessa faixa acharam irregularidade."""
-    drop_ratio = consumption_drop_ratio(profile)
+def _portfolio_sentence(profile: ConsumptionProfile, reasons: list[SuspicionReason], portfolio_ratio: float) -> str:
+    """Diz a queda da UC além da queda geral da carteira e quantas inspeções históricas nessa situação acharam."""
+    normalized_drop = normalized_drop_ratio(profile, portfolio_ratio)
     drop_reason = next(reason for reason in reasons if reason in DROP_REASONS)
-    hit_percent = round(reason_hit_rate(drop_reason, drop_ratio) * PERCENT)
+    hit_percent = round(reason_hit_rate(drop_reason, normalized_drop) * PERCENT)
     return (
-        f"Na faixa de queda {drop_band_label(drop_reason, drop_ratio)}, {hit_percent}% das inspeções "
+        f"Descontada a variação da carteira (mediana em {round(portfolio_ratio * PERCENT)}% do consumo base), "
+        f"a queda da UC é de {round(normalized_drop * PERCENT)}%; nessa situação, {hit_percent}% das inspeções "
         "históricas acharam irregularidade."
     )
 
 
-def explain_reasons(profile: ConsumptionProfile, reasons: list[SuspicionReason]) -> str:
+def explain_reasons(profile: ConsumptionProfile, reasons: list[SuspicionReason], portfolio_ratio: float = 1.0) -> str:
     """Escreve em pt-BR, só com os números reais da UC, por que ela está na fila.
 
     Args:
         profile: Consumo médio da UC nas janelas base e recente.
         reasons: Motivos de suspeita detectados.
+        portfolio_ratio: Razão mediana recente/base da carteira, que a frase desconta da queda da UC.
 
     Returns:
         Uma ou duas frases curtas; vazio se nenhum motivo se aplica.
@@ -87,7 +89,7 @@ def explain_reasons(profile: ConsumptionProfile, reasons: list[SuspicionReason])
             f"competências, {drop_percent}% abaixo da média de {format_kwh(profile.consumo_base_kwh)} kWh/mês do "
             f"período anterior (até {MESES_JANELA_BASE} competências)."
         )
-        sentences.extend([consumption_sentence, _drop_band_sentence(profile, reasons)])
+        sentences.extend([consumption_sentence, _portfolio_sentence(profile, reasons, portfolio_ratio)])
     if SuspicionReason.LEITURA_ZERADA in reasons:
         zero_months = profile.meses_zerados
         month_word = "mês" if zero_months == 1 else "meses"

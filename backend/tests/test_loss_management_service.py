@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.features.loss_management.exceptions import InspectionConflictError
+from app.features.loss_management.hit_rate import hit_probability
 from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.schemas import (
     CancellationReason,
@@ -20,7 +21,7 @@ from app.features.loss_management.scoring import (
     QueueCandidates,
     RegisteredUnit,
     build_suspicious_unit,
-    hit_probability,
+    normalized_drop_ratio,
     order_estimated_kwh,
     rank_suspicious_units,
 )
@@ -80,26 +81,57 @@ def test_drop_of_exactly_half_is_a_sudden_drop_not_a_moderate_one():
     assert unit.motivos == [SuspicionReason.QUEDA_SUBITA]
 
 
-def test_hit_probability_of_a_moderate_drop_depends_on_its_band():
-    assert hit_probability([SuspicionReason.QUEDA_MODERADA], drop_ratio=0.35) == pytest.approx(0.42)
-    assert hit_probability([SuspicionReason.QUEDA_MODERADA], drop_ratio=0.25) == pytest.approx(0.07)
+def test_hit_probability_of_a_moderate_drop_depends_on_the_drop_relative_to_the_portfolio():
+    assert hit_probability([SuspicionReason.QUEDA_MODERADA], normalized_drop=0.35) == pytest.approx(0.915)
+    assert hit_probability([SuspicionReason.QUEDA_MODERADA], normalized_drop=0.2) == pytest.approx(0.915)
+    assert hit_probability([SuspicionReason.QUEDA_MODERADA], normalized_drop=0.1) == pytest.approx(0.076)
 
 
-def test_unit_exposes_the_calibrated_probability_of_its_drop_band():
-    strong_moderate = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=195), TARIFF_RS_KWH)
-    weak_moderate = build_suspicious_unit(make_profile("UC2", base_kwh=300, recent_kwh=225), TARIFF_RS_KWH)
+def test_normalized_drop_discounts_the_fall_of_the_whole_portfolio():
+    profile = make_profile("UC1", base_kwh=300, recent_kwh=195)  # consumo recente = 65% da base
 
-    assert strong_moderate is not None
-    assert weak_moderate is not None
-    assert strong_moderate.probabilidade_acerto == pytest.approx(0.42)
-    assert weak_moderate.probabilidade_acerto == pytest.approx(0.07)
+    assert normalized_drop_ratio(profile) == pytest.approx(0.35)
+    assert normalized_drop_ratio(profile, portfolio_ratio=0.65) == pytest.approx(0.0)
+    assert normalized_drop_ratio(profile, portfolio_ratio=0.8) == pytest.approx(1 - 0.65 / 0.8)
+
+
+def test_normalized_drop_is_never_negative_nor_defined_without_a_base():
+    assert normalized_drop_ratio(make_profile("UC1", 300, 330), portfolio_ratio=0.9) == pytest.approx(0.0)
+    assert normalized_drop_ratio(make_profile("UC2", 0, 0), portfolio_ratio=0.9) == pytest.approx(0.0)
+
+
+def test_unit_exposes_the_probability_calibrated_against_the_portfolio():
+    profile = make_profile("UC1", base_kwh=300, recent_kwh=195)  # queda bruta de 35%
+
+    alone = build_suspicious_unit(profile, TARIFF_RS_KWH)
+    portfolio_fell_too = build_suspicious_unit(profile, TARIFF_RS_KWH, portfolio_ratio=0.65)
+
+    assert alone is not None
+    assert portfolio_fell_too is not None
+    assert alone.probabilidade_acerto == pytest.approx(0.915)
+    assert portfolio_fell_too.probabilidade_acerto == pytest.approx(0.076)
+    assert portfolio_fell_too.kwh_mes_recuperavel == alone.kwh_mes_recuperavel  # a energia a recuperar não muda
+
+
+def test_ranking_uses_the_portfolio_ratio_to_order_by_expected_kwh():
+    more_kwh_in_line_with_portfolio = make_profile("UC_A", base_kwh=500, recent_kwh=390)  # -22%, carteira em -20%
+    less_kwh_below_portfolio = make_profile("UC_B", base_kwh=200, recent_kwh=120)  # -40%
+    profiles = [more_kwh_in_line_with_portfolio, less_kwh_below_portfolio]
+
+    without_portfolio = rank_suspicious_units(profiles, limit=2, tariff_rs_kwh=TARIFF_RS_KWH)
+    with_portfolio = rank_suspicious_units(profiles, limit=2, tariff_rs_kwh=TARIFF_RS_KWH, portfolio_ratio=0.8)
+
+    assert [unit.id_uc for unit in without_portfolio] == ["UC_A", "UC_B"]
+    assert [unit.id_uc for unit in with_portfolio] == ["UC_B", "UC_A"]
 
 
 def test_ranking_puts_a_sudden_drop_ahead_of_a_larger_but_unlikelier_moderate_drop():
     large_weak_drop = make_profile("UC_QUEDA_FRACA_GRANDE", base_kwh=2000, recent_kwh=1500)
     small_sudden_drop = make_profile("UC_QUEDA_SUBITA", base_kwh=300, recent_kwh=100)
 
-    ranked = rank_suspicious_units([large_weak_drop, small_sudden_drop], limit=2, tariff_rs_kwh=TARIFF_RS_KWH)
+    ranked = rank_suspicious_units(
+        [large_weak_drop, small_sudden_drop], limit=2, tariff_rs_kwh=TARIFF_RS_KWH, portfolio_ratio=0.8
+    )
 
     assert [unit.id_uc for unit in ranked] == ["UC_QUEDA_SUBITA", "UC_QUEDA_FRACA_GRANDE"]
 
@@ -166,7 +198,9 @@ def test_hit_probability_takes_the_strongest_signal_when_both_apply():
 
 def test_unit_exposes_the_hit_probability_of_its_signals():
     drop_unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=100), TARIFF_RS_KWH)
-    zero_unit = build_suspicious_unit(make_profile("UC2", base_kwh=150, recent_kwh=100, zero_months=1), TARIFF_RS_KWH)
+    zero_unit = build_suspicious_unit(
+        make_profile("UC2", base_kwh=150, recent_kwh=100, zero_months=1), TARIFF_RS_KWH, portfolio_ratio=0.7
+    )
 
     assert drop_unit is not None
     assert zero_unit is not None
@@ -178,7 +212,9 @@ def test_ranking_prefers_the_likelier_hit_over_more_recoverable_kwh():
     more_kwh_less_likely = make_profile("UC_ZERADA_ISOLADA", base_kwh=1000, recent_kwh=700, zero_months=1)
     less_kwh_more_likely = make_profile("UC_QUEDA_SUBITA", base_kwh=330, recent_kwh=100)
 
-    ranked = rank_suspicious_units([more_kwh_less_likely, less_kwh_more_likely], limit=2, tariff_rs_kwh=TARIFF_RS_KWH)
+    ranked = rank_suspicious_units(
+        [more_kwh_less_likely, less_kwh_more_likely], limit=2, tariff_rs_kwh=TARIFF_RS_KWH, portfolio_ratio=0.7
+    )
 
     assert ranked[0].kwh_estimado_recuperar < ranked[1].kwh_estimado_recuperar
     assert [unit.id_uc for unit in ranked] == ["UC_QUEDA_SUBITA", "UC_ZERADA_ISOLADA"]

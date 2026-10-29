@@ -687,3 +687,28 @@
   - Pytest novos escritos antes (RED visto): faixa e taxa na frase do motivo nas três faixas, e as duas frases já existentes atualizadas.
   - Vitest novo: nota de valor no `QueueSummaryCards`.
   - `make lint-all` e `make test-all` abaixo. **Não conferido no navegador.**
+
+### [2026-10-28] - Fase 15.4: remedição dos sinais na Gold real (só medição e documentação)
+- **Autor:** Adrian César
+- **O que foi feito:** consultas somente de leitura no `v_energy.db`, sem alterar código nem regra. Resultados em `DECISOES_PERDAS.md` D12.
+  - GD confirmado (1 de 31, 3,2%) e queda de 50% ou mais confirmada (92,6%).
+  - Leitura zerada e reincidência não são mensuráveis com a Gold atual (nenhuma leitura zerada; nenhuma UC inspecionada duas vezes).
+  - Achado principal: a carteira inteira caiu em meados de 2025 (mediana da razão recente/base de 0,61 a 0,75). Com a queda normalizada pela mediana do mês, o acerto das inspeções acima de 20% fica entre 89,8% e 94,3% em cada mês, e abaixo de 20% entre 6,5% e 9,3%. Na fila de hoje, 31 das 165 UCs são fortes (cerca de 92%) e 134 fracas (cerca de 8%).
+- **Pendente de decisão:** trocar a queda bruta pela normalizada muda os números principais da fila (42% e 7% para cerca de 92% e 8%) e a ordem das UCs. Limites: só UCs que o campo já inspecionou, sem período de teste separado.
+- **Validação:** nenhum código alterado; `make lint-all` e `make test-all` não precisaram rodar de novo para esta entrada (o último passou na 15.3).
+
+### [2026-10-28] - Fase 15.4: chance de acerto pela queda além da carteira
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - Backend: a chance de acerto da `queda_moderada` passa a depender da queda da UC descontada a queda geral da carteira (`normalized_drop_ratio`): **91,5%** quando é de 20% ou mais e **7,6%** abaixo, medido na população da fila (sem GD, queda bruta de 20% a 50%: 118 de 129 e 25 de 330). Antes eram 42% e 7% por faixa de queda bruta.
+  - A mediana de recente/base de todas as UCs é calculada em `portfolio_repository.py` (uma consulta, cache por dia e por competência, como a tarifa) e viaja em `QueueCandidates.portfolio_ratio` até a lista, o resumo, o detalhe e o Painel do Diretor.
+  - As taxas e `hit_probability`/`reason_hit_rate` saíram de `scoring.py` para `hit_rate.py` (o teto de 300 linhas por módulo); `has_field_history_table` foi para o mixin da fila, que já repetia a verificação.
+  - A frase do motivo no detalhe agora diz: "Descontada a variação da carteira (mediana em N% do consumo base), a queda da UC é de X%; nessa situação, Y% das inspeções históricas acharam irregularidade". Substitui a frase por faixa da 15.3.
+  - A **regra de entrada na fila não mudou** (queda bruta de 20% ou mais): a lista, a energia recuperável e os números do Painel do Diretor ficam iguais.
+- **Resultado no `v_energy.db` real (2026-06):** as mesmas 165 UCs e 7.265 kWh/mês, com mediana da carteira 0,9176: **31 a 91,5% e 134 a 7,6%**, como a medição previu. O retorno esperado da fila inteira sobe de cerca de 908 para cerca de 2.046 kWh/mês, só pela classificação.
+- **Limites:** nenhuma UC de fora da fila foi inspecionada; a maior parte das UCs com queda além da carteira na população da fila vem de agosto e dezembro de 2025. Reincidência e leitura zerada seguem sem dado.
+- **Avisos a outros membros** em `docs/CORRECOES.md`: Célio (seção 6.2 do diagnóstico cita taxas e tarifa antigas) e Bernardo (ciência sobre o Painel). Nenhum arquivo de outro membro foi editado.
+- **Validação de Testes:**
+  - Pytest escritos antes (RED visto): queda normalizada, chance por motivo, ranking com e sem carteira, mediana da carteira no repositório (ímpar, par, com GD, com filtros, vazio), frase do motivo e detalhe da API (mediana 22% e queda de 26% conferidas à mão no seed).
+  - Testes antigos que supunham 42% e 7% foram reescritos com a carteira explícita, sem enfraquecê-los.
+  - `make lint-all` e `make test-all`: backend 750 passed, frontend 537 passed. **Não conferido no navegador.**

@@ -28,6 +28,7 @@ class QueuedUnit:
     profile: ConsumptionProfile
     top_expected_kwh: float
     reference: AnalysisReference
+    portfolio_ratio: float = 1.0
 
 
 class UnitDetailService:
@@ -66,7 +67,7 @@ class UnitDetailService:
             situacao=unit.situacao,
             competencia_referencia=queued.reference.competencia,
             motivos=unit.motivos,
-            motivo_resumo=explain_reasons(queued.profile, unit.motivos),
+            motivo_resumo=explain_reasons(queued.profile, unit.motivos, queued.portfolio_ratio),
             consumo_base_kwh=unit.consumo_base_kwh,
             consumo_recente_kwh=unit.consumo_recente_kwh,
             decomposicao_score=build_score_breakdown(unit, queued.top_expected_kwh),
@@ -82,14 +83,22 @@ class UnitDetailService:
         queue_filters = suspicion_filters(SuspiciousUnitsFilterDTO())
         candidates = await self.queue_repository.fetch_consumption_profiles(queue_filters)
         tariff = await self.queue_repository.fetch_average_tariff()
-        ranked_units = rank_suspicious_units(candidates.profiles, limit=None, tariff_rs_kwh=tariff.rs_per_kwh)
+        ranked_units = rank_suspicious_units(
+            candidates.profiles, limit=None, tariff_rs_kwh=tariff.rs_per_kwh, portfolio_ratio=candidates.portfolio_ratio
+        )
         found_unit = next((unit for unit in ranked_units if unit.id_uc == id_uc), None)
         if found_unit is None:
             raise await self._not_in_queue_error(id_uc)
         (unit,) = apply_situation([found_unit], candidates.active_orders)
         profile = next(profile for profile in candidates.profiles if profile.id_uc == id_uc)
         top_expected_kwh, _ = priority_key(ranked_units[0])
-        return QueuedUnit(unit=unit, profile=profile, top_expected_kwh=top_expected_kwh, reference=reference)
+        return QueuedUnit(
+            unit=unit,
+            profile=profile,
+            top_expected_kwh=top_expected_kwh,
+            reference=reference,
+            portfolio_ratio=candidates.portfolio_ratio,
+        )
 
     async def _not_in_queue_error(self, id_uc: str) -> NotFoundException:
         registered_unit = await self.queue_repository.fetch_registered_unit(id_uc)

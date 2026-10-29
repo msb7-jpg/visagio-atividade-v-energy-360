@@ -120,7 +120,9 @@ class ExecutiveDashboardService:
             SuspicionFilters(limiar_queda=LIMIAR_QUEDA_MODERADA)
         )
         tariff = await self.loss_repository.fetch_average_tariff()
-        ranked_units = rank_suspicious_units(candidates.profiles, limit=None, tariff_rs_kwh=tariff.rs_per_kwh)
+        ranked_units = rank_suspicious_units(
+            candidates.profiles, limit=None, tariff_rs_kwh=tariff.rs_per_kwh, portfolio_ratio=candidates.portfolio_ratio
+        )
         hit_rate = hit_rate_dto(await self.loss_repository.fetch_field_hit_rate())
         reference = candidates.reference_competencia or await self.repository.fetch_latest_measurement()
         snapshot = LossesSnapshotDTO(

@@ -47,6 +47,12 @@ class QueueSummaryRepositoryMixin:
         query = select(func.count()).select_from(InspectionOrder).where(InspectionOrder.status.in_(ACTIVE_STATUSES))
         return await self.session.scalar(query) or 0
 
+    async def has_field_history_table(self) -> bool:
+        """Indica se `fato_inspecoes_perdas` (Fatia 02) já foi exportada; só a ausência da tabela é tolerada."""
+        return await self.session.run_sync(
+            lambda sync_session: inspect(sync_session.connection()).has_table(fato_inspecoes_perdas.name)
+        )
+
     async def fetch_field_hit_rate(self) -> FieldHitRate | None:
         """Conta as inspeções do histórico de campo e quantas confirmaram irregularidade.
 
@@ -56,10 +62,7 @@ class QueueSummaryRepositoryMixin:
         Raises:
             DatabaseReadError: Se a tabela existe mas está fora do contrato de colunas.
         """
-        has_table = await self.session.run_sync(
-            lambda sync_session: inspect(sync_session.connection()).has_table(fato_inspecoes_perdas.name)
-        )
-        if not has_table:
+        if not await self.has_field_history_table():
             return None
         is_confirmed = case((fato_inspecoes_perdas.c.irregularidade_constatada.is_(True), 1), else_=0)
         query = select(

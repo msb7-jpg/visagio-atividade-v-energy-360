@@ -195,7 +195,10 @@
 - [x] **15.1 — Consistência:** painel do diretor passa a usar o mesmo limiar da fila (20%), com teste; `DECISOES_PERDAS.md` D8 e D9 atualizados (tarifa calculada, funil de 45.000 para 165 UCs) e pendências de tarifa fechadas. (Adrian César, 2026-10-28)
 - [x] **15.2 — Honestidade na tela:** aviso "N UCs prioritárias para uma capacidade de 200 inspeções por mês" (`QueueCapacityNotice`), expectativa da seleção "cerca de X de N inspeções devem achar irregularidade" e aviso de baixa chance, na barra de ações e no diálogo de geração (`SelectionOutlookNote`, `queueOutlook.ts`). Só frontend; nada bloqueia a decisão do gerente. (Adrian César, 2026-10-28)
 - [x] **15.3 — Motivo e valor mais úteis:** a frase do motivo no painel de detalhe traz a faixa de queda e a taxa de acerto da faixa ("Na faixa de queda de 30% a 50%, 42% das inspeções históricas acharam irregularidade"), calculada no backend (`drop_band_label`); o cartão da energia recuperável avisa que a estimativa de 3 meses ficou abaixo do recuperado (1,87×, D7). Sem coluna Motivo na tabela: as 165 UCs têm o mesmo motivo e o teste "não repete o motivo em cada linha" é uma decisão anterior. (Adrian César, 2026-10-28)
-- [ ] **15.4 — Mais sinais, com evidência:** remedir leitura zerada e limiar de GD na Gold real; normalizar a queda pela mediana da carteira; prazo de reincidência.
+- [x] **15.4 — Mais sinais, com evidência:** medição feita em 2026-10-28 e registrada em `DECISOES_PERDAS.md` D12.
+  - [x] GD remedido na Gold real: 1 de 31 (3,2%), a exclusão continua. Queda de 50% ou mais remedida: 92,6%.
+  - [x] Leitura zerada: não mensurável, a Gold real não tem leituras com consumo zero. Reincidência: não mensurável, nenhuma UC foi inspecionada duas vezes.
+  - [x] Queda normalizada pela mediana da carteira (decisão do dono da fatia em 2026-10-28): chance da `queda_moderada` de 91,5% (queda além da carteira de 20% ou mais) e 7,6% (abaixo), medida na população da fila. A entrada na fila não mudou; na fila de 2026-06 são 31 UCs fortes e 134 fracas. Backend: `normalized_drop_ratio`, `hit_rate.py`, `portfolio_repository.py`. Pendência 15.4: prazo de reincidência (sem dado).
 - [ ] **15.5 — Escala e validação:** paginação com `offset` no servidor (teto atual de 500 UCs) e piloto de inspeção fora da fila.
 
 ---

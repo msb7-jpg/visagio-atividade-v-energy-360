@@ -37,8 +37,9 @@ fora (1.385 de 1.389 entram).
 ### D2. Sinais e limiares
 - **Decisão (atualizada em 2026-10-27, fila classificada):** UC entra na fila se o consumo médio das 3 últimas
   competências cair **20% ou mais** frente às 12 anteriores, ou se tiver leitura zerada. A queda de 50% ou mais é
-  `queda_subita` (0,93); a de 20% a 50% é `queda_moderada`, com chance por faixa medida na Gold real: 0,42 de 30% a
-  50% e 0,07 de 20% a 30%. Leitura zerada 0,627 (a taxa geral). A ordem da fila não mudou (kWh esperado = kWh a
+  `queda_subita` (0,93); a de 20% a 50% é `queda_moderada`. **Atualização de 2026-10-28:** a chance da queda moderada
+  não depende mais da faixa de queda bruta (0,42 e 0,07), e sim da queda descontada a queda geral da carteira (D12):
+  0,915 quando a queda normalizada é de 20% ou mais e 0,076 abaixo disso. Leitura zerada 0,627 (a taxa geral). A ordem da fila não mudou (kWh esperado = kWh a
   recuperar x chance), então a queda súbita segue no topo e o piso de 20% só amplia a lista. Em meses de queda
   generalizada da carteira (ex.: 2025-07 e 2025-09) o piso não seleciona e a lista fica com dezenas de milhares de
   UCs; o topo continua correto.
@@ -155,11 +156,12 @@ fora (1.385 de 1.389 entram).
   inicial), **Baixa chance** (abaixo de 30%) e **Todas**, cada uma com a contagem. Aba sem UC fica desligada, e a
   tela abre na primeira que tem UC. Uma versão anterior recolhia a baixa chance atrás de um botão no fim da lista;
   foi trocada porque o usuário não descobria as outras UCs sem rolar a página. O corte
-  (`PRIORITY_MIN_HIT_PROBABILITY`) fica entre as taxas medidas: 7% (queda de 20% a 30%) e 42% (30% a 50%). A ordem
+  (`PRIORITY_MIN_HIT_PROBABILITY`) fica entre as taxas medidas. Até 2026-10-28 eram 7% (queda de 20% a 30%) e 42% (30%
+  a 50%); com a queda normalizada (D12) passam a ser 7,6% e 91,5%, e o corte de 30% continua entre elas. A ordem
   dentro de cada aba é a do backend (kWh esperado). "Selecionar top 10 prioritárias" escolhe só entre as
   prioritárias, em qualquer aba. A seleção vale entre abas.
-- **O que os dados mostram (2026-06, `v_energy.db` real):** a fila tem **165 UCs**, todas `queda_moderada`: 19 com
-  42% e 146 com 7%. Não há queda abrupta (≥ 50%) nem leitura zerada. As 1.358 UCs já inspecionadas saem da fila:
+- **O que os dados mostram (2026-06, `v_energy.db` real):** a fila tem **165 UCs**, todas `queda_moderada`: 31 com
+  91,5% e 134 com 7,6% (até 2026-10-28, com a queda bruta, eram 19 com 42% e 146 com 7%). Não há queda abrupta (≥ 50%) nem leitura zerada. As 1.358 UCs já inspecionadas saem da fila:
   das 656 candidatas com queda de 20% ou mais, 491 foram inspecionadas em 2025-08 a 2025-12.
 - **Taxas conferidas no ponto do tempo** (queda calculada até o mês anterior à inspeção, 1.385 inspeções): 7% (12 de
   161) para 20% a 30%, 42% (132 de 314) para 30% a 50% e 91% (713 de 780) a partir de 50%. Medir com a queda de hoje
@@ -169,6 +171,53 @@ fora (1.385 de 1.389 entram).
   separa as irregulares. Faltam exemplos de UCs que o campo nunca visitou, então só um **piloto de inspeção** em
   uma amostra de fora da fila valida um sinal novo.
 - **Em aberto:** depois de quanto tempo uma UC com irregularidade constatada volta à fila (reincidência).
+
+### D12. Remedição dos sinais na Gold real (2026-10-28)
+- **Método:** para cada uma das 1.385 inspeções avaliáveis (agosto a dezembro de 2025), a queda de consumo é calculada
+  no ponto do tempo: os 3 meses anteriores ao mês da inspeção contra os 12 meses antes deles, sem leituras
+  negativas. É o mesmo cuidado de D11 contra o viés de olhar para o futuro.
+- **GD (D3) confirmado:** 1 irregularidade em 31 inspeções em UCs com GD (3,2%), em qualquer faixa de queda. A
+  exclusão de UCs com GD continua.
+- **Queda de 50% ou mais (D2) confirmada:** 92,6% (713 de 770) nas UCs sem GD.
+- **Leitura zerada não é mensurável:** a Gold real não tem nenhuma leitura com consumo zero nem negativo
+  (0 linhas em 2.152.336). O motivo `leitura_zerada` nunca dispara hoje, e a taxa de 62,7% que ele usa é a geral, sem
+  medição própria.
+- **Reincidência não é mensurável:** as 1.389 inspeções são de 1.389 UCs diferentes. Nenhuma UC foi inspecionada duas
+  vezes, então não há dado para definir o prazo em que uma UC volta à fila depois de uma irregularidade.
+- **A queda geral da carteira muda a leitura das faixas.** A mediana de `consumo recente / base` de todas as UCs foi
+  0,75 (ago), 0,62 (set), 0,61 (out), 0,74 (nov) e 1,02 (dez/2025): em meados de 2025 a carteira inteira caiu. Medida
+  contra a mediana do mês (queda normalizada = 1 − razão da UC / mediana), a separação das inspeções, sem GD, é muito
+  maior:
+
+| Faixa de queda | Bruta | Normalizada pela mediana do mês |
+|---|---|---|
+| menos de 10% | 8,0% (8 de 100) | 8,0% (35 de 440) |
+| 10% a 20% | 12,0% (3 de 25) | 6,7% (1 de 15) |
+| 20% a 30% | 7,8% (12 de 154) | 88,9% (16 de 18) |
+| 30% a 50% | 43,0% (131 de 305) | 92,8% (467 de 503) |
+| 50% ou mais | 92,6% (713 de 770) | 92,1% (348 de 378) |
+
+  A queda normalizada de 20% ou mais acerta de 89,8% a 94,3% em cada um dos 5 meses; abaixo de 20% acerta de 6,5% a
+  9,3%. A bruta mistura meses de queda geral, e é por isso que a faixa de 30% a 50% parece valer só 42%.
+- **Efeito na fila de 2026-06:** a mediana da carteira é 0,918 (sem queda geral). Das 165 UCs da fila, **31** têm queda
+  normalizada de 20% ou mais (chance histórica de cerca de 92%) e **134** não têm (cerca de 8%). A classificação atual
+  (19 UCs a 42% e 146 a 7%) subestima 12 das 31 UCs fortes e superestima parte das 19.
+- **Limites:** os acertos são de UCs que o campo já escolhera inspecionar; nenhuma UC de fora da fila foi inspecionada,
+  então a medição não diz o que a fila deixa de ver. Cada mês é uma amostra independente, mas não há um período de
+  teste separado.
+- **Decisão implementada (2026-10-28):** a chance de acerto da `queda_moderada` passa a usar a queda normalizada.
+  Medido só na população da fila (sem GD, queda bruta de 20% a 50%): **91,5%** (118 de 129) com queda normalizada de
+  20% ou mais e **7,6%** (25 de 330) abaixo. A regra de entrada na fila não mudou (queda bruta de 20% ou mais), então
+  a lista, a energia recuperável e os números do Painel do Diretor continuam iguais; muda a chance de cada UC, a
+  ordem e o retorno esperado. A mediana da carteira (recente/base de todas as UCs, inclusive as com GD e as já
+  inspecionadas) é calculada na API e guardada em cache por dia (`portfolio_repository.py`).
+- **Resultado na fila de 2026-06 (mediana 0,918):** as mesmas 165 UCs, agora 31 a 91,5% e 134 a 7,6%. O retorno
+  esperado da fila inteira sobe de cerca de 908 para cerca de 2.046 kWh/mês, só pela classificação.
+- **Não confundir com o sinal já descartado em D11:** aquele comparava a UC com a mediana das UCs da mesma classe e
+  alimentador. A normalização aqui compara com a carteira inteira no mesmo período.
+- **Cautela:** a maior parte das UCs com queda normalizada alta na população da fila vem de agosto e dezembro de 2025
+  (nos meses de queda geral quase toda queda bruta passa de 50%). A taxa de 91,5% segue sendo histórica de UCs que o
+  campo já escolhera inspecionar.
 
 ## 5. Limitações e pendências
 

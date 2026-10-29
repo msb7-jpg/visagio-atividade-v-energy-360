@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from app.features.loss_management.hit_rate import TAXA_ACERTO_GERAL
 from app.features.loss_management.schemas import (
     FILA_CAPACIDADE_MENSAL,
     HitRateDTO,
@@ -10,7 +11,6 @@ from app.features.loss_management.schemas import (
     QueueSummaryDTO,
     SuspiciousUnitDTO,
 )
-from app.features.loss_management.scoring import TAXA_ACERTO_GERAL
 from app.features.loss_management.tariff import AverageTariff
 
 SITUATION_BY_ORDER_STATUS = {

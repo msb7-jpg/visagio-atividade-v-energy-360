@@ -2,7 +2,7 @@ import type { SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
 
 /**
  * Chance de acerto a partir da qual a UC é prioritária. As taxas medidas em campo ficam bem longe deste corte:
- * 7% (queda de 20% a 30%), 42% (30% a 50%), 63% (leitura zerada) e 93% (queda abrupta).
+ * 8% (queda moderada na linha da carteira), 63% (leitura zerada), 92% (queda moderada além da carteira) e 93% (queda abrupta).
  */
 export const PRIORITY_MIN_HIT_PROBABILITY = 0.3
 

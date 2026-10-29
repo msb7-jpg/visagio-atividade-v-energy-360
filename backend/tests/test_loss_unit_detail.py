@@ -67,10 +67,13 @@ async def test_detail_of_a_queued_unit_has_identification_and_reason(client):
     assert (detail["situacao"], detail["motivos"], detail["competencia_referencia"]) == (
         "na_fila", ["queda_subita"], "2026-01",
     )
+    # Razões recente/base do seed: 0,133; 0,167; 0,2; 0,25; 0,833 e 1,0 (a UC sem leitura recente fica de fora).
+    # Mediana = (0,2 + 0,25) / 2 = 0,225; queda da UC_FRAUDE além da carteira = 1 - 0,1667 / 0,225 = 26%.
     assert detail["motivo_resumo"] == (
         "Consumo médio de 50 kWh/mês nas 3 últimas competências, 83% abaixo da média de 300 kWh/mês "
-        "do período anterior (até 12 competências). Na faixa de queda acima de 50%, 93% das inspeções "
-        "históricas acharam irregularidade."
+        "do período anterior (até 12 competências). Descontada a variação da carteira (mediana em 22% do "
+        "consumo base), a queda da UC é de 26%; nessa situação, 93% das inspeções históricas acharam "
+        "irregularidade."
     )
 
 
@@ -275,25 +278,33 @@ def test_reason_text_uses_brazilian_thousands_separator_and_both_reasons():
     profile = make_profile(1500.0, 1000.0, zero_months=2)
     reasons = [SuspicionReason.QUEDA_MODERADA, SuspicionReason.LEITURA_ZERADA]
 
-    sentence = explain_reasons(profile, reasons)
+    sentence = explain_reasons(profile, reasons, portfolio_ratio=0.8)
 
     assert sentence == (
         "Consumo médio de 1.000 kWh/mês nas 3 últimas competências, 33% abaixo da média de 1.500 kWh/mês "
-        "do período anterior (até 12 competências). Na faixa de queda de 30% a 50%, 42% das inspeções "
-        "históricas acharam irregularidade. 2 meses com leitura zerada nas 3 últimas competências."
+        "do período anterior (até 12 competências). Descontada a variação da carteira (mediana em 80% do "
+        "consumo base), a queda da UC é de 17%; nessa situação, 8% das inspeções históricas acharam "
+        "irregularidade. 2 meses com leitura zerada nas 3 últimas competências."
     )
 
 
 @pytest.mark.parametrize(
-    ("base_kwh", "recent_kwh", "band", "hit_percent"),
-    [(300.0, 150.0, "acima de 50%", 93), (300.0, 200.0, "de 30% a 50%", 42), (300.0, 230.0, "de 20% a 30%", 7)],
+    ("base_kwh", "recent_kwh", "portfolio_ratio", "relative_drop", "hit_percent"),
+    [
+        (300.0, 150.0, 1.0, 50, 93),
+        (300.0, 200.0, 1.0, 33, 92),
+        (300.0, 230.0, 1.0, 23, 92),
+        (300.0, 230.0, 0.9, 15, 8),
+    ],
 )
-def test_reason_text_names_the_drop_band_and_its_historical_hit_rate(base_kwh, recent_kwh, band, hit_percent):
-    reasons = detect_reasons(make_profile(base_kwh, recent_kwh))
+def test_reason_text_discounts_the_portfolio_and_gives_the_historical_hit_rate(
+    base_kwh, recent_kwh, portfolio_ratio, relative_drop, hit_percent
+):
+    profile = make_profile(base_kwh, recent_kwh)
 
-    sentence = explain_reasons(make_profile(base_kwh, recent_kwh), reasons)
+    sentence = explain_reasons(profile, detect_reasons(profile), portfolio_ratio=portfolio_ratio)
 
-    assert f"Na faixa de queda {band}, {hit_percent}% das inspeções históricas acharam irregularidade." in sentence
+    assert f"a queda da UC é de {relative_drop}%; nessa situação, {hit_percent}% das inspeções históricas" in sentence
 
 
 def test_series_crosses_the_year_boundary_and_keeps_twelve_months():

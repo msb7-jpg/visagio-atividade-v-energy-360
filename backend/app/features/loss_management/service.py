@@ -129,7 +129,11 @@ class LossService:
         candidates = await self.repository.fetch_consumption_profiles(suspicion_filters(queue_filter))
         tariff = await self.repository.fetch_average_tariff()
         ranked_units = rank_suspicious_units(
-            candidates.profiles, None, tariff_rs_kwh=tariff.rs_per_kwh, reason=queue_filter.motivo
+            candidates.profiles,
+            None,
+            tariff_rs_kwh=tariff.rs_per_kwh,
+            reason=queue_filter.motivo,
+            portfolio_ratio=candidates.portfolio_ratio,
         )
         units = apply_situation(ranked_units[: queue_filter.limit], candidates.active_orders)
         fixed_competencia = candidates.reference_competencia
@@ -153,7 +157,9 @@ class LossService:
         """
         candidates = await self.repository.fetch_consumption_profiles(suspicion_filters(SuspiciousUnitsFilterDTO()))
         tariff = await self.repository.fetch_average_tariff()
-        ranked_units = rank_suspicious_units(candidates.profiles, limit=None, tariff_rs_kwh=tariff.rs_per_kwh)
+        ranked_units = rank_suspicious_units(
+            candidates.profiles, limit=None, tariff_rs_kwh=tariff.rs_per_kwh, portfolio_ratio=candidates.portfolio_ratio
+        )
         units = apply_situation(ranked_units, candidates.active_orders)
         selected_set = set(selected_ids)
         selected_units = [

@@ -140,3 +140,4 @@ async def test_losses_snapshot_uses_the_same_drop_threshold_as_the_loss_queue():
     await service.get_losses_snapshot()
 
     assert [filters.limiar_queda for filters in service.loss_repository.received_filters] == [LIMIAR_QUEDA_MODERADA]
+
