@@ -10,6 +10,7 @@ from app.features.executive_dashboard.queries import (
     SUFFIX_BASE,
     available_period_query,
 )
+from app.features.grid_quality.continuity_queries import feeder_ucs_query
 from app.features.loss_management.queries import latest_competencia_query
 from app.features.revenue.schemas import PeriodWindow
 from app.shared.exceptions import DatabaseReadError
@@ -48,7 +49,22 @@ class ExecutiveDashboardRepository:
             except OperationalError as error:
                 raise DatabaseReadError(f"Falha ao ler a tabela Gold {table_name}: {error.orig}") from error
             combined_row.update(result.mappings().one())
+        served_units = await self.fetch_served_units()
+        combined_row[f"ucs_atendidas_{SUFFIX_BASE}"] = served_units
+        combined_row[f"ucs_atendidas_{SUFFIX_ATUAL}"] = served_units
         return area_totals(combined_row, SUFFIX_BASE), area_totals(combined_row, SUFFIX_ATUAL)
+
+    async def fetch_served_units(self) -> int:
+        """UCs atendidas pela rede: soma das UCs de cada alimentador, a mesma base da Qualidade da Rede (ADR-025).
+
+        Raises:
+            DatabaseReadError: Se a tabela de qualidade por alimentador não existir.
+        """
+        try:
+            result = await self.session.execute(feeder_ucs_query())
+        except OperationalError as error:
+            raise DatabaseReadError(f"Falha ao ler a tabela Gold fato_qualidade_alimentador: {error.orig}") from error
+        return int(sum(row.ucs_atendidas or 0 for row in result))
 
     async def fetch_available_period(self) -> PeriodWindow | None:
         """Primeira e última competência com faturamento.

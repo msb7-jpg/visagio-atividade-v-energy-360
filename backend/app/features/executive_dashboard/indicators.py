@@ -45,6 +45,7 @@ class AreaTotals:
     leituras: int
     leituras_estimadas: int
     ucs_com_gd: int
+    ucs_atendidas: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,8 +143,7 @@ def build_detail(detail: DetailSpec | None, snapshots: PeriodSnapshots) -> Indic
 def build_indicator(spec: IndicatorSpec, snapshots: PeriodSnapshots) -> IndicatorDTO:
     """Mede o indicador nas duas janelas e monta a resposta com variação, avaliação e aviso.
 
-    Indicadores em % (inadimplência, leituras estimadas) são avaliados pela diferença em pontos percentuais:
-    de 3,55% para 3,60% é +1,4% relativo, mas só +0,05 p.p., e isso não deve aparecer como "piorou".
+    Indicadores em % são avaliados pela diferença em pontos percentuais (ADR-011).
 
     Args:
         spec: Definição do indicador.

@@ -61,8 +61,7 @@ class ExecutiveDashboardService:
     async def get_indicators(self, base: PeriodWindow, current: PeriodWindow) -> DashboardIndicatorsDTO:
         """Compara os indicadores de todas as áreas entre a janela base e a janela atual.
 
-        Os totais de receita vêm da mesma consulta da tela de Receita, então os números são iguais aos de
-        `/revenue/kpis` nas mesmas janelas. O resultado fica no cache por janela, porque a Gold só muda a cada carga.
+        A receita vem da mesma consulta de `/revenue/kpis`, e o resultado fica no cache por janela (ADR-016).
 
         Args:
             base: Janela de referência (padrão: primeiro ano da base).

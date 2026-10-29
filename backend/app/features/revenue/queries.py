@@ -76,9 +76,7 @@ def segment_totals_query(base: PeriodWindow, current: PeriodWindow, filters: Rev
 def period_totals_query(base: PeriodWindow, current: PeriodWindow, filters: RevenueFilters) -> Select:
     """Receita, volume, número de faturas e UCs distintas nas janelas base e atual (uma linha).
 
-    Sem filtro de competência no `WHERE`: cada soma já limita a janela no `CASE`, e ler a tabela inteira em sequência
-    é mais rápido no SQLite do que ir pelo índice de `competencia` para metade das faturas (no `v_energy.db` real,
-    5,1 s caíram para 2,8 s em 2026-10-28).
+    Sem `WHERE` por competência: cada soma filtra a janela no `CASE`, o que é mais rápido no SQLite (ADR-016).
     """
     volume = fato_faturamento.c.consumo_faturado_kwh
     revenue = fato_faturamento.c.valor_total_rs

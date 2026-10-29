@@ -33,13 +33,13 @@ def overdue_rate(snapshot: WindowSnapshot) -> float | None:
 
 
 def outage_hours_per_unit(snapshot: WindowSnapshot) -> float | None:
-    """Horas sem energia somadas de todas as UCs, divididas pelas UCs ativas (DEC da área)."""
-    return safe_ratio(snapshot.areas.horas_interrompidas, snapshot.revenue.ucs_ativas)
+    """Horas sem energia somadas de todas as UCs, divididas pelas UCs atendidas pela rede (DEC da área)."""
+    return safe_ratio(snapshot.areas.horas_interrompidas, snapshot.areas.ucs_atendidas)
 
 
 def outages_per_unit(snapshot: WindowSnapshot) -> float | None:
-    """Interrupções somadas de todas as UCs, divididas pelas UCs ativas (FEC da área)."""
-    return safe_ratio(snapshot.areas.interrupcoes, snapshot.revenue.ucs_ativas)
+    """Interrupções somadas de todas as UCs, divididas pelas UCs atendidas pela rede (FEC da área)."""
+    return safe_ratio(snapshot.areas.interrupcoes, snapshot.areas.ucs_atendidas)
 
 
 def estimated_reading_rate(snapshot: WindowSnapshot) -> float | None:
@@ -84,12 +84,14 @@ GROUPS = (
     GroupSpec("rede", "Rede", (
         IndicatorSpec(
             "dec_area", "Horas sem energia por cliente", IndicatorUnit.HORAS, MENOR,
-            "Horas de interrupção somadas de todas as UCs, divididas pelas UCs ativas (DEC da área).",
+            "Horas de interrupção somadas de todas as UCs, divididas pelas UCs atendidas pelos alimentadores "
+            "(DEC da área, mesma base da Qualidade da Rede).",
             outage_hours_per_unit, afetado_pelo_temporal=True,
         ),
         IndicatorSpec(
             "fec_area", "Interrupções por cliente", IndicatorUnit.VEZES, MENOR,
-            "Interrupções somadas de todas as UCs, divididas pelas UCs ativas (FEC da área).",
+            "Interrupções somadas de todas as UCs, divididas pelas UCs atendidas pelos alimentadores "
+            "(FEC da área, mesma base da Qualidade da Rede).",
             outages_per_unit, afetado_pelo_temporal=True,
         ),
     )),
