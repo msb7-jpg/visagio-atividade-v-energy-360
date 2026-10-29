@@ -80,7 +80,8 @@ fora (1.385 de 1.389 entram).
   correlação entre os dois é **0,87**.
 - **Impacto:** a estimativa **serve para ordenar** a fila (correlação alta, e a ordem não muda com a escala), mas
   **subestima o valor absoluto**: os dados sugerem cerca de 5,6 meses em vez de 3. Mudar a constante
-  `JANELA_RECUPERACAO_MESES` altera os kWh e R$ exibidos, não a ordem. Segue em 3 (valor da primeira versão); se
+  `JANELA_RECUPERACAO_MESES` altera os kWh e R$ exibidos, não a ordem. O cartão "Energia recuperável das selecionadas"
+  mostra essa razão de 1,87× como nota, sem alterar o número exibido. Segue em 3 (valor da primeira versão); se
   a diretoria for citar valores absolutos, o time deve decidir se ajusta.
 - **Limite da evidência:** uma única competência de referência e uma amostra de 188 UCs.
 

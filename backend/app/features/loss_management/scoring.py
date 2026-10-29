@@ -128,6 +128,22 @@ def reason_hit_rate(reason: SuspicionReason, drop_ratio: float) -> float:
     return TAXA_ACERTO_POR_MOTIVO[reason]
 
 
+def drop_band_label(reason: SuspicionReason, drop_ratio: float) -> str:
+    """Nomeia a faixa de queda que define a taxa de acerto do sinal (a mesma de `reason_hit_rate`).
+
+    Args:
+        reason: Motivo de queda (súbita ou moderada).
+        drop_ratio: Fração de queda do consumo da UC (0 a 1).
+
+    Returns:
+        "acima de 50%" para a queda súbita; "de 30% a 50%" ou "de 20% a 30%" para a moderada.
+    """
+    if reason == SuspicionReason.QUEDA_SUBITA:
+        return "acima de 50%"
+    is_strong_band = drop_ratio >= LIMIAR_QUEDA_MODERADA_FORTE
+    return "de 30% a 50%" if is_strong_band else "de 20% a 30%"
+
+
 def hit_probability(reasons: list[SuspicionReason], drop_ratio: float = 0.0) -> float:
     """Estima a chance de uma inspeção achar irregularidade a partir dos sinais da UC.
 

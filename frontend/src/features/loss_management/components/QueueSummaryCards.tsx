@@ -5,6 +5,7 @@ import { HitRateCard } from '@/features/loss_management/components/HitRateCard'
 import { SummaryCard } from '@/features/loss_management/components/SummaryCard'
 import type { QueueSummary } from '@/features/loss_management/types/lossTypes'
 import { formatCompactCurrency, formatInteger, formatTariffNote } from '@/features/loss_management/utils/lossFormatters'
+import { formatRecoveryNote } from '@/features/loss_management/utils/recoveryEstimate'
 import { cn } from '@/lib/utils'
 
 interface QueueSummaryCardsProps {
@@ -53,6 +54,7 @@ export function QueueSummaryCards({ summary, isUpdating, isError, onRetry }: Que
         <p className="text-muted-foreground text-xs">
           {formatTariffNote(summary.tarifa_rs_kwh, summary.tarifa_periodo_inicio, summary.tarifa_periodo_fim)}
         </p>
+        <p className="text-muted-foreground text-xs">{formatRecoveryNote()}</p>
       </SummaryCard>
       <SummaryCard title="Retorno esperado">
         <p className="flex items-baseline gap-1.5">

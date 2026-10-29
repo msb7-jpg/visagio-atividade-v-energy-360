@@ -675,3 +675,15 @@
 - **Validação de Testes:**
   - Vitest novos escritos antes do código (RED visto): `queueOutlook.test.ts` (6) e `QueueExpectationNotes.test.tsx` (5), mais 2 cenários em `SuspiciousQueueTab.test.tsx`.
   - Frontend: 536 passed. Backend inalterado. **Não conferido no navegador.**
+
+### [2026-10-28] - Fase 15.3: motivo com a faixa de queda e valor com a razão observada
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - Backend: `explain_reasons` (`unit_detail.py`) acrescenta à frase do motivo a faixa de queda e a taxa de acerto dela, por exemplo "Na faixa de queda de 30% a 50%, 42% das inspeções históricas acharam irregularidade". `drop_band_label` fica em `scoring.py`, junto dos limiares e das taxas, para os rótulos não divergirem do cálculo.
+  - Frontend: o cartão "Energia recuperável das selecionadas" ganha a nota "Estimativa de 3 meses de déficit: em campo, o recuperado foi 1,87× o estimado (mediana)" (`recoveryEstimate.ts`). O número exibido não mudou: a janela de 3 meses segue como no D7.
+  - **Decisão de desenho:** não criei coluna Motivo na tabela. Uma primeira tentativa foi desfeita porque as 165 UCs têm o mesmo motivo (`queda_moderada`) e o teste existente "não repete o motivo em cada linha" registra essa decisão. O motivo e a faixa ficam no painel de detalhe; a queda em % já está na coluna Queda.
+- **Próximos Passos:** Fase 15.4 (remedir sinais, queda normalizada pela mediana, reincidência).
+- **Validação de Testes:**
+  - Pytest novos escritos antes (RED visto): faixa e taxa na frase do motivo nas três faixas, e as duas frases já existentes atualizadas.
+  - Vitest novo: nota de valor no `QueueSummaryCards`.
+  - `make lint-all` e `make test-all` abaixo. **Não conferido no navegador.**

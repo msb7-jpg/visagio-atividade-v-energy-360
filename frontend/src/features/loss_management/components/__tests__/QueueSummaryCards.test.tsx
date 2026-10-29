@@ -34,6 +34,14 @@ describe('QueueSummaryCards', () => {
     expect(screen.getByText('Tarifa média de 12 meses: R$ 0,79/kWh (jul/2025–jun/2026)')).toBeInTheDocument()
   })
 
+  it('explica que o valor é uma estimativa conservadora frente ao que o campo recuperou', () => {
+    render(<QueueSummaryCards summary={summary} isUpdating={false} isError={false} onRetry={vi.fn()} />)
+
+    expect(
+      screen.getByText('Estimativa de 3 meses de déficit: em campo, o recuperado foi 1,87× o estimado (mediana)')
+    ).toBeInTheDocument()
+  })
+
   it('mostra o retorno esperado vindo do servidor, sem reaplicar a taxa histórica global', () => {
     render(<QueueSummaryCards summary={summary} isUpdating={false} isError={false} onRetry={vi.fn()} />)
 

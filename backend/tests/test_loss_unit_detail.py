@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.features.loss_management.detail_repository import UnitDetailRepository
 from app.features.loss_management.detail_schemas import PriorInspectionDTO, PriorInspectionSource
 from app.features.loss_management.schemas import SuspicionReason
-from app.features.loss_management.scoring import ConsumptionProfile
+from app.features.loss_management.scoring import ConsumptionProfile, detect_reasons
 from app.features.loss_management.unit_detail import (
     explain_reasons,
     fill_monthly_series,
@@ -69,7 +69,8 @@ async def test_detail_of_a_queued_unit_has_identification_and_reason(client):
     )
     assert detail["motivo_resumo"] == (
         "Consumo médio de 50 kWh/mês nas 3 últimas competências, 83% abaixo da média de 300 kWh/mês "
-        "do período anterior (até 12 competências)."
+        "do período anterior (até 12 competências). Na faixa de queda acima de 50%, 93% das inspeções "
+        "históricas acharam irregularidade."
     )
 
 
@@ -278,8 +279,21 @@ def test_reason_text_uses_brazilian_thousands_separator_and_both_reasons():
 
     assert sentence == (
         "Consumo médio de 1.000 kWh/mês nas 3 últimas competências, 33% abaixo da média de 1.500 kWh/mês "
-        "do período anterior (até 12 competências). 2 meses com leitura zerada nas 3 últimas competências."
+        "do período anterior (até 12 competências). Na faixa de queda de 30% a 50%, 42% das inspeções "
+        "históricas acharam irregularidade. 2 meses com leitura zerada nas 3 últimas competências."
     )
+
+
+@pytest.mark.parametrize(
+    ("base_kwh", "recent_kwh", "band", "hit_percent"),
+    [(300.0, 150.0, "acima de 50%", 93), (300.0, 200.0, "de 30% a 50%", 42), (300.0, 230.0, "de 20% a 30%", 7)],
+)
+def test_reason_text_names_the_drop_band_and_its_historical_hit_rate(base_kwh, recent_kwh, band, hit_percent):
+    reasons = detect_reasons(make_profile(base_kwh, recent_kwh))
+
+    sentence = explain_reasons(make_profile(base_kwh, recent_kwh), reasons)
+
+    assert f"Na faixa de queda {band}, {hit_percent}% das inspeções históricas acharam irregularidade." in sentence
 
 
 def test_series_crosses_the_year_boundary_and_keeps_twelve_months():

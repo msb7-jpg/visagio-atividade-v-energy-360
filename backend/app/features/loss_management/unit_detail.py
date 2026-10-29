@@ -13,7 +13,9 @@ from app.features.loss_management.scoring import (
     JANELA_RECUPERACAO_MESES,
     ConsumptionProfile,
     consumption_drop_ratio,
+    drop_band_label,
     priority_key,
+    reason_hit_rate,
 )
 
 MESES_SERIE = 12
@@ -56,6 +58,17 @@ def format_kwh(value: float) -> str:
     return f"{value:,.0f}".replace(",", ".")
 
 
+def _drop_band_sentence(profile: ConsumptionProfile, reasons: list[SuspicionReason]) -> str:
+    """Diz em qual faixa de queda a UC está e quantas inspeções históricas nessa faixa acharam irregularidade."""
+    drop_ratio = consumption_drop_ratio(profile)
+    drop_reason = next(reason for reason in reasons if reason in DROP_REASONS)
+    hit_percent = round(reason_hit_rate(drop_reason, drop_ratio) * PERCENT)
+    return (
+        f"Na faixa de queda {drop_band_label(drop_reason, drop_ratio)}, {hit_percent}% das inspeções "
+        "históricas acharam irregularidade."
+    )
+
+
 def explain_reasons(profile: ConsumptionProfile, reasons: list[SuspicionReason]) -> str:
     """Escreve em pt-BR, só com os números reais da UC, por que ela está na fila.
 
@@ -69,11 +82,12 @@ def explain_reasons(profile: ConsumptionProfile, reasons: list[SuspicionReason])
     sentences: list[str] = []
     if DROP_REASONS & set(reasons):
         drop_percent = round(consumption_drop_ratio(profile) * PERCENT)
-        sentences.append(
+        consumption_sentence = (
             f"Consumo médio de {format_kwh(profile.consumo_recente_kwh)} kWh/mês nas {MESES_JANELA_RECENTE} últimas "
             f"competências, {drop_percent}% abaixo da média de {format_kwh(profile.consumo_base_kwh)} kWh/mês do "
             f"período anterior (até {MESES_JANELA_BASE} competências)."
         )
+        sentences.extend([consumption_sentence, _drop_band_sentence(profile, reasons)])
     if SuspicionReason.LEITURA_ZERADA in reasons:
         zero_months = profile.meses_zerados
         month_word = "mês" if zero_months == 1 else "meses"
