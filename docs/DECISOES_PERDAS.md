@@ -57,8 +57,10 @@ fora (1.385 de 1.389 entram).
   ou mais. Sem a exclusão, a fila mandaria a equipe a UCs com pouquíssima chance de irregularidade.
 
 ### D4. UC já inspecionada não volta à fila
-- **Decisão:** sai da fila a UC com ordem ativa, ordem concluída ou inspeção no histórico de campo dentro da janela
-  de análise (15 meses). Ordem cancelada devolve a UC à fila.
+- **Decisão:** sai da fila a UC com ordem concluída ou inspeção no histórico de campo dentro da janela de análise
+  (15 meses). **Atualizado:** a UC com ordem ativa (gerada ou pendente) **continua na lista**, marcada na coluna
+  Situação como "Ordem gerada" ou "Em campo"; a seleção e o resumo de capacidade ignoram essas UCs. Ordem cancelada
+  devolve a UC à fila.
 - **Impacto:** evita repetir inspeção cujo sinal já foi verificado.
 
 ### D5. Leituras com consumo negativo são descartadas
@@ -99,9 +101,11 @@ fora (1.385 de 1.389 entram).
 
 ## 4. Dados e demonstração
 
-### D9. A fila da competência mais recente (2026-06) é curta: 165 UCs, só 19 de chance alta
-- **Decisão:** manter a regra de tempo real e oferecer a configuração opcional `LOSS_REFERENCE_COMPETENCIA`. A tabela
-  abaixo é de antes da fila classificada (D11), quando o piso era a queda de 50%; hoje a fila de 2026-06 tem 165 UCs.
+### D9. A fila da competência mais recente (2026-06) é curta: 165 UCs, só 7 de chance alta
+- **Decisão:** manter a regra de tempo real e oferecer a configuração opcional `LOSS_REFERENCE_COMPETENCIA`. **A
+  demonstração da onda de quedas de 2025 usa `LOSS_REFERENCE_COMPETENCIA="2025-09"`** (escolha e medição mais
+  abaixo, atualizadas em 2026-10-29). O funil logo abaixo é de antes da fila classificada (D11), quando o piso era a
+  queda de 50%; hoje a fila de 2026-06 tem 165 UCs (7 de chance alta e 158 de baixa, D14).
 - **Funil de 2026-06** (`v_energy.db` real, conferido em 2026-10-28):
 
 | Etapa | UCs |
@@ -143,8 +147,9 @@ fora (1.385 de 1.389 entram).
 - **Medição anterior (banco de simulação, substituída pela tabela acima):** 2025-06: 354 UCs, 93,5%; 2025-08: 594
   UCs, 93,1%; 2025-10: 323 UCs, 94,8%. Os acertos são parecidos, mas a onda de quedas da Gold real começa mais tarde.
 
-- **Demonstração de ponta a ponta** (`2025-08`, banco de simulação local): fila de 200 UCs, 200 ordens geradas,
-  exportação de 200 linhas e upload do `inspecoes.xlsx` real com **198 conciliadas, 188 irregulares (94,9%)**.
+- **Demonstração de ponta a ponta** (`2025-08`, banco de simulação local, regra de 50%; feita antes da Gold real e
+  não refeita com a regra atual): fila de 200 UCs, 200 ordens geradas, exportação de 200 linhas e upload do
+  `inspecoes.xlsx` real com **198 conciliadas, 188 irregulares (94,9%)**.
 - **Limite da evidência:** o acerto do top 200 mostra que o sinal funciona, o que já se sabia (92,6%). Não prova
   que a ordem dentro do top 200 seja melhor que a de fora, porque quase toda a fila tem queda de 50% ou mais.
 
@@ -277,13 +282,35 @@ fora (1.385 de 1.389 entram).
   (D13, estrato de ligações recentes) diz quanto elas realmente valem. O `data_ligacao` existe no dado bruto
   (`unidades_consumidoras.csv`) e não chegou à `dim_unidade_consumidora`; contar os meses de leitura dispensa a coluna.
 
+### D15. O score da UC não muda com os filtros de município, bairro e classe (2026-10-29)
+- **Como apareceu:** na conferência da tela, a UC142443 aparecia com score **100** ao filtrar Recife e com **72** no
+  painel de detalhe (e na lista sem filtro).
+- **Decisão:** o score (kWh esperado da UC ÷ maior kWh esperado da fila inteira × 100) é calculado sobre a fila
+  completa, antes de qualquer filtro. Município, bairro e classe passaram a ser aplicados **depois** do ranking
+  (`queue_territory.filter_by_territory`), como o filtro de motivo já era. Antes entravam na consulta dos perfis e o
+  topo usado na conta passava a ser o da lista filtrada.
+- **Impacto:** a UC mostra o mesmo score na lista, com ou sem filtro, e no detalhe. Ao filtrar, o maior score da
+  lista pode ficar abaixo de 100 (em Recife, 72). A consulta dos perfis agora roda sempre sem filtro territorial: na Gold
+  real leva cerca de 3,3 s por chamada, igual à da fila sem filtro. Os valores do filtro são os do banco (`RECIFE`,
+  `COMERCIAL`), que o seletor da tela envia; `Recife` não casa.
+- **Conformidade:** `test_score_does_not_change_when_a_territory_filter_hides_the_top_unit`,
+  `test_territory_filters_keep_only_matching_units` e
+  `test_territory_filters_are_applied_after_the_ranking_and_not_in_the_query` em `test_loss_queue_design.py`. Medido na
+  Gold real: `municipio=RECIFE` devolve as mesmas 72 UCs, e a UC142443 tem 72 na lista e no detalhe.
+- **Limite:** `service.py` está em exatamente 300 linhas, o teto do Pylint; acréscimos precisam de um módulo novo.
+
 ## 5. Limitações e pendências
 
-- A **Gold real** (Renan e Ryei) ainda não está no `v_energy.db`: todos os números de fila vêm de um banco de
-  simulação feito a partir das bases brutas, com tratamento mínimo. Remedir na Fase 7.
-- `data_inspecao` do upload é validada e **não é gravada**, e o id externo (`IN...`) também não: a ordem não tem as
-  colunas.
-- A taxa de leitura zerada, a tarifa fixa e o fator de 3 meses são suposições, listadas acima.
+- Os números de fila vêm da **Gold real** desde 2026-10-27. A remedição do limiar de 50% (92,6%), da exclusão de GD
+  (3,2%) e da leitura zerada está no D12: os dois primeiros se confirmaram.
+- A taxa de **leitura zerada** (a geral, 62,7%) é suposição: o motivo nunca dispara nos dados. O fator de **3 meses**
+  (D7) e a taxa fraca para **ligação recente** (D14) também são suposições, listadas acima.
+- A ordem grava a data da inspeção e o inspetor; o id externo da planilha do campo (`IN...`) **não é gravado**: a
+  ordem não tem a coluna.
+- **Reincidência** (prazo em que a UC volta à fila depois de uma irregularidade): não há dado (nenhuma UC foi
+  inspecionada duas vezes, D12) e a regra depende de decisão da equipe (item 12.2 do checklist).
+- **Nenhuma UC de fora da fila foi inspecionada:** as taxas valem para UCs que o campo já escolhera. O piloto do D13
+  mede o que a fila deixa de ver e não foi executado.
 - Problemas de qualidade encontrados que **não são desta fatia**, para a Silver: 21.523 leituras duplicadas
   exatas, 8.609 pares (UC, mês) repetidos com id `LTX...` e outro medidor, cerca de 24 mil `leitura_anterior`
   ausentes, 900 UCs duplicadas no cadastro e uma linha de cabeçalho repetida dentro do arquivo.
