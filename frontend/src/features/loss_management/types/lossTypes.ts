@@ -2,7 +2,7 @@
 export type InspectionStatus = 'gerada' | 'pendente' | 'concluida' | 'cancelada'
 
 /** Motivos de suspeita calculados pelo backend. */
-export type SuspicionReason = 'queda_subita' | 'leitura_zerada'
+export type SuspicionReason = 'queda_subita' | 'queda_moderada' | 'leitura_zerada'
 
 /** Situação da UC na fila: livre para ordem, com ordem gerada ou já em campo. */
 export type QueueSituation = 'na_fila' | 'ordem_gerada' | 'em_campo'
@@ -20,6 +20,8 @@ export interface SuspiciousUnit {
   situacao: QueueSituation
   /** Taxa histórica de inspeções que acharam irregularidade com este sinal (0 a 1). */
   probabilidade_acerto: number
+  /** Meses com leitura na janela de base; menos de 11 é uma ligação recente, sem a taxa medida em histórico completo. */
+  meses_base: number
   consumo_base_kwh: number
   consumo_recente_kwh: number
   kwh_estimado_recuperar: number
@@ -52,7 +54,11 @@ export interface SuspiciousUnitsFilter {
   bairro?: string
   classe?: string
   motivo?: SuspicionReason
-  score_minimo?: number
+}
+
+/** Página da fila: os filtros e quantas UCs pular (`offset`); sem `offset` vem a primeira página. */
+export interface SuspiciousUnitsPageRequest extends SuspiciousUnitsFilter {
+  offset?: number
 }
 
 /** Taxa histórica de inspeções que confirmaram irregularidade. */
@@ -72,8 +78,16 @@ export interface QueueSummary {
   selecionadas: number
   kwh_mes_selecionadas: number
   valor_ano_selecionadas_rs: number
+  /** Tarifa média ponderada (receita ÷ energia faturada) dos 12 meses de referência, em R$/kWh. */
   tarifa_rs_kwh: number
+  /** Primeira competência da tarifa ('YYYY-MM'). */
+  tarifa_periodo_inicio: string
+  /** Última competência da tarifa ('YYYY-MM'). */
+  tarifa_periodo_fim: string
+  /** Soma, por UC selecionada, de kWh/mês recuperável x chance de acerto da UC. */
   retorno_esperado_kwh_mes: number
+  /** Soma, por UC selecionada, de R$/ano recuperável x chance de acerto da UC. */
+  retorno_esperado_valor_ano_rs: number
   taxa_acerto: HitRate
 }
 
@@ -95,6 +109,19 @@ export interface BatchResult {
   failed: BatchFailure[]
 }
 
+/** Inspetor de campo (`GET /losses/inspectors`); a base guarda só o código, de INSP-001 a INSP-040. */
+export interface Inspector {
+  codigo: string
+}
+
+/** Motivos fechados de cancelamento aceitos pela API (os rótulos em pt-BR ficam em `utils/cancellationReasons.ts`). */
+export type CancellationReason =
+  | 'cliente_regularizou'
+  | 'ordem_duplicada'
+  | 'endereco_nao_localizado'
+  | 'repriorizacao_equipe'
+  | 'outro'
+
 /** Ordem de inspeção (`GET /losses/inspections`). */
 export interface InspectionOrder {
   id_inspecao: number
@@ -103,14 +130,23 @@ export interface InspectionOrder {
   motivo: string | null
   kwh_estimado: number
   fiscal_responsavel: string | null
+  /** Código INSP-001 a INSP-040; a API sempre envia, nulo nas ordens anteriores à coluna. */
+  inspetor?: string | null
+  /** Data da inspeção (AAAA-MM-DD); nula até o resultado ser registrado. */
+  data_inspecao?: string | null
   irregularidade_constatada: boolean | null
   tipo_irregularidade: string | null
   kwh_recuperado: number | null
   numero_toi: string | null
   justificativa_cancelamento: string | null
+  motivo_cancelamento?: CancellationReason | null
   criado_por: string
   criado_em: string
   atualizado_em: string
+  /** Território da UC no cadastro; só a listagem de ordens preenche, nulo se a UC não estiver nele. */
+  municipio?: string | null
+  bairro?: string | null
+  classe_consumo?: string | null
 }
 
 /** Payload de abertura de ordem a partir da fila (o kWh estimado é calculado pelo servidor). */
@@ -123,11 +159,15 @@ export interface InspectionOrderCreate {
 export interface InspectionOrderUpdate {
   status: InspectionStatus
   fiscal_responsavel?: string
+  inspetor?: string
+  data_inspecao?: string
   irregularidade_constatada?: boolean
   tipo_irregularidade?: string
   kwh_recuperado?: number
   numero_toi?: string
   justificativa_cancelamento?: string
+  /** A API exige este campo ao cancelar (422 sem ele). */
+  motivo_cancelamento?: CancellationReason
 }
 
 /** Linha da planilha de campo que não foi conciliada. */

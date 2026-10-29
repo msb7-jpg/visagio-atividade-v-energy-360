@@ -20,7 +20,7 @@ RESULT_COLUMN = "irregularidade_constatada"
 COLUMN_ALIASES = {
     "data": "data_inspecao",
     "resultado": "irregularidade_constatada",
-    "inspetor": "fiscal_responsavel",
+    "id_inspetor": "inspetor",
 }
 MAX_DATA_ROWS = 10_000
 CSV_DELIMITERS = (";", ",", "\t")

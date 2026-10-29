@@ -113,7 +113,7 @@ def describe_rejection(error: Exception) -> str:
         return error.message
     if isinstance(error, ValidationError):
         first_error = error.errors()[0]
-        return f"{first_error['loc'][0]}: {first_error['msg']}"
+        return f"{first_error['loc'][0]}: {first_error['msg'].removeprefix('Value error, ')}"
     return str(error)
 
 
@@ -142,7 +142,7 @@ def build_update(row: RawRow) -> InspectionOrderUpdateDTO | None:
     if all(is_blank(cells.get(column)) for column in RESULT_COLUMNS):
         return None
     irregularity = parse_irregularity(cells.get("irregularidade_constatada"))
-    parse_field_date(cells.get("data_inspecao"))  # valida o formato; a ordem não guarda a data
+    inspection_date = parse_field_date(cells.get("data_inspecao"))
     reported_kwh = parse_kwh(cells.get("kwh_recuperado"))
     if irregularity is None:
         raise InvalidValueError("irregularidade_constatada: preencha o resultado da inspeção.")
@@ -150,6 +150,8 @@ def build_update(row: RawRow) -> InspectionOrderUpdateDTO | None:
     update = InspectionOrderUpdateDTO(
         status=InspectionStatus.CONCLUIDA,
         fiscal_responsavel=text_or_none(cells.get("fiscal_responsavel")),
+        inspetor=text_or_none(cells.get("inspetor")),
+        data_inspecao=inspection_date,
         irregularidade_constatada=irregularity,
         tipo_irregularidade=text_or_none(cells.get("tipo_irregularidade")) if has_details else None,
         kwh_recuperado=reported_kwh if has_details or reported_kwh else None,  # 0 kWh = "nada consta"

@@ -10,11 +10,14 @@ AUTH_ERROR_RESPONSES: OpenApiResponses = {
 list_suspicious_units_doc = EndpointDoc(
     summary="Fila de UCs suspeitas priorizada por energia esperada a recuperar",
     description=(
-        "Lista UCs com queda >= 50% do consumo médio das 3 últimas competências em relação às 12 anteriores, "
-        "ou com leitura zerada. Exclui UCs com geração distribuída e as já inspecionadas dentro da janela "
-        "de análise (ordem concluída ou histórico de campo); ordem cancelada devolve a UC à fila. UCs com ordem "
+        "Fila classificada: lista UCs com queda >= 20% do consumo médio das 3 últimas competências em relação "
+        "às 12 anteriores, ou com leitura zerada. A queda >= 50% é 'queda_subita' (acerto histórico de 93%); a "
+        "de 20% a 50% é 'queda_moderada', com 'probabilidade_acerto' calibrada por faixa (42% de 30% a 50%; "
+        "7% de 20% a 30%), então o topo da fila continua sendo a queda súbita. Exclui UCs com geração "
+        "distribuída e as já inspecionadas dentro da janela de análise (ordem concluída ou histórico de "
+        "campo); ordem cancelada devolve a UC à fila. UCs com ordem "
         "ativa seguem na lista, com `situacao` ordem_gerada ou em_campo. Cada UC traz `score` de 0 a 100 (kWh "
-        "esperado relativo ao topo da fila). Filtros por município, bairro, classe, motivo e score mínimo; "
+        "esperado relativo ao topo da fila). Filtros por município, bairro, classe e motivo; "
         "limite padrão de 200 (capacidade mensal da equipe de campo). "
         "Ordenação decrescente por kWh esperado, isto é, kWh estimado a recuperar vezes a "
         "taxa histórica de acerto do sinal ('probabilidade_acerto'); o score de risco só desempata. "
@@ -37,12 +40,33 @@ list_suspicious_units_doc = EndpointDoc(
     },
 )
 
+unit_detail_doc = EndpointDoc(
+    summary="Detalhe de uma UC da Fila de Inspeção",
+    description=(
+        "Devolve, para uma UC que está na fila agora (com ou sem ordem gerada ou em campo): identificação e "
+        "situação; o motivo, com uma frase em pt-BR gerada dos números reais da UC; a conta do score "
+        "(kWh recuperável da janela x chance de acerto = kWh esperado; score = kWh esperado / maior kWh esperado "
+        "da fila x 100); o consumo mensal das 12 últimas competências (mês sem leitura válida vem com "
+        "`consumo_kwh` nulo, nunca zero) e as inspeções anteriores (histórico de campo e ordens concluídas no "
+        "portal; lista vazia se a UC nunca foi inspecionada). UC com ordem concluída ou inspecionada na janela "
+        "de análise sai da fila e responde 404; ordem cancelada devolve a UC à fila. O score usa a mesma fila "
+        "completa da lista, então os números batem com ela."
+    ),
+    response_description="Detalhe da UC com a decomposição do score, o consumo de 12 meses e o histórico.",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        404: {"description": "UC inexistente no cadastro ou fora da fila de inspeção."},
+        500: {"description": "Falha ao consultar tabelas Gold."},
+    },
+)
+
 queue_summary_doc = EndpointDoc(
     summary="Cartões do topo da Fila de Inspeção",
     description=(
         "Resume a capacidade do mês (ordens ativas contra as 200 inspeções que a equipe faz), a energia recuperável "
-        "das UCs selecionadas (`ucs`, repetível), o retorno esperado (energia x taxa histórica de acerto) e a taxa "
-        "histórica de inspeções com irregularidade confirmada. UCs que já têm ordem ativa ou que saíram da fila "
+        "das UCs selecionadas (`ucs`, repetível), o retorno esperado (soma, por UC selecionada, de energia x chance "
+        "de acerto da própria UC, em kWh/mês e R$/ano) e a taxa histórica de inspeções com irregularidade "
+        "confirmada, que não entra no retorno. UCs que já têm ordem ativa ou que saíram da fila "
         "não contam como selecionadas. A tarifa de referência vem em `tarifa_rs_kwh`."
     ),
     response_description="Capacidade, energia e valor das selecionadas, retorno esperado e taxa de acerto.",
@@ -62,11 +86,31 @@ queue_filters_doc = EndpointDoc(
     },
 )
 
+list_inspectors_doc = EndpointDoc(
+    summary="Listar os inspetores de campo",
+    description=(
+        "Lista os códigos de inspetor (INSP-001 a INSP-040) do histórico de inspeções de campo, em ordem "
+        "crescente. A base não guarda nome de exibição: a resposta traz só `codigo`. Leitura liberada ao diretor "
+        "e ao gerente de perdas."
+    ),
+    response_description="Inspetores do histórico de campo.",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        500: {"description": "Falha ao consultar o histórico de inspeções (fato_inspecoes_perdas)."},
+    },
+)
+
 list_inspections_doc = EndpointDoc(
     summary="Listar ordens de inspeção",
-    description="Lista as ordens de inspeção da mais recente para a mais antiga, com filtro opcional por status.",
-    response_description="Ordens de inspeção encontradas.",
-    responses=AUTH_ERROR_RESPONSES,
+    description=(
+        "Lista as ordens de inspeção da mais recente para a mais antiga, com filtro opcional por status. Cada "
+        "ordem traz município, bairro e classe da UC (LEFT JOIN com o cadastro; vazios se a UC não estiver nele)."
+    ),
+    response_description="Ordens de inspeção encontradas, com o território da UC.",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        500: {"description": "Falha ao consultar o cadastro de UCs."},
+    },
 )
 
 export_inspections_doc = EndpointDoc(

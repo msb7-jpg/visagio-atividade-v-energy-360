@@ -10,6 +10,7 @@ ATENDIMENTO_ACCESS: tuple[UserRole, ...] = (
     UserRole.ATENDENTE,
 )
 PERDAS_ACCESS: tuple[UserRole, ...] = (UserRole.DIRETOR, UserRole.GERENTE_PERDAS)
+PERDAS_WRITE: tuple[UserRole, ...] = (UserRole.GERENTE_PERDAS,)
 CUSTOMER360_ACCESS: tuple[UserRole, ...] = (
     UserRole.DIRETOR,
     UserRole.GERENTE_ATENDIMENTO,

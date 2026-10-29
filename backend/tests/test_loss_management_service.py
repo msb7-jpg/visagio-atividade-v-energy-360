@@ -1,10 +1,13 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
+from pydantic import ValidationError
 
 from app.features.loss_management.exceptions import InspectionConflictError
+from app.features.loss_management.hit_rate import hit_probability
 from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.schemas import (
+    CancellationReason,
     InspectionOrderCreateDTO,
     InspectionOrderDTO,
     InspectionOrderUpdateDTO,
@@ -18,12 +21,14 @@ from app.features.loss_management.scoring import (
     QueueCandidates,
     RegisteredUnit,
     build_suspicious_unit,
-    hit_probability,
+    normalized_drop_ratio,
     order_estimated_kwh,
     rank_suspicious_units,
 )
 from app.features.loss_management.service import LossService, validate_transition
+from app.features.loss_management.tariff import AverageTariff
 from app.shared.exceptions import BadRequestException, NotFoundException
+from tests.loss_tariff import TARIFF_RS_KWH, TEST_TARIFF
 
 
 def make_profile(id_uc: str, base_kwh: float, recent_kwh: float, zero_months: int = 0) -> ConsumptionProfile:
@@ -44,28 +49,102 @@ def make_unit(base_kwh: float, recent_kwh: float, possui_gd: bool = False) -> Re
 
 
 def test_sudden_drop_is_flagged_with_recoverable_energy():
-    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=50))
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=50), TARIFF_RS_KWH)
 
     assert unit is not None
     assert unit.motivos == [SuspicionReason.QUEDA_SUBITA]
     assert unit.kwh_estimado_recuperar == pytest.approx(750.0)
-    assert unit.valor_estimado_recuperar_rs == pytest.approx(535.5)
+    assert unit.valor_estimado_recuperar_rs == pytest.approx(562.5)
     assert unit.score_risco == pytest.approx(66.7)
 
 
 def test_stable_consumption_is_not_suspicious():
-    assert build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=190)) is None
+    assert build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=190), TARIFF_RS_KWH) is None
+
+
+def test_moderate_drop_enters_the_ranked_queue_with_its_own_reason():
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=195), TARIFF_RS_KWH)
+
+    assert unit is not None
+    assert unit.motivos == [SuspicionReason.QUEDA_MODERADA]
+    assert unit.kwh_mes_recuperavel == pytest.approx(105.0)
+
+
+def test_drop_just_below_the_floor_is_not_suspicious():
+    assert build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=170), TARIFF_RS_KWH) is None
+
+
+def test_drop_of_exactly_half_is_a_sudden_drop_not_a_moderate_one():
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=200, recent_kwh=100), TARIFF_RS_KWH)
+
+    assert unit is not None
+    assert unit.motivos == [SuspicionReason.QUEDA_SUBITA]
+
+
+def test_hit_probability_of_a_moderate_drop_depends_on_the_drop_relative_to_the_portfolio():
+    assert hit_probability([SuspicionReason.QUEDA_MODERADA], normalized_drop=0.35) == pytest.approx(0.915)
+    assert hit_probability([SuspicionReason.QUEDA_MODERADA], normalized_drop=0.2) == pytest.approx(0.915)
+    assert hit_probability([SuspicionReason.QUEDA_MODERADA], normalized_drop=0.1) == pytest.approx(0.076)
+
+
+def test_normalized_drop_discounts_the_fall_of_the_whole_portfolio():
+    profile = make_profile("UC1", base_kwh=300, recent_kwh=195)  # consumo recente = 65% da base
+
+    assert normalized_drop_ratio(profile) == pytest.approx(0.35)
+    assert normalized_drop_ratio(profile, portfolio_ratio=0.65) == pytest.approx(0.0)
+    assert normalized_drop_ratio(profile, portfolio_ratio=0.8) == pytest.approx(1 - 0.65 / 0.8)
+
+
+def test_normalized_drop_is_never_negative_nor_defined_without_a_base():
+    assert normalized_drop_ratio(make_profile("UC1", 300, 330), portfolio_ratio=0.9) == pytest.approx(0.0)
+    assert normalized_drop_ratio(make_profile("UC2", 0, 0), portfolio_ratio=0.9) == pytest.approx(0.0)
+
+
+def test_unit_exposes_the_probability_calibrated_against_the_portfolio():
+    profile = make_profile("UC1", base_kwh=300, recent_kwh=195)  # queda bruta de 35%
+
+    alone = build_suspicious_unit(profile, TARIFF_RS_KWH)
+    portfolio_fell_too = build_suspicious_unit(profile, TARIFF_RS_KWH, portfolio_ratio=0.65)
+
+    assert alone is not None
+    assert portfolio_fell_too is not None
+    assert alone.probabilidade_acerto == pytest.approx(0.915)
+    assert portfolio_fell_too.probabilidade_acerto == pytest.approx(0.076)
+    assert portfolio_fell_too.kwh_mes_recuperavel == alone.kwh_mes_recuperavel  # a energia a recuperar não muda
+
+
+def test_ranking_uses_the_portfolio_ratio_to_order_by_expected_kwh():
+    more_kwh_in_line_with_portfolio = make_profile("UC_A", base_kwh=500, recent_kwh=390)  # -22%, carteira em -20%
+    less_kwh_below_portfolio = make_profile("UC_B", base_kwh=200, recent_kwh=120)  # -40%
+    profiles = [more_kwh_in_line_with_portfolio, less_kwh_below_portfolio]
+
+    without_portfolio = rank_suspicious_units(profiles, limit=2, tariff_rs_kwh=TARIFF_RS_KWH)
+    with_portfolio = rank_suspicious_units(profiles, limit=2, tariff_rs_kwh=TARIFF_RS_KWH, portfolio_ratio=0.8)
+
+    assert [unit.id_uc for unit in without_portfolio] == ["UC_A", "UC_B"]
+    assert [unit.id_uc for unit in with_portfolio] == ["UC_B", "UC_A"]
+
+
+def test_ranking_puts_a_sudden_drop_ahead_of_a_larger_but_unlikelier_moderate_drop():
+    large_weak_drop = make_profile("UC_QUEDA_FRACA_GRANDE", base_kwh=2000, recent_kwh=1500)
+    small_sudden_drop = make_profile("UC_QUEDA_SUBITA", base_kwh=300, recent_kwh=100)
+
+    ranked = rank_suspicious_units(
+        [large_weak_drop, small_sudden_drop], limit=2, tariff_rs_kwh=TARIFF_RS_KWH, portfolio_ratio=0.8
+    )
+
+    assert [unit.id_uc for unit in ranked] == ["UC_QUEDA_SUBITA", "UC_QUEDA_FRACA_GRANDE"]
 
 
 def test_zero_reading_is_flagged_even_without_large_drop():
-    unit = build_suspicious_unit(make_profile("UC1", base_kwh=150, recent_kwh=100, zero_months=1))
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=150, recent_kwh=130, zero_months=1), TARIFF_RS_KWH)
 
     assert unit is not None
     assert unit.motivos == [SuspicionReason.LEITURA_ZERADA]
 
 
 def test_score_is_capped_at_100():
-    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=0, zero_months=3))
+    unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=0, zero_months=3), TARIFF_RS_KWH)
 
     assert unit is not None
     assert unit.score_risco == pytest.approx(100.0)
@@ -78,7 +157,7 @@ def test_ranking_orders_by_recoverable_kwh_and_applies_limit():
         make_profile("UC_NORMAL", base_kwh=100, recent_kwh=100),
     ]
 
-    ranked = rank_suspicious_units(profiles, limit=1)
+    ranked = rank_suspicious_units(profiles, limit=1, tariff_rs_kwh=TARIFF_RS_KWH)
 
     assert [unit.id_uc for unit in ranked] == ["UC_GRANDE"]
 
@@ -87,7 +166,9 @@ def test_ranking_does_not_count_the_drop_twice_through_score_and_kwh():
     deep_drop_small_base = make_profile("UC_QUEDA_TOTAL", base_kwh=300, recent_kwh=0)
     moderate_drop_large_base = make_profile("UC_BASE_GRANDE", base_kwh=1000, recent_kwh=480)
 
-    ranked = rank_suspicious_units([deep_drop_small_base, moderate_drop_large_base], limit=2)
+    ranked = rank_suspicious_units(
+        [deep_drop_small_base, moderate_drop_large_base], limit=2, tariff_rs_kwh=TARIFF_RS_KWH
+    )
 
     assert [unit.id_uc for unit in ranked] == ["UC_BASE_GRANDE", "UC_QUEDA_TOTAL"]
 
@@ -96,7 +177,7 @@ def test_ranking_breaks_kwh_ties_by_risk_score():
     lower_risk = make_profile("UC_RISCO_MENOR", base_kwh=300, recent_kwh=100)
     higher_risk = make_profile("UC_RISCO_MAIOR", base_kwh=300, recent_kwh=100, zero_months=1)
 
-    ranked = rank_suspicious_units([lower_risk, higher_risk], limit=2)
+    ranked = rank_suspicious_units([lower_risk, higher_risk], limit=2, tariff_rs_kwh=TARIFF_RS_KWH)
 
     assert [unit.id_uc for unit in ranked] == ["UC_RISCO_MAIOR", "UC_RISCO_MENOR"]
 
@@ -116,8 +197,10 @@ def test_hit_probability_takes_the_strongest_signal_when_both_apply():
 
 
 def test_unit_exposes_the_hit_probability_of_its_signals():
-    drop_unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=100))
-    zero_unit = build_suspicious_unit(make_profile("UC2", base_kwh=150, recent_kwh=100, zero_months=1))
+    drop_unit = build_suspicious_unit(make_profile("UC1", base_kwh=300, recent_kwh=100), TARIFF_RS_KWH)
+    zero_unit = build_suspicious_unit(
+        make_profile("UC2", base_kwh=150, recent_kwh=100, zero_months=1), TARIFF_RS_KWH, portfolio_ratio=0.7
+    )
 
     assert drop_unit is not None
     assert zero_unit is not None
@@ -129,7 +212,9 @@ def test_ranking_prefers_the_likelier_hit_over_more_recoverable_kwh():
     more_kwh_less_likely = make_profile("UC_ZERADA_ISOLADA", base_kwh=1000, recent_kwh=700, zero_months=1)
     less_kwh_more_likely = make_profile("UC_QUEDA_SUBITA", base_kwh=330, recent_kwh=100)
 
-    ranked = rank_suspicious_units([more_kwh_less_likely, less_kwh_more_likely], limit=2)
+    ranked = rank_suspicious_units(
+        [more_kwh_less_likely, less_kwh_more_likely], limit=2, tariff_rs_kwh=TARIFF_RS_KWH, portfolio_ratio=0.7
+    )
 
     assert ranked[0].kwh_estimado_recuperar < ranked[1].kwh_estimado_recuperar
     assert [unit.id_uc for unit in ranked] == ["UC_QUEDA_SUBITA", "UC_ZERADA_ISOLADA"]
@@ -138,8 +223,8 @@ def test_ranking_prefers_the_likelier_hit_over_more_recoverable_kwh():
 def test_ranking_is_deterministic_when_kwh_and_score_tie():
     profiles = [make_profile(id_uc, base_kwh=300, recent_kwh=100) for id_uc in ("UC_C", "UC_A", "UC_B")]
 
-    ranked = rank_suspicious_units(profiles, limit=3)
-    reversed_ranked = rank_suspicious_units(list(reversed(profiles)), limit=3)
+    ranked = rank_suspicious_units(profiles, limit=3, tariff_rs_kwh=TARIFF_RS_KWH)
+    reversed_ranked = rank_suspicious_units(list(reversed(profiles)), limit=3, tariff_rs_kwh=TARIFF_RS_KWH)
 
     assert [unit.id_uc for unit in ranked] == [unit.id_uc for unit in reversed_ranked] == ["UC_A", "UC_B", "UC_C"]
 
@@ -166,11 +251,46 @@ def test_conclusion_requires_field_result():
         validate_transition(InspectionStatus.PENDENTE, payload)
 
 
-def test_cancellation_requires_non_blank_justification():
-    payload = InspectionOrderUpdateDTO(status=InspectionStatus.CANCELADA, justificativa_cancelamento="   ")
+def test_cancellation_requires_a_reason_from_the_closed_list():
+    with pytest.raises(ValidationError, match="Informe o motivo do cancelamento"):
+        InspectionOrderUpdateDTO(status=InspectionStatus.CANCELADA, justificativa_cancelamento="Equipe realocada")
+    with pytest.raises(ValidationError):
+        InspectionOrderUpdateDTO(status=InspectionStatus.CANCELADA, motivo_cancelamento="porque sim")
 
-    with pytest.raises(BadRequestException):
-        validate_transition(InspectionStatus.GERADA, payload)
+
+def test_cancellation_with_listed_reason_is_valid_without_free_text():
+    payload = InspectionOrderUpdateDTO(
+        status=InspectionStatus.CANCELADA, motivo_cancelamento=CancellationReason.ORDEM_DUPLICADA
+    )
+
+    validate_transition(InspectionStatus.GERADA, payload)
+
+
+@pytest.mark.parametrize("code", ["INSP-000", "INSP-041", "INSP-1", "FISCAL-3", "insp 001", ""])
+def test_inspector_outside_the_roster_is_rejected(code):
+    with pytest.raises(ValidationError, match="INSP-001 a INSP-040"):
+        InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE, inspetor=code)
+
+
+def test_inspector_code_is_normalized_and_accepted_at_the_roster_edges():
+    first = InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE, inspetor=" insp-001 ")
+    last = InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE, inspetor="INSP-040")
+
+    assert (first.inspetor, last.inspetor) == ("INSP-001", "INSP-040")
+
+
+def test_future_inspection_date_is_rejected_but_today_is_accepted():
+    today = datetime.now(UTC).date()
+
+    accepted = InspectionOrderUpdateDTO(
+        status=InspectionStatus.CONCLUIDA, irregularidade_constatada=False, data_inspecao=today
+    )
+    with pytest.raises(ValidationError, match="não pode ser futura"):
+        InspectionOrderUpdateDTO(
+            status=InspectionStatus.CONCLUIDA, irregularidade_constatada=False, data_inspecao=today + timedelta(days=1)
+        )
+
+    assert accepted.data_inspecao == today
 
 
 def test_order_kwh_matches_queue_for_suspicious_unit():
@@ -254,8 +374,9 @@ async def test_create_saves_kwh_computed_by_server():
 def make_order_dto(status: InspectionStatus, **overrides: object) -> InspectionOrderDTO:
     order_fields = {
         "id_inspecao": 7, "id_uc": "UC1", "status": status, "motivo": None, "kwh_estimado": 750.0,
-        "fiscal_responsavel": None, "irregularidade_constatada": None, "tipo_irregularidade": None,
-        "kwh_recuperado": None, "numero_toi": None, "justificativa_cancelamento": None,
+        "fiscal_responsavel": None, "inspetor": None, "data_inspecao": None, "irregularidade_constatada": None,
+        "tipo_irregularidade": None, "kwh_recuperado": None, "numero_toi": None,
+        "justificativa_cancelamento": None, "motivo_cancelamento": None,
         "criado_por": "perdas@venergy.com", "criado_em": datetime(2026, 10, 20, tzinfo=UTC),
         "atualizado_em": datetime(2026, 10, 20, tzinfo=UTC),
     }
@@ -312,7 +433,9 @@ async def test_update_unknown_inspection_raises_not_found():
         (
             InspectionStatus.GERADA,
             InspectionOrderUpdateDTO(
-                status=InspectionStatus.CANCELADA, justificativa_cancelamento="Equipe realocada", kwh_recuperado=10
+                status=InspectionStatus.CANCELADA,
+                motivo_cancelamento=CancellationReason.REPRIORIZACAO_EQUIPE,
+                kwh_recuperado=10,
             ),
         ),
     ],
@@ -353,6 +476,9 @@ class FakeQueueRepository:
     async def fetch_consumption_profiles(self, filters: SuspicionFilters) -> QueueCandidates:
         del filters
         return self.candidates
+
+    async def fetch_average_tariff(self) -> AverageTariff:
+        return TEST_TARIFF
 
 
 async def test_queue_warns_when_field_history_was_not_applied():

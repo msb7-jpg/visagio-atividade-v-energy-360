@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from app.features.loss_management.hit_rate import TAXA_ACERTO_GERAL
 from app.features.loss_management.schemas import (
     FILA_CAPACIDADE_MENSAL,
     HitRateDTO,
@@ -10,7 +11,7 @@ from app.features.loss_management.schemas import (
     QueueSummaryDTO,
     SuspiciousUnitDTO,
 )
-from app.features.loss_management.scoring import TARIFA_MEDIA_RS_KWH, TAXA_ACERTO_GERAL
+from app.features.loss_management.tariff import AverageTariff
 
 SITUATION_BY_ORDER_STATUS = {
     InspectionStatus.GERADA: QueueSituation.ORDEM_GERADA,
@@ -86,8 +87,22 @@ def hit_rate_dto(rate: FieldHitRate | None) -> HitRateDTO:
     )
 
 
+def expected_return(selected_units: list[SuspiciousUnitDTO]) -> tuple[float, float]:
+    """Soma o retorno esperado das UCs selecionadas, cada uma com a sua chance de acerto.
+
+    Args:
+        selected_units: UCs selecionadas que ainda estão na fila.
+
+    Returns:
+        Energia esperada (kWh/mês) e valor esperado (R$/ano): soma de recuperável x `probabilidade_acerto` por UC.
+    """
+    expected_kwh = sum(unit.kwh_mes_recuperavel * unit.probabilidade_acerto for unit in selected_units)
+    expected_value_rs = sum(unit.valor_ano_rs * unit.probabilidade_acerto for unit in selected_units)
+    return expected_kwh, expected_value_rs
+
+
 def build_queue_summary(
-    selected_units: list[SuspiciousUnitDTO], scheduled_orders: int, hit_rate: HitRateDTO
+    selected_units: list[SuspiciousUnitDTO], scheduled_orders: int, hit_rate: HitRateDTO, tariff: AverageTariff
 ) -> QueueSummaryDTO:
     """Calcula os cartões do topo para as UCs selecionadas.
 
@@ -95,10 +110,12 @@ def build_queue_summary(
         selected_units: UCs selecionadas que ainda estão na fila (sem ordem).
         scheduled_orders: Ordens ativas (geradas ou em campo).
         hit_rate: Taxa histórica de acerto.
+        tariff: Tarifa média da base e seu período, já usada para valorar as UCs selecionadas.
 
     Returns:
-        Capacidade, energia e valor das selecionadas e retorno esperado (energia x taxa de acerto).
+        Capacidade, energia e valor das selecionadas e retorno esperado (soma de energia x chance de acerto por UC).
     """
+    expected_kwh, expected_value_rs = expected_return(selected_units)
     monthly_kwh = sum(unit.kwh_mes_recuperavel for unit in selected_units)
     annual_value_rs = sum(unit.valor_ano_rs for unit in selected_units)
     return QueueSummaryDTO(
@@ -107,7 +124,10 @@ def build_queue_summary(
         selecionadas=len(selected_units),
         kwh_mes_selecionadas=round(monthly_kwh, 1),
         valor_ano_selecionadas_rs=round(annual_value_rs, 2),
-        tarifa_rs_kwh=TARIFA_MEDIA_RS_KWH,
-        retorno_esperado_kwh_mes=round(monthly_kwh * hit_rate.taxa, 1),
+        tarifa_rs_kwh=tariff.rs_per_kwh,
+        tarifa_periodo_inicio=tariff.period_start,
+        tarifa_periodo_fim=tariff.period_end,
+        retorno_esperado_kwh_mes=round(expected_kwh, 1),
+        retorno_esperado_valor_ano_rs=round(expected_value_rs, 2),
         taxa_acerto=hit_rate,
     )

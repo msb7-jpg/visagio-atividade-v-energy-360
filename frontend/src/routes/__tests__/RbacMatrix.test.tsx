@@ -18,10 +18,10 @@ const ROUTES = ['/dashboard', '/losses', '/quality', '/customers', '/revenue']
 const EXPECTED: Record<string, { routes: string[]; menu: string[] }> = {
   diretor: {
     routes: ['/dashboard', '/revenue', '/losses', '/quality', '/customers'],
-    menu: ['Painel', 'Inteligência Comercial', 'Gestão de Perdas', 'Qualidade da Rede', 'Visão 360 da UC']
+    menu: ['Painel', 'Inteligência Comercial', 'Fila de Inspeção', 'Qualidade da Rede', 'Visão 360 da UC']
   },
   gerente_operacao: { routes: ['/quality', '/customers'], menu: ['Qualidade da Rede', 'Visão 360 da UC'] },
-  gerente_perdas: { routes: ['/losses', '/customers'], menu: ['Gestão de Perdas', 'Visão 360 da UC'] },
+  gerente_perdas: { routes: ['/losses', '/customers'], menu: ['Fila de Inspeção', 'Visão 360 da UC'] },
   gerente_atendimento: { routes: ['/customers'], menu: ['Visão 360 da UC'] },
   atendente: { routes: ['/customers'], menu: ['Visão 360 da UC'] }
 }

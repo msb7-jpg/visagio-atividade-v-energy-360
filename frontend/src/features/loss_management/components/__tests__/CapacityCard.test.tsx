@@ -9,8 +9,11 @@ const summary: QueueSummary = {
   selecionadas: 3,
   kwh_mes_selecionadas: 0,
   valor_ano_selecionadas_rs: 0,
-  tarifa_rs_kwh: 0.714,
+  tarifa_rs_kwh: 0.7876,
+  tarifa_periodo_inicio: '2025-07',
+  tarifa_periodo_fim: '2026-06',
   retorno_esperado_kwh_mes: 0,
+  retorno_esperado_valor_ano_rs: 0,
   taxa_acerto: { inspecoes_total: null, irregularidades_confirmadas: null, taxa: 0.627, periodo_inicio: null, periodo_fim: null }
 }
 

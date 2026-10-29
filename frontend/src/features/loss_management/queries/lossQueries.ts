@@ -1,13 +1,15 @@
-import { keepPreviousData, queryOptions } from '@tanstack/react-query'
+import { infiniteQueryOptions, keepPreviousData, queryOptions } from '@tanstack/react-query'
 import { lossApi } from '@/features/loss_management/api/lossApi'
-import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
+import type { SuspiciousQueue, SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
 
 export const lossKeys = {
   all: ['losses'] as const,
   suspiciousUnits: (filters: SuspiciousUnitsFilter) => [...lossKeys.all, 'suspicious-units', filters] as const,
+  unitDetail: (idUc: string) => [...lossKeys.all, 'unit-detail', idUc] as const,
   inspections: () => [...lossKeys.all, 'inspections'] as const,
   queueSummary: (selectedIds: string[]) => [...lossKeys.all, 'queue-summary', selectedIds] as const,
-  queueFilters: () => [...lossKeys.all, 'queue-filters'] as const
+  queueFilters: () => [...lossKeys.all, 'queue-filters'] as const,
+  inspectors: () => [...lossKeys.all, 'inspectors'] as const
 }
 
 // Fila e ordens mudam a cada ação do gerente: cache curto para refletir o trabalho de campo.
@@ -22,26 +24,54 @@ const FILTER_OPTIONS_STALE_TIME_MS = 10 * 60 * 1000
  * @returns Apenas os filtros preenchidos.
  */
 function compactFilters(filters: SuspiciousUnitsFilter): SuspiciousUnitsFilter {
-  const filledEntries = Object.entries(filters).filter(([, filterValue]) =>
-    typeof filterValue === 'number' ? filterValue > 0 : Boolean(filterValue?.trim())
-  )
+  const filledEntries = Object.entries(filters).filter(([, filterValue]) => Boolean(filterValue?.trim()))
   return Object.fromEntries(filledEntries)
 }
 
 /**
- * Opções reutilizáveis da consulta da fila de suspeitas.
+ * Próximo `offset` da fila: quantas UCs já vieram, ou nada quando a fila inteira está carregada.
  *
- * @param filters - Filtros de município, bairro, classe, motivo e score mínimo.
- * @returns Opções de query com chave hierárquica e cancelamento via signal.
+ * @param pages - Páginas já carregadas, da primeira à última.
+ * @returns O `offset` da próxima página, ou undefined quando não há mais UCs.
+ */
+function nextQueueOffset(pages: SuspiciousQueue[]): number | undefined {
+  const lastPage = pages[pages.length - 1]
+  const loadedCount = pages.reduce((count, page) => count + page.itens.length, 0)
+  return lastPage.itens.length > 0 && loadedCount < lastPage.total ? loadedCount : undefined
+}
+
+/**
+ * Opções reutilizáveis da consulta da fila de suspeitas, paginada pelo servidor (`offset`).
+ *
+ * @param filters - Filtros de município, bairro, classe e motivo.
+ * @returns Opções de query infinita com chave hierárquica e cancelamento via signal.
  */
 export function suspiciousUnitsQueryOptions(filters: SuspiciousUnitsFilter) {
   const activeFilters = compactFilters(filters)
-  return queryOptions({
+  return infiniteQueryOptions({
     queryKey: lossKeys.suspiciousUnits(activeFilters),
-    queryFn: ({ signal }) => lossApi.listSuspiciousUnits(activeFilters, signal),
+    // A primeira página não leva `offset`, para a chamada continuar igual à de antes da paginação.
+    queryFn: ({ pageParam, signal }) =>
+      lossApi.listSuspiciousUnits(pageParam > 0 ? { ...activeFilters, offset: pageParam } : activeFilters, signal),
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => nextQueueOffset(allPages),
     staleTime: LOSS_STALE_TIME_MS,
     // Mantém fila e avisos na tela enquanto o novo filtro carrega, sem piscar nem reanunciar o banner.
     placeholderData: keepPreviousData
+  })
+}
+
+/**
+ * Opções reutilizáveis do detalhe de uma UC da fila; o cache é por UC, então reabrir a mesma UC não refaz a chamada.
+ *
+ * @param idUc - UC aberta no painel.
+ * @returns Opções de query com chave por UC e cancelamento via signal.
+ */
+export function unitDetailQueryOptions(idUc: string) {
+  return queryOptions({
+    queryKey: lossKeys.unitDetail(idUc),
+    queryFn: ({ signal }) => lossApi.getUnitDetail(idUc, signal),
+    staleTime: LOSS_STALE_TIME_MS
   })
 }
 
@@ -71,6 +101,19 @@ export function queueSummaryQueryOptions(selectedIds: string[]) {
     queryFn: ({ signal }) => lossApi.getQueueSummary(sortedIds, signal),
     staleTime: LOSS_STALE_TIME_MS,
     placeholderData: keepPreviousData
+  })
+}
+
+/**
+ * Opções reutilizáveis da lista de inspetores de campo; o cache é longo porque a lista só muda com a carga do histórico.
+ *
+ * @returns Opções de query com cancelamento via signal.
+ */
+export function inspectorsQueryOptions() {
+  return queryOptions({
+    queryKey: lossKeys.inspectors(),
+    queryFn: ({ signal }) => lossApi.listInspectors(signal),
+    staleTime: FILTER_OPTIONS_STALE_TIME_MS
   })
 }
 

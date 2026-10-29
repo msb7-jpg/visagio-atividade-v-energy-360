@@ -46,9 +46,17 @@ dim_unidade_consumidora = table(
     column("possui_gd", Boolean),
 )
 
+fato_faturamento = table(
+    "fato_faturamento",
+    column("competencia", String),
+    column("valor_total_rs", Float),
+    column("consumo_faturado_kwh", Float),
+)
+
 fato_inspecoes_perdas = table(
     "fato_inspecoes_perdas",
     column("id_uc", String),
+    column("id_inspetor", String),
     column("data_inspecao", String),
     column("irregularidade_constatada", Boolean),
 )
@@ -131,7 +139,7 @@ def latest_competencia_query() -> Select[str | None]:
 
 
 def _consumption_aggregates(windows: ConsumptionWindows) -> list[Label]:
-    """Colunas agregadas por UC: média das duas janelas e quantidade de meses zerados na recente."""
+    """Colunas agregadas por UC: média das duas janelas, meses zerados na recente e meses com leitura na base."""
     competencia = fato_medicao.c.competencia
     consumo_kwh = fato_medicao.c.consumo_kwh
     is_base = competencia < windows.inicio_recente
@@ -141,6 +149,7 @@ def _consumption_aggregates(windows: ConsumptionWindows) -> list[Label]:
         func.avg(case((is_base, consumo_kwh))).label("consumo_base_kwh"),
         func.avg(case((is_recent, consumo_kwh))).label("consumo_recente_kwh"),
         func.sum(case((is_zero_recent, 1), else_=0)).label("meses_zerados"),
+        func.count(case((is_base, 1))).label("meses_base"),
     ]
 
 
@@ -190,7 +199,13 @@ def registered_unit_query(id_uc: str, windows: ConsumptionWindows | None) -> Sel
         return select(*unit_columns).where(uc.c.id_uc == id_uc)
     consumo = consumption_subquery(windows, id_uc)
     return (
-        select(*unit_columns, consumo.c.consumo_base_kwh, consumo.c.consumo_recente_kwh, consumo.c.meses_zerados)
+        select(
+            *unit_columns,
+            consumo.c.consumo_base_kwh,
+            consumo.c.consumo_recente_kwh,
+            consumo.c.meses_zerados,
+            consumo.c.meses_base,
+        )
         .outerjoin_from(uc, consumo, uc.c.id_uc == consumo.c.id_uc)
         .where(uc.c.id_uc == id_uc)
     )

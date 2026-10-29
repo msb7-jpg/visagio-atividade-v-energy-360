@@ -1,7 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { toast } from 'sonner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { lossApi } from '@/features/loss_management/api/lossApi'
 import { LossManagementPage } from '@/features/loss_management/components/LossManagementPage'
 import type {
@@ -24,6 +26,13 @@ vi.mock('@/features/loss_management/api/lossApi', () => ({
   }
 }))
 
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+vi.mock('@/features/auth/hooks/useAuth')
+
+function signInAs(role: string) {
+  vi.mocked(useAuth).mockReturnValue({ user: { role } } as ReturnType<typeof useAuth>)
+}
+
 const mockedApi = vi.mocked(lossApi)
 
 function buildUnit(idUc: string, score: number, situacao: QueueSituation = 'na_fila'): SuspiciousUnit {
@@ -37,6 +46,7 @@ function buildUnit(idUc: string, score: number, situacao: QueueSituation = 'na_f
     score,
     situacao,
     probabilidade_acerto: 0.93,
+    meses_base: 12,
     consumo_base_kwh: 300,
     consumo_recente_kwh: 50,
     kwh_estimado_recuperar: 750,
@@ -60,8 +70,11 @@ const baseSummary: QueueSummary = {
   selecionadas: 0,
   kwh_mes_selecionadas: 0,
   valor_ano_selecionadas_rs: 0,
-  tarifa_rs_kwh: 0.714,
+  tarifa_rs_kwh: 0.7876,
+  tarifa_periodo_inicio: '2025-07',
+  tarifa_periodo_fim: '2026-06',
   retorno_esperado_kwh_mes: 0,
+  retorno_esperado_valor_ano_rs: 0,
   taxa_acerto: {
     inspecoes_total: 1389,
     irregularidades_confirmadas: 871,
@@ -110,6 +123,7 @@ const rowOf = (idUc: string) => screen.findByRole('row', { name: new RegExp(idUc
 describe('Fila de Inspeção', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    signInAs('gerente_perdas')
     mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue(UNITS))
     mockedApi.getQueueSummary.mockImplementation(async (selectedIds) => ({
       ...baseSummary,
@@ -134,19 +148,20 @@ describe('Fila de Inspeção', () => {
     renderPage()
 
     expect(await screen.findByText('58')).toBeInTheDocument()
-    expect(screen.getByText(/de 200 inspeções/)).toBeInTheDocument()
+    expect(screen.getByText(/^de 200 inspeções$/)).toBeInTheDocument()
     expect(screen.getByText('62,7%')).toBeInTheDocument()
     expect(screen.getByText(/871 de 1\.389 inspeções/)).toBeInTheDocument()
   })
 
-  it('lista a UC com score, motivo, kWh por mês, valor por ano e link para a Visão 360', async () => {
+  it('lista a UC com score, queda, chance de acerto, kWh por mês, valor por ano e link para a Visão 360', async () => {
     renderPage()
 
     const row = await rowOf('UC100002')
 
     expect(within(row).getByRole('link', { name: 'UC100002' })).toHaveAttribute('href', '/customers?uc=UC100002')
     expect(within(row).getByText('91')).toBeInTheDocument()
-    expect(within(row).getByText('Queda abrupta de consumo')).toBeInTheDocument()
+    expect(within(row).getByText('−83%')).toBeInTheDocument()
+    expect(within(row).getByText('93%')).toBeInTheDocument()
     expect(within(row).getByText('1.840')).toBeInTheDocument()
     expect(within(row).getByText('Na fila')).toBeInTheDocument()
   })
@@ -176,11 +191,26 @@ describe('Fila de Inspeção', () => {
     expect(await screen.findByText('60')).toBeInTheDocument()
   })
 
+  it('avisa que as UCs prioritárias livres não enchem a capacidade da equipe', async () => {
+    renderPage()
+
+    expect(await screen.findByText(/3 UCs prioritárias para uma capacidade de 200 inspeções por mês/)).toBeInTheDocument()
+  })
+
+  it('mostra quantas inspeções da seleção devem achar irregularidade', async () => {
+    renderPage()
+
+    fireEvent.click(within(await rowOf('UC100002')).getByRole('checkbox'))
+    fireEvent.click(within(await rowOf('UC100003')).getByRole('checkbox'))
+
+    expect(await screen.findByText(/cerca de 2 de 2 inspeções devem achar irregularidade/)).toBeInTheDocument()
+  })
+
   it('seleciona o topo da fila pulando as UCs que já têm ordem', async () => {
     renderPage()
     await rowOf('UC100002')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Selecionar top 10' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Selecionar top 10 prioritárias' }))
 
     expect(await screen.findByRole('button', { name: 'Gerar 3 ordens' })).toBeEnabled()
     expect(within(await rowOf('UC100005')).getByRole('checkbox')).toBeChecked()
@@ -244,19 +274,42 @@ describe('Fila de Inspeção', () => {
     expect(screen.getByRole('checkbox', { name: 'Selecionar as UCs livres da página' })).toHaveAttribute('aria-checked', 'mixed')
   })
 
-  it('filtra por motivo, município, classe e score mínimo', async () => {
+  it('filtra por motivo, município e classe, sem filtro de score mínimo', async () => {
     renderPage()
     await rowOf('UC100002')
 
     fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'queda_subita' } })
     fireEvent.change(await screen.findByLabelText('Município'), { target: { value: 'Recife' } })
     fireEvent.change(screen.getByLabelText('Classe'), { target: { value: 'Comercial' } })
-    fireEvent.change(screen.getByLabelText('Score mínimo'), { target: { value: '70' } })
 
     await waitFor(() => expect(mockedApi.listSuspiciousUnits).toHaveBeenLastCalledWith(
-      { motivo: 'queda_subita', municipio: 'Recife', classe: 'Comercial', score_minimo: 70 },
+      { motivo: 'queda_subita', municipio: 'Recife', classe: 'Comercial' },
       expect.anything()
     ))
+    expect(screen.queryByLabelText('Score mínimo')).not.toBeInTheDocument()
+  })
+
+  it('carrega a próxima página da fila quando há mais UCs do que as carregadas', async () => {
+    mockedApi.listSuspiciousUnits.mockImplementation(async (filters) =>
+      filters.offset ? buildQueue([buildUnit('UC100099', 70)], [], 6) : buildQueue(UNITS, [], 6)
+    )
+    renderPage()
+    await rowOf('UC100002')
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Carregar mais UCs' }))
+
+    expect(await rowOf('UC100099')).toBeInTheDocument()
+    expect(await rowOf('UC100002')).toBeInTheDocument()
+    expect(mockedApi.listSuspiciousUnits).toHaveBeenLastCalledWith({ offset: 5 }, expect.anything())
+    expect(screen.queryByRole('button', { name: 'Carregar mais UCs' })).not.toBeInTheDocument()
+  })
+
+  it('não oferece carregar mais quando todas as UCs da fila já estão na tela', async () => {
+    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue(UNITS, [], UNITS.length))
+    renderPage()
+    await rowOf('UC100002')
+
+    expect(screen.queryByRole('button', { name: 'Carregar mais UCs' })).not.toBeInTheDocument()
   })
 
   it('volta para a primeira página ao mudar os filtros', async () => {
@@ -354,18 +407,122 @@ describe('Fila de Inspeção', () => {
     expect(await rowOf('UC100002')).toBeInTheDocument()
   })
 
-  it('habilita a exportação só quando há ordens programadas', async () => {
-    renderPage()
-
-    await waitFor(() => expect(screen.getByRole('button', { name: /Exportar fila \(CSV\)/ })).toBeEnabled())
-  })
-
-  it('desliga a exportação quando não há ordem gerada nem em campo', async () => {
-    mockedApi.getQueueSummary.mockResolvedValue({ ...baseSummary, capacidade_programada: 0 })
+  it('não oferece "Exportar fila" na aba Fila; a planilha de campo fica na aba Ordens', async () => {
     renderPage()
     await rowOf('UC100002')
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /Exportar fila \(CSV\)/ })).toBeDisabled())
+    expect(screen.queryByRole('button', { name: /Exportar fila/ })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
+
+    expect(await screen.findByRole('button', { name: 'Exportar planilha de campo' })).toBeInTheDocument()
+  })
+
+  it('para o diretor, que só consulta, não mostra "Gerar" nem os botões de ação das ordens', async () => {
+    signInAs('diretor')
+    renderPage()
+    await rowOf('UC100002')
+
+    fireEvent.click(within(await rowOf('UC100002')).getByRole('checkbox'))
+
+    expect(screen.queryByRole('button', { name: /^Gerar/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Selecionar top/ })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
+
+    expect(await screen.findByRole('button', { name: 'Exportar planilha de campo' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Importar resultados de campo' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Enviar a campo/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Cancelar/ })).not.toBeInTheDocument()
+  })
+
+  it('para o gerente de perdas, mostra "Gerar", "Importar" e as ações das ordens', async () => {
+    renderPage()
+    fireEvent.click(within(await rowOf('UC100002')).getByRole('checkbox'))
+    expect(await screen.findByRole('button', { name: 'Gerar 1 ordem' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
+
+    expect(await screen.findByRole('button', { name: 'Importar resultados de campo' })).toBeInTheDocument()
+    expect((await screen.findAllByRole('button', { name: /^Enviar a campo/ })).length).toBeGreaterThan(0)
+  })
+
+  it('mostra município e classe com acento e sem caixa alta, e filtra pelo valor do banco', async () => {
+    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([
+      { ...buildUnit('UC100002', 91), municipio: 'SAO LOURENCO DA MATA', classe_consumo: 'PODER PUBLICO' }
+    ]))
+    mockedApi.getQueueFilters.mockResolvedValue({ municipios: ['SAO LOURENCO DA MATA'], classes: ['PODER PUBLICO'] })
+    renderPage()
+
+    const row = await rowOf('UC100002')
+    expect(within(row).getByText('São Lourenço da Mata')).toBeInTheDocument()
+    expect(within(row).getByText('Poder Público')).toBeInTheDocument()
+
+    fireEvent.change(await screen.findByLabelText('Município'), { target: { value: 'SAO LOURENCO DA MATA' } })
+
+    await waitFor(() => expect(mockedApi.listSuspiciousUnits).toHaveBeenLastCalledWith(
+      { municipio: 'SAO LOURENCO DA MATA' },
+      expect.anything()
+    ))
+    expect(screen.getByRole('option', { name: 'Poder Público' })).toHaveValue('PODER PUBLICO')
+  })
+
+  it('mostra "Limpar filtros" só com filtro ativo e volta à fila inteira ao clicar', async () => {
+    renderPage()
+    await rowOf('UC100002')
+    expect(screen.queryByRole('button', { name: 'Limpar filtros' })).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'queda_subita' } })
+    fireEvent.click(await screen.findByRole('button', { name: 'Limpar filtros' }))
+
+    await waitFor(() => expect(screen.getByLabelText('Motivo')).toHaveValue(''))
+    expect(screen.queryByRole('button', { name: 'Limpar filtros' })).not.toBeInTheDocument()
+    expect(await rowOf('UC100002')).toBeInTheDocument()
+  })
+
+  it('explica que nenhuma UC tem os filtros escolhidos e oferece limpar', async () => {
+    mockedApi.listSuspiciousUnits.mockImplementation(async (filters) =>
+      filters.motivo ? buildQueue([], [], 0) : buildQueue(UNITS)
+    )
+    renderPage()
+    await rowOf('UC100002')
+
+    fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'leitura_zerada' } })
+
+    expect(await screen.findByText('Nenhuma UC com esses filtros.')).toBeInTheDocument()
+    expect(screen.queryByText('Nenhuma UC suspeita na fila')).not.toBeInTheDocument()
+    const clearButtons = screen.getAllByRole('button', { name: 'Limpar filtros' })
+    fireEvent.click(clearButtons[clearButtons.length - 1])
+
+    expect(await rowOf('UC100002')).toBeInTheDocument()
+  })
+
+  it('avisa com toast quantas ordens foram geradas', async () => {
+    renderPage()
+    fireEvent.click(within(await rowOf('UC100002')).getByRole('checkbox'))
+    fireEvent.click(within(await rowOf('UC100003')).getByRole('checkbox'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Gerar 2 ordens' }))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirmar e gerar 2 ordens' }))
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('2 ordens geradas.'))
+  })
+
+  it('usa o singular no toast de uma única ordem e não avisa quando alguma UC falha', async () => {
+    renderPage()
+    fireEvent.click(within(await rowOf('UC100002')).getByRole('checkbox'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Gerar 1 ordem' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirmar e gerar 1 ordem' }))
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('1 ordem gerada.'))
+
+    vi.mocked(toast.success).mockClear()
+    mockedApi.createInspection.mockRejectedValue(new Error('falha'))
+    fireEvent.click(within(await rowOf('UC100003')).getByRole('checkbox'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Gerar 1 ordem' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirmar e gerar 1 ordem' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('UC100003')
+    expect(toast.success).not.toHaveBeenCalled()
   })
 
   it('mostra o aviso de histórico de campo sem esconder a fila', async () => {
@@ -374,7 +531,7 @@ describe('Fila de Inspeção', () => {
     ]))
     renderPage()
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Histórico de inspeções não aplicado.')
+    expect(await screen.findByText('Histórico de inspeções não aplicado.')).toBeInTheDocument()
     expect(await rowOf('UC100002')).toBeInTheDocument()
   })
 
@@ -385,10 +542,14 @@ describe('Fila de Inspeção', () => {
     expect(await screen.findByText('Nenhuma UC suspeita na fila')).toBeInTheDocument()
   })
 
-  it('explica a falha ao carregar a fila', async () => {
-    mockedApi.listSuspiciousUnits.mockRejectedValue(new Error('falha'))
+  it('explica a falha ao carregar a fila e recarrega ao tentar novamente', async () => {
+    mockedApi.listSuspiciousUnits.mockRejectedValueOnce(new Error('falha'))
     renderPage()
 
     expect(await screen.findByText('Não foi possível carregar a fila')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+
+    expect(await rowOf('UC100002')).toBeInTheDocument()
+    expect(mockedApi.listSuspiciousUnits).toHaveBeenCalledTimes(2)
   })
 })

@@ -1,3 +1,4 @@
+from datetime import date
 from unittest.mock import AsyncMock
 
 import pytest
@@ -11,6 +12,7 @@ from app.features.loss_management.models import InspectionOrder
 from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.repository import LossRepository
 from app.features.loss_management.schemas import (
+    CancellationReason,
     InspectionOrderCreateDTO,
     InspectionOrderUpdateDTO,
     InspectionStatus,
@@ -52,12 +54,39 @@ async def test_rejected_duplicate_keeps_session_usable(repository):
 
 async def test_cancelled_order_does_not_block_new_order_for_unit(repository):
     first_order = await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR, kwh_estimado=0.0)
-    cancellation = InspectionOrderUpdateDTO(status=InspectionStatus.CANCELADA, justificativa_cancelamento="UC demolida")
+    cancellation = InspectionOrderUpdateDTO(
+        status=InspectionStatus.CANCELADA,
+        motivo_cancelamento=CancellationReason.OUTRO,
+        justificativa_cancelamento="UC demolida",
+    )
     await repository.update_order(first_order.id_inspecao, cancellation)
 
     new_order = await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR, kwh_estimado=0.0)
 
     assert new_order.status == InspectionStatus.GERADA
+
+
+async def test_result_and_cancellation_persist_the_new_columns(repository):
+    concluded_order = await repository.create_order(InspectionOrderCreateDTO(id_uc="UC1"), AUTHOR, kwh_estimado=0.0)
+    cancelled_order = await repository.create_order(InspectionOrderCreateDTO(id_uc="UC2"), AUTHOR, kwh_estimado=0.0)
+    result = InspectionOrderUpdateDTO(
+        status=InspectionStatus.CONCLUIDA,
+        irregularidade_constatada=False,
+        inspetor="INSP-028",
+        data_inspecao=date(2026, 10, 20),
+    )
+    cancellation = InspectionOrderUpdateDTO(
+        status=InspectionStatus.CANCELADA, motivo_cancelamento=CancellationReason.CLIENTE_REGULARIZOU
+    )
+
+    concluded = await repository.update_order(concluded_order.id_inspecao, result)
+    cancelled = await repository.update_order(cancelled_order.id_inspecao, cancellation)
+    reloaded = await repository.get_order(concluded_order.id_inspecao)
+
+    assert (concluded.inspetor, concluded.data_inspecao) == ("INSP-028", date(2026, 10, 20))
+    assert reloaded == concluded
+    assert cancelled.motivo_cancelamento == CancellationReason.CLIENTE_REGULARIZOU
+    assert (cancelled.inspetor, cancelled.data_inspecao) == (None, None)
 
 
 async def test_update_order_applies_only_informed_fields_of_dto(repository):

@@ -1,9 +1,15 @@
 """Schemas Pydantic da gestão de perdas não técnicas e ordens de inspeção."""
 
-from datetime import datetime
+import re
+from datetime import UTC, date, datetime
 from enum import StrEnum
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+INSPECTOR_CODE = re.compile(r"INSP-(\d{3})")
+FIRST_INSPECTOR_NUMBER = 1
+LAST_INSPECTOR_NUMBER = 40
 
 
 class InspectionStatus(StrEnum):
@@ -15,10 +21,21 @@ class InspectionStatus(StrEnum):
     CANCELADA = "cancelada"
 
 
+class CancellationReason(StrEnum):
+    """Lista fechada de motivos para cancelar uma ordem (a única fonte; o rótulo em pt-BR fica no frontend)."""
+
+    CLIENTE_REGULARIZOU = "cliente_regularizou"
+    ORDEM_DUPLICADA = "ordem_duplicada"
+    ENDERECO_NAO_LOCALIZADO = "endereco_nao_localizado"
+    REPRIORIZACAO_EQUIPE = "repriorizacao_equipe"
+    OUTRO = "outro"
+
+
 class SuspicionReason(StrEnum):
     """Motivos que colocam uma UC na fila de suspeitas."""
 
     QUEDA_SUBITA = "queda_subita"
+    QUEDA_MODERADA = "queda_moderada"
     LEITURA_ZERADA = "leitura_zerada"
 
 
@@ -40,8 +57,8 @@ class SuspiciousUnitsFilterDTO(BaseModel):
     bairro: str | None = None
     classe: str | None = None
     motivo: SuspicionReason | None = None
-    score_minimo: int = Field(default=0, ge=0, le=100, description="Só UCs com score a partir deste valor")
     limit: int = Field(default=FILA_CAPACIDADE_MENSAL, ge=1, le=500)
+    offset: int = Field(default=0, ge=0, description="UCs da fila ignoradas antes da página (paginação)")
 
 
 class SuspiciousUnitDTO(BaseModel):
@@ -65,6 +82,9 @@ class SuspiciousUnitDTO(BaseModel):
     consumo_recente_kwh: float
     kwh_estimado_recuperar: float
     valor_estimado_recuperar_rs: float
+    meses_base: int = Field(
+        default=12, ge=0, description="Meses com leitura na janela de base da UC (menos de 11 = ligação recente)"
+    )
     kwh_mes_recuperavel: float = Field(description="Déficit mensal de consumo (base - recente), em kWh/mês")
     valor_ano_rs: float = Field(description="kWh/mês recuperável x 12 x tarifa de referência")
 
@@ -87,7 +107,7 @@ class SuspiciousQueueDTO(BaseModel):
     """Fila de suspeitas com os avisos de degradação da análise (lista vazia = análise completa)."""
 
     itens: list[SuspiciousUnitDTO]
-    total: int = Field(description="UCs que passam nos filtros, antes de cortar a fila no `limit`")
+    total: int = Field(description="UCs que passam nos filtros, antes de cortar a página (`offset` e `limit`)")
     avisos: list[QueueWarningDTO]
 
 
@@ -101,14 +121,59 @@ class InspectionOrderCreateDTO(BaseModel):
     fiscal_responsavel: str | None = Field(default=None, max_length=120)
 
 
+def normalize_inspector_code(raw: str) -> str:
+    """Padroniza e valida o código do inspetor (INSP-001 a INSP-040).
+
+    Raises:
+        ValueError: Se o código não estiver no formato ou fora da faixa de inspetores.
+    """
+    code = raw.strip().upper()
+    code_match = INSPECTOR_CODE.fullmatch(code)
+    if code_match is None or not FIRST_INSPECTOR_NUMBER <= int(code_match.group(1)) <= LAST_INSPECTOR_NUMBER:
+        raise ValueError(f"Inspetor '{raw.strip()}' inválido: use um código de INSP-001 a INSP-040.")
+    return code
+
+
+def ensure_not_future_date(inspection_date: date) -> date:
+    """Garante que a data da inspeção não é posterior a hoje (UTC, o mesmo relógio de `criado_em`).
+
+    Raises:
+        ValueError: Se a data for futura.
+    """
+    if inspection_date > datetime.now(UTC).date():
+        raise ValueError("A data da inspeção não pode ser futura.")
+    return inspection_date
+
+
 class InspectionOrderUpdateDTO(BaseModel):
     status: InspectionStatus
     fiscal_responsavel: str | None = Field(default=None, max_length=120)
+    inspetor: str | None = Field(default=None, description="Código do inspetor, de INSP-001 a INSP-040")
+    data_inspecao: date | None = Field(default=None, description="Data em que a inspeção foi feita (não futura)")
     irregularidade_constatada: bool | None = None
     tipo_irregularidade: str | None = Field(default=None, max_length=80)
     kwh_recuperado: float | None = Field(default=None, ge=0)
     numero_toi: str | None = Field(default=None, max_length=40)
     justificativa_cancelamento: str | None = Field(default=None, max_length=500)
+    motivo_cancelamento: CancellationReason | None = Field(
+        default=None, description="Obrigatório ao cancelar; vem da lista fechada de motivos"
+    )
+
+    @field_validator("inspetor")
+    @classmethod
+    def _validate_inspector(cls, inspector: str | None) -> str | None:
+        return None if inspector is None else normalize_inspector_code(inspector)
+
+    @field_validator("data_inspecao")
+    @classmethod
+    def _validate_inspection_date(cls, inspection_date: date | None) -> date | None:
+        return None if inspection_date is None else ensure_not_future_date(inspection_date)
+
+    @model_validator(mode="after")
+    def _require_cancellation_reason(self) -> Self:
+        if self.status == InspectionStatus.CANCELADA and self.motivo_cancelamento is None:
+            raise ValueError("Informe o motivo do cancelamento.")
+        return self
 
 
 class InspectionOrderDTO(BaseModel):
@@ -120,14 +185,26 @@ class InspectionOrderDTO(BaseModel):
     motivo: str | None
     kwh_estimado: float
     fiscal_responsavel: str | None
+    inspetor: str | None
+    data_inspecao: date | None
     irregularidade_constatada: bool | None
     tipo_irregularidade: str | None
     kwh_recuperado: float | None
     numero_toi: str | None
     justificativa_cancelamento: str | None
+    motivo_cancelamento: CancellationReason | None
     criado_por: str
     criado_em: datetime
     atualizado_em: datetime
+    municipio: str | None = Field(default=None, description="Município da UC no cadastro; preenchido só na listagem")
+    bairro: str | None = Field(default=None, description="Bairro da UC no cadastro; preenchido só na listagem")
+    classe_consumo: str | None = Field(default=None, description="Classe da UC no cadastro; preenchido só na listagem")
+
+
+class InspectorDTO(BaseModel):
+    """Inspetor de campo do histórico de inspeções; a base não guarda nome, só o código."""
+
+    codigo: str = Field(description="Código do inspetor, de INSP-001 a INSP-040")
 
 
 class RejectedRowDTO(BaseModel):
@@ -166,8 +243,17 @@ class QueueSummaryDTO(BaseModel):
     selecionadas: int = Field(description="UCs selecionadas que ainda estão na fila, sem ordem")
     kwh_mes_selecionadas: float
     valor_ano_selecionadas_rs: float
-    tarifa_rs_kwh: float
-    retorno_esperado_kwh_mes: float = Field(description="Energia das selecionadas x taxa histórica de acerto")
+    tarifa_rs_kwh: float = Field(
+        description="Tarifa média ponderada (receita ÷ energia faturada) dos 12 meses de referência, em R$/kWh"
+    )
+    tarifa_periodo_inicio: str = Field(description="Primeira competência da tarifa ('YYYY-MM')")
+    tarifa_periodo_fim: str = Field(description="Última competência da tarifa ('YYYY-MM')")
+    retorno_esperado_kwh_mes: float = Field(
+        description="Soma, por UC selecionada, de kWh/mês recuperável x chance de acerto da UC"
+    )
+    retorno_esperado_valor_ano_rs: float = Field(
+        description="Soma, por UC selecionada, de valor anual recuperável x chance de acerto da UC"
+    )
     taxa_acerto: HitRateDTO
 
 

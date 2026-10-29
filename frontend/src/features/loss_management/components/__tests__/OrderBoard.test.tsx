@@ -1,9 +1,23 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { lossApi } from '@/features/loss_management/api/lossApi'
+import { CancelOrderDialog } from '@/features/loss_management/components/CancelOrderDialog'
 import { OrderBoard } from '@/features/loss_management/components/OrderBoard'
 import { RegisterResultDialog } from '@/features/loss_management/components/RegisterResultDialog'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
+
+vi.mock('@/features/loss_management/api/lossApi', () => ({
+  lossApi: { updateInspection: vi.fn(), listInspectors: vi.fn() }
+}))
+vi.mock('@/features/auth/hooks/useAuth')
+
+function signInAs(role: string) {
+  vi.mocked(useAuth).mockReturnValue({ user: { role } } as ReturnType<typeof useAuth>)
+}
+
+beforeEach(() => signInAs('gerente_perdas'))
 
 function buildOrder(overrides: Partial<InspectionOrder>): InspectionOrder {
   return {
@@ -32,6 +46,24 @@ function renderBoard(orders: InspectionOrder[], overrides: Partial<Parameters<ty
 }
 
 describe('OrderBoard', () => {
+  it('mostra bairro e município da UC no cartão, com os acentos restaurados', () => {
+    renderBoard([buildOrder({ bairro: 'BOA VIAGEM', municipio: 'JABOATAO DOS GUARARAPES' })])
+
+    expect(screen.getByText('Boa Viagem · Jaboatão dos Guararapes')).toBeInTheDocument()
+  })
+
+  it('mostra "—" no cartão quando a ordem vem sem bairro e município', () => {
+    renderBoard([buildOrder({ bairro: null, municipio: null }), buildOrder({ id_inspecao: 2 })])
+
+    expect(screen.getAllByText('—')).toHaveLength(2)
+  })
+
+  it('mostra "—" só no lado que falta quando há apenas um dos dois', () => {
+    renderBoard([buildOrder({ bairro: null, municipio: 'RECIFE' })])
+
+    expect(screen.getByText('— · Recife')).toBeInTheDocument()
+  })
+
   it('mostra as quatro etapas com contagem e aviso nas vazias', () => {
     renderBoard([buildOrder({ id_inspecao: 1 }), buildOrder({ id_inspecao: 2 })])
 
@@ -64,6 +96,23 @@ describe('OrderBoard', () => {
     expect(screen.getByText('Cancelada: UC regularizada pelo cliente')).toBeInTheDocument()
   })
 
+  it('mostra inspetor e data da inspeção nas ordens concluídas', () => {
+    renderBoard([buildOrder({ status: 'concluida', irregularidade_constatada: false, inspetor: 'INSP-014', data_inspecao: '2026-10-27' })])
+
+    expect(screen.getByText('INSP-014')).toBeInTheDocument()
+    expect(screen.getByText('Inspeção em 27/10/2026')).toBeInTheDocument()
+  })
+
+  it('mostra o motivo da lista, com a observação quando houver, nas ordens canceladas', () => {
+    renderBoard([
+      buildOrder({ id_inspecao: 1, status: 'cancelada', motivo_cancelamento: 'ordem_duplicada' }),
+      buildOrder({ id_inspecao: 2, status: 'cancelada', motivo_cancelamento: 'outro', justificativa_cancelamento: 'Cliente mudou' })
+    ])
+
+    expect(screen.getByText('Cancelada: Ordem duplicada')).toBeInTheDocument()
+    expect(screen.getByText('Cancelada: Outro · Cliente mudou')).toBeInTheDocument()
+  })
+
   it('dispara a ação com a ordem do cartão', () => {
     const order = buildOrder({ id_inspecao: 7 })
     const { onAction } = renderBoard([order])
@@ -71,6 +120,18 @@ describe('OrderBoard', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Enviar a campo/ }))
 
     expect(onAction).toHaveBeenCalledWith('dispatch', order)
+  })
+
+  it('esconde as ações dos cartões para quem só consulta, mas mantém o resumo do resultado', () => {
+    signInAs('diretor')
+    renderBoard([
+      buildOrder({ id_inspecao: 1, status: 'gerada' }),
+      buildOrder({ id_inspecao: 2, id_uc: 'UC200', status: 'pendente' }),
+      buildOrder({ id_inspecao: 3, id_uc: 'UC300', status: 'concluida', irregularidade_constatada: false })
+    ])
+
+    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByText('UC300')).toBeInTheDocument()
   })
 
   it('mostra um esqueleto com uma coluna por etapa enquanto carrega', () => {
@@ -93,6 +154,7 @@ describe('OrderBoard', () => {
 
 describe('RegisterResultDialog', () => {
   function renderDialog() {
+    vi.mocked(lossApi.listInspectors).mockResolvedValue([{ codigo: 'INSP-014' }])
     const queryClient = new QueryClient()
     render(
       <QueryClientProvider client={queryClient}>
@@ -113,6 +175,43 @@ describe('RegisterResultDialog', () => {
     expect(kwhField).toHaveAttribute('aria-invalid', 'true')
     expect(kwhField).toHaveClass('border-destructive')
     expect(screen.getByLabelText(/Tipo de irregularidade/)).toHaveClass('border-destructive')
-    expect(document.getElementById('kwh-erro')).toHaveTextContent('maior que zero')
+    expect(document.getElementById('kwh-erro')).toHaveTextContent('Informe o kWh recuperado (número maior que zero).')
+  })
+
+  it('mostra os tipos de irregularidade com acento e sem caixa alta', async () => {
+    renderDialog()
+
+    const typeField = await screen.findByLabelText(/Tipo de irregularidade/)
+
+    expect(within(typeField).getByRole('option', { name: 'Ligação clandestina' })).toHaveValue('LIGACAO CLANDESTINA')
+    expect(within(typeField).getByRole('option', { name: 'By-pass' })).toHaveValue('BY-PASS')
+  })
+
+  it('aceita o kWh digitado como texto decimal e envia o número ao salvar', async () => {
+    vi.mocked(lossApi.updateInspection).mockResolvedValue(buildOrder({ status: 'concluida' }))
+    renderDialog()
+
+    await screen.findByRole('option', { name: 'INSP-014' })
+    fireEvent.change(screen.getByLabelText(/^Inspetor/), { target: { value: 'INSP-014' } })
+    fireEvent.change(screen.getByLabelText(/Data da inspeção/), { target: { value: '2026-10-27' } })
+    fireEvent.change(screen.getByLabelText(/Irregularidade constatada\?/), { target: { value: 'sim' } })
+    fireEvent.change(screen.getByLabelText(/Tipo de irregularidade/), { target: { value: 'BY-PASS' } })
+    const kwhField = screen.getByLabelText(/kWh recuperado/)
+    expect(kwhField).toHaveAttribute('type', 'text')
+    expect(kwhField).toHaveAttribute('inputmode', 'decimal')
+    fireEvent.change(kwhField, { target: { value: '1.240' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar resultado' }))
+
+    await waitFor(() => expect(lossApi.updateInspection).toHaveBeenCalledOnce())
+    expect(lossApi.updateInspection).toHaveBeenCalledWith(1, expect.objectContaining({ kwh_recuperado: 1240 }))
+    expect(document.getElementById('kwh-erro')).toBeNull()
+  })
+})
+
+describe('CancelOrderDialog', () => {
+  it('avisa que a UC volta para a fila e que o score é recalculado', () => {
+    render(<QueryClientProvider client={new QueryClient()}><CancelOrderDialog order={buildOrder({})} onClose={vi.fn()} /></QueryClientProvider>)
+
+    expect(screen.getByText(/A UC UC131844 volta para a fila e o score é recalculado no próximo processamento\./)).toBeInTheDocument()
   })
 })

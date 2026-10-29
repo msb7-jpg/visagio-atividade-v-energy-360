@@ -12,7 +12,14 @@ from tests.test_loss_router import auth_headers, open_client
 
 EXPORT_URL = "/api/v1/losses/inspections/export"
 INSPECTIONS_URL = "/api/v1/losses/inspections"
-RESULT_COLUMNS = ("data_inspecao", "irregularidade_constatada", "tipo_irregularidade", "kwh_recuperado", "numero_toi")
+RESULT_COLUMNS = (
+    "data_inspecao",
+    "inspetor",
+    "irregularidade_constatada",
+    "tipo_irregularidade",
+    "kwh_recuperado",
+    "numero_toi",
+)
 
 
 def make_order(id_inspecao: int, id_uc: str, **overrides) -> InspectionOrderDTO:
@@ -23,11 +30,14 @@ def make_order(id_inspecao: int, id_uc: str, **overrides) -> InspectionOrderDTO:
         "motivo": None,
         "kwh_estimado": 750.0,
         "fiscal_responsavel": None,
+        "inspetor": None,
+        "data_inspecao": None,
         "irregularidade_constatada": None,
         "tipo_irregularidade": None,
         "kwh_recuperado": None,
         "numero_toi": None,
         "justificativa_cancelamento": None,
+        "motivo_cancelamento": None,
         "criado_por": "perdas@venergy.com",
         "criado_em": datetime(2026, 10, 21, 9, 30, tzinfo=UTC),
         "atualizado_em": datetime(2026, 10, 21, 9, 30, tzinfo=UTC),
@@ -102,7 +112,7 @@ async def test_export_returns_only_orders_that_go_to_field(client):
     dispatch = {"status": "pendente", "fiscal_responsavel": "Equipe 3"}
     await client.patch(f"{INSPECTIONS_URL}/{dispatched_id}", headers=headers, json=dispatch)
     cancelled_id = await create_order(client, headers, "UC_NORMAL")
-    cancellation = {"status": "cancelada", "justificativa_cancelamento": "Duplicada"}
+    cancellation = {"status": "cancelada", "motivo_cancelamento": "ordem_duplicada"}
     await client.patch(f"{INSPECTIONS_URL}/{cancelled_id}", headers=headers, json=cancellation)
 
     response = await client.get(EXPORT_URL, headers=headers)
