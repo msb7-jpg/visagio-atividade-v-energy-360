@@ -813,3 +813,11 @@
 - **Checklist:** a pendência da linha 142 (remedir limiar de 50%, GD e leitura zerada na Gold real) já estava resolvida pelo D12 desde 2026-10-28 e foi marcada; o README e o registro das decisões entraram na Fase 8.
 - **CORRECOES:** o item 🔴 do README segue aberto por ser de todos, com o andamento anotado: falta a seção das outras fatias e o link para o diagnóstico (hoje um esqueleto).
 - **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam (última rodada verde: pytest 776, vitest 554).
+
+### [2026-10-29] - Resposta à banca sobre a fila de 39 mil UCs
+- **Autor:** Adrian César
+- **Pergunta:** a explicação da fila longa de `2025-09` estava registrada só como fato (D9 e README), sem um roteiro de resposta; o item "combinar como explicar à banca" da `CORRECOES.md` seguia aberto.
+- **O que foi feito:** subseção "Se perguntarem sobre a fila de 39 mil UCs (`2025-09`)" no README, na parte da Fatia 05, em quatro respostas: por que é grande (a carteira inteira perdeu consumo em 2025, mediana de 0,61 a 0,75 de agosto a novembro, D12, então a maioria das UCs passa do piso de 20%), por que o topo continua valendo (chance calibrada pela queda além da carteira: 91,5% a 93% contra 7,6%; a fila ordena pelo kWh esperado e a aba Prioritárias separa as de 30% ou mais), a evidência (196 das 200 primeiras inspecionadas depois, 93,9% de acerto contra 62,7%) e o que admitir (a taxa vale para UCs que o campo já escolhera inspecionar; páginas lentas, porque a consulta pesada roda a cada página).
+- **CORRECOES:** o item "Fila curta na competência mais recente" foi marcado `[x]` e movido para "Já resolvido", com a data e o PR #49 (aguardando merge).
+- **Decisão de escopo:** a tela não foi alterada. Uma nota na tela, quando a competência está fixada, ficou como possibilidade e não foi feita.
+- **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam.
