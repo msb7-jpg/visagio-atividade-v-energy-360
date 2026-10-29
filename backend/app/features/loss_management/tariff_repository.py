@@ -1,12 +1,11 @@
 """Leitura da tarifa média em `fato_faturamento`, com cache por dia e por banco."""
 
 import logging
-from datetime import date
-from weakref import WeakKeyDictionary
 
-from sqlalchemy import Engine, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.features.loss_management.daily_cache import DailyEngineCache
 from app.features.loss_management.queries import fato_faturamento, shift_competencia
 from app.features.loss_management.queue_repository import GOLD_QUERY_ERRORS
 from app.features.loss_management.tariff import EMPTY_BILLING_MESSAGE, AverageTariff, compute_average_tariff
@@ -17,8 +16,8 @@ logger = logging.getLogger(__name__)
 MESES_TARIFA = 12
 TARIFF_ERROR_MESSAGE = "Falha ao calcular a tarifa média em fato_faturamento."
 
-# Uma entrada por banco: a tarifa só muda quando o pipeline recarrega o Gold, então vale o dia inteiro.
-_tariff_cache: WeakKeyDictionary[Engine, tuple[date, AverageTariff]] = WeakKeyDictionary()
+# A tarifa só muda quando o pipeline recarrega o Gold, então vale o dia inteiro.
+_tariff_cache = DailyEngineCache[AverageTariff]()
 
 
 class TariffRepositoryMixin:
@@ -38,14 +37,7 @@ class TariffRepositoryMixin:
         Raises:
             DatabaseReadError: Se `fato_faturamento` está ausente, fora do contrato ou sem energia faturada.
         """
-        engine = self.session.get_bind()
-        today = date.today()
-        cached = _tariff_cache.get(engine)
-        if cached is not None and cached[0] == today:
-            return cached[1]
-        tariff = await self._query_average_tariff()
-        _tariff_cache[engine] = (today, tariff)
-        return tariff
+        return await _tariff_cache.get_or_compute(self.session.get_bind(), "tarifa", self._query_average_tariff)
 
     async def _query_average_tariff(self) -> AverageTariff:
         competencia = fato_faturamento.c.competencia

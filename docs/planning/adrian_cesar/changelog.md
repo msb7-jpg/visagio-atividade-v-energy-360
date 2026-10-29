@@ -724,3 +724,11 @@
   - Pytest novos escritos antes (RED visto): página seguinte com o mesmo total, offset além do fim e offset negativo (422).
   - Vitest novos escritos antes (RED visto): botão carrega a página seguinte com `offset` igual ao número de UCs carregadas e some quando a fila inteira está na tela; não aparece quando já está tudo carregado.
   - `make lint-all` e `make test-all` abaixo. **Não conferido no navegador.**
+
+### [2026-10-29] - Correção: carregamento lento da Fila de Inspeção na partida a frio
+- **Autor:** Adrian César
+- **Problema:** logo depois de subir a API, a tela mostrava erro ao carregar. No log, `queue-summary` levou de 18 a 23 s e cada consulta pesada passou de 9 s. O pré-cálculo do Painel do Diretor e as chamadas da tela rodam ao mesmo tempo, e cada chamada refazia sozinha a tarifa média e a mediana da carteira (a da Fase 15.4), porque o cache só era preenchido quando o cálculo terminava.
+- **Medido no banco real:** a mediana sozinha leva 3,0 s; 4 chamadas simultâneas levavam 6,4 s cada. Com o servidor já aquecido a tela carrega sem erros (conferido no navegador: 6 chamadas à API com 200 e nenhum erro no console).
+- **Correção:** `daily_cache.py` (`DailyEngineCache`): cache por dia e por banco com trava, em que chamadas simultâneas esperam o mesmo cálculo. A tarifa e a mediana da carteira passaram a usá-lo (a falha continua sem entrar no cache). Depois da correção, 8 chamadas simultâneas (4 de tarifa e 4 de mediana) terminam em 3,7 s no total.
+- **Não resolvido:** a consulta dos perfis de consumo (cerca de 3 s sozinha) continua rodando uma vez por chamada, porque depende dos filtros e das ordens ativas e não pode ser guardada por dia. Com várias chamadas em paralelo ela ainda se acumula na primeira carga.
+- **Validação de Testes:** pytest novos escritos antes (RED visto): cálculo único para chamadas simultâneas, reaproveitamento, chaves e bancos diferentes, expiração no fim do dia, falha sem cache, e a consulta pesada da mediana executada uma vez com 4 sessões em paralelo. `make lint-all` e `make test-all`: backend 758 passed, frontend 539 passed.

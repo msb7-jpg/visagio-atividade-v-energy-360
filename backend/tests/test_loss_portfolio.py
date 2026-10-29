@@ -1,7 +1,9 @@
 """Mediana da carteira: a queda geral de consumo que a chance de acerto de cada UC desconta."""
 
+import asyncio
+
 import pytest
-from sqlalchemy import text
+from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -78,3 +80,28 @@ async def test_portfolio_ratio_counts_every_unit_even_with_solar_and_ignores_the
 async def test_portfolio_ratio_skips_units_without_a_base_and_defaults_to_one_without_measurements():
     assert await ratio_of_portfolio({"UC1": (0.0, 0.0, False), "UC2": (100.0, 80.0, False)}) == pytest.approx(0.8)
     assert await ratio_of_portfolio({}) == pytest.approx(1.0)
+
+
+async def test_simultaneous_requests_run_the_heavy_portfolio_query_once():
+    engine = create_async_engine("sqlite+aiosqlite://", poolclass=StaticPool)
+    statements: list[str] = []
+    event.listen(engine.sync_engine, "before_cursor_execute", lambda *args: statements.append(args[2]))
+    try:
+        async with engine.begin() as connection:
+            await connection.execute(text(REGISTRY_DDL))
+            await connection.execute(text(MEASUREMENT_DDL))
+            rows = [{"id": "UC1", "month": month, "kwh": 100.0} for month in BASE_MONTHS + RECENT_MONTHS]
+            await connection.execute(text("INSERT INTO fato_medicao VALUES (:id, :month, :kwh)"), rows)
+        session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+        async def ratio_in_new_session() -> float:
+            async with session_factory() as session:
+                return await LossRepository(session).fetch_portfolio_ratio("2026-03")
+
+        ratios = await asyncio.gather(*(ratio_in_new_session() for _ in range(4)))
+    finally:
+        await engine.dispose()
+
+    assert ratios == [pytest.approx(1.0)] * 4
+    portfolio_queries = [sql for sql in statements if sql.lstrip().startswith("SELECT") and "fato_medicao" in sql]
+    assert len(portfolio_queries) == 1

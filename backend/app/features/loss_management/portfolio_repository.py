@@ -1,18 +1,17 @@
 """Mediana da razão recente/base de toda a carteira, com cache por dia e por banco."""
 
 import statistics
-from datetime import date
-from weakref import WeakKeyDictionary
 
-from sqlalchemy import Engine, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.features.loss_management.daily_cache import DailyEngineCache
 from app.features.loss_management.queries import build_windows, consumption_subquery
 
 NEUTRAL_PORTFOLIO_RATIO = 1.0  # sem UC com consumo na janela, não há queda geral a descontar
 
-# Uma entrada por banco: a carteira só muda quando o pipeline recarrega o Gold, então vale o dia inteiro.
-_portfolio_cache: WeakKeyDictionary[Engine, tuple[date, str, float]] = WeakKeyDictionary()
+# A carteira só muda quando o pipeline recarrega o Gold, então vale o dia inteiro, por competência de referência.
+_portfolio_cache = DailyEngineCache[float]()
 
 
 class PortfolioRepositoryMixin:
@@ -32,15 +31,13 @@ class PortfolioRepositoryMixin:
         Returns:
             A mediana de recente/base (1.0 se nenhuma UC tem consumo base na janela).
         """
-        engine = self.session.get_bind()
-        today = date.today()
-        cached = _portfolio_cache.get(engine)
-        if cached is not None and cached[:2] == (today, reference_competencia):
-            return cached[2]
+        return await _portfolio_cache.get_or_compute(
+            self.session.get_bind(), reference_competencia, lambda: self._query_portfolio_ratio(reference_competencia)
+        )
+
+    async def _query_portfolio_ratio(self, reference_competencia: str) -> float:
         consumo = consumption_subquery(build_windows(reference_competencia))
         ratio = consumo.c.consumo_recente_kwh / consumo.c.consumo_base_kwh
         query = select(ratio).where(consumo.c.consumo_base_kwh > 0, consumo.c.consumo_recente_kwh.is_not(None))
         ratios = list((await self.session.scalars(query)).all())
-        median_ratio = statistics.median(ratios) if ratios else NEUTRAL_PORTFOLIO_RATIO
-        _portfolio_cache[engine] = (today, reference_competencia, median_ratio)
-        return median_ratio
+        return statistics.median(ratios) if ratios else NEUTRAL_PORTFOLIO_RATIO
