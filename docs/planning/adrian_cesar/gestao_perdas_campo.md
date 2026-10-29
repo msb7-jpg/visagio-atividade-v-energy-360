@@ -188,6 +188,7 @@
 - [x] **14.1 — Passo 8: `Sheet` de detalhe da UC** na Fila de Inspeção (`UnitDetailSheet`, `UnitDetailBody`, `UnitScoreCalculation`, `UnitConsumptionChart`, `PriorInspectionsList`, `useUnitDetailQuery`). Abre por clique ou Enter na linha; mostra motivo, conta do score, consumo de 12 meses (mês sem leitura = lacuna) e inspeções anteriores; carregando, erro com "Tentar novamente" e vazio; "Gerar ordem desta UC" reaproveita o diálogo de lote e não aparece para o `diretor`. (Adrian César, 2026-10-28)
 - [ ] **14.2 — Pendências:** captura do painel em modo escuro em `assets/fila-inspecao-atual/` e conferência no navegador do retorno de foco à linha ao fechar. Passo 10 em diante não iniciado.
 - [x] **14.3 — Passo 9: diálogos de campo com lista** (`InspectorField`, `RegisterResultDialog`, `CancelOrderDialog`, `DispatchOrderDialog`, `apiFieldErrors`, `cancellationReasons`). Inspetor (lista da API, busca acima de 15), data dd/mm/aaaa sem data futura e motivo de cancelamento em lista; erros 422 ao lado do campo sem fechar o diálogo; cartão do quadro mostra inspetor, data e motivo. (Adrian César, 2026-10-28)
+- [x] **14.4 — Passo 12: tarifa média calculada da base (P4).** `valor_total_rs / consumo_faturado_kwh` de `fato_faturamento` nos últimos 12 meses (R$ 0,7876/kWh em 2025-07 a 2026-06), com cache por dia; `tarifa_rs_kwh` e o período no resumo; texto de apoio no cartão; sem tarifa de reserva. Registrado em `changelog.md`. [Concluído por Adrian Cesar - 2026-10-28]
 
 ---
 

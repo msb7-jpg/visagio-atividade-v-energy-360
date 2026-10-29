@@ -633,3 +633,21 @@
 - **Validação de Testes:**
   - Vitest novos: validação de campos obrigatórios e data futura (`resultFormValidation.test.ts`), 422 por campo (`apiFieldErrors.test.ts`), diálogos de resultado e cancelamento com erro sem fechar, motivo obrigatório, foco e Esc, busca com 40 inspetores e quadro atualizado após salvar (`FieldDialogs.test.tsx`, `LossManagementPage.test.tsx`).
   - `make lint-all` exit 0; `make test-all`: backend 607 passed, frontend 330 passed. **Não conferido no navegador.**
+
+### [2026-10-28] - Fila de Inspeção: passo 12 (tarifa média calculada da base, P4)
+- **Autor:** Adrian Cesar (Fatia 05, Gestão de Perdas)
+- **O que foi feito:**
+  - Tarifa = `SUM(valor_total_rs) / SUM(consumo_faturado_kwh)` de `fato_faturamento`, nos 12 meses até a última competência faturada (média ponderada pelo consumo; não é a média simples de `tarifa_aplicada_rs_kwh`). Mesma fórmula da Visão Geral (`revenue/kpis.py::average_tariff`).
+  - Ponto único no backend: `loss_management/tariff.py` (cálculo puro) e `tariff_repository.py` (`fetch_average_tariff`, cache por banco e por dia). A constante `TARIFA_MEDIA_RS_KWH` (0,714) foi removida; `build_suspicious_unit` e `rank_suspicious_units` recebem a tarifa como parâmetro. Lista da fila, resumo e detalhe da UC usam o mesmo valor.
+  - `GET /losses/queue-summary` passa a trazer `tarifa_rs_kwh` calculada e `tarifa_periodo_inicio` / `tarifa_periodo_fim`.
+  - Tabela vazia, sem energia faturada ou ausente devolve `DatabaseReadError` (500) com mensagem clara; não há tarifa de reserva e o erro não entra no cache.
+  - Front: o cartão "Energia recuperável das selecionadas" mostra "Tarifa média de 12 meses: R$ 0,79/kWh (jul/2025–jun/2026)" (`formatTariffNote`); o texto fixo "a R$ 0,714/kWh" saiu.
+- **Números na base real (`v_energy.db`, 2025-07 a 2026-06, 539.768 faturas):** receita R$ 169.683.459 / energia 215.432.924 kWh = **R$ 0,7876/kWh**, 10,3% acima dos 0,714 antigos; todo R$ da fila sobe cerca de 10%. Para comparação: `valor_energia_rs` / consumo = 0,5907 (sem tributos) e a média simples de `tarifa_aplicada_rs_kwh` = 0,7738. O 0,561 citado na D8 não corresponde a nenhuma janela de 12 meses medida.
+- **Ocorrências de 0,714:** código (`scoring.py`, `queue_summary.py`) e testes de backend e frontend foram trocados pela tarifa semeada (0,75 no backend; 0,7876 nas fixtures do front). Os documentos (`DECISOES_PERDAS.md`, protótipo, raio-x, `gestao_perdas_campo.md` e entradas antigas deste diário) mantêm 0,714 como registro histórico.
+- **Escopo da tarifa (esclarecido):** o período 2025-07 a 2026-06 é só a janela de tempo. A tarifa soma **todas** as faturas da base nesses 12 meses (539.768 faturas, todas as UCs), sem filtrar pelas UCs da fila (165 no momento da conferência). A tarifa é a mesma para qualquer UC; as UCs da fila só a usam para converter kWh em R$. Tarifa por classe ou só das UCs suspeitas ficaria fora da P4.
+- **Operação:** a primeira chamada do dia a `/losses/queue-summary` levou cerca de 11 s (cálculo sobre 2,1 milhões de faturas); as seguintes saem do cache. Dois uvicorn na porta 8000 serviam o código antigo e causaram o erro `split` no front até um deles ser encerrado.
+- **Fora desta entrega:** passo 13 em diante; o banco não foi alterado; pendente alinhar com a Fatia 02 se a tarifa deve ser por classe.
+- **Validação de Testes:**
+  - Pytest novos em `test_loss_tariff.py`: resultado exato (750 / 1000 = 0,75), ponderação (600 / 1100, e não 0,75 da média simples), janela de 12 meses, arredondamento, tabela vazia e ausente, cache por dia, tarifa e período no resumo, R$ da fila com a tarifa calculada e erro 500 claro.
+  - Vitest novos: `formatTariffNote` em pt-BR e texto de apoio no `QueueSummaryCards`.
+  - `make lint-all` exit 0; `make test-all`: backend 620 passed, frontend 332 passed. **Não conferido no navegador.**
