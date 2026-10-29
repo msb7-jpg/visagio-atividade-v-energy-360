@@ -7,6 +7,7 @@ from app.features.loss_management.scoring import ConsumptionProfile, QueueCandid
 from app.features.revenue.exceptions import InvalidPeriodError, RevenueDataNotFoundError
 from app.features.revenue.kpis import PeriodTotals, WindowTotals
 from app.features.revenue.schemas import PeriodWindow
+from tests.loss_tariff import TEST_TARIFF
 
 BASE_WINDOW = PeriodWindow(competencia_inicio="2022-07", competencia_fim="2023-06")
 CURRENT_WINDOW = PeriodWindow(competencia_inicio="2025-07", competencia_fim="2026-06")
@@ -49,6 +50,9 @@ class FakeLossRepository:
         return QueueCandidates(
             profiles=[drop, steady], field_history_applied=True, reference_competencia=self.reference_competencia
         )
+
+    async def fetch_average_tariff(self):
+        return TEST_TARIFF
 
     async def fetch_field_hit_rate(self):
         return FieldHitRate(total=8, confirmed=2, first_date="2025-08-01", last_date="2025-12-20")

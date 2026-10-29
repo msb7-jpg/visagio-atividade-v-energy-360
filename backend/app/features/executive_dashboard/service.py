@@ -7,6 +7,7 @@ from app.features.executive_dashboard.schemas import DashboardIndicatorsDTO, Los
 from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.queue_summary import FieldHitRate, hit_rate_dto
 from app.features.loss_management.scoring import LIMIAR_QUEDA_SUBITA, QueueCandidates, rank_suspicious_units
+from app.features.loss_management.tariff import AverageTariff
 from app.features.revenue.exceptions import RevenueDataNotFoundError
 from app.features.revenue.schemas import PeriodWindow, RevenueFilters
 from app.features.revenue.service import PeriodTotalsReader, RevenueService
@@ -40,6 +41,10 @@ class LossQueueReader(Protocol):
 
     async def fetch_field_hit_rate(self) -> FieldHitRate | None:
         """Lê as contagens do histórico de inspeções de campo."""
+        ...
+
+    async def fetch_average_tariff(self) -> AverageTariff:
+        """Lê a tarifa média da base (R$/kWh) que valora a energia recuperável."""
         ...
 
 
@@ -114,7 +119,8 @@ class ExecutiveDashboardService:
         candidates = await self.loss_repository.fetch_consumption_profiles(
             SuspicionFilters(limiar_queda=LIMIAR_QUEDA_SUBITA)
         )
-        ranked_units = rank_suspicious_units(candidates.profiles, limit=None)
+        tariff = await self.loss_repository.fetch_average_tariff()
+        ranked_units = rank_suspicious_units(candidates.profiles, limit=None, tariff_rs_kwh=tariff.rs_per_kwh)
         hit_rate = hit_rate_dto(await self.loss_repository.fetch_field_hit_rate())
         reference = candidates.reference_competencia or await self.repository.fetch_latest_measurement()
         snapshot = LossesSnapshotDTO(
