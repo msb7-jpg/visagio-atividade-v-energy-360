@@ -116,22 +116,29 @@ fora (1.385 de 1.389 entram).
 - **Impacto:** com os dados limpos, a onda de quedas foi em meados de 2025 e já foi inspecionada (a equipe saiu a
   campo de agosto a dezembro). Com a referência fixada, a fila é calculada com os dados até aquele mês, e só as
   inspeções feitas até o fim dele excluem a UC. A tela mostra o aviso "Competência de referência fixada".
-- **Evidência na Gold real** (`v_energy.db`, conferida em 2026-10-27: a fila de cada mês e o que as inspeções reais
-  acharam nos 3 meses seguintes):
+- **Evidência na Gold real, na regra atual** (`v_energy.db`, medida em 2026-10-29 com queda de 20% ou mais e chance
+  calibrada: a fila de cada mês fixado e o que as inspeções reais acharam nos 3 meses seguintes, entre as 1.389
+  inspeções de 2025-08-01 a 2025-12-31):
 
-| Referência | UCs na fila | Inspecionadas depois | Acerto | Top 200 inspecionadas | Acerto do top 200 |
-|---|---|---|---|---|---|
-| 2025-06 | 3 | 0 | n/a | 0 | n/a |
-| 2025-07 | 827 | 300 | 94,0% | 129 | 94,6% |
-| 2025-08 | 773 | 369 | 94,9% | 155 | 96,8% |
-| 2025-09 | 590 | 492 | 91,5% | 197 | 93,9% |
-| 2025-10 | 352 | 336 | 90,8% | 197 | 92,9% |
-| 2025-11 | 71 | 70 | 90,0% | 70 | 90,0% |
-| 2026-06 | 0 (165 com a fila classificada) | 0 | n/a | 0 | n/a |
+| Referência | UCs na fila | Janela das inspeções | Top 200 inspecionadas | Acerto do top 200 | Acerto de todas as inspeções da janela | Top 500: inspecionadas e acerto |
+|---|---|---|---|---|---|---|
+| 2025-07 | 34.193 | ago–out/2025 | 120 | 94,2% | 64,9% | 303 e 94,7% |
+| 2025-08 | 39.409 | set–nov/2025 | 155 | 96,8% | 64,2% | 369 e 94,9% |
+| 2025-09 | 39.243 | out–dez/2025 | **196** | 93,9% | 62,7% | 487 e 91,4% |
+| 2025-10 | 34.348 | nov–dez/2025 (só 2 meses com dado) | 195 | 93,8% | 59,4% | 344 e 91,0% |
+| 2026-06 (tempo real) | 165 (7 prioritárias) | sem inspeções depois | 0 | n/a | n/a | n/a |
+
+  **Mês escolhido para a demonstração: 2025-09.** O top 200 de setembro foi quase todo a campo depois (196 de 200) e
+  93,9% tinham irregularidade, contra 62,7% de todas as inspeções do período. A chance prevista média do top 200 é de
+  92,6% a 93,0% em todos os meses, perto do medido (93,8% a 96,8%). As diferenças entre os meses (até 3 pontos, com 120 a
+  196 inspeções) ficam dentro do ruído, então o desempate foi a cobertura: 2025-07 só teve 120 das 200 inspecionadas.
+  Custo: a fila tem 39.243 UCs, quase todas de baixa chance, e cada página leva alguns segundos (a consulta pesada
+  roda a cada página); em tempo real, com 165 UCs, é instantâneo. A tabela anterior, da regra de 50% (827, 773, 590, 352
+  e 71 UCs em 2025-07 a 2025-11), foi substituída por esta.
 
   A API limita a consulta a 500 UCs; "UCs na fila" é o `total`. Na fila de 2026-06 há 559 quedas ≥ 50%, todas em UCs
   com GD (conectadas entre 2025-06 e 2026-04), que a regra exclui. O acerto vale para UCs que o campo já inspecionava
-  com esse padrão (497 das 500 primeiras de 2025-07 foram inspecionadas depois): é a taxa histórica de acerto, e não
+  com esse padrão (196 das 200 primeiras de 2025-09 foram inspecionadas depois): é a taxa histórica de acerto, e não
   prova que a regra ache irregularidades em UCs que ninguém inspecionou.
 - **Medição anterior (banco de simulação, substituída pela tabela acima):** 2025-06: 354 UCs, 93,5%; 2025-08: 594
   UCs, 93,1%; 2025-10: 323 UCs, 94,8%. Os acertos são parecidos, mas a onda de quedas da Gold real começa mais tarde.

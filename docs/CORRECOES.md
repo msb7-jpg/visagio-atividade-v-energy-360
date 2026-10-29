@@ -72,7 +72,7 @@
 
 ## 6. Gestão de Perdas (Adrian)
 
-- [ ] 🟡 **Fila curta na competência mais recente.** Em jun/2026 as 559 UCs com queda de consumo acima de 50% têm painel solar, e a Fila as exclui de propósito; sobram 165 UCs de queda moderada (31 com chance alta, 134 com chance baixa; funil em `DECISOES_PERDAS.md` D9). A demonstração com a onda de 2025 precisa de `LOSS_REFERENCE_COMPETENCIA=2025-08` no `.env`. Deixar isso no passo a passo do README e combinar como explicar à banca.
+- [ ] 🟡 **Fila curta na competência mais recente.** Em jun/2026 as 559 UCs com queda de consumo acima de 50% têm painel solar, e a Fila as exclui de propósito; sobram 165 UCs de queda moderada (7 com chance alta e 158 com chance baixa, D14; funil em `DECISOES_PERDAS.md` D9). A demonstração com a onda de 2025 precisa de `LOSS_REFERENCE_COMPETENCIA=2025-09` no `.env` (medido em 2026-10-29, regra atual: das 200 primeiras UCs, 196 foram inspecionadas nos 3 meses seguintes e 93,9% tinham irregularidade, contra 62,7% de todas as inspeções do período; tabela em D9). Nesse mês a fila tem 39.243 UCs, quase todas de baixa chance, e cada página leva alguns segundos. Deixar isso no passo a passo do README e combinar como explicar à banca.
 - [ ] ⚪ Adotar o `components/ui/pagination.tsx` (criado no #34) no `QueuePagination`.
 
 ## 7. Inteligência Comercial (Célio)
