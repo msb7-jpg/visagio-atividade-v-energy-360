@@ -134,7 +134,6 @@ class QueryProfilerMiddleware(BaseHTTPMiddleware):
             query_count = len(records)
             db_time_ms = sum(r.duration_ms for r in records)
 
-            # Detecção de N+1
             n_plus_one_suspects = analyze_queries_for_n_plus_one(records)
             for stmt, count in n_plus_one_suspects:
                 logger.warning(
@@ -145,7 +144,6 @@ class QueryProfilerMiddleware(BaseHTTPMiddleware):
                     stmt[:250],
                 )
 
-            # Alerta de volume alto de queries
             if query_count >= HIGH_QUERY_COUNT_THRESHOLD:
                 logger.warning(
                     "[HIGH QUERY COUNT] %s %s disparou %d queries (DB: %.2fms, Total: %.2fms)",

@@ -36,14 +36,12 @@ def test_toon_serializer():
 
 
 def test_append_steps_and_thought():
-    # Teste de reinicialização ao passar router
     initial_steps = [{"node": "synthesizer", "status": "done", "duration_ms": 100, "label": "Formatando"}]
     new_router_step = [{"node": "router", "status": "done", "duration_ms": 50, "label": "Classificando"}]
     updated = append_steps(initial_steps, new_router_step)
     assert len(updated) == 1
     assert updated[0]["node"] == "router"
 
-    # Teste de thought com reset
     t1 = append_thought(None, "__RESET__[Classificando]\nAnalisando")
     assert t1 == "[Classificando]\nAnalisando"
 
@@ -126,7 +124,6 @@ def test_llm_factory_model_precedence(monkeypatch):
     model_instance = get_chat_model(provider="local", base_url="http://localhost:11434/v1")
     assert getattr(model_instance, "model_name", None) == "Qwen3.5-4B-Q4_K_M"
 
-    # Quando explicitamente passado no argumento model, tem prioridade absoluta
     model_override = get_chat_model(
         provider="local", model="custom-override-model", base_url="http://localhost:11434/v1"
     )

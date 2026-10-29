@@ -175,7 +175,6 @@ def create_agent_graph(checkpointer: Any = None) -> CompiledStateGraph:
     """Compila o StateGraph completo com roteamento, SQL generator, executor, corrector e synthesizer."""
     workflow = StateGraph(AgentState)
 
-    # 1. Registro de todos os nós com telemetria
     nodes = [
         (AgentNode.ROUTER.value, router_node),
         (AgentNode.SQL_GENERATOR.value, sql_generator_node),
@@ -186,10 +185,8 @@ def create_agent_graph(checkpointer: Any = None) -> CompiledStateGraph:
     for name, fn in nodes:
         workflow.add_node(name, _wrap_node(name, fn))
 
-    # 2. Início: START -> ROUTER
     workflow.add_edge(START, AgentNode.ROUTER.value)
 
-    # 3. Transição pós-router: direct -> SYNTHESIZER | sql -> SQL_GENERATOR
     workflow.add_conditional_edges(
         AgentNode.ROUTER.value,
         route_decision,
@@ -199,10 +196,8 @@ def create_agent_graph(checkpointer: Any = None) -> CompiledStateGraph:
         },
     )
 
-    # 4. Pipeline SQL: Gerador -> Executor
     workflow.add_edge(AgentNode.SQL_GENERATOR.value, AgentNode.SQL_EXECUTOR.value)
 
-    # 5. Avaliação pós-execução SQL (Autocorreção ou Síntese)
     workflow.add_conditional_edges(
         AgentNode.SQL_EXECUTOR.value,
         check_sql_execution,
@@ -212,10 +207,8 @@ def create_agent_graph(checkpointer: Any = None) -> CompiledStateGraph:
         },
     )
 
-    # 6. Loop de autocorreção: Corrector -> Executor
     workflow.add_edge(AgentNode.SQL_CORRECTOR.value, AgentNode.SQL_EXECUTOR.value)
 
-    # 7. Conclusão: Synthesizer -> END
     workflow.add_edge(AgentNode.SYNTHESIZER.value, END)
 
     return workflow.compile(checkpointer=checkpointer)

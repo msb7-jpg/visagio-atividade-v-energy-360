@@ -87,8 +87,8 @@ async def test_area_indicators_from_seed(client, director_headers):
 
     expected = {
         "inadimplencia": (4.17, 5.95, 42.9, "PIOROU"),
-        "dec_area": (4.0, 6.0, 50.0, "PIOROU"),
-        "fec_area": (2.0, 2.0, 0.0, "ESTAVEL"),
+        "dec_area": (2.0, 4.5, 125.0, "PIOROU"),
+        "fec_area": (1.0, 1.5, 50.0, "PIOROU"),
         "satisfacao": (4.0, 3.5, -12.5, "PIOROU"),
         "tempo_resolucao": (15.0, 30.0, 100.0, "PIOROU"),
         "leituras_estimadas": (25.0, 8.33, -66.7, "MELHOROU"),

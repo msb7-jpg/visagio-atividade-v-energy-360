@@ -55,7 +55,6 @@ async def router_node(state: AgentState, config: RunnableConfig | None = None) -
     if not last_user_message:
         return {"route": "direct", "command": None}
 
-    # Avalia se há comando de barra no início da mensagem
     command_info, _ = parse_slash_command(last_user_message)
     if command_info:
         route_update = _resolve_command_route(command_info)

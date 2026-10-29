@@ -43,6 +43,13 @@ CREATE_TABLES = {
         "fim_interrupcao TEXT, duracao_min INTEGER, duracao_horas REAL, competencia TEXT, "
         "fl_anterior_ligacao BOOLEAN)"
     ),
+    "fato_qualidade_alimentador": (
+        "CREATE TABLE fato_qualidade_alimentador (id_alimentador TEXT NOT NULL, competencia TEXT NOT NULL, "
+        "conjunto_aneel TEXT, criterio_limite TEXT, ucs_atendidas INTEGER, ucs_interrompidas INTEGER, "
+        "dec_apurado_horas REAL, fec_apurado_vezes REAL, dec_acumulado_ano_horas REAL, fec_acumulado_ano_vezes REAL, "
+        "dec_limite_aneel REAL, fec_limite_aneel REAL, violou_dec BOOLEAN, violou_fec BOOLEAN, violou_meta BOOLEAN, "
+        "PRIMARY KEY (id_alimentador, competencia))"
+    ),
     "fato_atendimentos": (
         "CREATE TABLE fato_atendimentos (id_atendimento TEXT PRIMARY KEY, id_uc TEXT, numero_protocolo TEXT, "
         "motivo_chamado TEXT, submotivo_chamado TEXT, canal_atendimento TEXT, data_abertura TEXT, "
@@ -138,7 +145,27 @@ def service_rows() -> list[dict[str, object]]:
     ]
 
 
+# (alimentador, UCs atendidas): a rede tem 4 UCs atendidas, contadas uma vez por alimentador (ADR-025).
+FEEDERS = (("ALM-REC-001", 2), ("ALM-REC-002", 2))
+
+
+def feeder_rows() -> list[dict[str, object]]:
+    return [
+        {"id_alimentador": feeder, "competencia": competencia, "ucs": ucs}
+        for feeder, ucs in FEEDERS
+        for competencia in ("2022-07", "2026-06")
+    ]
+
+
 INSERTS = (
+    (
+        "fato_qualidade_alimentador",
+        (
+            "INSERT INTO fato_qualidade_alimentador (id_alimentador, competencia, ucs_atendidas) "
+            "VALUES (:id_alimentador, :competencia, :ucs)"
+        ),
+        feeder_rows,
+    ),
     (
         "dim_unidade_consumidora",
         (

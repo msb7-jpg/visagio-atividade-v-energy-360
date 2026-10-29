@@ -292,3 +292,17 @@ Os números dos exemplos são ilustrativos.
 **Achados para o time:**
 - **Volume (Renan e Célio, diagnóstico):** a energia faturada cai 5,1% na Gold, e não "quase 4%" como no texto do case. Sem as 3.510 UCs com painel solar, o volume fica estável (−0,2%): a queda inteira vem da geração solar. O Painel usa a mesma consulta da Receita, então os dois mostram −5,1%.
 - **Fila de Perdas em tempo real (Adrian):** na competência mais recente (jun/2026), todas as 559 UCs com queda acima de 50% têm painel solar, e a Fila as exclui de propósito. Por isso a demonstração usa `LOSS_REFERENCE_COMPETENCIA=2025-08`. O card de perdas avisa quando a competência está fixada e quando a fila está vazia.
+
+---
+
+## 14. Conferência com o banco regerado (2026-10-29)
+
+`v_energy.db` regerado depois do PR #44 (faturas `9999-12-31`). Cada indicador foi recalculado com SQL independente, sem usar o código do portal, nos períodos padrão e em 2023 contra 2025: **22 de 22 valores iguais**.
+
+| Conferência | Resultado |
+|---|---|
+| Faturamento, energia, tarifa e UCs iguais a `/revenue/kpis` | ✓ +8,0%, −5,1%, +13,8%, +0,6% |
+| Inadimplência com as faturas corrigidas | ✓ 5,52% → 5,42% (−0,09 ponto percentual, estável); faturas `ABERTA` não entram |
+| DEC/FEC iguais à Continuidade | ✓ depois da revisão da ADR-012: DEC 1,47 → 3,45 e FEC 0,89 → 1,31 nas duas telas |
+| Retrato de perdas igual à Fila | ✓ 773 UCs, acerto de 62,7% em 1.389 inspeções |
+| Tempo de resposta | ✓ períodos padrão em 0,01 s; outro período em cerca de 2,7 s na primeira vez |

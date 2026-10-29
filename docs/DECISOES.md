@@ -179,8 +179,9 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 
 - **Data:** 2026-10-27 · **Fatia:** 03 / Painel (Bernardo H) · **Status:** Aceita
 - **Contexto:** O glossário diz que o DEC/FEC do case serve para comparar períodos entre si, não com limites ANEEL (ADR-003). O Painel precisa de um número da rede inteira por período.
-- **Decisão:** "Horas sem energia por cliente" = Σ `duracao_horas` de `fato_ocorrencias_rede` ÷ UCs ativas da janela. "Interrupções por cliente" = nº de linhas (uma por UC atingida) ÷ UCs ativas. Todas as ocorrências contam, inclusive as anteriores à ligação (ADR-005). Sem limite ANEEL. Quando um dos períodos contém jul/2025, os dois indicadores avisam que o temporal daquele mês concentra boa parte das interrupções.
+- **Decisão:** "Horas sem energia por cliente" = Σ `duracao_horas` de `fato_ocorrencias_rede` ÷ UCs atendidas pela rede. "Interrupções por cliente" = nº de linhas (uma por UC atingida) ÷ as mesmas UCs atendidas. As UCs atendidas são a soma de `ucs_atendidas` de `fato_qualidade_alimentador`, uma vez por alimentador, com a mesma consulta da Continuidade (`feeder_ucs_query`, ADR-025), para o Painel e a Qualidade da Rede mostrarem o mesmo DEC/FEC. Todas as ocorrências contam, inclusive as anteriores à ligação (ADR-005). Sem limite ANEEL. Quando um dos períodos contém jul/2025, os dois indicadores avisam que o temporal daquele mês concentra boa parte das interrupções.
 - **Alternativa descartada:** média do DEC dos alimentadores, que pesa igual um alimentador pequeno e um grande.
+- **Revisão (2026-10-29):** a primeira versão dividia pelas UCs com fatura na janela (44.741 no primeiro ano), e a Continuidade, pelas UCs atendidas da Gold (45.000). O DEC do primeiro ano saía 1,48 no Painel e 1,47 na Qualidade da Rede. O Painel passou a usar a base da Gold, que é a fonte única de DEC/FEC (Fatia 02).
 - **Conformidade:** `test_storm_warning_only_when_period_contains_july_2025` e `test_area_indicators_from_seed`.
 
 ## ADR-013 — Inadimplência como % do valor faturado vencido e não pago

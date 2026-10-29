@@ -9,7 +9,6 @@ async def test_auth_login_and_me():
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
-        # 1. Login com credenciais válidas do Diretor
         login_resp = await ac.post(
             "/api/v1/auth/login",
             json={"email": "diretor@venergy.com", "senha": "venergy123"},
@@ -20,7 +19,6 @@ async def test_auth_login_and_me():
         assert payload["user"]["role"] == "diretor"
         token = payload["access_token"]
 
-        # 2. Acesso à rota protegida /auth/me
         me_resp = await ac.get(
             "/api/v1/auth/me",
             headers={"Authorization": f"Bearer {token}"},
@@ -30,7 +28,6 @@ async def test_auth_login_and_me():
         assert user["email"] == "diretor@venergy.com"
         assert user["role"] == "diretor"
 
-        # 3. Login com senha inválida
         invalid_resp = await ac.post(
             "/api/v1/auth/login",
             json={"email": "diretor@venergy.com", "senha": "senha-errada"},

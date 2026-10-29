@@ -1,11 +1,7 @@
 """Consultas SQLAlchemy Core das áreas do Painel do Diretor sobre as tabelas Gold.
 
-Cada consulta devolve uma linha com cada métrica duas vezes: `<métrica>_base` e `<métrica>_atual`. As tabelas Gold
-pertencem ao pipeline (Fatias 01 e 02) e são declaradas com `table()`/`column()` leves, fora do `Base.metadata`.
-
-As consultas não têm `WHERE` por competência de propósito: cada métrica já filtra a janela no `CASE`, e uma leitura
-sequencial das 2,1 milhões de faturas ou leituras é cerca de 6 vezes mais rápida no SQLite do que ir pelo índice de
-`competencia` para metade da tabela (medido em 2026-10-28: 2,9 s contra 0,4 s em `fato_faturamento`).
+Cada consulta devolve uma linha com cada métrica duas vezes: `<métrica>_base` e `<métrica>_atual`. Sem `WHERE` por
+competência: cada métrica filtra a janela no `CASE`, o que é mais rápido no SQLite (ADR-016).
 """
 # pylint: disable=not-callable
 from collections.abc import Callable

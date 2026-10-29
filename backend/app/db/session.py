@@ -24,7 +24,6 @@ settings = get_settings()
 def get_db_path() -> Path:
     """Retorna o caminho validado para o arquivo sqlite."""
     url = settings.database_url
-    # Remove prefixo SQLAlchemy
     raw_path = url.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
     path = Path(raw_path).resolve()
     if not path.exists():

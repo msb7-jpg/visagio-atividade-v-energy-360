@@ -83,7 +83,6 @@ class SSEEventDispatcher:
         label = NODE_LABELS.get(node_name, node_name)
         step_duration = _resolve_step_duration(node_update, duration_ms)
 
-        # 1. Evento de conclusão de etapa (step_end)
         events.append({
             "event": SSEEventType.STEP_END.value,
             "data": json.dumps(
@@ -97,12 +96,10 @@ class SSEEventDispatcher:
             ),
         })
 
-        # 2. Emissão de raciocínio intermediário (thought)
         thought_event = _build_thought_event(node_update, label)
         if thought_event:
             events.append(thought_event)
 
-        # 3. Emissão de código SQL formatado
         if node_update.get("generated_sql"):
             raw_sql = str(node_update["generated_sql"])
             formatted_sql = sqlparse.format(raw_sql, reindent=True, keyword_case="upper")
@@ -111,7 +108,6 @@ class SSEEventDispatcher:
                 "data": json.dumps({"sql": formatted_sql, "raw": raw_sql}, ensure_ascii=False),
             })
 
-        # 4. Emissão de dados analíticos retornados
         if node_update.get("query_result") is not None:
             results = node_update["query_result"]
             events.append({
@@ -119,7 +115,6 @@ class SSEEventDispatcher:
                 "data": json.dumps({"results": results[:50], "total": len(results)}, ensure_ascii=False),
             })
 
-        # 6. Emissão de mensagem sintetizada
         if node_update.get("messages"):
             for msg in node_update["messages"]:
                 content = getattr(msg, "content", "")

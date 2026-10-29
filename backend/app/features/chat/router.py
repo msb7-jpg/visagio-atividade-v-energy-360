@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Agente de Inteligência Artificial"])
 settings = get_settings()
 
-# Instância reutilizável do grafo compilado com memória conversacional por thread_id
 memory_checkpointer = MemorySaver()
 agent_graph = create_agent_graph(checkpointer=memory_checkpointer)
 
@@ -49,7 +48,6 @@ async def chat_stream(
     session_thread_id = f"{current_user.id}:{raw_thread_id}"
 
     async def event_generator() -> AsyncIterator[dict[str, str]]:
-        # 1. Handshake de sessão emitindo o thread_id original para o cliente
         yield SSEEventDispatcher.emit_session(
             thread_id=raw_thread_id,
             provider=request.provider,
@@ -80,7 +78,6 @@ async def chat_stream(
         }
 
         try:
-            # Transmite o fluxo de execução dos nós do LangGraph em tempo real
             async for chunk in agent_graph.astream(inputs, config=runnable_config, stream_mode="updates"):
                 for node_name, update_payload in chunk.items():
                     events = SSEEventDispatcher.dispatch_node_updates(
@@ -90,7 +87,6 @@ async def chat_stream(
                     for evt in events:
                         yield evt
 
-            # Sinalização de conclusão
             yield SSEEventDispatcher.emit_done(thread_id=raw_thread_id)
 
         except Exception as exc:

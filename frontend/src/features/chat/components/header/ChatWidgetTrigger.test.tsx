@@ -29,7 +29,6 @@ describe('ChatWidgetTrigger', () => {
       />
     )
 
-    // O indicador de ping pulsante deve possuir pointer-events-none para não capturar cliques
     const pingIndicator = container.querySelector('.animate-ping')
     expect(pingIndicator).toBeInTheDocument()
     expect(pingIndicator).toHaveClass('pointer-events-none')
