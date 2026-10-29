@@ -177,7 +177,7 @@
 - [x] **10.4 — `ErrorState`** em `AsyncState` e `ErrorBoundary`. (Adrian César, 2026-10-27)
 - [x] **10.5a — Conferência visual nos dois temas** da Fila de Inspeção, painel de detalhe, quadro de ordens e diálogos de importar e gerar ordens: contraste AA medido em todos os textos visíveis; 1 falha (selo "Pendente" no claro, 4,44:1), ver `changelog.md`. (Adrian César, 2026-10-29)
 - [x] **10.5b — Pendências com outros donos registradas em `docs/CORRECOES.md`** (Adrian César, 2026-10-29): `onRetry` na Visão 360 (seção 5), na Inteligência Comercial (7) e na Qualidade da Rede (8, seção nova); `PAYMENT_STATUS` da Visão 360 para o `StatusBadge` (5); `KpiCard`, `DeltaBadge`, `DataTable` e `FilterBar` sem dono (9). A correção é de cada responsável.
-- [ ] **10.5c — Selo "Pendente" no tema claro** abaixo do AA (4,44:1; `--warning` `#8A5A00` sobre o tint de 15% em fundo cinza). Decidir com o design se escurece o token.
+- [x] **10.5c — Selo de aviso no tema claro abaixo do AA** (4,44:1 no "Pendente"; 4,09:1 sobre `--accent`): `--warning` claro de `#8A5A00` para `#7F5200` (mínimo 4,61:1 em todas as superfícies), com teste de contraste dos dois temas. O `--chart-4` segue `#8A5A00`. (Adrian César, 2026-10-29)
 
 ### Fase 12 — Fila em duas faixas (2026-10-27)
 - [x] **12.1 — Abas Prioritárias, Baixa chance e Todas** na Fila de Inspeção (`QueueBandTabs`, `queueBands.ts`), acima da tabela e com contagem, corte de 30% de chance de acerto e "Selecionar top 10 prioritárias" só entre as prioritárias. Decisão D11 em `docs/DECISOES_PERDAS.md`. (Adrian César, 2026-10-27)

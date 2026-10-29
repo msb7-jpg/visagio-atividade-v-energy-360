@@ -786,3 +786,11 @@
 - **Seção nova:** "8. Qualidade da Rede (João)", porque o arquivo não tinha uma para ele; o Fechamento passou a ser a seção 9 (nenhuma referência dependia do número 8).
 - **Não alterado:** nenhum código dessas fatias; a correção fica com cada responsável.
 - **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam.
+
+### [2026-10-29] - Fase 10.5c: token `--warning` do tema claro no AA
+- **Autor:** Adrian César
+- **Origem:** a conferência visual (10.5a) achou o selo "Pendente" com 4,44:1 no tema claro. A conta por superfície mostrou que o problema era maior que o selo: com o tint de 15% (`bg-warning/15`), o texto `#8A5A00` dava 4,40:1 sobre `--background`, 4,48:1 sobre `--muted`, 4,15:1 sobre `--secondary` e 4,09:1 sobre `--accent`; só passava sobre `--card`.
+- **Correção:** `--warning` claro de `#8A5A00` para `#7F5200`, o menor ajuste que passa em todas as superfícies (mínimo 4,61:1 sobre `--accent`; texto branco sobre o token, 6,75:1). `index.css` e as duas linhas do `design.md` atualizados. O `--chart-4` não mudou: é série de gráfico, não texto de selo. O valor sai do que está em `tokens-claro.png`; o desvio é só neste token e está registrado aqui.
+- **Efeito em outras fatias:** `text-warning` e `bg-warning` também aparecem no `Alert`, no `IndicatorCard` do painel, no `CauseSharesCard` da Qualidade da Rede e no `ScoreBar`; o tom fica um pouco mais escuro no claro, sem mudar de significado.
+- **Teste:** `components/ui/__tests__/warning-token-contrast.test.ts` lê o `index.css` e exige 4,5:1 do `--warning` sobre as cinco superfícies nos dois temas. Escrito antes (RED visto: 4 falhas no claro, com os valores acima); o escuro já passava. Lê o arquivo com `node:fs` porque o Vitest zera `.css`, mesmo com `?raw`.
+- **Validação de Testes:** `make lint-all` e `make test-all` verdes (pytest 776, vitest 554) e `bun run build` sem erros de tipo (o primeiro build achou que o teste precisava dos tipos do Node, corrigido). Conferência visual no navegador não refeita: o contraste é calculado pelo teste e bate com a medição do DOM de antes (4,44:1 medido, 4,40 a 4,79 calculado conforme a superfície).
