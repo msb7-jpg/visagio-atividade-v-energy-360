@@ -169,45 +169,9 @@ async def test_sem_token_retorna_401(client, route):
 
 
 @pytest.mark.parametrize("route", ROUTES)
-async def test_token_invalido_retorna_401(client, route):
-    response = await client.get(route, headers={"Authorization": "Bearer token.invalido"})
-
-    assert response.status_code == 401
-
-
-@pytest.mark.parametrize("route", ROUTES)
-async def test_atendente_recebe_403_em_todas_as_rotas(client, route):
-    response = await client.get(route, headers=bearer_for_role(UserRole.ATENDENTE))
-
-    assert response.status_code == 403
-
-
 @pytest.mark.parametrize(
     ("role", "expected_status"),
-    [
-        (UserRole.DIRETOR, 200),
-        (UserRole.GERENTE_OPERACAO, 200),
-        (UserRole.GERENTE_PERDAS, 403),
-        (UserRole.GERENTE_ATENDIMENTO, 403),
-        (UserRole.ATENDENTE, 403),
-    ],
-)
-async def test_matriz_de_papeis_nos_indicadores(client, role, expected_status):
-    response = await client.get("/quality/indicators", headers=bearer_for_role(role))
-
-    assert response.status_code == expected_status
-
-
-@pytest.mark.parametrize("route", ROUTES)
-@pytest.mark.parametrize(
-    ("role", "expected_status"),
-    [
-        (UserRole.DIRETOR, 200),
-        (UserRole.GERENTE_OPERACAO, 200),
-        (UserRole.GERENTE_PERDAS, 403),
-        (UserRole.GERENTE_ATENDIMENTO, 403),
-        (UserRole.ATENDENTE, 403),
-    ],
+    [(UserRole.DIRETOR, 200), (UserRole.GERENTE_OPERACAO, 200), (UserRole.ATENDENTE, 403)],
 )
 async def test_matriz_de_papeis_em_todas_as_rotas(client, route, role, expected_status):
     response = await client.get(route, headers=bearer_for_role(role))

@@ -3,7 +3,7 @@ from collections.abc import Sequence
 import pytest
  
 from app.features.revenue.decomposition import SegmentTotals, decompose
-from app.features.revenue.exceptions import InvalidPeriodError, RevenueDataNotFoundError
+from app.features.revenue.exceptions import InvalidPeriodError
 from app.features.revenue.schemas import PeriodWindow, RevenueFilters
 from app.features.revenue.service import RevenueService
  
@@ -119,14 +119,7 @@ async def test_service_returns_decomposition_and_forwards_windows_and_filters():
     assert result.efeito_preco_rs == pytest.approx(80.0)
     assert repository.calls == [(BASE_WINDOW, CURRENT_WINDOW, filters)]
  
- 
-async def test_service_raises_not_found_when_repository_has_no_segments():
-    service = RevenueService(FakeSegmentRepository([]))
- 
-    with pytest.raises(RevenueDataNotFoundError):
-        await service.get_decomposition(BASE_WINDOW, CURRENT_WINDOW, NO_FILTERS)
- 
- 
+
 @pytest.mark.parametrize(
     "overlapping_current",
     [

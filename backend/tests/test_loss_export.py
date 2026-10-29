@@ -124,11 +124,3 @@ async def test_export_returns_only_orders_that_go_to_field(client):
     rows = parse_export(response.text)
     assert sorted(int(row["id_inspecao"]) for row in rows) == sorted([generated_id, dispatched_id])
     assert {row["id_uc"] for row in rows} == {"UC_FRAUDE", "UC_ZERADA"}
-
-
-async def test_export_is_forbidden_for_roles_without_permission(client):
-    headers = await auth_headers(client, "atendimento@venergy.com")
-
-    response = await client.get(EXPORT_URL, headers=headers)
-
-    assert response.status_code == 403

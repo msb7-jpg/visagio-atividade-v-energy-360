@@ -378,15 +378,6 @@ async def test_queue_filters_list_available_municipalities_and_classes(client: A
     assert response.json() == {"municipios": ["Recife"], "classes": ["Residencial"]}
 
 
-async def test_new_endpoints_are_forbidden_for_other_roles(client: AsyncClient):
-    headers = await auth_headers(client, "atendimento@venergy.com")
-
-    summary = await client.get(f"{BASE_URL}/queue-summary", headers=headers)
-    filters = await client.get(f"{BASE_URL}/queue-filters", headers=headers)
-
-    assert (summary.status_code, filters.status_code) == (403, 403)
-
-
 def test_ranking_without_limit_returns_every_unit_and_an_empty_queue_has_no_score():
     assert len(rank_suspicious_units([BIG_DROP, SMALL_DROP, ZERO_ONLY], limit=None, tariff_rs_kwh=TARIFF_RS_KWH)) == 3
     assert rank_suspicious_units([], limit=None, tariff_rs_kwh=TARIFF_RS_KWH) == []

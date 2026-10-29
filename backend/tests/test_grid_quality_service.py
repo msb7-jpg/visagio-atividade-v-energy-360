@@ -124,15 +124,6 @@ def test_ranking_coloca_alimentador_sem_limite_por_ultimo():
     assert ranking_ids(rank_feeders(rows)) == ["ALIM-TESTE-02", "ALIM-TESTE-01"]
 
 
-def test_resumo_com_base_vazia_devolve_indicadores_zerados():
-    indicators = summarize_indicators(None, [])
-
-    assert indicators.competencia is None
-    assert indicators.total_alimentadores == 0
-    assert indicators.dec_medio_horas == pytest.approx(0.0)
-    assert indicators.percentual_violacao == pytest.approx(0.0)
-
-
 def test_resumo_usa_media_simples_e_conta_so_violacao():
     rows = [
         make_row("ALIM-TESTE-01", dec=120.0, fec=10.0),

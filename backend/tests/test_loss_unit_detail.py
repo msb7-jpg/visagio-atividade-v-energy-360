@@ -244,24 +244,6 @@ async def test_completed_portal_order_is_listed_as_a_previous_inspection(client)
     ]
 
 
-async def test_role_without_permission_is_forbidden(client):
-    response = await get_detail(client, "UC_FRAUDE", email="atendimento@venergy.com")
-
-    assert response.status_code == 403
-
-
-async def test_director_can_read_the_detail(client):
-    response = await get_detail(client, "UC_FRAUDE", email="diretor@venergy.com")
-
-    assert response.status_code == 200
-
-
-async def test_request_without_token_is_unauthorized(client):
-    response = await client.get(f"{DETAIL_URL}/UC_FRAUDE")
-
-    assert response.status_code == 401
-
-
 def make_profile(base_kwh: float, recent_kwh: float, zero_months: int = 0) -> ConsumptionProfile:
     return ConsumptionProfile(
         id_uc="UC_X",

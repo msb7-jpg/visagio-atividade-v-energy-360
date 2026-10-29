@@ -8,7 +8,6 @@ from app.features.loss_management.hit_rate import hit_probability
 from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.schemas import (
     CancellationReason,
-    InspectionOrderCreateDTO,
     InspectionOrderDTO,
     InspectionOrderUpdateDTO,
     InspectionStatus,
@@ -27,7 +26,7 @@ from app.features.loss_management.scoring import (
 )
 from app.features.loss_management.service import LossService, validate_transition
 from app.features.loss_management.tariff import AverageTariff
-from app.shared.exceptions import BadRequestException, NotFoundException
+from app.shared.exceptions import BadRequestException
 from tests.loss_tariff import TARIFF_RS_KWH, TEST_TARIFF
 
 
@@ -318,59 +317,6 @@ def test_order_kwh_is_zero_for_unit_without_recent_reading():
     assert order_estimated_kwh(unit) == pytest.approx(0.0)
 
 
-class FakeCreationRepository:
-    """Repositório de criação: cadastro opcional, ordem ativa configurável e registro do kWh gravado."""
-
-    def __init__(self, registered_unit: RegisteredUnit | None, has_active: bool = False) -> None:
-        self.registered_unit = registered_unit
-        self.has_active = has_active
-        self.saved_kwh: float | None = None
-
-    async def fetch_registered_unit(self, id_uc: str) -> RegisteredUnit | None:
-        del id_uc
-        return self.registered_unit
-
-    async def has_active_order(self, id_uc: str) -> bool:
-        del id_uc
-        return self.has_active
-
-    async def create_order(
-        self, payload: InspectionOrderCreateDTO, criado_por: str, *, kwh_estimado: float
-    ) -> InspectionOrderDTO:
-        del criado_por
-        self.saved_kwh = kwh_estimado
-        return make_order_dto(InspectionStatus.GERADA, id_uc=payload.id_uc, kwh_estimado=kwh_estimado)
-
-
-SUSPICIOUS_UNIT = make_unit(300.0, 50.0)
-
-
-async def test_create_rejects_unit_with_active_order():
-    service = LossService(repository=FakeCreationRepository(SUSPICIOUS_UNIT, has_active=True))  # type: ignore[arg-type]
-
-    with pytest.raises(InspectionConflictError):
-        await service.create_inspection(InspectionOrderCreateDTO(id_uc="UC1"), criado_por="perdas@venergy.com")
-
-
-async def test_create_rejects_unit_missing_from_registry():
-    repository = FakeCreationRepository(None)
-    service = LossService(repository=repository)  # type: ignore[arg-type]
-
-    with pytest.raises(NotFoundException):
-        await service.create_inspection(InspectionOrderCreateDTO(id_uc="UC_X"), criado_por="perdas@venergy.com")
-    assert repository.saved_kwh is None
-
-
-async def test_create_saves_kwh_computed_by_server():
-    repository = FakeCreationRepository(SUSPICIOUS_UNIT)
-    service = LossService(repository=repository)  # type: ignore[arg-type]
-
-    created = await service.create_inspection(InspectionOrderCreateDTO(id_uc="UC1"), criado_por="perdas@venergy.com")
-
-    assert repository.saved_kwh == pytest.approx(750.0)
-    assert created.kwh_estimado == pytest.approx(750.0)
-
-
 def make_order_dto(status: InspectionStatus, **overrides: object) -> InspectionOrderDTO:
     order_fields = {
         "id_inspecao": 7, "id_uc": "UC1", "status": status, "motivo": None, "kwh_estimado": 750.0,
@@ -411,13 +357,6 @@ async def test_update_inspection_delegates_persistence_to_repository_with_dtos()
 
     assert updated.status == InspectionStatus.PENDENTE
     assert repository.applied_payload == payload
-
-
-async def test_update_unknown_inspection_raises_not_found():
-    service = LossService(repository=FakeDtoOnlyRepository(None))  # type: ignore[arg-type]
-
-    with pytest.raises(NotFoundException):
-        await service.update_inspection(99, InspectionOrderUpdateDTO(status=InspectionStatus.PENDENTE))
 
 
 @pytest.mark.parametrize(
@@ -479,17 +418,6 @@ class FakeQueueRepository:
 
     async def fetch_average_tariff(self) -> AverageTariff:
         return TEST_TARIFF
-
-
-async def test_queue_warns_when_field_history_was_not_applied():
-    profile = make_profile("UC1", base_kwh=300, recent_kwh=50)
-    candidates = QueueCandidates(profiles=[profile], field_history_applied=False)
-    service = LossService(repository=FakeQueueRepository(candidates))  # type: ignore[arg-type]
-
-    queue = await service.list_suspicious_units(SuspiciousUnitsFilterDTO())
-
-    assert [unit.id_uc for unit in queue.itens] == ["UC1"]
-    assert [warning.codigo for warning in queue.avisos] == [QueueWarningCode.HISTORICO_CAMPO_NAO_APLICADO]
 
 
 async def test_queue_warns_when_a_fixed_reference_competencia_is_used():

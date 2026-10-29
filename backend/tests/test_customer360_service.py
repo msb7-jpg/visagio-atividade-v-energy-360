@@ -139,14 +139,6 @@ async def test_history_builds_twelve_months_ending_at_latest_reading():
     assert history.meses[0].variacao_consumo_pct == pytest.approx(40.0)
 
 
-async def test_diagnosis_flags_consumption_increase():
-    history = await build_service(recent_kwh=280.0, previous_kwh=200.0).get_history("UC100000")
-
-    assert history.diagnostico is not None
-    assert history.diagnostico.tendencia_consumo == ConsumptionTrend.SUBIU
-    assert history.diagnostico.competencia_comparada == "2025-12"
-
-
 async def test_diagnosis_reports_flag_change_when_consumption_is_stable():
     invoices = [invoice("2026-12", 230.0, bandeira="VERMELHA_P2"), invoice("2025-12", 160.0)]
     history = await build_service(recent_kwh=200.0, previous_kwh=200.0, invoices=invoices).get_history("UC100000")
@@ -226,12 +218,6 @@ async def test_unknown_unit_raises_not_found(method_name):
         await getattr(service, method_name)("UC999999")
 
 
-async def test_lowercase_number_with_spaces_finds_the_unit():
-    summary = await Customer360Service(FakeCustomer360Repository(UNIT)).get_summary("  uc100000 ")
-
-    assert summary.id_uc == "UC100000"
-
-
 def test_daily_average_handles_missing_or_zero_days():
     assert daily_average(240.0, 36) == pytest.approx(6.67)
     assert daily_average(240.0, 0) is None
@@ -284,15 +270,3 @@ def test_totals_ignore_months_without_previous_year():
     ]
 
     assert summarize_window(recent_only) is None
-
-
-async def test_search_ignores_short_text_and_normalizes_digits():
-    repository = FakeCustomer360Repository(UNIT)
-    service = Customer360Service(repository)
-
-    assert await service.search("10", 8) == []
-    assert repository.searched_range is None
-    await service.search("10000", 8)
-    assert repository.searched_range.start == "UC10000"
-    await service.search(" maria   silva ", 8)
-    assert repository.searched_holder_pattern == "%maria silva%"

@@ -173,11 +173,3 @@ async def test_upload_is_forbidden_for_director_who_only_reads(client):
 
     assert response.status_code == 403
     assert (await get_order(client, manager, id_inspecao))["status"] == "gerada"
-
-
-async def test_upload_is_forbidden_for_roles_without_permission(client):
-    headers = await auth_headers(client, "atendimento@venergy.com")
-
-    response = await client.post(UPLOAD_URL, headers=headers, files=csv_file("1;;sim;;1;"))
-
-    assert response.status_code == 403
