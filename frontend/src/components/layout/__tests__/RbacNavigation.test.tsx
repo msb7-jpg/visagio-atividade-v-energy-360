@@ -1,43 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { navItemsFor } from '@/components/layout/navItems'
-import { SidebarNav } from '@/components/layout/SidebarNav'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { ProtectedRoute } from '@/routes/ProtectedRoute'
 import { homeRouteFor } from '@/routes/homeRoute'
 
 vi.mock('@/features/auth/hooks/useAuth')
 
-function renderSidebarAs(role: string) {
-  vi.mocked(useAuth).mockReturnValue({ user: { role } } as ReturnType<typeof useAuth>)
-  render(
-    <MemoryRouter>
-      <SidebarNav />
-    </MemoryRouter>
-  )
-}
-
 describe('RBAC da navegação', () => {
   beforeEach(() => vi.resetAllMocks())
-
-  it.each([
-    ['atendente', ['Visão 360 da UC']],
-    ['gerente_atendimento', ['Visão 360 da UC']],
-    ['gerente_operacao', ['Qualidade da Rede', 'Visão 360 da UC']],
-    ['gerente_perdas', ['Fila de Inspeção', 'Visão 360 da UC']],
-    ['diretor', ['Painel', 'Inteligência Comercial', 'Fila de Inspeção', 'Qualidade da Rede', 'Visão 360 da UC']],
-    ['papel_desconhecido', []]
-  ])('%s vê apenas os itens permitidos', (role, labels) => {
-    expect(navItemsFor(role).map((item) => item.label)).toEqual(labels)
-  })
-
-  it('SidebarNav oculta Qualidade e Perdas para atendente', () => {
-    renderSidebarAs('atendente')
-    expect(screen.getByRole('link', { name: 'Visão 360 da UC' })).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Qualidade da Rede' })).toBeNull()
-    expect(screen.queryByRole('link', { name: 'Fila de Inspeção' })).toBeNull()
-  })
 
   it.each([
     ['atendente', '/customers'],

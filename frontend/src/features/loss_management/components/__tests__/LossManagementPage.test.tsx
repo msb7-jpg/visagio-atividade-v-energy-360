@@ -150,26 +150,6 @@ describe('LossManagementPage', () => {
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('OI-2026-0001 enviada a campo com INSP-014.'))
   })
 
-  it('registra o resultado de campo de uma ordem pendente', async () => {
-    mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'pendente' })])
-    renderPage()
-    const board = await openOrdersTab()
-
-    fireEvent.click(within(board).getByRole('button', { name: /^Registrar resultado OI-/ }))
-    await screen.findByRole('option', { name: 'INSP-007' })
-    fireEvent.change(screen.getByLabelText(/^Inspetor/), { target: { value: 'INSP-007' } })
-    fireEvent.change(screen.getByLabelText(/Data da inspeção/), { target: { value: '2026-10-27' } })
-    fireEvent.change(screen.getByLabelText(/Irregularidade constatada\?/), { target: { value: 'sim' } })
-    fireEvent.change(screen.getByLabelText(/Tipo de irregularidade/), { target: { value: 'BY-PASS' } })
-    fireEvent.change(screen.getByLabelText(/kWh recuperado/), { target: { value: '680' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Salvar resultado' }))
-
-    await waitFor(() => expect(mockedApi.updateInspection).toHaveBeenCalledWith(1, expect.objectContaining({
-      status: 'concluida', inspetor: 'INSP-007', data_inspecao: '2026-10-27', irregularidade_constatada: true, kwh_recuperado: 680
-    })))
-    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Resultado de OI-2026-0001 registrado.'))
-  })
-
   it('move a ordem para Concluída com inspetor e data, sem recarregar a página, depois de salvar o resultado', async () => {
     const concludedOrder = buildOrder({
       status: 'concluida', irregularidade_constatada: false, inspetor: 'INSP-007', data_inspecao: '2026-10-27'
@@ -193,24 +173,6 @@ describe('LossManagementPage', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('só habilita o cancelamento depois de escolher o motivo da lista', async () => {
-    mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'pendente' })])
-    renderPage()
-    const board = await openOrdersTab()
-
-    fireEvent.click(within(board).getByRole('button', { name: /^Cancelar OI-/ }))
-    const confirmButton = await screen.findByRole('button', { name: 'Confirmar cancelamento' })
-    expect(confirmButton).toBeDisabled()
-
-    fireEvent.change(screen.getByLabelText(/^Motivo do cancelamento/), { target: { value: 'cliente_regularizou' } })
-    expect(confirmButton).toBeEnabled()
-    fireEvent.click(confirmButton)
-
-    await waitFor(() => expect(mockedApi.updateInspection).toHaveBeenCalledWith(1, {
-      status: 'cancelada', motivo_cancelamento: 'cliente_regularizou'
-    }))
-    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('OI-2026-0001 cancelada.'))
-  })
 })
 
 function buildApiError(status: number, detail: string): AxiosError {

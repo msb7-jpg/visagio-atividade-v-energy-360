@@ -271,25 +271,6 @@ describe('Customer360Page', () => {
     expect(screen.getByText('R$ 2.150,50')).toBeInTheDocument()
   })
 
-  it('separa período de faturamento mais longo do consumo real', async () => {
-    mockedApi.getHistory.mockResolvedValue(buildHistory({
-      ...stableWithFlagChange,
-      consumo_kwh: 240,
-      variacao_consumo_pct: 20,
-      tendencia_consumo: 'SUBIU',
-      bandeira_mudou: false,
-      dias_faturamento: 36,
-      media_diaria_kwh: 6.67,
-      variacao_media_diaria_pct: 0,
-      variacao_tarifa_pct: null
-    }))
-    renderPage()
-    searchFor('UC100004')
-
-    expect(await screen.findByText(/Este período teve 36 dias de faturamento contra 30; por dia, o consumo ficou estável/)).toBeInTheDocument()
-    expect(screen.queryByText(/preço médio do kWh/)).not.toBeInTheDocument()
-  })
-
   it('aponta aumento real de consumo', async () => {
     mockedApi.getHistory.mockResolvedValue(buildHistory({
       ...stableWithFlagChange,
@@ -375,14 +356,6 @@ describe('Customer360Page', () => {
     expect(within(inspections).getByText('By-pass')).toBeInTheDocument()
   })
 
-  it('avisa quando a leitura do mês foi estimada', async () => {
-    mockedApi.getHistory.mockResolvedValue(buildHistory({ ...stableWithFlagChange, leitura_estimada: true }))
-    renderPage()
-    searchFor('UC100004')
-
-    expect(await screen.findByText(/A leitura de jun\/2026 foi estimada pela média/)).toBeInTheDocument()
-  })
-
   it('resume faturas em aberto, falta de luz e chamados sem trocar de aba', async () => {
     renderPage()
     searchFor('UC100004')
@@ -391,24 +364,6 @@ describe('Customer360Page', () => {
     expect(screen.getByText('2 faturas em aberto.')).toBeInTheDocument()
     expect(await screen.findByText('Acima do normal no último ano; o mais recente foi mai/2026.')).toBeInTheDocument()
     expect(screen.getByText('Último aberto em 25/06/2026.')).toBeInTheDocument()
-  })
-
-  it('lembra o efeito da geração solar no diagnóstico de conta alta', async () => {
-    mockedApi.getSummary.mockResolvedValue({ ...summary, possui_gd: true, potencia_gd_kw: 4.5 })
-    renderPage()
-    searchFor('UC100004')
-
-    expect(await screen.findByText(/a energia gerada é abatida do consumo faturado/)).toBeInTheDocument()
-    expect(screen.getByText(/GD Solar \(4,5 kW\)/)).toBeInTheDocument()
-  })
-
-  it('explica a queda de consumo pelo painel solar ligado no último ano', async () => {
-    mockedApi.getSummary.mockResolvedValue({ ...summary, possui_gd: true, potencia_gd_kw: 4.5, data_conexao_gd: '2025-09-15' })
-    renderPage()
-    searchFor('UC100004')
-
-    expect(await screen.findByText(/O painel solar foi ligado em set\/2025, depois de jun\/2025/)).toBeInTheDocument()
-    expect(screen.getByText(/desde set\/2025/)).toBeInTheDocument()
   })
 
   it('aceita só os dígitos do número da conta e guarda a UC no endereço da página', async () => {

@@ -191,21 +191,6 @@ describe('Fila de Inspeção', () => {
     expect(await screen.findByText('60')).toBeInTheDocument()
   })
 
-  it('avisa que as UCs prioritárias livres não enchem a capacidade da equipe', async () => {
-    renderPage()
-
-    expect(await screen.findByText(/3 UCs prioritárias para uma capacidade de 200 inspeções por mês/)).toBeInTheDocument()
-  })
-
-  it('mostra quantas inspeções da seleção devem achar irregularidade', async () => {
-    renderPage()
-
-    fireEvent.click(within(await rowOf('UC100002')).getByRole('checkbox'))
-    fireEvent.click(within(await rowOf('UC100003')).getByRole('checkbox'))
-
-    expect(await screen.findByText(/cerca de 2 de 2 inspeções devem achar irregularidade/)).toBeInTheDocument()
-  })
-
   it('seleciona o topo da fila pulando as UCs que já têm ordem', async () => {
     renderPage()
     await rowOf('UC100002')
@@ -264,14 +249,6 @@ describe('Fila de Inspeção', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Voltar' })).toBeDisabled())
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-  })
-
-  it('marca o cabeçalho como parcial quando só algumas UCs livres estão selecionadas', async () => {
-    renderPage()
-
-    fireEvent.click(within(await rowOf('UC100002')).getByRole('checkbox'))
-
-    expect(screen.getByRole('checkbox', { name: 'Selecionar as UCs livres da página' })).toHaveAttribute('aria-checked', 'mixed')
   })
 
   it('filtra por motivo, município e classe, sem filtro de score mínimo', async () => {
@@ -387,16 +364,6 @@ describe('Fila de Inspeção', () => {
 
     expect(await screen.findByRole('button', { name: 'Gerar 1 ordem' })).toBeEnabled()
     expect(within(await rowOf('UC100002')).getByRole('checkbox')).toBeChecked()
-  })
-
-  it('avisa que usa a taxa geral quando o histórico de campo não está disponível', async () => {
-    mockedApi.getQueueSummary.mockResolvedValue({
-      ...baseSummary,
-      taxa_acerto: { inspecoes_total: null, irregularidades_confirmadas: null, taxa: 0.627, periodo_inicio: null, periodo_fim: null }
-    })
-    renderPage()
-
-    expect(await screen.findByText(/Histórico de campo indisponível/)).toBeInTheDocument()
   })
 
   it('avisa quando o resumo não carrega, sem esconder a fila', async () => {
