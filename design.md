@@ -117,6 +117,8 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 
 **Receitas derivadas (sem criar token novo):** tint de success/warning/destructive = `bg-success/15`; hover do primary = `bg-primary/85`; série "Outros" e eixos = `muted-foreground`; sombra = `shadow-sm`. Todo `-foreground` é texto sobre a cor correspondente (contraste AA ≥ 4,5).
 
+**Contraste do `--warning` (decisão de 2026-10-29):** no tema claro o token é `#7F5200`, um pouco mais escuro que o `#8A5A00` de `tokens-claro.png`. Com o tint de 15% (`bg-warning/15`), o `#8A5A00` ficava entre 4,09:1 e 4,48:1 em quatro das cinco superfícies; com `#7F5200` o mínimo é 4,61:1 (AA, 4,5:1). O teste `components/ui/__tests__/warning-token-contrast.test.ts` exige isso nos dois temas. O `--chart-4` segue `#8A5A00`, porque é cor de série e não de texto.
+
 **Fundo do login e banners hero:** `glass-gradient`, derivado de `--background` → `--accent` (sem hex próprio).
 
 ---
