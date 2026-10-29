@@ -97,7 +97,12 @@ export interface BatchResult {
   failed: BatchFailure[]
 }
 
-/** Motivos fechados de cancelamento aceitos pela API (os rótulos em pt-BR entram no passo 9). */
+/** Inspetor de campo (`GET /losses/inspectors`); a base guarda só o código, de INSP-001 a INSP-040. */
+export interface Inspector {
+  codigo: string
+}
+
+/** Motivos fechados de cancelamento aceitos pela API (os rótulos em pt-BR ficam em `utils/cancellationReasons.ts`). */
 export type CancellationReason =
   | 'cliente_regularizou'
   | 'ordem_duplicada'
@@ -149,7 +154,7 @@ export interface InspectionOrderUpdate {
   kwh_recuperado?: number
   numero_toi?: string
   justificativa_cancelamento?: string
-  /** A API exige este campo ao cancelar (422 sem ele); o diálogo passa a enviá-lo no passo 9. */
+  /** A API exige este campo ao cancelar (422 sem ele). */
   motivo_cancelamento?: CancellationReason
 }
 

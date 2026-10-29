@@ -9,7 +9,7 @@ import { RegisterResultDialog } from '@/features/loss_management/components/Regi
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 
 vi.mock('@/features/loss_management/api/lossApi', () => ({
-  lossApi: { updateInspection: vi.fn() }
+  lossApi: { updateInspection: vi.fn(), listInspectors: vi.fn() }
 }))
 vi.mock('@/features/auth/hooks/useAuth')
 
@@ -96,6 +96,23 @@ describe('OrderBoard', () => {
     expect(screen.getByText('Cancelada: UC regularizada pelo cliente')).toBeInTheDocument()
   })
 
+  it('mostra inspetor e data da inspeção nas ordens concluídas', () => {
+    renderBoard([buildOrder({ status: 'concluida', irregularidade_constatada: false, inspetor: 'INSP-014', data_inspecao: '2026-10-27' })])
+
+    expect(screen.getByText('INSP-014')).toBeInTheDocument()
+    expect(screen.getByText('Inspeção em 27/10/2026')).toBeInTheDocument()
+  })
+
+  it('mostra o motivo da lista, com a observação quando houver, nas ordens canceladas', () => {
+    renderBoard([
+      buildOrder({ id_inspecao: 1, status: 'cancelada', motivo_cancelamento: 'ordem_duplicada' }),
+      buildOrder({ id_inspecao: 2, status: 'cancelada', motivo_cancelamento: 'outro', justificativa_cancelamento: 'Cliente mudou' })
+    ])
+
+    expect(screen.getByText('Cancelada: Ordem duplicada')).toBeInTheDocument()
+    expect(screen.getByText('Cancelada: Outro · Cliente mudou')).toBeInTheDocument()
+  })
+
   it('dispara a ação com a ordem do cartão', () => {
     const order = buildOrder({ id_inspecao: 7 })
     const { onAction } = renderBoard([order])
@@ -137,6 +154,7 @@ describe('OrderBoard', () => {
 
 describe('RegisterResultDialog', () => {
   function renderDialog() {
+    vi.mocked(lossApi.listInspectors).mockResolvedValue([{ codigo: 'INSP-014' }])
     const queryClient = new QueryClient()
     render(
       <QueryClientProvider client={queryClient}>
@@ -173,7 +191,10 @@ describe('RegisterResultDialog', () => {
     vi.mocked(lossApi.updateInspection).mockResolvedValue(buildOrder({ status: 'concluida' }))
     renderDialog()
 
-    fireEvent.change(await screen.findByLabelText(/Irregularidade constatada\?/), { target: { value: 'sim' } })
+    await screen.findByRole('option', { name: 'INSP-014' })
+    fireEvent.change(screen.getByLabelText(/^Inspetor/), { target: { value: 'INSP-014' } })
+    fireEvent.change(screen.getByLabelText(/Data da inspeção/), { target: { value: '2026-10-27' } })
+    fireEvent.change(screen.getByLabelText(/Irregularidade constatada\?/), { target: { value: 'sim' } })
     fireEvent.change(screen.getByLabelText(/Tipo de irregularidade/), { target: { value: 'BY-PASS' } })
     const kwhField = screen.getByLabelText(/kWh recuperado/)
     expect(kwhField).toHaveAttribute('type', 'text')

@@ -8,7 +8,8 @@ export const lossKeys = {
   unitDetail: (idUc: string) => [...lossKeys.all, 'unit-detail', idUc] as const,
   inspections: () => [...lossKeys.all, 'inspections'] as const,
   queueSummary: (selectedIds: string[]) => [...lossKeys.all, 'queue-summary', selectedIds] as const,
-  queueFilters: () => [...lossKeys.all, 'queue-filters'] as const
+  queueFilters: () => [...lossKeys.all, 'queue-filters'] as const,
+  inspectors: () => [...lossKeys.all, 'inspectors'] as const
 }
 
 // Fila e ordens mudam a cada ação do gerente: cache curto para refletir o trabalho de campo.
@@ -84,6 +85,19 @@ export function queueSummaryQueryOptions(selectedIds: string[]) {
     queryFn: ({ signal }) => lossApi.getQueueSummary(sortedIds, signal),
     staleTime: LOSS_STALE_TIME_MS,
     placeholderData: keepPreviousData
+  })
+}
+
+/**
+ * Opções reutilizáveis da lista de inspetores de campo; o cache é longo porque a lista só muda com a carga do histórico.
+ *
+ * @returns Opções de query com cancelamento via signal.
+ */
+export function inspectorsQueryOptions() {
+  return queryOptions({
+    queryKey: lossKeys.inspectors(),
+    queryFn: ({ signal }) => lossApi.listInspectors(signal),
+    staleTime: FILTER_OPTIONS_STALE_TIME_MS
   })
 }
 

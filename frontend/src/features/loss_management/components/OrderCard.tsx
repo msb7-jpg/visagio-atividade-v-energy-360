@@ -3,8 +3,10 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useCanWriteLosses } from '@/features/loss_management/hooks/useCanWriteLosses'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
+import { describeCancellationReason } from '@/features/loss_management/utils/cancellationReasons'
 import { formatDate } from '@/features/loss_management/utils/lossFormatters'
 import { formatPlaceName } from '@/features/loss_management/utils/textFormat'
+import { formatIsoDate } from '@/features/loss_management/utils/unitDetailFormat'
 import {
   ACTION_LABELS,
   ACTIONS_BY_STATUS,
@@ -25,7 +27,19 @@ interface OrderCardProps {
  * @returns Texto de apoio do cartão.
  */
 function describeInspector(order: InspectionOrder): string {
-  return order.fiscal_responsavel ?? 'sem inspetor'
+  return order.inspetor ?? order.fiscal_responsavel ?? 'sem inspetor'
+}
+
+/**
+ * Texto da faixa de cancelamento: motivo da lista e, se houver, a observação digitada.
+ *
+ * @param order - Ordem de inspeção.
+ * @returns Texto como "Ordem duplicada · já havia outra aberta", ou null se a ordem não registrou nenhum dos dois.
+ */
+function describeCancellation(order: InspectionOrder): string | null {
+  const reasonLabel = order.motivo_cancelamento ? describeCancellationReason(order.motivo_cancelamento) : null
+  const parts = [reasonLabel, order.justificativa_cancelamento].filter((part): part is string => Boolean(part))
+  return parts.length > 0 ? parts.join(' · ') : null
 }
 
 /**
@@ -49,6 +63,7 @@ function describeLocation(order: InspectionOrder): string {
  */
 export function OrderCard({ order, onAction }: OrderCardProps) {
   const resultSummary = summarizeFieldResult(order)
+  const cancellationText = describeCancellation(order)
   const canWrite = useCanWriteLosses()
   const actions = canWrite ? ACTIONS_BY_STATUS[order.status] : []
 
@@ -65,9 +80,12 @@ export function OrderCard({ order, onAction }: OrderCardProps) {
         {resultSummary ? (
           <Badge variant={resultSummary.tone} className="h-auto self-start whitespace-normal">{resultSummary.text}</Badge>
         ) : null}
-        {order.justificativa_cancelamento ? (
+        {order.data_inspecao ? (
+          <p className="text-muted-foreground text-xs tabular-nums">Inspeção em {formatIsoDate(order.data_inspecao)}</p>
+        ) : null}
+        {cancellationText ? (
           <p className="text-muted-foreground border-border rounded-md border p-2 text-xs">
-            Cancelada: {order.justificativa_cancelamento}
+            Cancelada: {cancellationText}
           </p>
         ) : null}
         {actions.length > 0 ? (

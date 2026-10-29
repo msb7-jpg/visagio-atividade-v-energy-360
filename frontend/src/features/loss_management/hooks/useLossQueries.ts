@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import {
   inspectionsQueryOptions,
+  inspectorsQueryOptions,
   queueFiltersQueryOptions,
   queueSummaryQueryOptions,
   suspiciousUnitsQueryOptions,
@@ -29,6 +30,15 @@ export function useUnitDetailQuery(idUc: string | null) {
     ...unitDetailQueryOptions(idUc ?? ''),
     enabled: idUc !== null
   })
+}
+
+/**
+ * Inspetores de campo para os seletores dos diálogos de envio e resultado.
+ *
+ * @returns Estado da query da lista de inspetores.
+ */
+export function useInspectorsQuery() {
+  return useQuery(inspectorsQueryOptions())
 }
 
 /**

@@ -5,6 +5,7 @@ import type {
   InspectionOrderCreate,
   InspectionOrderUpdate,
   InspectionStatus,
+  Inspector,
   QueueFilterOptions,
   QueueSummary,
   SuspiciousQueue,
@@ -39,6 +40,11 @@ export const lossApi = {
 
   async getQueueFilters(signal?: AbortSignal): Promise<QueueFilterOptions> {
     const { data } = await apiClient.get<QueueFilterOptions>('/losses/queue-filters', { signal })
+    return data
+  },
+
+  async listInspectors(signal?: AbortSignal): Promise<Inspector[]> {
+    const { data } = await apiClient.get<Inspector[]>('/losses/inspectors', { signal })
     return data
   },
 
