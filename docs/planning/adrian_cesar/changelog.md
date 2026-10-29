@@ -651,3 +651,15 @@
   - Pytest novos em `test_loss_tariff.py`: resultado exato (750 / 1000 = 0,75), ponderação (600 / 1100, e não 0,75 da média simples), janela de 12 meses, arredondamento, tabela vazia e ausente, cache por dia, tarifa e período no resumo, R$ da fila com a tarifa calculada e erro 500 claro.
   - Vitest novos: `formatTariffNote` em pt-BR e texto de apoio no `QueueSummaryCards`.
   - `make lint-all` exit 0; `make test-all`: backend 620 passed, frontend 332 passed. **Não conferido no navegador.**
+
+### [2026-10-28] - Fase 15.1: consistência entre o painel do diretor e a Fila de Inspeção
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - `executive_dashboard/service.py`: o retrato de perdas do painel pedia à fila o limiar de queda de 50% (`LIMIAR_QUEDA_SUBITA`), e a tela de perdas usa 20% (`LIMIAR_QUEDA_MODERADA`). No `v_energy.db` real, o painel mostrava 0 UCs enquanto a fila mostrava 165. Agora os dois usam o mesmo limiar.
+  - Merge de `origin/main` na branch: `rank_suspicious_units` exige `tariff_rs_kwh`, e o painel também passou a usar a tarifa média real (R$ 0,7876/kWh). O valor recuperável do teste do painel passou de 599,76 para 756,00.
+  - `DECISOES_PERDAS.md`: D8 reescrita (tarifa calculada da base) e D9 com o funil de 2026-06 (45.000 cadastradas, 1.823 com queda de 20% ou mais, 656 sem GD, 165 sem as já inspecionadas). Pendências de tarifa fechadas em `gestao_perdas_campo.md`; nova Fase 15 com o plano de melhora.
+- **Funil medido:** 559 quedas de 50% ou mais, todas em UCs com GD; 491 das 656 candidatas já foram inspecionadas desde 2025-04; 14.295 UCs com queda de 10% a 20% ficam fora porque o sinal acerta 7% ou menos.
+- **Próximos Passos:** Fase 15.2 (a fila curta na tela) e 15.3 (motivo e valor).
+- **Validação de Testes:**
+  - Novo teste: o painel pede o mesmo limiar da fila. Escrito antes e visto falhar.
+  - `make lint-all` e `make test-all` na validação final abaixo.

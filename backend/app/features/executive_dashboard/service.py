@@ -6,7 +6,7 @@ from app.features.executive_dashboard.indicators import AreaTotals, PeriodSnapsh
 from app.features.executive_dashboard.schemas import DashboardIndicatorsDTO, LossesSnapshotDTO
 from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.queue_summary import FieldHitRate, hit_rate_dto
-from app.features.loss_management.scoring import LIMIAR_QUEDA_SUBITA, QueueCandidates, rank_suspicious_units
+from app.features.loss_management.scoring import LIMIAR_QUEDA_MODERADA, QueueCandidates, rank_suspicious_units
 from app.features.loss_management.tariff import AverageTariff
 from app.features.revenue.exceptions import RevenueDataNotFoundError
 from app.features.revenue.schemas import PeriodWindow, RevenueFilters
@@ -117,7 +117,7 @@ class ExecutiveDashboardService:
         if cached is not None:
             return cached
         candidates = await self.loss_repository.fetch_consumption_profiles(
-            SuspicionFilters(limiar_queda=LIMIAR_QUEDA_SUBITA)
+            SuspicionFilters(limiar_queda=LIMIAR_QUEDA_MODERADA)
         )
         tariff = await self.loss_repository.fetch_average_tariff()
         ranked_units = rank_suspicious_units(candidates.profiles, limit=None, tariff_rs_kwh=tariff.rs_per_kwh)

@@ -106,7 +106,7 @@
 - [x] Prioridade pela taxa histórica de acerto: a fila ordena por kWh esperado (kWh a recuperar × taxa de acerto do sinal) e o score só desempata. (taxas 0,93 para queda súbita e 0,627 geral para leitura zerada isolada; a de leitura zerada ainda não foi medida)
 - [x] Consumo negativo ignorado na fila: leituras com `consumo_kwh < 0` (troca de medidor ou sinal invertido na origem) não entram nas médias. Na base bruta, 81 de 81 UCs da fila vinham dessas leituras.
 - [x] Competência de referência configurável para a demonstração (`LOSS_REFERENCE_COMPETENCIA`, formato `YYYY-MM`; ausente = competência mais recente): a fila e o kWh das novas ordens usam os dados até essa competência, só as inspeções feitas até o fim dela excluem a UC, e a tela mostra o aviso "Competência de referência fixada". Com `2025-08` nos dados do case, a fila tem 200 UCs e o top 200 acertou 94,9% (198 conciliadas, 188 irregulares).
-- [ ] Tarifa real de `fato_faturamento` no valor a recuperar (aguarda Ryei).
+- [x] Tarifa real de `fato_faturamento` no valor a recuperar. (Passo 12, Fase 14.4: tarifa média ponderada dos últimos 12 meses, sem depender da resposta da Fatia 02.)
 
 ### Fase 3 — Conformidade com `backend-coding-standards`
 - [x] Docstrings Google-style nos métodos públicos (repositório, serviço, rotas, fábrica de DI). Também em `queries.py` e `scoring.py`.
@@ -138,7 +138,7 @@
 - [x] Seed local da Fase 1 sem resíduos: o `v_energy.db` real só tem as tabelas da Gold e a `ordem_inspecao` (nenhuma tabela marcada `_seed_provisorio_fatia05`); o `v_energy_dev.db` é só da Visão 360.
 - [x] Fila rodada contra os dados reais e números conferidos: 45.000 UCs, 2.152.336 medições (2022-07 a 2026-06), 1.389 inspeções (871 irregulares, 62,7%). Fila em tempo real (2026-06): **0 UCs** (as 559 quedas ≥ 50% são todas de UCs com GD, que a regra exclui); com a competência fixada em 2025-07: **827 UCs**, top 200 com **94,6%** de acerto nas inspeções dos 3 meses seguintes.
 - [x] Taxa geral 0,627 confirmada (871/1.389). Taxa da queda súbita (0,93): o backtest na Gold real dá 91 a 95% por competência, então a constante segue defensável.
-- [ ] Tarifa: `TARIFA_MEDIA_RS_KWH` (0,714 no código; 0,85 em `DECISOES_PERDAS.md` D8) contra a Gold real: média de `tarifa_aplicada_rs_kwh` = 0,774 e `valor_energia_rs / consumo_faturado_kwh` = 0,561. Aguarda definição com Ryei (Fatia 02) de qual medida usar.
+- [x] Tarifa: definida na P4 como `valor_total_rs / consumo_faturado_kwh` dos últimos 12 meses (R$ 0,7876/kWh); as medidas de 0,774 e 0,561 foram descartadas. Ver `DECISOES_PERDAS.md` D8.
 - [ ] Remedir na Gold real os números que ainda vêm do seed: limiar de 50% (92,6%, D2), exclusão de GD (3,2%, D3) e a taxa da leitura zerada isolada (usa a geral).
 
 ### Fase 11 — Fila classificada (2026-10-27)
@@ -189,6 +189,14 @@
 - [ ] **14.2 — Pendências:** captura do painel em modo escuro em `assets/fila-inspecao-atual/` e conferência no navegador do retorno de foco à linha ao fechar. Passo 10 em diante não iniciado.
 - [x] **14.3 — Passo 9: diálogos de campo com lista** (`InspectorField`, `RegisterResultDialog`, `CancelOrderDialog`, `DispatchOrderDialog`, `apiFieldErrors`, `cancellationReasons`). Inspetor (lista da API, busca acima de 15), data dd/mm/aaaa sem data futura e motivo de cancelamento em lista; erros 422 ao lado do campo sem fechar o diálogo; cartão do quadro mostra inspetor, data e motivo. (Adrian César, 2026-10-28)
 - [x] **14.4 — Passo 12: tarifa média calculada da base (P4).** `valor_total_rs / consumo_faturado_kwh` de `fato_faturamento` nos últimos 12 meses (R$ 0,7876/kWh em 2025-07 a 2026-06), com cache por dia; `tarifa_rs_kwh` e o período no resumo; texto de apoio no cartão; sem tarifa de reserva. Registrado em `changelog.md`. [Concluído por Adrian Cesar - 2026-10-28]
+
+### Fase 15 — Conferência com a fala do gerente de perdas (2026-10-28)
+> Plano de melhora a partir da conferência da fala de Rafael Coutinho (`atividade.pdf`, pág. 6) com o sistema.
+- [x] **15.1 — Consistência:** painel do diretor passa a usar o mesmo limiar da fila (20%), com teste; `DECISOES_PERDAS.md` D8 e D9 atualizados (tarifa calculada, funil de 45.000 para 165 UCs) e pendências de tarifa fechadas. (Adrian César, 2026-10-28)
+- [ ] **15.2 — Honestidade na tela:** mostrar "19 prioritárias para ~200 inspeções", a chance de acerto esperada da seleção e aviso ao incluir UCs de baixa chance.
+- [ ] **15.3 — Motivo e valor mais úteis:** motivo com a queda (%) e a faixa de acerto; valor em R$ com a leitura estimada (3 meses) e a razão observada de 1,87×.
+- [ ] **15.4 — Mais sinais, com evidência:** remedir leitura zerada e limiar de GD na Gold real; normalizar a queda pela mediana da carteira; prazo de reincidência.
+- [ ] **15.5 — Escala e validação:** paginação com `offset` no servidor (teto atual de 500 UCs) e piloto de inspeção fora da fila.
 
 ---
 

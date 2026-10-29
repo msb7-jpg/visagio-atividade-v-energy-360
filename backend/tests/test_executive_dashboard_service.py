@@ -3,7 +3,7 @@ import pytest
 from app.features.executive_dashboard.indicators import AreaTotals
 from app.features.executive_dashboard.service import ExecutiveDashboardService
 from app.features.loss_management.queue_summary import FieldHitRate
-from app.features.loss_management.scoring import ConsumptionProfile, QueueCandidates
+from app.features.loss_management.scoring import LIMIAR_QUEDA_MODERADA, ConsumptionProfile, QueueCandidates
 from app.features.revenue.exceptions import InvalidPeriodError, RevenueDataNotFoundError
 from app.features.revenue.kpis import PeriodTotals, WindowTotals
 from app.features.revenue.schemas import PeriodWindow
@@ -43,8 +43,10 @@ class FakeRevenueRepository:
 class FakeLossRepository:
     def __init__(self, reference_competencia: str | None = None) -> None:
         self.reference_competencia = reference_competencia
+        self.received_filters = []
 
     async def fetch_consumption_profiles(self, filters):
+        self.received_filters.append(filters)
         drop = ConsumptionProfile("UC1", "RECIFE", "CENTRO", "Residencial", 300.0, 50.0, 0)
         steady = ConsumptionProfile("UC2", "RECIFE", "CENTRO", "Residencial", 200.0, 200.0, 0)
         return QueueCandidates(
@@ -130,3 +132,11 @@ async def test_losses_snapshot_prefers_fixed_reference_competencia():
 
     assert snapshot.competencia_referencia == "2025-12"
     assert snapshot.competencia_fixada is True
+
+
+async def test_losses_snapshot_uses_the_same_drop_threshold_as_the_loss_queue():
+    service, _ = build_service()
+
+    await service.get_losses_snapshot()
+
+    assert [filters.limiar_queda for filters in service.loss_repository.received_filters] == [LIMIAR_QUEDA_MODERADA]

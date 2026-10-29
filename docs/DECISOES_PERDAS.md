@@ -84,17 +84,33 @@ fora (1.385 de 1.389 entram).
   a diretoria for citar valores absolutos, o time deve decidir se ajusta.
 - **Limite da evidência:** uma única competência de referência e uma amostra de 188 UCs.
 
-### D8. Tarifa fixa de R$ 0,85 por kWh (suposição)
-- **Decisão:** o R$ a recuperar usa tarifa média fixa. A tarifa real está em `fato_faturamento` (Fatia 02) e ainda
-  não foi integrada. O R$ é uma estimativa; o PDF pede a energia (kWh).
-- **Conferência na Gold real (2026-10-27):** o código usa hoje `TARIFA_MEDIA_RS_KWH` = 0,714 (e não 0,85). No
-  `fato_faturamento` real a média de `tarifa_aplicada_rs_kwh` é 0,774 e `valor_energia_rs / consumo_faturado_kwh` é
-  0,561. Pendente: definir com a Fatia 02 qual medida representa a tarifa a recuperar.
+### D8. Tarifa média calculada da base de faturamento
+- **Decisão:** o R$ a recuperar usa a tarifa média ponderada dos últimos 12 meses de `fato_faturamento`:
+  `sum(valor_total_rs) / sum(consumo_faturado_kwh)`. Com a Gold real, 2025-07 a 2026-06 dá **R$ 0,7876/kWh**. A API
+  expõe o valor e o período em `tarifa_rs_kwh`, o cálculo é guardado em cache por dia e não há tarifa de reserva: sem
+  faturas no período, a fila responde com erro explícito em vez de usar um número inventado.
+- **Alternativas descartadas:** a média simples de `tarifa_aplicada_rs_kwh` (0,774) não pondera pelo consumo, e
+  `valor_energia_rs / consumo_faturado_kwh` (0,561) ignora os tributos que o cliente paga. As constantes antigas
+  (0,85 e 0,714) saíram do código.
+- **Impacto:** o R$ é uma estimativa (o PDF pede a energia em kWh) e muda quando a base de faturamento muda. O painel
+  do diretor usa a mesma tarifa, então os dois valores coincidem.
 
 ## 4. Dados e demonstração
 
-### D9. A fila da competência mais recente (2026-06) é vazia, e isso é esperado
-- **Decisão:** manter a regra de tempo real e oferecer a configuração opcional `LOSS_REFERENCE_COMPETENCIA`.
+### D9. A fila da competência mais recente (2026-06) é curta: 165 UCs, só 19 de chance alta
+- **Decisão:** manter a regra de tempo real e oferecer a configuração opcional `LOSS_REFERENCE_COMPETENCIA`. A tabela
+  abaixo é de antes da fila classificada (D11), quando o piso era a queda de 50%; hoje a fila de 2026-06 tem 165 UCs.
+- **Funil de 2026-06** (`v_energy.db` real, conferido em 2026-10-28):
+
+| Etapa | UCs |
+|---|---|
+| Cadastro (todas com medição na janela) | 45.000 |
+| Queda de consumo de 20% ou mais (3 últimos meses contra os 12 anteriores) | 1.823 |
+| Sem as UCs com GD (1.167, incluindo as 559 quedas de 50% ou mais) | 656 |
+| Sem as UCs inspecionadas desde 2025-04 (491) | **165** |
+
+  Quedas de 10% a 20% são 14.295 UCs e ficam fora: o sinal acerta 7% ou menos. As UCs fora da fila não estão
+  "limpas": só não têm um sinal que o histórico mostre que acerta.
 - **Impacto:** com os dados limpos, a onda de quedas foi em meados de 2025 e já foi inspecionada (a equipe saiu a
   campo de agosto a dezembro). Com a referência fixada, a fila é calculada com os dados até aquele mês, e só as
   inspeções feitas até o fim dele excluem a UC. A tela mostra o aviso "Competência de referência fixada".
@@ -109,7 +125,7 @@ fora (1.385 de 1.389 entram).
 | 2025-09 | 590 | 492 | 91,5% | 197 | 93,9% |
 | 2025-10 | 352 | 336 | 90,8% | 197 | 92,9% |
 | 2025-11 | 71 | 70 | 90,0% | 70 | 90,0% |
-| 2026-06 | 0 | 0 | n/a | 0 | n/a |
+| 2026-06 | 0 (165 com a fila classificada) | 0 | n/a | 0 | n/a |
 
   A API limita a consulta a 500 UCs; "UCs na fila" é o `total`. Na fila de 2026-06 há 559 quedas ≥ 50%, todas em UCs
   com GD (conectadas entre 2025-06 e 2026-04), que a regra exclui. O acerto vale para UCs que o campo já inspecionava
