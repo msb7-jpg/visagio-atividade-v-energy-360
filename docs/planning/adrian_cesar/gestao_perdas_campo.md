@@ -146,7 +146,7 @@
 - [x] `queda_moderada` (queda de 20% a 50%) entra na fila com chance de acerto por faixa: 0,42 (30% a 50%) e 0,07 (20% a 30%); a queda súbita (50% ou mais, 0,93) continua no topo.
 - [x] Testes escritos antes (TDD), front com o novo motivo e filtro, `tests/conftest.py` isolando o `.env`.
 - [x] No `v_energy.db` real, a fila em tempo real (2026-06) passa de 0 para 165 UCs; backtest de 2025-07 mantém 94,9% de acerto no top 200.
-- [ ] Conferir a tela no navegador com a fila classificada.
+- [x] Conferir a tela no navegador com a fila classificada. (Adrian César, 2026-10-29; achados corrigidos no mesmo dia, ver `changelog.md`: selo da coluna Situação em uma linha e score igual com ou sem filtro territorial.)
 - [x] Meses de queda generalizada: queda normalizada pela mediana da carteira. (Fase 15.4: calibra a chance de acerto; a entrada na fila segue pela queda bruta.)
 - [x] Paginação (`offset`) além das 500 UCs da API. (Fase 15.5)
 
@@ -186,7 +186,8 @@
 
 ### Fase 14 — Painel de detalhe da UC (2026-10-28)
 - [x] **14.1 — Passo 8: `Sheet` de detalhe da UC** na Fila de Inspeção (`UnitDetailSheet`, `UnitDetailBody`, `UnitScoreCalculation`, `UnitConsumptionChart`, `PriorInspectionsList`, `useUnitDetailQuery`). Abre por clique ou Enter na linha; mostra motivo, conta do score, consumo de 12 meses (mês sem leitura = lacuna) e inspeções anteriores; carregando, erro com "Tentar novamente" e vazio; "Gerar ordem desta UC" reaproveita o diálogo de lote e não aparece para o `diretor`. (Adrian César, 2026-10-28)
-- [ ] **14.2 — Pendências:** captura do painel em modo escuro em `assets/fila-inspecao-atual/` e conferência no navegador do retorno de foco à linha ao fechar. Passo 10 em diante não iniciado.
+- [x] **14.2 — Captura em modo escuro** (`assets/fila-inspecao/14-detalhe-da-uc-modo-escuro.jpg`) e **retorno de foco à linha** ao fechar (Esc e botão X) conferidos no navegador. (Adrian César, 2026-10-29)
+- [ ] **14.2b — Pendência:** passo 10 em diante não iniciado.
 - [x] **14.3 — Passo 9: diálogos de campo com lista** (`InspectorField`, `RegisterResultDialog`, `CancelOrderDialog`, `DispatchOrderDialog`, `apiFieldErrors`, `cancellationReasons`). Inspetor (lista da API, busca acima de 15), data dd/mm/aaaa sem data futura e motivo de cancelamento em lista; erros 422 ao lado do campo sem fechar o diálogo; cartão do quadro mostra inspetor, data e motivo. (Adrian César, 2026-10-28)
 - [x] **14.4 — Passo 12: tarifa média calculada da base (P4).** `valor_total_rs / consumo_faturado_kwh` de `fato_faturamento` nos últimos 12 meses (R$ 0,7876/kWh em 2025-07 a 2026-06), com cache por dia; `tarifa_rs_kwh` e o período no resumo; texto de apoio no cartão; sem tarifa de reserva. Registrado em `changelog.md`. [Concluído por Adrian Cesar - 2026-10-28]
 

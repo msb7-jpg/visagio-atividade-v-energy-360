@@ -743,3 +743,31 @@
 - **Resultado no banco real (2026-06):** as mesmas 165 UCs, agora 7 fortes (6 com 12 meses e 1 com 11) e 158 fracas, 35 delas ligações recentes. O retorno esperado cai de cerca de 2.046 para cerca de 788 kWh/mês. A energia recuperável (7.265 kWh/mês) não muda.
 - **Limite:** a taxa fraca para ligação recente é prudência, não medição; o piloto do D13 passa a ter um estrato de ligações recentes.
 - **Validação de Testes:** pytest e vitest escritos antes (RED visto): regra do histórico mínimo, contagem de meses no repositório, frase do motivo, contrato da API, aviso na linha e dica do cabeçalho. `make lint-all` e `make test-all` abaixo.
+
+### [2026-10-29] - Fase 14.2: captura em modo escuro e retorno de foco do painel de detalhe
+- **Autor:** Adrian César
+- **O que foi feito:** conferência no navegador (backend e frontend locais, perfil gerente de perdas, modo escuro, competência 2026-06). Captura do painel de detalhe da UC109003 em `assets/fila-inspecao/14-detalhe-da-uc-modo-escuro.jpg`: motivo, conta do score, gráfico de 12 meses, "Inspeções anteriores" e "Gerar ordem desta UC" legíveis, sem texto cortado.
+- **Retorno de foco:** ao fechar o painel, o foco volta à linha da UC que o abriu, tanto por Enter + Esc (mesma linha) quanto por clique na linha + botão X (linha clicada). Nenhum código alterado.
+- **Pasta:** o checklist citava `assets/fila-inspecao-atual/`, que não existe; a captura foi para `assets/fila-inspecao/`, onde estão as de 01 a 13.
+- **Validação de Testes:** conferência manual; sem mudança de código, então `make lint-all` e `make test-all` não se aplicam a esta entrega.
+
+### [2026-10-29] - Fase 11: conferência no navegador da fila classificada
+- **Autor:** Adrian César
+- **O que foi conferido** (backend e frontend locais, Gold real, competência 2026-06, perfil gerente de perdas, modo escuro):
+  - Contagens: Fila priorizada 165 = Prioritárias 7 + Baixa chance 158; Todas 165, paginada em 25 por página (7 páginas), com "Mostrando 1–25 de N".
+  - Seleção "top 10 prioritárias" pega só as 7 prioritárias: 281 kWh/mês recuperáveis, retorno esperado 257 kWh/mês (281 × 91,5%) e o aviso "cerca de 6 de 7 inspeções devem achar irregularidade".
+  - Aviso de capacidade: "7 UCs prioritárias para uma capacidade de 200 inspeções por mês" e "158 UCs de baixa chance acertam no máximo 7,6%".
+  - Filtro de município (Recife): 72 UCs = 5 prioritárias + 67 de baixa chance, todas de Recife. O filtro de motivo "Queda moderada" não muda a lista, porque as 165 UCs são todas desse motivo.
+  - Carga da página: 4 chamadas à API (`suspicious-units`, `queue-summary`, `queue-filters`, `inspections`) com 200 e nenhum erro no console.
+- **Achados (sem correção nesta entrega):**
+  - Na aba "Todas", a coluna Situação quebra "Na fila" em duas linhas.
+  - Com um filtro ativo, o score é recalculado em relação ao topo da lista filtrada (em Recife, a UC142443 aparece com 100). Consistente com o texto do detalhe ("relativo ao topo da fila"), mas o mesmo UC muda de score conforme o filtro.
+- **Validação de Testes:** conferência manual, sem mudança de código; nada foi gerado nem gravado em `ordem_inspecao`.
+
+### [2026-10-29] - Fase 11: correção dos dois achados da conferência da fila classificada
+- **Autor:** Adrian César
+- **Achado 2 (score mudava com o filtro territorial):** o município, o bairro e a classe eram aplicados na consulta dos perfis, antes do ranking, e o topo usado para normalizar o score passava a ser o da lista filtrada. Em Recife, a UC142443 aparecia com 100 na lista e com 72 no painel de detalhe (que usa a fila inteira). O `rank_suspicious_units` já prometia o contrário ("antes dos filtros") para o filtro de motivo.
+- **Correção:** `LossService.list_suspicious_units` busca os perfis sem filtro territorial, ranqueia a fila inteira e só então aplica município, bairro e classe (`queue_territory.filter_by_territory`, módulo novo). O `service.py` ficou em exatamente 300 linhas, o teto do Pylint; qualquer acréscimo ali precisa de um novo módulo.
+- **Medido no banco real (2026-06):** `municipio=RECIFE` devolve as mesmas 72 UCs, e a UC142443 agora tem 72 na lista e no detalhe (a UC140404, 68 nos dois). Tempo por consulta de cerca de 3,3 s, igual ao da fila sem filtro. Os valores de filtro são os do banco (`RECIFE`, `COMERCIAL`), que a tela envia no `<select>`; com `Recife` a lista volta vazia, como antes.
+- **Achado 1 (selo "Na fila" em duas linhas):** `StatusBadge` ganhou `whitespace-nowrap`. Só o `StatusBadge` (rótulos curtos e fechados), e não o `Badge`, usado em 20 arquivos de outras fatias.
+- **Validação de Testes:** escritos antes (RED visto): 4 casos de filtro territorial, "score não muda quando o filtro esconde o topo", "filtro territorial fora da consulta" e "selo não quebra linha". `make lint-all` e `make test-all` verdes (pytest 776, vitest 544). Conferência visual do selo no navegador não feita: o backend do desenvolvedor na porta 8000 estava ocupado e o frontend na 5173 também era dele; só a API foi conferida.
