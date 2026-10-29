@@ -612,3 +612,24 @@
 - **Dificuldades / Desafios:** o resumo do diálogo é omitido ao gerar pelo painel, porque ele congela o valor ao abrir e o resumo da nova seleção ainda carrega.
 - **Fora desta entrega:** passo 9 em diante; captura em modo escuro (o screenshot do Chrome expirou).
 - **Validação de Testes:** Vitest novos (`UnitDetailSheet.test.tsx`, `UnitConsumptionChart.test.tsx`): abre por clique e por Enter, Esc fecha, checkbox não abre, carregando/erro/vazio, cache ao reabrir, gerar ordem, botão desligado com ordem, `diretor` sem o botão, lacuna no gráfico. `make lint-all` exit 0; `make test-all`: backend 607 passed, frontend 296 passed. Conferido no navegador com dados reais (UC106967), sem captura.
+
+### [2026-10-28] - Fila de Inspeção: passo 9 (diálogos de campo com inspetor, data e motivo em lista)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Registrar resultado:** "Inspetor" (obrigatório) vem de `GET /losses/inspectors` e vira busca por digitação quando há mais de 15 itens (hoje 40); "Data da inspeção" (obrigatória, dd/mm/aaaa, máximo hoje). Inspetor, data e resultado são validados juntos antes de enviar. O payload passa a levar `inspetor` e `data_inspecao` e deixa de enviar `fiscal_responsavel`. O inspetor em texto livre saiu.
+  - **Cancelar ordem:** motivo obrigatório em lista (`CANCELLATION_REASON_LABELS`, `Record` tipado sobre `CancellationReason`: um motivo novo na API deixa de compilar até ter rótulo) e observação opcional enviada em `justificativa_cancelamento`. O botão de confirmar fica desabilitado até escolher o motivo. Resolve o 422 ao cancelar pela tela, registrado no passo 4.
+  - **Enviar a campo:** o "Fiscal responsável" em texto livre virou a lista de inspetores (opcional), seguindo a regra de trocar texto livre por lista. Fora das três telas pedidas.
+  - **Gerar ordens:** sem alteração (não tem campo de inspetor e o raio-x não prevê campo novo).
+  - **Erros do servidor:** 422 vira mensagem em pt-BR ao lado do campo (`apiFieldErrors.ts`); os demais erros aparecem no rodapé do diálogo. O diálogo só fecha com sucesso, e o erro some quando o usuário edita o campo.
+  - **Sucesso:** toast curto e invalidação de fila e ordens, então o quadro atualiza sem recarregar.
+  - **Cartão do quadro:** mostra inspetor, "Inspeção em dd/mm/aaaa" e "Cancelada: motivo · observação".
+  - **Acessibilidade:** rótulos ligados aos campos, foco inicial no primeiro campo, Esc cancela, erros com `role="alert"` e `aria-describedby`.
+- **Diferenças e limites:**
+  - **Painel de detalhe da UC:** já mostrava inspetor e data nas inspeções anteriores. O motivo de cancelamento não aparece porque `GET /suspicious-units/{id_uc}` devolve só inspeções, não ordens canceladas; mostrá-lo exige mudar o backend, fora desta entrega.
+  - **Seletor de data:** é o `<input type="date">` nativo; o dd/mm/aaaa depende do navegador em pt-BR (há `lang="pt-BR"` e o formato no rótulo).
+  - **Busca de inspetores:** aparece já durante o carregamento, para não perder o foco inicial quando a lista chega; se a lista tiver 15 itens ou menos, o campo troca para a lista simples depois de carregar.
+  - **Teste:** `src/test/setup.ts` ganhou stubs de `ResizeObserver` e `scrollIntoView`, exigidos pelo `cmdk` no jsdom.
+- **Fora desta entrega:** passo 10 em diante; observações do resultado (fora por P3); backend intacto.
+- **Validação de Testes:**
+  - Vitest novos: validação de campos obrigatórios e data futura (`resultFormValidation.test.ts`), 422 por campo (`apiFieldErrors.test.ts`), diálogos de resultado e cancelamento com erro sem fechar, motivo obrigatório, foco e Esc, busca com 40 inspetores e quadro atualizado após salvar (`FieldDialogs.test.tsx`, `LossManagementPage.test.tsx`).
+  - `make lint-all` exit 0; `make test-all`: backend 607 passed, frontend 330 passed. **Não conferido no navegador.**
