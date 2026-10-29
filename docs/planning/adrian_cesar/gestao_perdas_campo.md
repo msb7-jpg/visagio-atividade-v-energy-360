@@ -193,7 +193,7 @@
 ### Fase 15 — Conferência com a fala do gerente de perdas (2026-10-28)
 > Plano de melhora a partir da conferência da fala de Rafael Coutinho (`atividade.pdf`, pág. 6) com o sistema.
 - [x] **15.1 — Consistência:** painel do diretor passa a usar o mesmo limiar da fila (20%), com teste; `DECISOES_PERDAS.md` D8 e D9 atualizados (tarifa calculada, funil de 45.000 para 165 UCs) e pendências de tarifa fechadas. (Adrian César, 2026-10-28)
-- [ ] **15.2 — Honestidade na tela:** mostrar "19 prioritárias para ~200 inspeções", a chance de acerto esperada da seleção e aviso ao incluir UCs de baixa chance.
+- [x] **15.2 — Honestidade na tela:** aviso "N UCs prioritárias para uma capacidade de 200 inspeções por mês" (`QueueCapacityNotice`), expectativa da seleção "cerca de X de N inspeções devem achar irregularidade" e aviso de baixa chance, na barra de ações e no diálogo de geração (`SelectionOutlookNote`, `queueOutlook.ts`). Só frontend; nada bloqueia a decisão do gerente. (Adrian César, 2026-10-28)
 - [ ] **15.3 — Motivo e valor mais úteis:** motivo com a queda (%) e a faixa de acerto; valor em R$ com a leitura estimada (3 meses) e a razão observada de 1,87×.
 - [ ] **15.4 — Mais sinais, com evidência:** remedir leitura zerada e limiar de GD na Gold real; normalizar a queda pela mediana da carteira; prazo de reincidência.
 - [ ] **15.5 — Escala e validação:** paginação com `offset` no servidor (teto atual de 500 UCs) e piloto de inspeção fora da fila.

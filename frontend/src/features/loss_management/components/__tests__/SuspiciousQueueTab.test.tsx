@@ -147,7 +147,7 @@ describe('Fila de Inspeção', () => {
     renderPage()
 
     expect(await screen.findByText('58')).toBeInTheDocument()
-    expect(screen.getByText(/de 200 inspeções/)).toBeInTheDocument()
+    expect(screen.getByText(/^de 200 inspeções$/)).toBeInTheDocument()
     expect(screen.getByText('62,7%')).toBeInTheDocument()
     expect(screen.getByText(/871 de 1\.389 inspeções/)).toBeInTheDocument()
   })
@@ -188,6 +188,21 @@ describe('Fila de Inspeção', () => {
     expect(await screen.findByRole('button', { name: 'Gerar 2 ordens' })).toBeEnabled()
     await waitFor(() => expect(mockedApi.getQueueSummary).toHaveBeenLastCalledWith(['UC100002', 'UC100003'], expect.anything()))
     expect(await screen.findByText('60')).toBeInTheDocument()
+  })
+
+  it('avisa que as UCs prioritárias livres não enchem a capacidade da equipe', async () => {
+    renderPage()
+
+    expect(await screen.findByText(/3 UCs prioritárias para uma capacidade de 200 inspeções por mês/)).toBeInTheDocument()
+  })
+
+  it('mostra quantas inspeções da seleção devem achar irregularidade', async () => {
+    renderPage()
+
+    fireEvent.click(within(await rowOf('UC100002')).getByRole('checkbox'))
+    fireEvent.click(within(await rowOf('UC100003')).getByRole('checkbox'))
+
+    expect(await screen.findByText(/cerca de 2 de 2 inspeções devem achar irregularidade/)).toBeInTheDocument()
   })
 
   it('seleciona o topo da fila pulando as UCs que já têm ordem', async () => {
@@ -492,7 +507,7 @@ describe('Fila de Inspeção', () => {
     ]))
     renderPage()
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Histórico de inspeções não aplicado.')
+    expect(await screen.findByText('Histórico de inspeções não aplicado.')).toBeInTheDocument()
     expect(await rowOf('UC100002')).toBeInTheDocument()
   })
 

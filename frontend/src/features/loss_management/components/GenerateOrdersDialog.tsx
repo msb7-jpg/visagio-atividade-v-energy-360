@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { DialogFooter } from '@/components/ui/dialog'
 import { ActionDialog } from '@/features/loss_management/components/ActionDialog'
+import { SelectionOutlookNote } from '@/features/loss_management/components/SelectionOutlookNote'
 import { ActionDialogFooter } from '@/features/loss_management/components/ActionDialogFooter'
 import { useCreateInspectionsBatchMutation } from '@/features/loss_management/hooks/useLossMutations'
 import type { QueueSummary, SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
@@ -69,6 +70,7 @@ export function GenerateOrdersDialog({ units: selectedUnits, summary: currentSum
           <dd>{summary.capacidade_programada + count} de {summary.capacidade_total}</dd>
         </dl>
       ) : null}
+      <SelectionOutlookNote units={units} />
       {failures.length > 0 ? (
         <div className="flex flex-col gap-3">
           <div role="alert" className="text-destructive flex flex-col gap-1 text-sm">

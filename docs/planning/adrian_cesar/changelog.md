@@ -663,3 +663,15 @@
 - **Validação de Testes:**
   - Novo teste: o painel pede o mesmo limiar da fila. Escrito antes e visto falhar.
   - `make lint-all` e `make test-all` na validação final abaixo.
+
+### [2026-10-28] - Fase 15.2: a Fila de Inspeção diz a verdade sobre a capacidade e a seleção
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - `QueueCapacityNotice`: alerta acima da fila quando as UCs prioritárias livres (chance de acerto de 30% ou mais) não enchem a capacidade mensal. Com a fila de hoje: "19 UCs prioritárias para uma capacidade de 200 inspeções por mês" e quantas UCs de baixa chance existem, com a melhor chance entre elas (7%).
+  - `SelectionOutlookNote`: com UCs marcadas, mostra "cerca de X de N inspeções devem achar irregularidade; Y devem voltar sem achado" (soma da chance de acerto de cada UC) e, havendo UC abaixo de 30%, um aviso. Aparece na barra de ações e no diálogo de geração de ordens. O aviso não bloqueia: a decisão continua do gerente.
+  - Lógica pura em `utils/queueOutlook.ts` (`selectionOutlook`, `describeCapacityGap`), reaproveitando `isPriorityUnit`. Só frontend; o backend não mudou.
+  - Dois testes antigos de `SuspiciousQueueTab` ficaram mais específicos porque o texto novo repetia "de 200 inspeções" e usava `role="status"`.
+- **Próximos Passos:** Fase 15.3 (motivo com a queda e valor com a razão observada de 1,87×).
+- **Validação de Testes:**
+  - Vitest novos escritos antes do código (RED visto): `queueOutlook.test.ts` (6) e `QueueExpectationNotes.test.tsx` (5), mais 2 cenários em `SuspiciousQueueTab.test.tsx`.
+  - Frontend: 536 passed. Backend inalterado. **Não conferido no navegador.**
