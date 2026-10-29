@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
@@ -7,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 from app.db.session import get_db
 from app.features.loss_management.models import InspectionOrder
 from app.main import app
+from tests.loss_tariff import BILLING_ROWS
 
 BASE_URL = "/api/v1/losses"
 COMPETENCIAS = [f"{year}-{month:02d}" for year in (2024, 2025) for month in range(1, 13)] + ["2026-01"]
@@ -15,7 +18,7 @@ RECENT_COMPETENCIAS = COMPETENCIAS[-3:]
 # (id_uc, possui_gd, bairro, consumo base, consumo nas 3 competências recentes)
 SEED_UNITS = [
     ("UC_FRAUDE", 0, "Centro", 300.0, [50.0, 50.0, 50.0]),
-    ("UC_ZERADA", 0, "Centro", 150.0, [150.0, 0.0, 150.0]),
+    ("UC_ZERADA", 0, "Centro", 120.0, [150.0, 0.0, 150.0]),
     ("UC_NORMAL", 0, "Centro", 200.0, [200.0, 200.0, 200.0]),
     ("UC_SOLAR", 1, "Centro", 300.0, [40.0, 40.0, 40.0]),
     ("UC_INSPECIONADA", 0, "Centro", 250.0, [50.0, 50.0, 50.0]),
@@ -28,6 +31,8 @@ SEED_INSPECTIONS = [
     ("IN1", "UC_INSPECIONADA", "2025-08-10", 1),
     ("IN2", "UC_INSPECAO_ANTIGA", "2023-05-02", 0),
 ]
+# Inspetor de cada inspeção acima, na mesma ordem; fora de ordem de propósito para provar a ordenação da lista.
+SEED_INSPECTOR_CODES = ["INSP-002", "INSP-001"]
 
 
 def build_measurement_rows() -> list[dict[str, object]]:
@@ -46,13 +51,23 @@ def build_measurement_rows() -> list[dict[str, object]]:
 async def seed_field_history_table(connection) -> None:
     await connection.execute(text(
         "CREATE TABLE fato_inspecoes_perdas (id_inspecao TEXT PRIMARY KEY, id_uc TEXT, data_inspecao TEXT, "
-        "irregularidade_constatada BOOLEAN)"
+        "irregularidade_constatada BOOLEAN, id_inspetor TEXT)"
     ))
     await connection.execute(
-        text("INSERT INTO fato_inspecoes_perdas VALUES (:id_inspecao, :id_uc, :data_inspecao, :irregular)"),
+        text(
+            "INSERT INTO fato_inspecoes_perdas VALUES (:id_inspecao, :id_uc, :data_inspecao, :irregular, :inspetor)"
+        ),
         [
-            {"id_inspecao": id_inspecao, "id_uc": id_uc, "data_inspecao": data_inspecao, "irregular": irregular}
-            for id_inspecao, id_uc, data_inspecao, irregular in SEED_INSPECTIONS
+            {
+                "id_inspecao": id_inspecao,
+                "id_uc": id_uc,
+                "data_inspecao": data_inspecao,
+                "irregular": irregular,
+                "inspetor": inspetor,
+            }
+            for (id_inspecao, id_uc, data_inspecao, irregular), inspetor in zip(
+                SEED_INSPECTIONS, SEED_INSPECTOR_CODES, strict=True
+            )
         ],
     )
 
@@ -63,6 +78,12 @@ async def seed_gold_tables(connection, *, with_field_history: bool = True) -> No
         "municipio TEXT, bairro TEXT, possui_gd BOOLEAN)"
     ))
     await connection.execute(text("CREATE TABLE fato_medicao (id_uc TEXT, competencia TEXT, consumo_kwh REAL)"))
+    await connection.execute(text(
+        "CREATE TABLE fato_faturamento (competencia TEXT, valor_total_rs REAL, consumo_faturado_kwh REAL)"
+    ))
+    await connection.execute(
+        text("INSERT INTO fato_faturamento VALUES (:competencia, :valor_total_rs, :consumo_faturado_kwh)"), BILLING_ROWS
+    )
     await connection.execute(
         text("INSERT INTO dim_unidade_consumidora VALUES (:id_uc, 'Residencial', 'Recife', :bairro, :possui_gd)"),
         [{"id_uc": id_uc, "possui_gd": possui_gd, "bairro": bairro} for id_uc, possui_gd, bairro, _, _ in SEED_UNITS],
@@ -113,7 +134,29 @@ async def test_suspicious_units_ranked_and_solar_excluded(client):
     units = response.json()["itens"]
     assert [unit["id_uc"] for unit in units] == ["UC_FRAUDE", "UC_INSPECAO_ANTIGA", "UC_ZERADA"]
     assert units[0]["motivos"] == ["queda_subita"]
+    assert units[0]["meses_base"] == 12
     assert units[0]["kwh_estimado_recuperar"] == pytest.approx(750.0)
+
+
+async def test_suspicious_units_offset_pages_through_the_queue_without_changing_the_total(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    first_page = (await client.get(f"{BASE_URL}/suspicious-units?limit=2", headers=headers)).json()
+    second_page = (await client.get(f"{BASE_URL}/suspicious-units?limit=2&offset=2", headers=headers)).json()
+    past_the_end = (await client.get(f"{BASE_URL}/suspicious-units?limit=2&offset=10", headers=headers)).json()
+
+    assert [unit["id_uc"] for unit in first_page["itens"]] == ["UC_FRAUDE", "UC_INSPECAO_ANTIGA"]
+    assert [unit["id_uc"] for unit in second_page["itens"]] == ["UC_ZERADA"]
+    assert (first_page["total"], second_page["total"], past_the_end["total"]) == (3, 3, 3)
+    assert past_the_end["itens"] == []
+
+
+async def test_suspicious_units_rejects_a_negative_offset(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    response = await client.get(f"{BASE_URL}/suspicious-units?offset=-1", headers=headers)
+
+    assert response.status_code == 422
 
 
 async def test_role_without_permission_is_forbidden(client):
@@ -122,6 +165,102 @@ async def test_role_without_permission_is_forbidden(client):
     response = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)
 
     assert response.status_code == 403
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["/suspicious-units", "/queue-summary", "/queue-filters", "/inspections", "/inspections/export"],
+)
+async def test_director_can_read_every_loss_endpoint(client, path):
+    headers = await auth_headers(client, "diretor@venergy.com")
+
+    response = await client.get(f"{BASE_URL}{path}", headers=headers)
+
+    assert response.status_code == 200
+
+
+async def test_inspectors_are_listed_by_code_from_the_field_history(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    response = await client.get(f"{BASE_URL}/inspectors", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json() == [{"codigo": "INSP-001"}, {"codigo": "INSP-002"}]
+
+
+async def test_director_can_read_the_inspectors(client):
+    headers = await auth_headers(client, "diretor@venergy.com")
+
+    response = await client.get(f"{BASE_URL}/inspectors", headers=headers)
+
+    assert response.status_code == 200
+
+
+async def test_role_without_permission_cannot_read_the_inspectors(client):
+    headers = await auth_headers(client, "atendimento@venergy.com")
+
+    response = await client.get(f"{BASE_URL}/inspectors", headers=headers)
+
+    assert response.status_code == 403
+
+
+async def test_inspectors_without_the_field_history_table_is_a_clear_error():
+    engine, http_client = await open_client(with_gold_tables=True, with_field_history=False)
+    async with http_client:
+        headers = await auth_headers(http_client, "perdas@venergy.com")
+        response = await http_client.get(f"{BASE_URL}/inspectors", headers=headers)
+    app.dependency_overrides.clear()
+    await engine.dispose()
+
+    assert response.status_code == 500
+
+
+async def test_orders_list_carries_neighborhood_municipality_and_class_of_the_unit(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_INSPECAO_ANTIGA"})
+    await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+
+    response = await client.get(f"{BASE_URL}/inspections", headers=headers)
+
+    assert response.status_code == 200
+    location_by_unit = {
+        order["id_uc"]: (order["bairro"], order["municipio"], order["classe_consumo"]) for order in response.json()
+    }
+    assert location_by_unit == {
+        "UC_INSPECAO_ANTIGA": ("Boa Viagem", "Recife", "Residencial"),
+        "UC_FRAUDE": ("Centro", "Recife", "Residencial"),
+    }
+
+
+async def test_orders_list_keeps_an_order_whose_unit_is_not_in_the_registry(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+    async for session in app.dependency_overrides[get_db]():
+        await session.execute(text("DELETE FROM dim_unidade_consumidora WHERE id_uc = 'UC_FRAUDE'"))
+        await session.commit()
+
+    response = await client.get(f"{BASE_URL}/inspections", headers=headers)
+
+    (order,) = response.json()
+    location = (order["bairro"], order["municipio"], order["classe_consumo"])
+    assert (order["id_uc"], location) == ("UC_FRAUDE", (None, None, None))
+
+
+async def test_director_cannot_create_or_update_orders(client):
+    director = await auth_headers(client, "diretor@venergy.com")
+    manager = await auth_headers(client, "perdas@venergy.com")
+    created = await client.post(f"{BASE_URL}/inspections", headers=manager, json={"id_uc": "UC_FRAUDE"})
+    id_inspecao = created.json()["id_inspecao"]
+
+    create_response = await client.post(f"{BASE_URL}/inspections", headers=director, json={"id_uc": "UC_ZERADA"})
+    update_response = await client.patch(
+        f"{BASE_URL}/inspections/{id_inspecao}", headers=director, json={"status": "pendente"}
+    )
+
+    assert create_response.status_code == 403
+    assert update_response.status_code == 403
+    orders = (await client.get(f"{BASE_URL}/inspections", headers=manager)).json()
+    assert [(order["id_uc"], order["status"]) for order in orders] == [("UC_FRAUDE", "gerada")]
 
 
 async def test_inspection_lifecycle(client):
@@ -199,26 +338,90 @@ async def test_registered_unit_outside_queue_gets_manual_order_with_zero_kwh(cli
     assert created.json()["kwh_estimado"] == pytest.approx(0.0)
 
 
-async def test_cancel_requires_justification_and_unknown_order_is_404(client):
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"status": "cancelada"},
+        {"status": "cancelada", "justificativa_cancelamento": "Cliente regularizou"},
+        {"status": "cancelada", "motivo_cancelamento": "porque sim"},
+        {"status": "cancelada", "motivo_cancelamento": ""},
+    ],
+)
+async def test_cancel_without_a_listed_reason_is_422_and_keeps_the_order_open(client, payload):
     headers = await auth_headers(client, "perdas@venergy.com")
     created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_ZERADA"})
     order_url = f"{BASE_URL}/inspections/{created.json()['id_inspecao']}"
 
-    without_reason = await client.patch(order_url, headers=headers, json={"status": "cancelada"})
+    response = await client.patch(order_url, headers=headers, json=payload)
+
+    assert response.status_code == 422
+    orders = (await client.get(f"{BASE_URL}/inspections", headers=headers)).json()
+    assert [order["status"] for order in orders] == ["gerada"]
+
+
+async def test_cancel_with_listed_reason_records_it_and_unknown_order_is_404(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_ZERADA"})
+    order_url = f"{BASE_URL}/inspections/{created.json()['id_inspecao']}"
+
     cancelled = await client.patch(
-        order_url, headers=headers, json={"status": "cancelada", "justificativa_cancelamento": "Cliente regularizou"}
+        order_url, headers=headers, json={"status": "cancelada", "motivo_cancelamento": "cliente_regularizou"}
     )
     missing = await client.patch(f"{BASE_URL}/inspections/9999", headers=headers, json={"status": "pendente"})
 
-    assert without_reason.status_code == 400
+    assert cancelled.status_code == 200
     assert cancelled.json()["status"] == "cancelada"
+    assert cancelled.json()["motivo_cancelamento"] == "cliente_regularizou"
     assert missing.status_code == 404
+
+
+async def test_result_records_inspector_and_inspection_date(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+    order_url = f"{BASE_URL}/inspections/{created.json()['id_inspecao']}"
+    await client.patch(order_url, headers=headers, json={"status": "pendente"})
+    result = {
+        "status": "concluida",
+        "irregularidade_constatada": True,
+        "kwh_recuperado": 120.5,
+        "inspetor": "INSP-007",
+        "data_inspecao": "2026-10-20",
+    }
+
+    response = await client.patch(order_url, headers=headers, json=result)
+
+    assert response.status_code == 200
+    assert (response.json()["inspetor"], response.json()["data_inspecao"]) == ("INSP-007", "2026-10-20")
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("inspetor", "INSP-041"),
+        ("inspetor", "INSP-000"),
+        ("inspetor", "Maria"),
+        ("data_inspecao", (date.today() + timedelta(days=3)).isoformat()),
+    ],
+)
+async def test_result_with_invalid_inspector_or_future_date_is_422(client, field, value):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+    order_url = f"{BASE_URL}/inspections/{created.json()['id_inspecao']}"
+    await client.patch(order_url, headers=headers, json={"status": "pendente"})
+    result = {"status": "concluida", "irregularidade_constatada": False, field: value}
+
+    response = await client.patch(order_url, headers=headers, json=result)
+
+    assert response.status_code == 422
+    assert "Value error" in response.text
+    orders = (await client.get(f"{BASE_URL}/inspections", headers=headers)).json()
+    assert [order["status"] for order in orders] == ["pendente"]
 
 
 async def test_cancelled_order_returns_unit_to_queue(client):
     headers = await auth_headers(client, "perdas@venergy.com")
     created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_ZERADA"})
-    cancel = {"status": "cancelada", "justificativa_cancelamento": "Equipe realocada"}
+    cancel = {"status": "cancelada", "motivo_cancelamento": "repriorizacao_equipe"}
     await client.patch(f"{BASE_URL}/inspections/{created.json()['id_inspecao']}", headers=headers, json=cancel)
 
     queue = await client.get(f"{BASE_URL}/suspicious-units", headers=headers)

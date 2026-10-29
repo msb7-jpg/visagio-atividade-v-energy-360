@@ -7,16 +7,16 @@ import {
 } from '@/features/loss_management/queries/lossQueries'
 
 describe('suspiciousUnitsQueryOptions', () => {
-  it('omite filtros vazios e score mínimo zero da chave de cache', () => {
-    const options = suspiciousUnitsQueryOptions({ municipio: '', bairro: '  ', classe: 'Comercial', score_minimo: 0 })
+  it('omite filtros vazios da chave de cache', () => {
+    const options = suspiciousUnitsQueryOptions({ municipio: '', bairro: '  ', classe: 'Comercial' })
 
     expect(options.queryKey).toEqual(lossKeys.suspiciousUnits({ classe: 'Comercial' }))
   })
 
-  it('mantém motivo e score mínimo preenchidos', () => {
-    const options = suspiciousUnitsQueryOptions({ motivo: 'queda_subita', score_minimo: 70 })
+  it('mantém motivo e município preenchidos', () => {
+    const options = suspiciousUnitsQueryOptions({ motivo: 'queda_subita', municipio: 'Recife' })
 
-    expect(options.queryKey).toEqual(lossKeys.suspiciousUnits({ motivo: 'queda_subita', score_minimo: 70 }))
+    expect(options.queryKey).toEqual(lossKeys.suspiciousUnits({ motivo: 'queda_subita', municipio: 'Recife' }))
   })
 })
 

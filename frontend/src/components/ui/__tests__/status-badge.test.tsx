@@ -22,6 +22,12 @@ describe('StatusBadge', () => {
     expect(screen.getByTestId('status-badge')).toHaveClass(toneClass)
   })
 
+  test('keeps the label on one line even in a narrow table column', () => {
+    render(<StatusBadge kind="ordem" status="na_fila" />)
+
+    expect(screen.getByTestId('status-badge')).toHaveClass('whitespace-nowrap')
+  })
+
   test('marks estimated readings with a decorative icon next to the text', () => {
     render(<StatusBadge kind="leitura" status="estimada" />)
 

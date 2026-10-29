@@ -80,14 +80,14 @@ def _candidate_select(consumo: Subquery) -> Select:
     uc = dim_unidade_consumidora
     return select(
         uc.c.id_uc, uc.c.municipio, uc.c.bairro, uc.c.classe_consumo,
-        consumo.c.consumo_base_kwh, consumo.c.consumo_recente_kwh, consumo.c.meses_zerados,
+        consumo.c.consumo_base_kwh, consumo.c.consumo_recente_kwh, consumo.c.meses_zerados, consumo.c.meses_base,
     ).join_from(consumo, uc, uc.c.id_uc == consumo.c.id_uc)
 
 
 def _candidate_conditions(
     consumo: Subquery, filters: SuspicionFilters, excluded_units: Select | CompoundSelect
 ) -> list[ColumnElement[bool]]:
-    """Condições para uma UC virar candidata: sem GD, sem inspeção recente, com queda súbita ou leitura zerada."""
+    """Condições para uma UC virar candidata: sem GD, sem inspeção recente, com queda acima do piso ou zerada."""
     uc = dim_unidade_consumidora
     remaining_share = 1 - filters.limiar_queda
     drop_ceiling_kwh = consumo.c.consumo_base_kwh * remaining_share

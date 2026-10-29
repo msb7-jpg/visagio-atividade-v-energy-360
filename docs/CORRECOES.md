@@ -1,7 +1,7 @@
 # Correções pendentes do projeto
 
 > Lista única do que ainda precisa ser corrigido antes da entrega (04/11/2026).
-> Atualizada em 2026-10-29 por Bernardo H, depois da conferência com o banco regerado.
+> Atualizada em 2026-10-29 por Bernardo H (conferência com o banco regerado) e Adrian C. (pendências do design novo e da Fila de Inspeção).
 >
 > 🔴 bloqueia merge ou entrega · 🟡 importante · ⚪ melhoria
 
@@ -26,6 +26,8 @@
 
 - [ ] 🔴 **A conclusão sobre os 4 bairros está errada.** O `docs/DIAGNOSTICO_RECEITA.md` (seção 6.5, linha "Causa: não sabemos") diz que a queda em Iputinga, Macaxeira, Jardim Jordão e Prazeres tem causa desconhecida, e a 6.2 diz que fraude não é causa mensurável. Mas 828 das 871 irregularidades confirmadas em `fato_inspecoes_perdas` (95%) estão nesses bairros, e 887 UCs deles caíram 40% ou mais a partir de mai/2025. Corrigir 1, 6.2, 6.5, 7 e 8.
 - [ ] 🔴 **Ainda há 10 `[a preencher]` e 12 `[a confirmar]`** no documento (contagem de 29/10). É entregável obrigatório (case, 5.4).
+- [ ] 🟡 **Seção 6.2 do diagnóstico (fraude e furto) cita números da fila de perdas que mudaram** (Adrian, 2026-10-28). Para usar "o mesmo cálculo da fila", atualizar: tarifa de **R$ 0,7876/kWh** (média ponderada de 12 meses de `fato_faturamento`, e não os 0,714 da constante antiga); chance de acerto da queda moderada **91,5%** com queda além da carteira de 20% ou mais e **7,6%** abaixo (a queda súbita segue 93% e a taxa geral 62,7%); fila de 2026-06 com 165 UCs (**7 fortes e 158 fracas**, 35 delas ligações recentes sem taxa medida, D14), cerca de 7.265 kWh/mês recuperáveis e cerca de 788 kWh/mês de retorno esperado. Fonte: `docs/DECISOES_PERDAS.md` D8, D11, D12 e D14.
+- [ ] 🟡 Refazer os números por bairro depois da correção dos nomes (item 1).
 
 ## 3. IA (Miguel)
 
@@ -33,26 +35,42 @@
 
 ## 4. Painel do Diretor (Bernardo)
 
+- [ ] 🟡 **O retrato de perdas do Painel soma a fila inteira.** Depois do PR #49, `/dashboard/losses` usa o mesmo ranking e o mesmo limiar de 20% da Fila de Inspeção. Com `LOSS_REFERENCE_COMPETENCIA="2025-09"` (a competência da demonstração), o card mostra 39.243 UCs e R$ 31,6 mi/ano recuperáveis, mas só 587 UCs têm chance alta (R$ 1,6 mi/ano); 95% do valor vem de UCs com 7,6% de chance de acerto (medido em 29/10 com o banco regerado).
+  - **Correção sugerida:** mostrar no card as UCs prioritárias e o retorno esperado (valor × chance de acerto), com o total da fila como informação secundária.
 - [ ] ⚪ Avisar o Célio que `period_totals_query` (`backend/app/features/revenue/queries.py`) perdeu o filtro de competência no `WHERE` para ficar mais rápida (mesmos números, ADR-016).
 
 ## 5. Visão 360 (Bernardo)
 
 - [ ] ⚪ Plugar o `SmartInsightCard context="customer360"` (opcional: o case pede IA embutida em pelo menos uma tela, e ela já está no Painel).
+- [ ] ⚪ **Situação da fatura fora do `StatusBadge`** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). `PAYMENT_STATUS` em `frontend/src/features/customer360/utils/customer360Formatters.ts:28` e o `PaymentStatusBadge` de `InvoicesTab.tsx:19` refazem à mão o que `StatusBadge kind="fatura"` (`components/ui/status-badge.tsx`) já tem, com os tons do design (paga = verde, em aberto = âmbar, vencida = vermelho). Hoje a fatura paga sai em cinza (`secondary`) e a aberta sem cor.
+  - **Correção sugerida:** trocar por `<StatusBadge kind="fatura" status={...} />` e apagar `PAYMENT_STATUS`. A API devolve `PAGA`, `ABERTA` e `VENCIDA` e o vocabulário usa `paga`, `em_aberto` e `vencida`: mapear `ABERTA` para `em_aberto`, e manter o texto bruto para qualquer valor desconhecido.
+- [ ] ⚪ **Sem "Tentar novamente" nos erros da Visão 360.** `features/customer360/components/Customer360Details.tsx` tem 4 `AsyncState` (linhas 63, 77, 82 e 92) e nenhum passa `onRetry`; numa falha o usuário só vê o aviso e precisa recarregar a página.
+  - **Correção sugerida:** `onRetry={() => void query.refetch()}` em cada um, com a consulta que alimenta o bloco (modelo em `features/loss_management/components/UnitDetailSheet.tsx:57`).
 
 ## 6. Gestão de Perdas (Adrian)
 
-- [ ] 🟡 **Fila vazia na competência mais recente.** Em jun/2026, todas as 559 UCs com queda de consumo acima de 50% têm painel solar, e a Fila as exclui de propósito. A demonstração precisa de `LOSS_REFERENCE_COMPETENCIA=2025-08` no `.env`. Deixar isso no passo a passo do README e combinar como explicar à banca.
 - [ ] ⚪ Adotar o `components/ui/pagination.tsx` (criado no #34) no `QueuePagination`.
 
 ## 7. Inteligência Comercial (Célio)
 
 - [ ] 🟡 **A Receita leva cerca de 4,5 s por consulta.** Medido em 29/10 com o banco novo: `/revenue/decomposition` 4,5 s e cada página de `/revenue/breakdown` (classe, município e bairro) 4,5 a 4,6 s. A tela dispara várias dessas ao abrir. Sugestão: o mesmo tratamento da ADR-016 (leitura sequencial sem `WHERE` por competência e cache por janela).
 - [ ] ⚪ Registrar no `docs/planning/celio/changelog.md` a correção do filtro de bairro (commit `07a69c0`: a lista lê todas as páginas, e Recife tem 106 bairros).
+- [ ] ⚪ **Sem "Tentar novamente" nos erros da Inteligência Comercial** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Nenhum `AsyncState` passa `onRetry`: `RevenueResults.tsx:24`, `RevenueRankingCard.tsx:51`, `RevenueWaterfallCard.tsx:39` e `NeighborhoodHistorySheet.tsx:49`, em `frontend/src/features/revenue/components/`.
+  - **Correção sugerida:** `onRetry={() => void query.refetch()}` em cada um (modelo em `features/loss_management/components/UnitDetailSheet.tsx:57`).
 
-## 8. Fechamento (todos)
+## 8. Qualidade da Rede (João)
+
+- [ ] ⚪ **Sem "Tentar novamente" nos erros da Qualidade da Rede** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Nenhum `AsyncState` passa `onRetry`: `ContinuityView.tsx:35`, `CurrentQualityView.tsx:49` e `FeederHistorySheet.tsx` (linhas 43 e 53), todos em `frontend/src/features/grid_quality/components/`. O `ErrorState` já mostra o botão quando recebe `onRetry`.
+  - **Correção sugerida:** `onRetry={() => void query.refetch()}` em cada um (modelo em `features/loss_management/components/UnitDetailSheet.tsx:57`).
+
+## 9. Fechamento (todos)
 
 - [ ] 🔴 **README:** suposições de cada fatia, passo a passo de execução (incluindo `LOSS_REFERENCE_COMPETENCIA`), print do Workflow no Databricks e links para o dicionário de dados e o diagnóstico (case, seção 6).
+  - **Andamento (2026-10-29):** a seção da Fatia 05 está no README (suposições, passo a passo com `LOSS_REFERENCE_COMPETENCIA="2025-09"` e limites), em "Suposições e Demonstração por Fatia". O print do Workflow e o dicionário de dados já estavam. Faltam as seções das outras fatias nesse mesmo lugar e o link para o diagnóstico (seção 2).
 - [ ] 🟡 Rodar `make lint-all`, `make test-all` e `bun run build` na `main` depois de cada merge (o `make` não roda o `tsc`).
+- [ ] ⚪ **Componentes do design novo sem dono: `KpiCard`, `DeltaBadge`, `DataTable` e `FilterBar`** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Os `componentes-*.png` os preveem, mas nenhum existe em `frontend/src/components/ui/`: cada fatia tem a sua versão.
+  - **Evidência:** cartões de KPI em `revenue/RevenueKpiCard(s).tsx`, `grid_quality/ContinuityKpiCards.tsx` e `grid_quality/QualityKpiCards.tsx`; variação em `revenue/VariationBadge.tsx`; tabelas em `grid_quality/FeederRankingTable.tsx`, `FeederUcHoursTable.tsx`, `FeederCustomersTable.tsx` e `loss_management/PrioritizedQueueTable.tsx`; filtros em `revenue/RevenueFiltersBar.tsx`, `grid_quality/ContinuityFilters.tsx` e `loss_management/QueueFilters.tsx`.
+  - **Decisão da equipe:** quem cria cada componente compartilhado (sugestão: o dono da fatia com a versão mais completa) e se cabe antes de 04/11/2026. Pelo prazo, é aceitável manter as versões por fatia e só documentar a diferença; o que não pode é cada tela divergir do `design.md` sem registro.
 
 ---
 
@@ -68,3 +86,4 @@
 - [x] PRs do Painel do Diretor (#42) e da Visão 360 (#43) abertos, revisados e mesclados em 2026-10-28.
 - [x] Painel do Diretor: DEC e FEC diferentes da Continuidade no primeiro ano (1,48 x 1,47). O Painel passou a usar as UCs atendidas da Gold (ADR-012 revisada). Branch `fix/painel-dec-ucs-atendidas`, 2026-10-29.
 - [x] Código da correção de bairros (`fix_mojibake`) no PR #45; falta regerar o banco (item 1, aberto). Bairros com o nome corrompido na Gold: UDF `fix_mojibake` implementado na Silver (`fatia01_silver.ipynb`) para reverter dupla codificação UTF-8/Latin-1 antes da remoção de acentos em `bairro`, `municipio`, `logradouro` e `nome_titular`. 61 bairros (348 UCs) unificados; conferência GLOB `*[^ -~]*` validada com zero falhas; testes de qualidade adicionados em `fatia01_testes_qualidade.ipynb` e ADR-009 atualizada. Resolvido na branch `feat/fatia-01-cadastro` em 2026-10-28.
+- [x] **Fila curta na competência mais recente** (Adrian, PR #49, 2026-10-29). Em jun/2026 as 559 quedas acima de 50% são de UCs com painel solar, que a Fila exclui; sobram 165 UCs (7 de chance alta e 158 de baixa, D14). A demonstração da onda de 2025 usa `LOSS_REFERENCE_COMPETENCIA="2025-09"` (das 200 primeiras UCs, 196 foram inspecionadas depois, com 93,9% de acerto contra 62,7% geral; tabela no D9). Nesse mês a fila tem 39.243 UCs, quase todas de baixa chance, e as páginas são lentas. O passo a passo e a causa da fila longa (a carteira inteira perdeu consumo em 2025) estão no README, na seção da Fatia 05, com a medição no D9; a tela não foi alterada.

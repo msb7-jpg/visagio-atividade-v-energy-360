@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { PrioritizedQueueTable } from '@/features/loss_management/components/PrioritizedQueueTable'
 import { ScoreBar } from '@/features/loss_management/components/ScoreBar'
 import { useQueueSelection } from '@/features/loss_management/hooks/useQueueSelection'
@@ -17,6 +17,7 @@ function buildUnit(idUc: string, overrides: Partial<SuspiciousUnit> = {}): Suspi
     score: 80,
     situacao: 'na_fila',
     probabilidade_acerto: 0.93,
+    meses_base: 12,
     consumo_base_kwh: 300,
     consumo_recente_kwh: 50,
     kwh_estimado_recuperar: 750,
@@ -29,7 +30,7 @@ function buildUnit(idUc: string, overrides: Partial<SuspiciousUnit> = {}): Suspi
 
 function Harness({ units, total = units.length }: { units: SuspiciousUnit[]; total?: number }) {
   const selection = useQueueSelection(units)
-  return <PrioritizedQueueTable units={units} total={total} selection={selection} />
+  return <PrioritizedQueueTable units={units} total={total} selection={selection} onOpenDetail={vi.fn()} />
 }
 
 function renderTable(units: SuspiciousUnit[], total?: number) {
@@ -44,10 +45,39 @@ const headerCheckbox = () => screen.getByRole('checkbox', { name: 'Selecionar as
 const lockedUnit = (situacao: QueueSituation) => buildUnit('UC9', { situacao })
 
 describe('PrioritizedQueueTable', () => {
+  it('avisa na linha que a UC é uma ligação recente, com os meses de base que ela tem', () => {
+    renderTable([buildUnit('UC1', { meses_base: 3 })])
+
+    const row = screen.getByRole('link', { name: 'UC1' }).closest('tr') as HTMLElement
+    expect(within(row).getByText('Ligação recente: base de 3 meses')).toBeInTheDocument()
+  })
+
+  it.each([12, 11])('não avisa nada quando a UC tem %i meses de base', (baseMonths) => {
+    renderTable([buildUnit('UC1', { meses_base: baseMonths })])
+
+    expect(screen.queryByText(/Ligação recente/)).not.toBeInTheDocument()
+  })
+
+  it('explica ao focar o cabeçalho da coluna Queda que são médias e que o gráfico mostra mês a mês', async () => {
+    renderTable([buildUnit('UC1')])
+
+    fireEvent.focus(screen.getByRole('button', { name: 'Queda' }))
+
+    expect(await screen.findByText(/média dos 3 últimos meses contra a média dos 12 anteriores/i)).toBeInTheDocument()
+  })
+
   it('informa quantas UCs aparecem e quantas existem na fila', () => {
     renderTable([buildUnit('UC1'), buildUnit('UC2')], 1248)
 
     expect(screen.getByText(/Mostrando 1–2 de 2 UCs carregadas \(1\.248 na fila\)/)).toBeInTheDocument()
+  })
+
+  it('explica o score ao focar o cabeçalho da coluna pelo teclado', async () => {
+    renderTable([buildUnit('UC1')])
+
+    fireEvent.focus(screen.getByRole('button', { name: 'Score' }))
+
+    expect(await screen.findByText(/Score de 0 a 100 = chance de irregularidade/)).toBeInTheDocument()
   })
 
   it('mostra 25 UCs por página e navega para as seguintes', () => {
@@ -134,12 +164,29 @@ describe('PrioritizedQueueTable', () => {
     expect(within(screen.getByRole('row', { name: /UC1/ })).getAllByText('—')).toHaveLength(3)
   })
 
-  it('mostra um chip por motivo da UC', () => {
-    renderTable([buildUnit('UC1')])
+  it('mostra a queda de consumo da UC com o consumo base e o recente', () => {
+    renderTable([buildUnit('UC1', { consumo_base_kwh: 300, consumo_recente_kwh: 200 })])
 
     const row = screen.getByRole('row', { name: /UC1/ })
-    expect(within(row).getByText('Queda abrupta de consumo')).toBeInTheDocument()
-    expect(within(row).getByText('Consumo zero com medidor ativo')).toBeInTheDocument()
+    expect(within(row).getByText('−33%')).toBeInTheDocument()
+    expect(within(row).getByText('300 → 200 kWh/mês')).toBeInTheDocument()
+  })
+
+  it('mostra a chance de acerto de cada UC, que muda com a faixa de queda', () => {
+    renderTable([
+      buildUnit('UC1', { probabilidade_acerto: 0.93 }),
+      buildUnit('UC2', { probabilidade_acerto: 0.07 })
+    ])
+
+    expect(within(screen.getByRole('row', { name: /UC1/ })).getByText('93%')).toBeInTheDocument()
+    expect(within(screen.getByRole('row', { name: /UC2/ })).getByText('7%')).toBeInTheDocument()
+  })
+
+  it('não repete o motivo em cada linha da tabela', () => {
+    renderTable([buildUnit('UC1', { motivos: ['queda_moderada'] })])
+
+    expect(screen.queryByText('Queda moderada de consumo')).not.toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Motivos' })).not.toBeInTheDocument()
   })
 
   it('codifica o id da UC no link para a Visão 360', () => {

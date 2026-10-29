@@ -7,6 +7,7 @@ from sqlalchemy import text
 from app.core.config import Settings, get_settings
 from app.features.loss_management.schemas import QueueWarningCode
 from app.main import app
+from tests.loss_tariff import BILLING_ROWS
 from tests.test_loss_router import BASE_URL, auth_headers, open_client
 
 REFERENCE_WARNING = QueueWarningCode.COMPETENCIA_REFERENCIA_FIXADA.value
@@ -30,6 +31,13 @@ async def seed_wave_scenario(engine) -> None:
             "CREATE TABLE fato_inspecoes_perdas (id_inspecao TEXT, id_uc TEXT, data_inspecao TEXT, "
             "irregularidade_constatada BOOLEAN)"
         ))
+        await connection.execute(text(
+            "CREATE TABLE fato_faturamento (competencia TEXT, valor_total_rs REAL, consumo_faturado_kwh REAL)"
+        ))
+        await connection.execute(
+            text("INSERT INTO fato_faturamento VALUES (:competencia, :valor_total_rs, :consumo_faturado_kwh)"),
+            BILLING_ROWS,
+        )
         await connection.execute(
             text("INSERT INTO dim_unidade_consumidora VALUES (:id_uc, 'Residencial', 'Recife', 'Centro', 0)"),
             [{"id_uc": id_uc} for id_uc in WAVE_UNITS],

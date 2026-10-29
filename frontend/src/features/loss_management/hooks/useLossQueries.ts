@@ -1,9 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
   inspectionsQueryOptions,
+  inspectorsQueryOptions,
   queueFiltersQueryOptions,
   queueSummaryQueryOptions,
-  suspiciousUnitsQueryOptions
+  suspiciousUnitsQueryOptions,
+  unitDetailQueryOptions
 } from '@/features/loss_management/queries/lossQueries'
 import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
 
@@ -11,10 +13,32 @@ import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/los
  * Fila de UCs suspeitas priorizada pelo backend.
  *
  * @param filters - Filtros aplicados à fila.
- * @returns Estado da query da fila.
+* @returns Estado da query da fila, em páginas do servidor (`fetchNextPage` traz as UCs seguintes).
  */
 export function useSuspiciousUnitsQuery(filters: SuspiciousUnitsFilter) {
-  return useQuery(suspiciousUnitsQueryOptions(filters))
+  return useInfiniteQuery(suspiciousUnitsQueryOptions(filters))
+}
+
+/**
+ * Detalhe de uma UC da fila (conta do score, consumo de 12 meses e inspeções anteriores), em cache por UC.
+ *
+ * @param idUc - UC aberta no painel; nulo mantém a consulta desligada.
+ * @returns Estado da query do detalhe.
+ */
+export function useUnitDetailQuery(idUc: string | null) {
+  return useQuery({
+    ...unitDetailQueryOptions(idUc ?? ''),
+    enabled: idUc !== null
+  })
+}
+
+/**
+ * Inspetores de campo para os seletores dos diálogos de envio e resultado.
+ *
+ * @returns Estado da query da lista de inspetores.
+ */
+export function useInspectorsQuery() {
+  return useQuery(inspectorsQueryOptions())
 }
 
 /**

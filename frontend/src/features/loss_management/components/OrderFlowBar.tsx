@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { ExportOrdersButton } from '@/features/loss_management/components/ExportOrdersButton'
+import { useCanWriteLosses } from '@/features/loss_management/hooks/useCanWriteLosses'
 import { BOARD_COLUMNS } from '@/features/loss_management/utils/orderBoard'
 
 interface OrderFlowBarProps {
@@ -18,6 +19,7 @@ interface OrderFlowBarProps {
  */
 export function OrderFlowBar({ canExport, onImport }: OrderFlowBarProps) {
   const [pending, inField, done, canceled] = BOARD_COLUMNS
+  const canWrite = useCanWriteLosses()
   return (
     <Card className="flex flex-wrap items-center justify-between gap-3 p-3">
       <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
@@ -32,10 +34,12 @@ export function OrderFlowBar({ canExport, onImport }: OrderFlowBarProps) {
       </div>
       <div className="flex flex-wrap items-start gap-3">
         <ExportOrdersButton disabled={!canExport} label="Exportar planilha de campo" />
-        <Button type="button" onClick={onImport}>
-          <Upload aria-hidden="true" />
-          Importar resultados de campo
-        </Button>
+        {canWrite ? (
+          <Button type="button" onClick={onImport}>
+            <Upload aria-hidden="true" />
+            Importar resultados de campo
+          </Button>
+        ) : null}
       </div>
     </Card>
   )

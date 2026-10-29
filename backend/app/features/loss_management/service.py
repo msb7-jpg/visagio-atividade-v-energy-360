@@ -6,12 +6,14 @@ from app.features.loss_management.exceptions import ActiveOrderConflictError, In
 from app.features.loss_management.export import render_field_orders_csv
 from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.queue_summary import apply_situation, build_queue_summary, hit_rate_dto
+from app.features.loss_management.queue_territory import filter_by_territory
 from app.features.loss_management.repository import LossRepository
 from app.features.loss_management.schemas import (
     InspectionOrderCreateDTO,
     InspectionOrderDTO,
     InspectionOrderUpdateDTO,
     InspectionStatus,
+    InspectorDTO,
     QueueFiltersDTO,
     QueueSituation,
     QueueSummaryDTO,
@@ -21,7 +23,7 @@ from app.features.loss_management.schemas import (
     SuspiciousUnitsFilterDTO,
     UploadResultDTO,
 )
-from app.features.loss_management.scoring import LIMIAR_QUEDA_SUBITA, order_estimated_kwh, rank_suspicious_units
+from app.features.loss_management.scoring import LIMIAR_QUEDA_MODERADA, order_estimated_kwh, rank_suspicious_units
 from app.features.loss_management.update_rules import ensure_fields_match_status, ensure_required_fields
 from app.features.loss_management.upload_parser import read_spreadsheet
 from app.features.loss_management.upload_reconcile import (
@@ -94,10 +96,10 @@ def suspicion_filters(queue_filter: SuspiciousUnitsFilterDTO) -> SuspicionFilter
         queue_filter: Filtros recebidos pela API.
 
     Returns:
-        Critérios com o limiar de queda súbita da regra de negócio.
+        Critérios com o piso de queda da fila classificada (a queda súbita é só a faixa de topo).
     """
     return SuspicionFilters(
-        limiar_queda=LIMIAR_QUEDA_SUBITA,
+        limiar_queda=LIMIAR_QUEDA_MODERADA,
         municipio=queue_filter.municipio,
         bairro=queue_filter.bairro,
         classe=queue_filter.classe,
@@ -114,22 +116,31 @@ class LossService:
         """Monta a fila de UCs suspeitas priorizada pela energia estimada a recuperar.
 
         Args:
-            queue_filter: Filtros de município, bairro, classe, motivo e score mínimo, e o tamanho da fila.
+            queue_filter: Filtros de município, bairro, classe e motivo, e a página (`offset` e `limit`).
 
         Returns:
             UCs suspeitas, com score de 0 a 100 e situação (na fila, ordem gerada ou em campo), em ordem
-            decrescente de kWh esperado (a recuperar x taxa de acerto do sinal), limitadas a `queue_filter.limit`,
-            o total antes do corte do `limit` e os avisos de degradação da análise
+            decrescente de kWh esperado (a recuperar x taxa de acerto do sinal), só a página pedida (`offset` e
+            `limit`), o total antes do corte da página e os avisos de degradação da análise
             (ex.: histórico de campo não aplicado).
 
         Raises:
             DatabaseReadError: Se as tabelas Gold não puderem ser consultadas.
         """
-        candidates = await self.repository.fetch_consumption_profiles(suspicion_filters(queue_filter))
-        ranked_units = rank_suspicious_units(
-            candidates.profiles, None, reason=queue_filter.motivo, min_score=queue_filter.score_minimo
+        candidates = await self.repository.fetch_consumption_profiles(suspicion_filters(SuspiciousUnitsFilterDTO()))
+        tariff = await self.repository.fetch_average_tariff()
+        ranked_units = filter_by_territory(
+            rank_suspicious_units(
+                candidates.profiles,
+                None,
+                tariff_rs_kwh=tariff.rs_per_kwh,
+                reason=queue_filter.motivo,
+                portfolio_ratio=candidates.portfolio_ratio,
+            ),
+            queue_filter,
         )
-        units = apply_situation(ranked_units[: queue_filter.limit], candidates.active_orders)
+        page_end = queue_filter.offset + queue_filter.limit
+        units = apply_situation(ranked_units[queue_filter.offset : page_end], candidates.active_orders)
         fixed_competencia = candidates.reference_competencia
         reference_warnings = [reference_competencia_warning(fixed_competencia)] if fixed_competencia else []
         history_warnings = [] if candidates.field_history_applied else [FIELD_HISTORY_NOT_APPLIED_WARNING]
@@ -150,7 +161,10 @@ class LossService:
             DatabaseReadError: Se as tabelas Gold não puderem ser consultadas.
         """
         candidates = await self.repository.fetch_consumption_profiles(suspicion_filters(SuspiciousUnitsFilterDTO()))
-        ranked_units = rank_suspicious_units(candidates.profiles, limit=None)
+        tariff = await self.repository.fetch_average_tariff()
+        ranked_units = rank_suspicious_units(
+            candidates.profiles, limit=None, tariff_rs_kwh=tariff.rs_per_kwh, portfolio_ratio=candidates.portfolio_ratio
+        )
         units = apply_situation(ranked_units, candidates.active_orders)
         selected_set = set(selected_ids)
         selected_units = [
@@ -158,7 +172,7 @@ class LossService:
         ]
         scheduled_orders = await self.repository.count_active_orders()
         hit_rate = hit_rate_dto(await self.repository.fetch_field_hit_rate())
-        return build_queue_summary(selected_units, scheduled_orders, hit_rate)
+        return build_queue_summary(selected_units, scheduled_orders, hit_rate, tariff)
 
     async def list_queue_filters(self) -> QueueFiltersDTO:
         """Lista as opções dos filtros de município e classe da tela.
@@ -171,6 +185,17 @@ class LossService:
         """
         return await self.repository.fetch_filter_options()
 
+    async def list_inspectors(self) -> list[InspectorDTO]:
+        """Lista os inspetores de campo para os seletores de inspetor.
+
+        Returns:
+            Inspetores do histórico de inspeções, em ordem de código.
+
+        Raises:
+            DatabaseReadError: Se o histórico de inspeções não puder ser consultado.
+        """
+        return await self.repository.list_inspectors()
+
     async def list_inspections(self, status: InspectionStatus | None) -> list[InspectionOrderDTO]:
         """Lista as ordens de inspeção, opcionalmente filtradas por status.
 
@@ -178,7 +203,10 @@ class LossService:
             status: Status para filtrar; None devolve todas.
 
         Returns:
-            Ordens da mais recente para a mais antiga.
+            Ordens da mais recente para a mais antiga, com município, bairro e classe da UC.
+
+        Raises:
+            DatabaseReadError: Se o cadastro de UCs não puder ser consultado.
         """
         return await self.repository.list_orders(status)
 

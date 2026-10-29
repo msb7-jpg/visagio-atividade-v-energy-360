@@ -31,7 +31,7 @@ colors:
     accent: "#E1EEF4"
     destructive: "#B8322A"
     success: "#176B41"
-    warning: "#8A5A00"
+    warning: "#7F5200"
     border: "#DCE2E9"
     input: "#7C8BA0"
 typography:
@@ -109,13 +109,15 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 | `--accent` / `--accent-foreground` | `#123349` / `#5BB8DD` | `#E1EEF4` / `#0B5C7A` | `bg-accent text-accent-foreground` | Item de menu ativo, linha selecionada |
 | `--destructive` / `-foreground` | `#F28479` / `#1A0A09` | `#B8322A` / `#FFFFFF` | `bg-destructive text-destructive-foreground` | Piora, erro, atraso, recusa |
 | `--success` / `-foreground` | `#5BCB93` / `#06121C` | `#176B41` / `#FFFFFF` | `bg-success text-success-foreground` | Melhoria, pago, concluído |
-| `--warning` / `-foreground` | `#F2B92B` / `#1A1204` | `#8A5A00` / `#FFFFFF` | `bg-warning text-warning-foreground` | Atenção, selo "Gerado por IA" |
+| `--warning` / `-foreground` | `#F2B92B` / `#1A1204` | `#7F5200` / `#FFFFFF` | `bg-warning text-warning-foreground` | Atenção, selo "Gerado por IA" |
 | `--border` | `#24354D` | `#DCE2E9` | `border-border` | Divisórias, bordas de card e tabela |
 | `--input` | `#5A7396` | `#7C8BA0` | `border-input` | Borda de campos e botões de contorno (3:1) |
 | `--ring` | `#5BB8DD` | `#0B5C7A` | `ring-ring` | Anel de foco (2px, deslocado 2px) |
 | `--chart-1…5` | `#5BB8DD #F59A6B #B39DF0 #F2B92B #4FD1C0` | `#0B5C7A #C2410C #7B4FC4 #8A5A00 #0E8C80` | `fill-chart-1` etc. | Séries de gráficos |
 
 **Receitas derivadas (sem criar token novo):** tint de success/warning/destructive = `bg-success/15`; hover do primary = `bg-primary/85`; série "Outros" e eixos = `muted-foreground`; sombra = `shadow-sm`. Todo `-foreground` é texto sobre a cor correspondente (contraste AA ≥ 4,5).
+
+**Contraste do `--warning` (decisão de 2026-10-29):** no tema claro o token é `#7F5200`, um pouco mais escuro que o `#8A5A00` de `tokens-claro.png`. Com o tint de 15% (`bg-warning/15`), o `#8A5A00` ficava entre 4,09:1 e 4,48:1 em quatro das cinco superfícies; com `#7F5200` o mínimo é 4,61:1 (AA, 4,5:1). O teste `components/ui/__tests__/warning-token-contrast.test.ts` exige isso nos dois temas. O `--chart-4` segue `#8A5A00`, porque é cor de série e não de texto.
 
 **Fundo do login e banners hero:** `glass-gradient`, derivado de `--background` → `--accent` (sem hex próprio).
 

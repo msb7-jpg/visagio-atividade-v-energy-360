@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 import pytest
 
 from app.db.session import get_db
@@ -78,8 +80,50 @@ async def test_upload_in_the_field_team_format_matches_orders_by_unit(client):
     assert "UC_SEM_ORDEM" in body["rejeitadas"][0]["motivo"]
     order = await get_order(client, headers, order_id)
     assert order["status"] == "concluida"
-    assert order["fiscal_responsavel"] == "INSP-028"
+    assert order["inspetor"] == "INSP-028"
+    assert order["data_inspecao"] == "2025-09-25"
+    assert order["fiscal_responsavel"] is None
     assert order["tipo_irregularidade"] == "BY-PASS"
+
+
+async def test_upload_rejects_rows_with_invalid_inspector_or_future_date_and_keeps_orders_open(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    bad_inspector_id = await create_order(client, headers, "UC_FRAUDE")
+    future_date_id = await create_order(client, headers, "UC_ZERADA")
+    future_date = (date.today() + timedelta(days=5)).isoformat()
+    lines = [
+        "id_inspecao;data_inspecao;inspetor;irregularidade_constatada",
+        f"{bad_inspector_id};2025-08-15;INSP-041;sim",
+        f"{future_date_id};{future_date};INSP-003;sim",
+    ]
+    files = {"file": ("retorno.csv", "\r\n".join(lines).encode("utf-8-sig"), "text/csv")}
+
+    response = await client.post(UPLOAD_URL, headers=headers, files=files)
+
+    body = response.json()
+    assert body["conciliadas"] == 0
+    reasons = {row["id_inspecao"]: row["motivo"] for row in body["rejeitadas"]}
+    assert "INSP-001 a INSP-040" in reasons[bad_inspector_id]
+    assert "não pode ser futura" in reasons[future_date_id]
+    assert "Value error" not in " ".join(reasons.values())
+    assert (await get_order(client, headers, bad_inspector_id))["status"] == "gerada"
+    assert (await get_order(client, headers, future_date_id))["status"] == "gerada"
+
+
+async def test_upload_in_portal_format_records_inspector_and_date(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    order_id = await create_order(client, headers, "UC_FRAUDE")
+    lines = [
+        "id_inspecao;data_inspecao;inspetor;irregularidade_constatada",
+        f"{order_id};14.08.2025; insp-012 ;nada consta",
+    ]
+    files = {"file": ("retorno.csv", "\r\n".join(lines).encode("utf-8-sig"), "text/csv")}
+
+    response = await client.post(UPLOAD_URL, headers=headers, files=files)
+
+    assert response.json()["conciliadas"] == 1
+    order = await get_order(client, headers, order_id)
+    assert (order["inspetor"], order["data_inspecao"]) == ("INSP-012", "2025-08-14")
 
 
 async def test_upload_twice_rejects_orders_already_completed(client):
@@ -118,6 +162,17 @@ async def test_upload_requires_a_file(client):
     response = await client.post(UPLOAD_URL, headers=headers)
 
     assert response.status_code == 422
+
+
+async def test_upload_is_forbidden_for_director_who_only_reads(client):
+    manager = await auth_headers(client, "perdas@venergy.com")
+    id_inspecao = await create_order(client, manager, "UC_FRAUDE")
+    director = await auth_headers(client, "diretor@venergy.com")
+
+    response = await client.post(UPLOAD_URL, headers=director, files=csv_file(f"{id_inspecao};;sim;;1;"))
+
+    assert response.status_code == 403
+    assert (await get_order(client, manager, id_inspecao))["status"] == "gerada"
 
 
 async def test_upload_is_forbidden_for_roles_without_permission(client):
