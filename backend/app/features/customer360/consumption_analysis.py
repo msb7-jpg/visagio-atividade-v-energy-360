@@ -12,6 +12,7 @@ from app.features.customer360.schemas import (
 
 JANELA_MESES = 12
 LIMIAR_VARIACAO_CONSUMO_PCT = 10.0
+LEITURA_ESTIMADA = "ESTIMADA"
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +20,7 @@ class MonthSnapshot:
     """Valores de uma competência usados na comparação: leitura, período faturado e fatura."""
 
     kwh: float | None
+    reading_type: str | None
     days: int | None
     daily_kwh: float | None
     amount: float | None
@@ -110,6 +112,7 @@ def snapshot_month(
     days = measurement.dias_faturamento if measurement else None
     return MonthSnapshot(
         kwh=kwh,
+        reading_type=measurement.tipo_leitura if measurement else None,
         days=days,
         daily_kwh=daily_average(kwh, days),
         amount=invoice.valor_total_rs if invoice else None,
@@ -161,13 +164,14 @@ def _compare_month(
         tarifa_rs_kwh=current.tariff,
         tarifa_rs_kwh_ano_anterior=previous.tariff,
         variacao_tarifa_pct=percent_change(current.tariff, previous.tariff),
+        tipo_leitura=current.reading_type,
     )
 
 
 def diagnose_high_bill(
     reference_month: MonthlyComparisonDTO, invoices_by_month: dict[str, InvoiceDTO]
 ) -> HighBillDiagnosisDTO:
-    """Explica a conta do mês de referência pelas quatro causas: consumo, dias faturados, bandeira e tarifa.
+    """Explica a conta do mês de referência por consumo, dias faturados, bandeira, tarifa e leitura estimada.
 
     Args:
         reference_month: Comparação do mês de referência contra o ano anterior.
@@ -199,6 +203,7 @@ def diagnose_high_bill(
         tarifa_rs_kwh=reference_month.tarifa_rs_kwh,
         tarifa_rs_kwh_ano_anterior=reference_month.tarifa_rs_kwh_ano_anterior,
         variacao_tarifa_pct=reference_month.variacao_tarifa_pct,
+        leitura_estimada=reference_month.tipo_leitura == LEITURA_ESTIMADA,
     )
 
 

@@ -2,7 +2,7 @@
 # V-Energy Grid 360 -- Monorepo Management Makefile
 # ==============================================================================
 
-.PHONY: help setup-all data-unzip db-upgrade run-backend run-frontend test-all lint-all lint-backend lint-frontend
+.PHONY: help setup-all data-unzip db-upgrade run-backend run-frontend run-llm run-all test-all lint-all lint-backend lint-frontend
 
 help:
 	@echo "======================================================================"
@@ -13,6 +13,8 @@ help:
 	@echo "  make db-upgrade     - Adiciona ao banco existente as colunas novas de ordem_inspecao (idempotente)"
 	@echo "  make run-backend    - Inicia API FastAPI com Agente de IA integrado (:8000)"
 	@echo "  make run-frontend   - Inicia Portal Web React 19 com Vite (:5173)"
+	@echo "  make run-llm        - Inicia servidor llama-server local com modelo Qwen3.5-4B (:1234)"
+	@echo "  make run-all        - Inicia a stack completa: llama-server + backend + frontend"
 	@echo "  make test-all       - Executa testes no backend (pytest) e frontend (vitest)"
 	@echo "  make lint-backend   - Executa Ruff, Pylint e import-linter (fronteiras arquiteturais)"
 	@echo "  make lint-frontend  - Executa ESLint e Fallow (arquitetura/thresholds/complexidade)"
@@ -37,6 +39,18 @@ run-backend:
 
 run-frontend:
 	@cd frontend && bun run dev
+
+run-llm:
+	@~/workspace/llama.cpp/build/bin/llama-server \
+		-m ~/workspace/llama.cpp/models/Qwen3.5-4B-Q4_K_M.gguf \
+		-ngl 999 -c 64000 -np 2 \
+		-fa on \
+		--host 0.0.0.0 \
+		--port 1234 \
+		--no-context-shift
+
+run-all:
+	@bash scripts/dev_local.sh
 
 test-all:
 	@echo "==> Executando testes do backend..."

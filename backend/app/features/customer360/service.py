@@ -18,13 +18,17 @@ from app.features.customer360.schemas import (
     FeederQualityMonthDTO,
     HighBillDiagnosisDTO,
     InvoiceDTO,
+    LossInspectionDTO,
     MeasurementDTO,
     MonthlyComparisonDTO,
     ServiceTicketDTO,
+    UnitOutageDTO,
+    UnitOutageSummaryDTO,
 )
 from app.features.customer360.search_terms import (
     PrefixRange,
     is_searchable,
+    name_pattern,
     normalize_id_uc,
     normalize_meter,
     prefix_range,
@@ -32,6 +36,7 @@ from app.features.customer360.search_terms import (
 from app.features.customer360.yoy_totals import summarize_window
 
 STATUS_EM_ABERTO = frozenset({"ABERTA", "VENCIDA"})
+LIMITE_INTERRUPCOES_UC = 50
 
 
 class Customer360Reader(Protocol):
@@ -43,8 +48,12 @@ class Customer360Reader(Protocol):
     async def fetch_invoices(self, id_uc: str) -> list[InvoiceDTO]: ...
     async def fetch_feeder_quality(self, id_alimentador: str, limite_meses: int) -> list[FeederQualityMonthDTO]: ...
     async def fetch_service_tickets(self, id_uc: str) -> list[ServiceTicketDTO]: ...
+    async def fetch_unit_outages(self, id_uc: str, limite: int) -> list[UnitOutageDTO]: ...
+
+    async def fetch_unit_outage_summary(self, id_uc: str) -> UnitOutageSummaryDTO: ...
+    async def fetch_loss_inspections(self, id_uc: str) -> list[LossInspectionDTO]: ...
     async def search_units(
-        self, uc_range: PrefixRange, meter_range: PrefixRange, limite: int
+        self, uc_range: PrefixRange, meter_range: PrefixRange, holder_pattern: str, limite: int
     ) -> list[CustomerSearchResultDTO]: ...
 
 
@@ -55,10 +64,10 @@ class Customer360Service:
         self.repository = repository
 
     async def search(self, typed_text: str, limite: int) -> list[CustomerSearchResultDTO]:
-        """Sugere UCs enquanto o atendente digita, pelo começo do número da UC ou do medidor.
+        """Sugere UCs enquanto o atendente digita, pelo começo do número da UC ou do medidor ou por parte do nome.
 
         Args:
-            typed_text: Texto digitado em qualquer formato (ex: `10000`, `uc 100`, `MD5000`).
+            typed_text: Texto digitado em qualquer formato (ex: `10000`, `uc 100`, `MD5000`, `maria silva`).
             limite: Quantidade máxima de sugestões.
 
         Returns:
@@ -68,7 +77,7 @@ class Customer360Service:
             return []
         uc_range = prefix_range(normalize_id_uc(typed_text))
         meter_range = prefix_range(normalize_meter(typed_text))
-        return await self.repository.search_units(uc_range, meter_range, limite)
+        return await self.repository.search_units(uc_range, meter_range, name_pattern(typed_text), limite)
 
     async def get_summary(self, id_uc: str) -> CustomerSummaryDTO:
         """Busca o cadastro da UC.
@@ -123,13 +132,14 @@ class Customer360Service:
         )
 
     async def get_events(self, id_uc: str) -> CustomerEventTimelineDTO:
-        """Reúne a continuidade do alimentador da UC e os chamados abertos por ela.
+        """Reúne as interrupções da UC e do seu alimentador, os chamados e as inspeções de perdas.
 
         Args:
             id_uc: Identificador da unidade consumidora.
 
         Returns:
-            DEC/FEC dos últimos 12 meses do alimentador (mais recente primeiro) e chamados.
+            DEC/FEC dos últimos 12 meses do alimentador e interrupções da própria UC (mais recentes primeiro),
+            chamados e inspeções.
 
         Raises:
             CustomerNotFoundError: A UC não existe no cadastro.
@@ -138,12 +148,14 @@ class Customer360Service:
         feeder_quality = (
             await self.repository.fetch_feeder_quality(unit.alimentador, JANELA_MESES) if unit.alimentador else []
         )
-        tickets = await self.repository.fetch_service_tickets(unit.id_uc)
         return CustomerEventTimelineDTO(
             id_uc=unit.id_uc,
             alimentador=unit.alimentador,
             qualidade_alimentador=feeder_quality,
-            chamados=tickets,
+            interrupcoes_uc=await self.repository.fetch_unit_outages(unit.id_uc, LIMITE_INTERRUPCOES_UC),
+            resumo_interrupcoes_uc=await self.repository.fetch_unit_outage_summary(unit.id_uc),
+            chamados=await self.repository.fetch_service_tickets(unit.id_uc),
+            inspecoes=await self.repository.fetch_loss_inspections(unit.id_uc),
         )
 
 

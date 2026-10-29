@@ -22,12 +22,9 @@ flowchart TD
     
     SQL_EXEC -->|Erro Sintático & tentativas < 3| CORRECTOR["Auto-Corretor SQL\n(sql_corrector_node)\n[Auto-corrigindo consulta SQL]"]
     SQL_EXEC -->|Violação Segurança / Excedeu 3 tentativas| SYNTHESIZER
-    SQL_EXEC -->|Sucesso com dados retornados| CHART_GEN["Gerador de Gráficos\n(chart_generator_node)\n[Avaliando visualização gráfica]"]
-    SQL_EXEC -->|Sucesso sem dados| SYNTHESIZER
+    SQL_EXEC -->|Sucesso| SYNTHESIZER
     
     CORRECTOR --> SQL_EXEC
-    
-    CHART_GEN --> SYNTHESIZER
     
     SYNTHESIZER --> END_NODE([END])
 ```
@@ -48,9 +45,8 @@ O estado transita de forma imutável entre os nós através do `AgentState`:
 | `error_count` | `int` | sobrescrita | Contador incremental de falhas sintáticas (0 a 3) |
 | `last_error` | `str \| None` | sobrescrita | Última mensagem de erro reportada pelo validador ou SQLite |
 | `error_category` | `SqlErrorCategory \| None` | sobrescrita | Categoria do erro (`SECURITY_VIOLATION`, `RECOVERABLE_SYNTAX`, etc.) |
-| `chart_spec` | `dict[str, Any] \| None` | sobrescrita | Especificação declarativa ChartJsConfigDTO para o frontend |
 | `steps` | `list[AgentStepInfo]` | `append_steps` | Lista cronológica de etapas concluídas com latência em ms |
-| `command` | `SlashCommandInfo \| None` | sobrescrita | Metadados de comando de barra capturado (`/sql`, `/chart`, etc.) |
+| `command` | `SlashCommandInfo \| None` | sobrescrita | Metadados de comando de barra capturado (`/sql`, `/explain`, etc.) |
 
 ### Reducers Especiais
 
@@ -63,7 +59,7 @@ O estado transita de forma imutável entre os nós através do `AgentState`:
 
 ### 1. `router_node` (`router`)
 - **Papel**: Identifica se a pergunta do usuário exige consulta analítica à base (`sql`) ou se é uma saudação/pergunta conceitual (`direct`).
-- **Comandos de Barra**: Processa atalhos explícitos (`/sql`, `/chart`, `/direct`, `/explain`, `/clear`).
+- **Comandos de Barra**: Processa atalhos explícitos (`/sql`, `/direct`, `/explain`, `/clear`).
 - **Transição**: Direciona para `sql_generator` ou salta diretamente para `synthesizer`.
 
 ### 2. `sql_generator_node` (`sql_generator`)
@@ -81,14 +77,10 @@ O estado transita de forma imutável entre os nós através do `AgentState`:
 - **Entrada**: Consulta com defeito + mensagem de erro do SQLite.
 - **Saída**: Nova proposta de query SQL corrigida, retornando para re-execução em `sql_executor` (limite máximo de 3 tentativas).
 
-### 5. `chart_generator_node` (`chart_generator`)
-- **Papel**: Avalia se o conjunto de dados retornado possui atributos favoráveis para visualização gráfica (categorias discretas ou séries temporais numéricas) ou intenção explícita (`/chart`, "gráfico", "distribuição").
-- **Saída**: Produz payload declarativo `ChartJsConfigDTO` com tipo (`bar`, `line`, `pie`, `doughnut`), rótulos e séries.
-
-### 6. `synthesizer_node` (`synthesizer`)
+### 5. `synthesizer_node` (`synthesizer`)
 - **Papel**: Gera a resposta executiva final em Markdown para o usuário.
 - **Anti-Alucinação**: Baseia-se estritamente nos dados do bloco `[CONTEXTO DOS DADOS]`.
-- **Gráficos**: Caso `chart_spec` esteja presente, insere o marcador ` ```chart ` para que a UI renderize o componente interativo.
+- **Visualização Tabular**: Estrutura dados analíticos em tabelas Markdown executivas limpas.
 - **Zero Vazamento Técnico**: Oculta nomes de tabelas, identificadores de sistema e detalhes de implementação.
 
 ---

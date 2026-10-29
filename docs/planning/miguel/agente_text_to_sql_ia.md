@@ -36,10 +36,10 @@
 ### Backend (`backend/app/agent/` & `backend/app/features/chat/`):
 - **Motor LangGraph FSM (`app/agent/`):**
   - Catálogo semântico com mapeamento de jargões ("conta de luz" $\to$ faturas, "falta de luz" $\to$ interrupções, "gato" $\to$ perdas/inspeções).
-  - Nós da FSM: `router_node`, `sql_generator_node`, `sql_validator_node` (AST read-only sqlparse), `sql_executor_node` (`mode=ro`), `corrector.py` (auto-correção self-healing até 3 tentativas), `chart_generator.py` (`ChartJsConfigDTO`), `synthesizer.py` (anti-alucinação estrita).
+  - Nós da FSM: `router_node`, `sql_generator_node`, `sql_validator_node` (AST read-only sqlparse), `sql_executor_node` (`mode=ro`), `corrector.py` (auto-correção self-healing até 3 tentativas), `synthesizer.py` (anti-alucinação estrita).
   - Suporte a **Follow-up** com preservação de contexto e resolução de anáforas.
 - **Despacho SSE & IA Embutida (`app/features/chat/`):**
-  - `POST /api/v1/chat/stream`: Server-Sent Events transmitindo passos de raciocínio, pensamento, SQL gerado e gráficos.
+  - `POST /api/v1/chat/stream`: Server-Sent Events transmitindo passos de raciocínio, pensamento, SQL gerado e dados tabulares.
   - `POST /api/v1/ai/insights`: Endpoint contextual para geração dos Smart Insights em telas.
 
 ### Frontend (`frontend/src/features/chat/` & `frontend/src/features/insights/`):
@@ -48,7 +48,6 @@
 - `components/ChatMessageBubble.tsx`: Balão de mensagem em Markdown.
 - `components/AgentStepProgress.tsx`: Indicador de progresso ("Classificando intenção", "Escrevendo SQL", etc.).
 - `components/SqlAuditAccordion.tsx`: Sanfona para auditoria de SQL e telemetria em ms.
-- `components/InteractiveChartCard.tsx`: Renderizador de gráficos Chart.js interativos.
 - `components/SmartInsightCard.tsx`: Card de IA embutida integrado na Visão 360 e no Dashboard de Receita.
 
 #### 🧩 Componentes do Design System Recomendados (`@/components/ui/` & `@/components/feedback/`):
@@ -71,15 +70,16 @@
 
 - [x] Grafo base do LangGraph FSM e nós essenciais em `backend/app/agent/`.
 - [x] Validador sintático AST e execução somente-leitura (`mode=ro`).
-- [ ] Enriquecer o catálogo semântico (`catalog_prompt.py`) com sinônimos cotidianos e schemas finais da Gold.
-- [ ] Implementar suporte conversacional a follow-up no `AgentState`.
-- [ ] Implementar endpoint `POST /api/v1/ai/insights` no backend.
-- [ ] Criar testes unitários em `backend/tests/test_agent_graph.py`, `test_agent_security.py` e `test_agent_stream.py`.
-- [ ] Construir o framework de benchmark em `backend/scripts/evaluate_agent.py` e `backend/tests/golden_dataset.json`.
-- [ ] Criar componentes do chat em `frontend/src/features/chat/` ($\le 150$ linhas por componente).
-- [ ] Implementar `SmartInsightCard.tsx` e plugar na Visão 360 e no Dashboard de Receita.
-- [ ] Criar testes no frontend com Vitest em `ChatDrawer.test.tsx`.
-- [ ] Garantir 100% verde em `make lint-all` e `make test-all`.
+- [x] Enriquecer o catálogo semântico (`catalog_prompt.py`) com sinônimos cotidianos e schemas finais da Gold.
+- [x] Implementar suporte conversacional a follow-up no `AgentState`.
+- [x] Implementar endpoint `POST /api/v1/ai/insights` no backend.
+- [x] Criar testes unitários em `backend/tests/test_agent_graph.py`, `test_agent_security.py` e `test_agent_stream.py`.
+- [x] Construir o framework de benchmark em `backend/scripts/evaluate_agent.py` e `backend/tests/golden_dataset.json`.
+- [x] Adaptar componentes ricos do chat (fidelidade visual ao ai-assistant, botão circular flutuante no canto inferior direito, expansão fluida e modo tela cheia, conformidade com design.md e fallow <= 150 linhas).
+- [x] Implementar e exportar `SmartInsightCard.tsx` (componente plugável e desacoplado, pronto para ser consumido nas telas da Fatia 03 - Bernardo e Fatia 04 - Célio conforme contrato de integração).
+- [x] Criar testes no frontend com Vitest em `ChatDrawer.test.tsx`.
+- [x] Expor `<ChatDrawer />` globalmente nas telas ativas, corrigir autenticação JWT do streaming/insights, follow-up multi-turno com `MemorySaver` e métricas completas em `evaluate_agent.py`.
+- [x] Garantir 100% verde em `make lint-all` e `make test-all`.
 
 ---
 

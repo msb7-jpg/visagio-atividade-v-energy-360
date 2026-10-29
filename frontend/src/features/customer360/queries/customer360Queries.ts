@@ -1,7 +1,7 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { customer360Api } from '@/features/customer360/api/customer360Api'
-import { compactTerm, isSearchable } from '@/features/customer360/utils/searchTerms'
+import { isSearchable, normalizeSearchText } from '@/features/customer360/utils/searchTerms'
 
 type CustomerResource = 'summary' | 'history' | 'events'
 
@@ -65,7 +65,7 @@ export function customerHistoryQueryOptions(idUc: string) {
 }
 
 /**
- * Opções da consulta de interrupções do alimentador e chamados da UC.
+ * Opções da consulta de interrupções da UC e do alimentador, chamados e inspeções.
  *
  * @param idUc - Número da UC buscada (vazio desativa a consulta).
  * @returns Opções de query com cancelamento via signal.
@@ -75,13 +75,13 @@ export function customerEventsQueryOptions(idUc: string) {
 }
 
 /**
- * Opções da consulta de sugestões enquanto o atendente digita (número da UC ou do medidor).
+ * Opções da consulta de sugestões enquanto o atendente digita (número da UC, do medidor ou nome do titular).
  *
  * @param typedText - Texto digitado, já com debounce.
  * @returns Opções de query que mantêm as sugestões anteriores enquanto as novas chegam.
  */
 export function customerSearchQueryOptions(typedText: string) {
-  const term = compactTerm(typedText)
+  const term = normalizeSearchText(typedText)
   return queryOptions({
     queryKey: customer360Keys.search(term),
     queryFn: ({ signal }) => customer360Api.search(term, signal),

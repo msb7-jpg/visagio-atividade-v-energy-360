@@ -39,9 +39,11 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 1440  # 24 horas
 
-    # Provedores de IA (Gemini / OpenRouter)
+    # Provedores de IA (Gemini / OpenRouter / Local llama.cpp)
     gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
-    ai_model_name: str = "gemini-2.5-flash-lite"
+    ai_model_name: str | None = Field(default=None, alias="AI_MODEL_NAME")
+    ai_provider: str | None = Field(default=None, alias="AI_PROVIDER")
+    ai_base_url: str | None = Field(default=None, alias="AI_BASE_URL")
 
     # Usuários Padrão para Testes e Demonstração
     default_users: dict[str, dict[str, str]] = {

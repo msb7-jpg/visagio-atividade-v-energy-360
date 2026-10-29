@@ -5,14 +5,16 @@ from app.agent.graph import create_agent_graph
 from app.agent.state import append_steps, append_thought
 from app.agent.utils.command_parser import parse_slash_command
 from app.agent.utils.toon_serializer import serialize_to_toon_tabular
+from app.core.config import get_settings
 from app.core.constants import AgentNode
+from app.core.llm_factory.factory import get_chat_model
 
 
 def test_command_parser():
-    cmd, _ = parse_slash_command("/chart bar Evolução mensal de consumo")
-    assert cmd is not None
-    assert cmd["name"] == "chart"
-    assert cmd["args"] == "bar Evolução mensal de consumo"
+    cmd_explain, _ = parse_slash_command("/explain Metodologia de cálculo do DEC")
+    assert cmd_explain is not None
+    assert cmd_explain["name"] == "explain"
+    assert cmd_explain["args"] == "Metodologia de cálculo do DEC"
 
     cmd_sql, _ = parse_slash_command("/sql SELECT 1")
     assert cmd_sql is not None
@@ -63,7 +65,6 @@ async def test_agent_graph_execution_direct_route():
         "error_count": 0,
         "last_error": None,
         "error_category": None,
-        "chart_spec": None,
         "steps": [],
         "command": None,
     }
@@ -85,11 +86,11 @@ async def test_agent_graph_execution_direct_route():
 
 
 @pytest.mark.asyncio
-async def test_agent_graph_execution_sql_and_chart_route():
+async def test_agent_graph_execution_sql_route():
     graph = create_agent_graph()
 
     inputs = {
-        "messages": [HumanMessage(content="Mostre o consumo por classe com gráfico de barras")],
+        "messages": [HumanMessage(content="Mostre o consumo por classe")],
         "route": None,
         "thought": None,
         "generated_sql": None,
@@ -97,7 +98,6 @@ async def test_agent_graph_execution_sql_and_chart_route():
         "error_count": 0,
         "last_error": None,
         "error_category": None,
-        "chart_spec": None,
         "steps": [],
         "command": None,
     }
@@ -117,5 +117,18 @@ async def test_agent_graph_execution_sql_and_chart_route():
     assert len(result["steps"]) >= 4
     assert any(s["node"] == AgentNode.SQL_GENERATOR.value for s in result["steps"])
     assert any(s["node"] == AgentNode.SQL_EXECUTOR.value for s in result["steps"])
-    assert any(s["node"] == AgentNode.CHART_GENERATOR.value for s in result["steps"])
     assert any(s["node"] == AgentNode.SYNTHESIZER.value for s in result["steps"])
+
+
+def test_llm_factory_model_precedence(monkeypatch):
+    """Garante que AI_MODEL_NAME seja respeitado com precedência para provedores como local."""
+    monkeypatch.setattr(get_settings(), "ai_model_name", "Qwen3.5-4B-Q4_K_M")
+    model_instance = get_chat_model(provider="local", base_url="http://localhost:11434/v1")
+    assert getattr(model_instance, "model_name", None) == "Qwen3.5-4B-Q4_K_M"
+
+    # Quando explicitamente passado no argumento model, tem prioridade absoluta
+    model_override = get_chat_model(
+        provider="local", model="custom-override-model", base_url="http://localhost:11434/v1"
+    )
+    assert getattr(model_override, "model_name", None) == "custom-override-model"
+

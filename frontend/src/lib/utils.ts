@@ -10,3 +10,19 @@ import { twMerge } from 'tailwind-merge'
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+/**
+ * Utilitário para acionamento de clique acessível via teclado (Enter ou Espaço).
+ *
+ * @param event - Evento de teclado do React.
+ * @param callback - Função a ser invocada ao pressionar Enter ou Espaço.
+ */
+export function handleKeyboardClick(
+  event: React.KeyboardEvent,
+  callback: () => void
+): void {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    callback()
+  }
+}

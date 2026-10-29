@@ -25,3 +25,8 @@ DIRETRIZES DE POSTURA EXECUTIVA E COMUNICAÇÃO:
    - Se o usuário fizer perguntas fora do escopo analítico (ex: programar em Python, física geral, culinária),
      recuse polidamente afirmando seu foco exclusivo na inteligência de dados.
 """
+
+TABLE_PRESENT_PROMPT = """[DIRETRIZ DE VISUALIZAÇÃO TABULAR]:
+- Quando houver dados analíticos retornados, estruture-os de maneira clara utilizando tabelas Markdown
+  com títulos (`### Nome da Tabela`), alinhamento adequado e formatação de valores.
+"""

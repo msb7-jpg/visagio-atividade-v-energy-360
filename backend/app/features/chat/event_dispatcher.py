@@ -111,14 +111,7 @@ class SSEEventDispatcher:
                 "data": json.dumps({"sql": formatted_sql, "raw": raw_sql}, ensure_ascii=False),
             })
 
-        # 4. Emissão de especificação de gráfico
-        if node_update.get("chart_spec"):
-            events.append({
-                "event": SSEEventType.CHART.value,
-                "data": json.dumps({"chart": node_update["chart_spec"]}, ensure_ascii=False),
-            })
-
-        # 5. Emissão de dados analíticos retornados
+        # 4. Emissão de dados analíticos retornados
         if node_update.get("query_result") is not None:
             results = node_update["query_result"]
             events.append({

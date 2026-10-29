@@ -38,7 +38,6 @@ class AgentNode(StrEnum):
     SQL_VALIDATOR = "sql_validator"
     SQL_EXECUTOR = "sql_executor"
     SQL_CORRECTOR = "sql_corrector"
-    CHART_GENERATOR = "chart_generator"
     SYNTHESIZER = "synthesizer"
 
 
@@ -48,7 +47,6 @@ NODE_LABELS: dict[str, str] = {
     AgentNode.SQL_VALIDATOR.value: "Validando integridade da query",
     AgentNode.SQL_EXECUTOR.value: "Executando no banco de dados",
     AgentNode.SQL_CORRECTOR.value: "Auto-corrigindo consulta SQL",
-    AgentNode.CHART_GENERATOR.value: "Avaliando visualização gráfica",
     AgentNode.SYNTHESIZER.value: "Formatando resposta analítica",
 }
 
@@ -63,19 +61,9 @@ class SSEEventType(StrEnum):
     STEP_END = "step_end"
     THOUGHT = "thought"
     SQL = "sql"
-    CHART = "chart"
     DATA = "data"
     TOKEN = "token"  # ruff: ignore[hardcoded-password-string]
     ANSWER = "answer"
-
-
-class ChartType(StrEnum):
-    """Tipos de visualização gráfica suportados."""
-
-    BAR = "bar"
-    LINE = "line"
-    PIE = "pie"
-    DOUGHNUT = "doughnut"
 
 
 class StepStatus(StrEnum):

@@ -1,10 +1,28 @@
 import * as React from 'react'
+import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
+const inputVariants = cva(
+  'flex h-10 w-full rounded-md border bg-background px-3.5 py-2 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-base',
+  {
+    variants: {
+      variant: {
+        default: 'border-input focus-visible:ring-ring',
+        embedded: 'h-9 border-0 bg-transparent px-2 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0'
+      }
+    },
+    defaultVariants: {
+      variant: 'default'
+    }
+  }
+)
+
 /**
- * Propriedades do Input: as nativas de input HTML mais o estado de erro.
+ * Propriedades do Input: as nativas de input HTML, variantes visuais e estado de erro.
  */
-export interface InputProps extends React.ComponentProps<'input'> {
+export interface InputProps
+  extends React.ComponentProps<'input'>,
+  VariantProps<typeof inputVariants> {
   /**
    * Se `true`, destaca a borda e o foco com a cor semântica destrutiva (mesmo contrato do `Select`).
    * @defaultValue `false`
@@ -14,18 +32,20 @@ export interface InputProps extends React.ComponentProps<'input'> {
 
 /**
  * Campo de entrada Input padronizado conforme design.md (SaaS Enterprise Analytics).
- * Possui raio de 12px (rounded-md), borda de 1px e anel de foco proeminente com deslocamento.
+ * Possui raio base (rounded-md), borda de 1px e anel de foco proeminente com deslocamento.
  *
- * @param props - Propriedades nativas de input HTML e estado de erro.
+ * @param props - Propriedades nativas de input HTML, variante e estado de erro.
  * @returns Elemento input renderizado.
  */
-function Input({ className, type, error = false, ...props }: InputProps) {
+function Input({ className, type, variant, error = false, ...props }: InputProps) {
+  const errorClasses = error ? 'border-destructive focus-visible:ring-destructive' : ''
+
   return (
     <input
       type={type}
       className={cn(
-        'flex h-10 w-full rounded-md border bg-background px-3.5 py-2 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-base',
-        error ? 'border-destructive focus-visible:ring-destructive' : 'border-input focus-visible:ring-ring',
+        inputVariants({ variant }),
+        errorClasses,
         className
       )}
       {...props}
@@ -33,4 +53,4 @@ function Input({ className, type, error = false, ...props }: InputProps) {
   )
 }
 
-export { Input }
+export { Input, inputVariants }

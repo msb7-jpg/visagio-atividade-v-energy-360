@@ -24,9 +24,9 @@ describe('RBAC da navegação', () => {
   it.each([
     ['atendente', ['Visão 360 da UC']],
     ['gerente_atendimento', ['Visão 360 da UC']],
-    ['gerente_operacao', ['Painel', 'Qualidade da Rede']],
-    ['gerente_perdas', ['Painel', 'Visão 360 da UC', 'Fila de Inspeção']],
-    ['diretor', ['Painel', 'Visão 360 da UC', 'Fila de Inspeção', 'Qualidade da Rede']],
+    ['gerente_operacao', ['Qualidade da Rede', 'Visão 360 da UC']],
+    ['gerente_perdas', ['Fila de Inspeção', 'Visão 360 da UC']],
+    ['diretor', ['Painel', 'Inteligência Comercial', 'Fila de Inspeção', 'Qualidade da Rede', 'Visão 360 da UC']],
     ['papel_desconhecido', []]
   ])('%s vê apenas os itens permitidos', (role, labels) => {
     expect(navItemsFor(role).map((item) => item.label)).toEqual(labels)
@@ -41,7 +41,9 @@ describe('RBAC da navegação', () => {
 
   it.each([
     ['atendente', '/customers'],
-    ['gerente_perdas', '/dashboard'],
+    ['diretor', '/dashboard'],
+    ['gerente_perdas', '/losses'],
+    ['gerente_operacao', '/quality'],
     ['papel_desconhecido', '/login']
   ])('%s abre em %s', (role, path) => {
     expect(homeRouteFor(role)).toBe(path)

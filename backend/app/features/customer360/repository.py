@@ -11,10 +11,13 @@ from app.features.customer360.schemas import (
     CustomerSummaryDTO,
     FeederQualityMonthDTO,
     InvoiceDTO,
+    LossInspectionDTO,
     MeasurementDTO,
     ServiceTicketDTO,
+    UnitOutageDTO,
+    UnitOutageSummaryDTO,
 )
-from app.features.customer360.search_terms import PrefixRange
+from app.features.customer360.search_terms import LIKE_ESCAPE, PrefixRange
 from app.shared.exceptions import DatabaseReadError
 
 UNIT_SQL = text("SELECT * FROM dim_unidade_consumidora WHERE id_uc = :id_uc")
@@ -26,12 +29,13 @@ SELECT *
 FROM dim_unidade_consumidora
 WHERE (id_uc >= :uc_start AND id_uc < :uc_end)
    OR (numero_medidor_ativo >= :meter_start AND numero_medidor_ativo < :meter_end)
+   OR nome_titular LIKE :name_pattern ESCAPE :like_escape
 ORDER BY id_uc
 LIMIT :limite
 """)
 
 MEASUREMENTS_SQL = text("""
-SELECT competencia, consumo_kwh, dias_faturamento
+SELECT competencia, consumo_kwh, dias_faturamento, tipo_leitura
 FROM fato_medicao
 WHERE id_uc = :id_uc
 ORDER BY competencia
@@ -60,6 +64,35 @@ WHERE id_uc = :id_uc
 ORDER BY data_abertura DESC
 """)
 
+UNIT_OUTAGES_SQL = text("""
+SELECT id_ocorrencia, competencia, inicio_interrupcao, fim_interrupcao, duracao_horas, tipo_ocorrencia, causa
+FROM fato_ocorrencias_rede
+WHERE id_uc = :id_uc AND COALESCE(fl_anterior_ligacao, 0) = 0
+ORDER BY inicio_interrupcao DESC
+LIMIT :limite
+""")
+
+UNIT_OUTAGE_TOTALS_SQL = text("""
+SELECT COUNT(*) AS total_interrupcoes, COALESCE(SUM(duracao_horas), 0) AS total_horas
+FROM fato_ocorrencias_rede
+WHERE id_uc = :id_uc AND COALESCE(fl_anterior_ligacao, 0) = 0
+""")
+
+UNIT_LONGEST_OUTAGE_SQL = text("""
+SELECT id_ocorrencia, competencia, inicio_interrupcao, fim_interrupcao, duracao_horas, tipo_ocorrencia, causa
+FROM fato_ocorrencias_rede
+WHERE id_uc = :id_uc AND COALESCE(fl_anterior_ligacao, 0) = 0
+ORDER BY duracao_horas DESC, inicio_interrupcao DESC
+LIMIT 1
+""")
+
+LOSS_INSPECTIONS_SQL = text("""
+SELECT id_inspecao, data_inspecao, id_inspetor, irregularidade_constatada, tipo_irregularidade, kwh_recuperado
+FROM fato_inspecoes_perdas
+WHERE id_uc = :id_uc
+ORDER BY data_inspecao DESC
+""")
+
 
 class Customer360Repository:
     """Leitura somente das tabelas Gold necessárias para a tela única de atendimento."""
@@ -78,14 +111,16 @@ class Customer360Repository:
         return bool(rows)
 
     async def search_units(
-        self, uc_range: PrefixRange, meter_range: PrefixRange, limite: int
+        self, uc_range: PrefixRange, meter_range: PrefixRange, holder_pattern: str, limite: int
     ) -> list[CustomerSearchResultDTO]:
-        """UCs cujo número ou medidor começa com o texto buscado, em ordem de número."""
+        """UCs cujo número ou medidor começa com o texto buscado, ou cujo titular o contém, em ordem de número."""
         params = {
             "uc_start": uc_range.start,
             "uc_end": uc_range.end,
             "meter_start": meter_range.start,
             "meter_end": meter_range.end,
+            "name_pattern": holder_pattern,
+            "like_escape": LIKE_ESCAPE,
             "limite": limite,
         }
         rows = await self._fetch_rows(SEARCH_SQL, params, "dim_unidade_consumidora")
@@ -111,6 +146,28 @@ class Customer360Repository:
         """Chamados abertos pela UC, mais recente primeiro."""
         rows = await self._fetch_rows(SERVICE_TICKETS_SQL, {"id_uc": id_uc}, "fato_atendimentos")
         return [ServiceTicketDTO.model_validate(row) for row in rows]
+
+    async def fetch_unit_outages(self, id_uc: str, limite: int) -> list[UnitOutageDTO]:
+        """Interrupções que atingiram a UC depois da ligação dela, mais recente primeiro."""
+        params = {"id_uc": id_uc, "limite": limite}
+        rows = await self._fetch_rows(UNIT_OUTAGES_SQL, params, "fato_ocorrencias_rede")
+        return [UnitOutageDTO.model_validate(row) for row in rows]
+
+    async def fetch_unit_outage_summary(self, id_uc: str) -> UnitOutageSummaryDTO:
+        """Total, horas somadas e a mais longa de todas as interrupções da UC depois da ligação."""
+        params = {"id_uc": id_uc}
+        totals = (await self._fetch_rows(UNIT_OUTAGE_TOTALS_SQL, params, "fato_ocorrencias_rede"))[0]
+        longest = await self._fetch_rows(UNIT_LONGEST_OUTAGE_SQL, params, "fato_ocorrencias_rede")
+        return UnitOutageSummaryDTO(
+            total_interrupcoes=int(totals["total_interrupcoes"]),
+            total_horas=round(float(totals["total_horas"]), 2),
+            mais_longa=UnitOutageDTO.model_validate(longest[0]) if longest else None,
+        )
+
+    async def fetch_loss_inspections(self, id_uc: str) -> list[LossInspectionDTO]:
+        """Inspeções de perdas feitas na UC, mais recente primeiro."""
+        rows = await self._fetch_rows(LOSS_INSPECTIONS_SQL, {"id_uc": id_uc}, "fato_inspecoes_perdas")
+        return [LossInspectionDTO.model_validate(row) for row in rows]
 
     async def _fetch_rows(
         self, query: TextClause, params: Mapping[str, str | int], table_name: str

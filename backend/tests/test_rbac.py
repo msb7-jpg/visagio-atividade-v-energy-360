@@ -34,6 +34,7 @@ ROUTE_BY_GROUP = {
         UserRole.GERENTE_ATENDIMENTO,
         UserRole.ATENDENTE,
         UserRole.GERENTE_PERDAS,
+        UserRole.GERENTE_OPERACAO,
     },
 }
 

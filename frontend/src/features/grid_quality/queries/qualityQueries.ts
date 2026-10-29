@@ -6,7 +6,8 @@ export const qualityKeys = {
   all: ['quality'] as const,
   indicators: () => [...qualityKeys.all, 'indicators'] as const,
   feeders: (status: QualityStatus | undefined) => [...qualityKeys.all, 'feeders', status] as const,
-  history: (feederId: string) => [...qualityKeys.all, 'history', feederId] as const
+  history: (feederId: string) => [...qualityKeys.all, 'history', feederId] as const,
+  customers: (feederId: string) => [...qualityKeys.all, 'customers', feederId] as const
 }
 
 // DEC/FEC vêm de uma competência mensal fechada: cache longo evita refetch ao reabrir a gaveta.
@@ -28,7 +29,7 @@ export function indicatorsQueryOptions() {
 /**
  * Opções da consulta do ranking de alimentadores.
  *
- * @param status - Filtro de status regulatório; sem valor traz todos.
+ * @param status - Filtro de situação frente ao limite de referência; sem valor traz todos.
  * @returns Opções de query que mantém o ranking anterior enquanto o filtro carrega.
  */
 export function feedersQueryOptions(status: QualityStatus | undefined) {
@@ -50,6 +51,21 @@ export function feederHistoryQueryOptions(feederId: string | null) {
   return queryOptions({
     queryKey: qualityKeys.history(feederId ?? ''),
     queryFn: ({ signal }) => qualityApi.getFeederHistory(feederId ?? '', signal),
+    enabled: feederId !== null,
+    staleTime: QUALITY_STALE_TIME_MS
+  })
+}
+
+/**
+ * Opções da consulta dos clientes mais afetados de um alimentador (padrão da API: 12 meses, 10 clientes).
+ *
+ * @param feederId - Alimentador aberto na gaveta; `null` desliga a consulta.
+ * @returns Opções de query habilitada apenas com alimentador selecionado.
+ */
+export function affectedCustomersQueryOptions(feederId: string | null) {
+  return queryOptions({
+    queryKey: qualityKeys.customers(feederId ?? ''),
+    queryFn: ({ signal }) => qualityApi.getAffectedCustomers(feederId ?? '', signal),
     enabled: feederId !== null,
     staleTime: QUALITY_STALE_TIME_MS
   })

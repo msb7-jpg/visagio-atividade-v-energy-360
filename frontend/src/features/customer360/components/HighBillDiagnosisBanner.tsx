@@ -2,12 +2,14 @@ import type { ReactNode } from 'react'
 import { ArrowDownRight, ArrowUpRight, Minus, Scale } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import type { ConsumptionTrend, HighBillDiagnosis } from '@/features/customer360/types/customer360Types'
+import type { ConsumptionTrend, HighBillDiagnosis, SolarGeneration } from '@/features/customer360/types/customer360Types'
 import { TREND_LABELS } from '@/features/customer360/utils/customer360Formatters'
 import {
   describeBillingDays,
   describeConsumption,
+  describeEstimatedReading,
   describeFlagChange,
+  describeSolar,
   describeTariffChange
 } from '@/features/customer360/utils/diagnosisMessages'
 
@@ -18,32 +20,32 @@ const TREND_ICONS: Record<ConsumptionTrend, ReactNode> = {
   SEM_COMPARACAO: <Scale className="text-muted-foreground size-5" />
 }
 
-const SOLAR_MESSAGE = 'A UC tem geração solar: a energia gerada é abatida do consumo faturado.'
-
-function collectExplanations(diagnosis: HighBillDiagnosis, hasSolar: boolean): string[] {
+function collectExplanations(diagnosis: HighBillDiagnosis, solar: SolarGeneration): string[] {
   const explanations = [
+    describeEstimatedReading(diagnosis),
     describeBillingDays(diagnosis),
     describeFlagChange(diagnosis),
     describeTariffChange(diagnosis),
-    hasSolar ? SOLAR_MESSAGE : null
+    solar.hasSolar ? describeSolar(diagnosis, solar.connectedAt) : null
   ]
   return explanations.filter((explanation): explanation is string => explanation !== null)
 }
 
 interface HighBillDiagnosisBannerProps {
   diagnosis: HighBillDiagnosis
-  hasSolar: boolean
+  solar: SolarGeneration
 }
 
 /**
  * Aviso para o atendente responder na hora a reclamação de conta alta.
- * Cobre as quatro causas: consumo, dias faturados, bandeira tarifária e preço do kWh, além do efeito da geração solar.
+ * Cobre as cinco causas: consumo, leitura estimada, dias faturados, bandeira tarifária e preço do kWh,
+ * além do efeito da geração solar.
  *
- * @param props - Diagnóstico do mês mais recente da UC e se ela possui geração solar.
+ * @param props - Diagnóstico do mês mais recente da UC e a geração solar dela.
  * @returns Card com o veredito de consumo e as demais explicações encontradas.
  */
-export function HighBillDiagnosisBanner({ diagnosis, hasSolar }: HighBillDiagnosisBannerProps) {
-  const explanations = collectExplanations(diagnosis, hasSolar)
+export function HighBillDiagnosisBanner({ diagnosis, solar }: HighBillDiagnosisBannerProps) {
+  const explanations = collectExplanations(diagnosis, solar)
   return (
     <Card>
       <CardContent className="flex items-start gap-3 pt-6">

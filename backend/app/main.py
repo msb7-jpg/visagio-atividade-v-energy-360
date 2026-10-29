@@ -1,5 +1,6 @@
 """Ponto de entrada principal da API FastAPI do V-Energy Grid 360."""
 
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -10,7 +11,8 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.core.profiler import QueryProfilerMiddleware
-from app.db.session import engine
+from app.db.session import AsyncSessionLocal, engine
+from app.features.executive_dashboard.warmup import warm_up_dashboard
 from app.features.loss_management.schema_upgrade import upgrade_inspection_table
 from app.shared.error_handlers import register_exception_handlers
 
@@ -24,9 +26,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     del app
     # Tabelas operacionais escritas pela API (as tabelas Gold vêm do pipeline); cria ou atualiza colunas novas
     await upgrade_inspection_table()
+    # Painel do Diretor: consultas de segundos sobre milhões de linhas, calculadas uma vez em segundo plano
+    dashboard_warm_up = asyncio.create_task(warm_up_dashboard(AsyncSessionLocal, settings))
     try:
         yield
     finally:
+        dashboard_warm_up.cancel()
         await engine.dispose()
 
 

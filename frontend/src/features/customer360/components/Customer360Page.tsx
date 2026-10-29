@@ -14,7 +14,7 @@ function CustomerResult({ searchedId, summary, isNotFound, isError }: CustomerRe
     return (
       <EmptyState
         title="Busque uma unidade consumidora"
-        description="Digite o número da UC que está na conta do cliente (ou o número do medidor) para ver cadastro, consumo, faturas, interrupções e chamados."
+        description="Digite o número da UC que está na conta do cliente, o número do medidor ou o nome do titular para ver cadastro, consumo, faturas, interrupções, chamados e inspeções."
         icon={<UserSearch className="size-10" />}
       />
     )
@@ -43,7 +43,7 @@ function CustomerResult({ searchedId, summary, isNotFound, isError }: CustomerRe
   return (
     <div className="flex flex-col gap-4">
       <CustomerOverviewCard summary={summary} />
-      <Customer360Details idUc={summary.id_uc} hasSolar={summary.possui_gd} />
+      <Customer360Details idUc={summary.id_uc} solar={{ hasSolar: summary.possui_gd, connectedAt: summary.data_conexao_gd }} />
     </div>
   )
 }
@@ -63,7 +63,7 @@ export function Customer360Page() {
           <div className="flex flex-col gap-1">
             <h1 className="text-foreground text-xl font-bold tracking-tight">Visão 360 da Unidade Consumidora</h1>
             <p className="text-muted-foreground text-sm">
-              Cadastro, consumo comparado ao ano anterior, faturas, interrupções e chamados numa tela só.
+              Cadastro, consumo comparado ao ano anterior, faturas, interrupções, chamados e inspeções numa tela só.
             </p>
           </div>
         </div>
