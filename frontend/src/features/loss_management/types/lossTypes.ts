@@ -20,6 +20,8 @@ export interface SuspiciousUnit {
   situacao: QueueSituation
   /** Taxa histórica de inspeções que acharam irregularidade com este sinal (0 a 1). */
   probabilidade_acerto: number
+  /** Meses com leitura na janela de base; menos de 11 é uma ligação recente, sem a taxa medida em histórico completo. */
+  meses_base: number
   consumo_base_kwh: number
   consumo_recente_kwh: number
   kwh_estimado_recuperar: number

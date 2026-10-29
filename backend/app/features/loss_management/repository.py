@@ -70,6 +70,7 @@ def to_registered_unit(row: RowMapping) -> RegisteredUnit:
         consumo_base_kwh=row.get("consumo_base_kwh") or 0.0,
         consumo_recente_kwh=row.get("consumo_recente_kwh") or 0.0,
         meses_zerados=row.get("meses_zerados") or 0,
+        meses_base=row.get("meses_base") or 0,
     )
     has_recent_reading = row.get("consumo_recente_kwh") is not None
     return RegisteredUnit(profile=profile, possui_gd=bool(row["possui_gd"]), has_recent_reading=has_recent_reading)

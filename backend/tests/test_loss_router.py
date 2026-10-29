@@ -134,6 +134,7 @@ async def test_suspicious_units_ranked_and_solar_excluded(client):
     units = response.json()["itens"]
     assert [unit["id_uc"] for unit in units] == ["UC_FRAUDE", "UC_INSPECAO_ANTIGA", "UC_ZERADA"]
     assert units[0]["motivos"] == ["queda_subita"]
+    assert units[0]["meses_base"] == 12
     assert units[0]["kwh_estimado_recuperar"] == pytest.approx(750.0)
 
 

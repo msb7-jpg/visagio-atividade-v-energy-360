@@ -82,6 +82,9 @@ class SuspiciousUnitDTO(BaseModel):
     consumo_recente_kwh: float
     kwh_estimado_recuperar: float
     valor_estimado_recuperar_rs: float
+    meses_base: int = Field(
+        default=12, ge=0, description="Meses com leitura na janela de base da UC (menos de 11 = ligação recente)"
+    )
     kwh_mes_recuperavel: float = Field(description="Déficit mensal de consumo (base - recente), em kWh/mês")
     valor_ano_rs: float = Field(description="kWh/mês recuperável x 12 x tarifa de referência")
 

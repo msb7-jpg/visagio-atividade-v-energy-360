@@ -7,7 +7,7 @@ from app.features.loss_management.detail_schemas import (
     PriorInspectionDTO,
     ScoreBreakdownDTO,
 )
-from app.features.loss_management.hit_rate import reason_hit_rate
+from app.features.loss_management.hit_rate import MESES_BASE_MINIMO, reason_hit_rate
 from app.features.loss_management.queries import MESES_JANELA_BASE, MESES_JANELA_RECENTE, shift_competencia
 from app.features.loss_management.schemas import SuspicionReason, SuspiciousUnitDTO
 from app.features.loss_management.scoring import (
@@ -59,10 +59,19 @@ def format_kwh(value: float) -> str:
 
 
 def _portfolio_sentence(profile: ConsumptionProfile, reasons: list[SuspicionReason], portfolio_ratio: float) -> str:
-    """Diz a queda da UC além da queda geral da carteira e quantas inspeções históricas nessa situação acharam."""
+    """Diz a queda da UC além da queda geral da carteira e quantas inspeções históricas nessa situação acharam.
+
+    Ligação recente (menos de `MESES_BASE_MINIMO` meses de base) não tem taxa medida: a frase avisa e usa a taxa fraca.
+    """
     normalized_drop = normalized_drop_ratio(profile, portfolio_ratio)
     drop_reason = next(reason for reason in reasons if reason in DROP_REASONS)
-    hit_percent = round(reason_hit_rate(drop_reason, normalized_drop) * PERCENT)
+    hit_percent = round(reason_hit_rate(drop_reason, normalized_drop, profile.meses_base) * PERCENT)
+    if profile.meses_base < MESES_BASE_MINIMO:
+        month_word = "mês" if profile.meses_base == 1 else "meses"
+        return (
+            f"Ligação recente: só {profile.meses_base} {month_word} de leitura na janela de base; a chance medida em "
+            f"UCs com histórico completo não se aplica, e a UC fica na taxa fraca de {hit_percent}%."
+        )
     return (
         f"Descontada a variação da carteira (mediana em {round(portfolio_ratio * PERCENT)}% do consumo base), "
         f"a queda da UC é de {round(normalized_drop * PERCENT)}%; nessa situação, {hit_percent}% das inspeções "

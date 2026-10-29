@@ -13,6 +13,7 @@ function buildUnit(idUc: string, hitProbability: number): SuspiciousUnit {
     score: 50,
     situacao: 'na_fila',
     probabilidade_acerto: hitProbability,
+    meses_base: 12,
     consumo_base_kwh: 300,
     consumo_recente_kwh: 200,
     kwh_estimado_recuperar: 300,

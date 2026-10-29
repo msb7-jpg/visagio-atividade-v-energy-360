@@ -191,6 +191,7 @@
 - [x] **14.4 — Passo 12: tarifa média calculada da base (P4).** `valor_total_rs / consumo_faturado_kwh` de `fato_faturamento` nos últimos 12 meses (R$ 0,7876/kWh em 2025-07 a 2026-06), com cache por dia; `tarifa_rs_kwh` e o período no resumo; texto de apoio no cartão; sem tarifa de reserva. Registrado em `changelog.md`. [Concluído por Adrian Cesar - 2026-10-28]
 
 ### Fase 15 — Conferência com a fala do gerente de perdas (2026-10-28)
+> Correção de 2026-10-29: conferência dos dados por UC achou o histórico curto (D14); ver 15.6.
 > Plano de melhora a partir da conferência da fala de Rafael Coutinho (`atividade.pdf`, pág. 6) com o sistema.
 - [x] **15.1 — Consistência:** painel do diretor passa a usar o mesmo limiar da fila (20%), com teste; `DECISOES_PERDAS.md` D8 e D9 atualizados (tarifa calculada, funil de 45.000 para 165 UCs) e pendências de tarifa fechadas. (Adrian César, 2026-10-28)
 - [x] **15.2 — Honestidade na tela:** aviso "N UCs prioritárias para uma capacidade de 200 inspeções por mês" (`QueueCapacityNotice`), expectativa da seleção "cerca de X de N inspeções devem achar irregularidade" e aviso de baixa chance, na barra de ações e no diálogo de geração (`SelectionOutlookNote`, `queueOutlook.ts`). Só frontend; nada bloqueia a decisão do gerente. (Adrian César, 2026-10-28)
@@ -202,6 +203,7 @@
 - [x] **15.5 — Escala e validação (2026-10-28):**
   - [x] Paginação no servidor: `offset` em `GET /losses/suspicious-units` (a lista passa de 200 UCs e do teto de 500 por página) e botão "Carregar mais UCs" na Fila de Inspeção; a ordem, as abas e a seleção valem sobre tudo o que foi carregado. O `total` continua sendo o da fila inteira.
   - [x] Protocolo do piloto fora da fila escrito em `DECISOES_PERDAS.md` D13 (estratos medidos, amostra de cerca de 150, critério de decisão). **A execução depende de autorização do gerente de perdas e da equipe de campo e fica fora da entrega de 04/11.**
+- [x] **15.6 — Histórico mínimo (2026-10-29):** a conferência dos números de cada UC (caso UC106967) mostrou que 25 das 31 UCs fortes eram ligações recentes (menos de 11 meses de base), fora da população em que a taxa de 91,5% foi medida. `MESES_BASE_MINIMO` = 11: abaixo disso a chance não passa de 7,6%, a linha mostra "Ligação recente: base de N meses", o cabeçalho "Queda" explica que são médias e a frase do detalhe avisa. Fila forte real: 7 UCs. `DECISOES_PERDAS.md` D14. (Adrian César)
 
 ---
 

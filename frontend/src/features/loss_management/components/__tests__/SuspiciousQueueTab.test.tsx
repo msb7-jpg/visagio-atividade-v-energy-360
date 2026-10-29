@@ -46,6 +46,7 @@ function buildUnit(idUc: string, score: number, situacao: QueueSituation = 'na_f
     score,
     situacao,
     probabilidade_acerto: 0.93,
+    meses_base: 12,
     consumo_base_kwh: 300,
     consumo_recente_kwh: 50,
     kwh_estimado_recuperar: 750,

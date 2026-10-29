@@ -17,6 +17,7 @@ function buildUnit(idUc: string, overrides: Partial<SuspiciousUnit> = {}): Suspi
     score: 80,
     situacao: 'na_fila',
     probabilidade_acerto: 0.93,
+    meses_base: 12,
     consumo_base_kwh: 300,
     consumo_recente_kwh: 50,
     kwh_estimado_recuperar: 750,
@@ -44,6 +45,27 @@ const headerCheckbox = () => screen.getByRole('checkbox', { name: 'Selecionar as
 const lockedUnit = (situacao: QueueSituation) => buildUnit('UC9', { situacao })
 
 describe('PrioritizedQueueTable', () => {
+  it('avisa na linha que a UC é uma ligação recente, com os meses de base que ela tem', () => {
+    renderTable([buildUnit('UC1', { meses_base: 3 })])
+
+    const row = screen.getByRole('link', { name: 'UC1' }).closest('tr') as HTMLElement
+    expect(within(row).getByText('Ligação recente: base de 3 meses')).toBeInTheDocument()
+  })
+
+  it.each([12, 11])('não avisa nada quando a UC tem %i meses de base', (baseMonths) => {
+    renderTable([buildUnit('UC1', { meses_base: baseMonths })])
+
+    expect(screen.queryByText(/Ligação recente/)).not.toBeInTheDocument()
+  })
+
+  it('explica ao focar o cabeçalho da coluna Queda que são médias e que o gráfico mostra mês a mês', async () => {
+    renderTable([buildUnit('UC1')])
+
+    fireEvent.focus(screen.getByRole('button', { name: 'Queda' }))
+
+    expect(await screen.findByText(/média dos 3 últimos meses contra a média dos 12 anteriores/i)).toBeInTheDocument()
+  })
+
   it('informa quantas UCs aparecem e quantas existem na fila', () => {
     renderTable([buildUnit('UC1'), buildUnit('UC2')], 1248)
 

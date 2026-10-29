@@ -43,6 +43,7 @@ const suspiciousUnit: SuspiciousUnit = {
   score: 100,
   situacao: 'na_fila',
   probabilidade_acerto: 0.93,
+  meses_base: 12,
   consumo_base_kwh: 10544.8,
   consumo_recente_kwh: 3069.3,
   kwh_estimado_recuperar: 22426.2,

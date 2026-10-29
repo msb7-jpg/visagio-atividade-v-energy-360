@@ -80,7 +80,7 @@ def _candidate_select(consumo: Subquery) -> Select:
     uc = dim_unidade_consumidora
     return select(
         uc.c.id_uc, uc.c.municipio, uc.c.bairro, uc.c.classe_consumo,
-        consumo.c.consumo_base_kwh, consumo.c.consumo_recente_kwh, consumo.c.meses_zerados,
+        consumo.c.consumo_base_kwh, consumo.c.consumo_recente_kwh, consumo.c.meses_zerados, consumo.c.meses_base,
     ).join_from(consumo, uc, uc.c.id_uc == consumo.c.id_uc)
 
 

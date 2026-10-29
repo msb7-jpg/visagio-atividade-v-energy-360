@@ -20,6 +20,10 @@ const PAGE_SIZE = 25
 const SCORE_EXPLANATION =
   'Score de 0 a 100 = chance de irregularidade × energia recuperável, relativo à UC mais promissora da fila (100).'
 
+const QUEDA_EXPLANATION =
+  'Média dos 3 últimos meses contra a média dos 12 anteriores (menos, se a UC é recente). O gráfico do detalhe mostra mês a mês.'
+const COLUMN_HELP: Record<string, string> = { Score: SCORE_EXPLANATION, Queda: QUEDA_EXPLANATION }
+
 const COLUMNS = [
   '#',
   'UC',
@@ -85,9 +89,9 @@ export function PrioritizedQueueTable({
             </TableHead>
             {COLUMNS.map((column) => (
               <TableHead key={column}>
-                {column === 'Score' ? (
-                  <Tooltip content={SCORE_EXPLANATION}>
-                    <Button type="button" variant="link" size="sm">Score</Button>
+                {COLUMN_HELP[column] ? (
+                  <Tooltip content={COLUMN_HELP[column]}>
+                    <Button type="button" variant="link" size="sm">{column}</Button>
                   </Tooltip>
                 ) : column}
               </TableHead>

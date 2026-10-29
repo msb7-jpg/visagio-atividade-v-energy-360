@@ -38,7 +38,7 @@
 - [ ] 🔴 **`docs/DIAGNOSTICO_RECEITA.md` ainda é um esqueleto,** com os números `[a preencher]`. É entregável obrigatório do case (seção 5.4): explicar a variação, sustentar as causas com dados e terminar em recomendações com ordem de grandeza do impacto.
 - [ ] 🟡 Usar o achado acima: a queda de volume inteira vem das UCs com painel solar.
 - [ ] 🟡 Refazer os números por bairro depois da correção dos nomes (item 1).
-- [ ] 🟡 **Seção 6.2 do diagnóstico (fraude e furto) cita números da fila de perdas que mudaram** (Adrian, 2026-10-28). Para usar "o mesmo cálculo da fila", atualizar: tarifa de **R$ 0,7876/kWh** (média ponderada de 12 meses de `fato_faturamento`, e não os 0,714 da constante antiga); chance de acerto da queda moderada **91,5%** com queda além da carteira de 20% ou mais e **7,6%** abaixo (a queda súbita segue 93% e a taxa geral 62,7%); fila de 2026-06 com 165 UCs (31 fortes e 134 fracas), cerca de 7.265 kWh/mês recuperáveis. Fonte: `docs/DECISOES_PERDAS.md` D8, D11 e D12.
+- [ ] 🟡 **Seção 6.2 do diagnóstico (fraude e furto) cita números da fila de perdas que mudaram** (Adrian, 2026-10-28). Para usar "o mesmo cálculo da fila", atualizar: tarifa de **R$ 0,7876/kWh** (média ponderada de 12 meses de `fato_faturamento`, e não os 0,714 da constante antiga); chance de acerto da queda moderada **91,5%** com queda além da carteira de 20% ou mais e **7,6%** abaixo (a queda súbita segue 93% e a taxa geral 62,7%); fila de 2026-06 com 165 UCs (**7 fortes e 158 fracas**, 35 delas ligações recentes sem taxa medida, D14), cerca de 7.265 kWh/mês recuperáveis e cerca de 788 kWh/mês de retorno esperado. Fonte: `docs/DECISOES_PERDAS.md` D8, D11, D12 e D14.
 
 ## 3. PR #35, IA (Miguel)
 

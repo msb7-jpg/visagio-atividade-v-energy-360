@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from app.features.loss_management.hit_rate import hit_probability
+from app.features.loss_management.hit_rate import MESES_BASE_COMPLETO, hit_probability
 from app.features.loss_management.schemas import InspectionStatus, SuspicionReason, SuspiciousUnitDTO
 
 LIMIAR_QUEDA_SUBITA = 0.5
@@ -25,6 +25,7 @@ class ConsumptionProfile:
     consumo_base_kwh: float
     consumo_recente_kwh: float
     meses_zerados: int
+    meses_base: int = MESES_BASE_COMPLETO  # meses com leitura na janela de base; menos que o completo = ligação recente
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,7 +174,10 @@ def build_suspicious_unit(
         classe_consumo=profile.classe_consumo,
         motivos=reasons,
         score_risco=risk_score(profile),
-        probabilidade_acerto=hit_probability(reasons, normalized_drop_ratio(profile, portfolio_ratio)),
+        probabilidade_acerto=hit_probability(
+            reasons, normalized_drop_ratio(profile, portfolio_ratio), profile.meses_base
+        ),
+        meses_base=profile.meses_base,
         consumo_base_kwh=round(profile.consumo_base_kwh, 1),
         consumo_recente_kwh=round(profile.consumo_recente_kwh, 1),
         kwh_estimado_recuperar=recoverable_kwh,

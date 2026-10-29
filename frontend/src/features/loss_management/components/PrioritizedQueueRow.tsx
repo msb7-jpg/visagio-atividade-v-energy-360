@@ -11,6 +11,7 @@ import {
   formatInteger,
   formatPercent
 } from '@/features/loss_management/utils/lossFormatters'
+import { describeShortHistory } from '@/features/loss_management/utils/baseHistory'
 import { formatPlaceName } from '@/features/loss_management/utils/textFormat'
 
 /** Controles dentro da linha que têm ação própria e não devem abrir o painel de detalhe. */
@@ -40,6 +41,8 @@ export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onTo
   const handleKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {
     if (event.key === 'Enter' && event.target === event.currentTarget) onOpen(unit.id_uc)
   }
+
+  const shortHistory = describeShortHistory(unit)
 
   return (
     <TableRow
@@ -77,6 +80,7 @@ export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onTo
           <span className="text-muted-foreground text-xs">
             {formatInteger(unit.consumo_base_kwh)} → {formatInteger(unit.consumo_recente_kwh)} kWh/mês
           </span>
+          {shortHistory ? <span className="text-warning text-xs">{shortHistory}</span> : null}
         </div>
       </TableCell>
       <TableCell><span className="font-mono">{formatPercent(unit.probabilidade_acerto)}</span></TableCell>

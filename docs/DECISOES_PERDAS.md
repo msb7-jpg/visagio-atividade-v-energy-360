@@ -212,7 +212,8 @@ fora (1.385 de 1.389 entram).
   ordem e o retorno esperado. A mediana da carteira (recente/base de todas as UCs, inclusive as com GD e as já
   inspecionadas) é calculada na API e guardada em cache por dia (`portfolio_repository.py`).
 - **Resultado na fila de 2026-06 (mediana 0,918):** as mesmas 165 UCs, agora 31 a 91,5% e 134 a 7,6%. O retorno
-  esperado da fila inteira sobe de cerca de 908 para cerca de 2.046 kWh/mês, só pela classificação.
+  esperado da fila inteira subiu de cerca de 908 para cerca de 2.046 kWh/mês. **Corrigido em 2026-10-29 pelo D14:** 25
+  das 31 eram ligações recentes sem taxa medida; a fila forte real tem 7 UCs e o retorno esperado cai para cerca de 788.
 - **Não confundir com o sinal já descartado em D11:** aquele comparava a UC com a mediana das UCs da mesma classe e
   alimentador. A normalização aqui compara com a carteira inteira no mesmo período.
 - **Cautela:** a maior parte das UCs com queda normalizada alta na população da fila vem de agosto e dezembro de 2025
@@ -235,6 +236,8 @@ fora (1.385 de 1.389 entram).
 - **Amostra proposta (cerca de 150 inspeções, uma parte da capacidade de mais de 200 por mês):** as 31 UCs de A (a
   fila forte, que o campo visitaria de qualquer forma), 40 sorteadas de B, 40 de D e 40 de E, sorteio aleatório simples
   dentro de cada estrato e com semente registrada.
+- **Ligações recentes (D14):** 35 UCs da fila têm menos de 11 meses de base e recebem a taxa fraca sem medição. O
+  piloto deve incluir cerca de 20 delas, em estrato à parte (`PILOTO-L`), para medir o que valem de fato.
 - **O que cada estrato responde:**
   - A confirma os 91,5%. B mede de novo o 7,6% com UCs que o campo não escolheu (hoje a taxa vem de UCs escolhidas).
   - D e E medem a taxa de quem a fila ignora. Com 40 inspeções e nenhuma irregularidade, o limite superior de 95% é de
@@ -246,6 +249,26 @@ fora (1.385 de 1.389 entram).
   aceita texto livre) e resultado pelo fluxo de sempre; a análise é uma consulta sobre `ordem_inspecao`. Sem código novo.
 - **Dependência:** autorização do gerente de perdas e da equipe de campo (pendência 12.2 do checklist). Mandar a
   equipe a UCs sem sinal é um custo real, por isso o piloto é pequeno e fica fora da entrega de 04/11.
+
+### D14. Histórico mínimo: ligação recente não recebe a chance medida (2026-10-29)
+- **Como apareceu:** a UC106967 (Iputinga), a primeira da fila, mostrava "309 → 212 kWh/mês, −31%", e o gráfico do
+  detalhe começava em 307 e terminava em 158. Os números estavam certos (a tabela usa médias, o gráfico usa meses
+  isolados), mas a UC foi ligada em 24/12/2025 e só tem 6 leituras: a "base de 12 meses" eram 3 meses. A conferência
+  das 165 UCs contra uma conta independente no banco não achou nenhuma divergência de cálculo.
+- **O que os dados mostram:** 38.628 UCs têm 12 meses de base, 6.304 têm 11 (um mês faltando na limpeza) e cerca de
+  90 têm menos. Na fila de 2026-06, 58 das 165 UCs têm menos de 12 meses e **25 das 31** UCs fortes eram assim. Das
+  1.358 UCs sem GD que o campo inspecionou, só 7 tinham menos de 11 meses de base: a taxa de 91,5% (D12) foi medida
+  em UCs com histórico completo e não vale para ligações recentes.
+- **Decisão:** exigir `MESES_BASE_MINIMO` = 11 meses de leitura na janela de base para receber a chance medida. Abaixo
+  disso a UC continua na fila, mas a chance não passa da taxa fraca (7,6%, `TAXA_ACERTO_HISTORICO_CURTO`), a linha da
+  tabela diz "Ligação recente: base de N meses" e a frase do detalhe avisa que a chance medida não se aplica. A
+  energia a recuperar não muda.
+- **Efeito na fila de 2026-06:** as mesmas 165 UCs, agora **7 fortes** (6 com 12 meses de base e 1 com 11) e **158
+  fracas** (35 delas ligações recentes). O retorno esperado da fila inteira cai de cerca de 2.046 para cerca de 788
+  kWh/mês. É o número honesto: o resto era extrapolação.
+- **Limite:** a taxa fraca para ligação recente é uma escolha prudente, não uma medição. Só um piloto de inspeção
+  (D13, estrato de ligações recentes) diz quanto elas realmente valem. O `data_ligacao` existe no dado bruto
+  (`unidades_consumidoras.csv`) e não chegou à `dim_unidade_consumidora`; contar os meses de leitura dispensa a coluna.
 
 ## 5. Limitações e pendências
 

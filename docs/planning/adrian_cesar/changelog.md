@@ -732,3 +732,14 @@
 - **Correção:** `daily_cache.py` (`DailyEngineCache`): cache por dia e por banco com trava, em que chamadas simultâneas esperam o mesmo cálculo. A tarifa e a mediana da carteira passaram a usá-lo (a falha continua sem entrar no cache). Depois da correção, 8 chamadas simultâneas (4 de tarifa e 4 de mediana) terminam em 3,7 s no total.
 - **Não resolvido:** a consulta dos perfis de consumo (cerca de 3 s sozinha) continua rodando uma vez por chamada, porque depende dos filtros e das ordens ativas e não pode ser guardada por dia. Com várias chamadas em paralelo ela ainda se acumula na primeira carga.
 - **Validação de Testes:** pytest novos escritos antes (RED visto): cálculo único para chamadas simultâneas, reaproveitamento, chaves e bancos diferentes, expiração no fim do dia, falha sem cache, e a consulta pesada da mediana executada uma vez com 4 sessões em paralelo. `make lint-all` e `make test-all`: backend 758 passed, frontend 539 passed.
+
+### [2026-10-29] - Fase 15.6: histórico mínimo para a chance de acerto
+- **Autor:** Adrian César
+- **Origem:** conferência dos números de cada UC. Na UC106967, a tabela mostrava 309 → 212 kWh/mês (−31%) e o gráfico do detalhe, 307 no primeiro ponto e 158 no último. Os dois estão certos: a tabela usa médias e o gráfico, meses isolados. Mas a UC foi ligada em 24/12/2025 e tem 6 leituras, então a base de 12 meses eram 3.
+- **Achado:** 25 das 31 UCs fortes tinham menos de 11 meses de base (na carteira, só cerca de 90 de 45.000 têm). O campo inspecionou só 7 UCs assim, então os 91,5% não valiam para elas. As 165 UCs foram conferidas contra uma conta independente (base, recente, kWh/mês e kWh estimado): 0 divergências.
+- **O que foi feito:**
+  - Backend: `meses_base` (meses com leitura na janela de base) no perfil, na consulta e na API. `MESES_BASE_MINIMO` = 11 em `hit_rate.py`: abaixo disso a chance não passa da taxa fraca (7,6%). A frase do detalhe avisa "Ligação recente: só N meses de leitura na janela de base; a chance medida em UCs com histórico completo não se aplica".
+  - Frontend: a linha mostra "Ligação recente: base de N meses" e o cabeçalho "Queda" explica "média dos 3 últimos meses contra a média dos 12 anteriores", com o gráfico mês a mês.
+- **Resultado no banco real (2026-06):** as mesmas 165 UCs, agora 7 fortes (6 com 12 meses e 1 com 11) e 158 fracas, 35 delas ligações recentes. O retorno esperado cai de cerca de 2.046 para cerca de 788 kWh/mês. A energia recuperável (7.265 kWh/mês) não muda.
+- **Limite:** a taxa fraca para ligação recente é prudência, não medição; o piloto do D13 passa a ter um estrato de ligações recentes.
+- **Validação de Testes:** pytest e vitest escritos antes (RED visto): regra do histórico mínimo, contagem de meses no repositório, frase do motivo, contrato da API, aviso na linha e dica do cabeçalho. `make lint-all` e `make test-all` abaixo.
