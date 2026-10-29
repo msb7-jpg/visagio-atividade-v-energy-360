@@ -159,7 +159,7 @@
 - [x] Fila quase vazia na competência mais recente (2026-06) é esperada: a onda de quedas de meados de 2025 já foi inspecionada. (D9)
 - [x] Fórmula da energia estimada a recuperar (déficit mensal × 3 meses) como suposição. Medido: o recuperado foi 1,87× o estimado (mediana), com correlação de 0,87. (D7)
 - [x] **README da Fatia 05** (seção "Suposições e Demonstração por Fatia"): como a fila é montada, passo a passo da demonstração com `LOSS_REFERENCE_COMPETENCIA="2025-09"`, tabela de suposições e limites. (Adrian César, 2026-10-29)
-- [x] **Resposta à banca sobre a fila de 39 mil UCs** (`2025-09`) escrita no README, em "Se perguntarem sobre a fila de 39 mil UCs": por que a lista é grande (queda geral da carteira), por que o topo continua valendo (chance calibrada pela queda além da carteira), a evidência (196 de 200, 93,9%) e o que admitir. Sem mudança na tela. (Adrian César, 2026-10-29)
+- [x] **Causa da fila de 39 mil UCs** (`2025-09`) no README, em uma frase no passo a passo da demonstração (a carteira inteira perdeu consumo em 2025; o que vale é o topo), com a medição no D9. O roteiro de perguntas e respostas para a banca foi escrito e depois removido do README, por ser fala de apresentação e não documentação. Sem mudança na tela. (Adrian César, 2026-10-29)
 - [x] **Decisões de 2026-10-29 registradas** em `DECISOES_PERDAS.md`: competência da demonstração (D9), score sem efeito dos filtros territoriais (D15), D4 e seção 5 corrigidos; contraste do `--warning` em `design.md`. (Adrian César, 2026-10-29)
 
 ### Fase 9 — Nova tela "Fila de Inspeção" (desenho de 2026-10-24)

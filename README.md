@@ -123,14 +123,8 @@ Responde ao gerente de perdas: **quais UCs mandar a campo primeiro**. No portal 
 **Como demonstrar**
 
 - **Sem configurar nada**, a fila usa a competência mais recente dos dados (2026-06): **165 UCs, 7 prioritárias e 158 de baixa chance**. É curta de propósito: as 559 maiores quedas do mês são de UCs com painel solar, que a fila exclui, e 491 das 656 candidatas restantes já foram inspecionadas pelo campo em 2025.
-- **Para ver a fila na onda de quedas de 2025**, em `backend/.env` (copie de [`backend/.env.example`](backend/.env.example)) descomente `LOSS_REFERENCE_COMPETENCIA="2025-09"` e reinicie o backend. A tela mostra o aviso "Competência de referência fixada". Nessa competência a fila tem **39.243 UCs**, quase todas de baixa chance, e cada página leva alguns segundos. Das 200 primeiras, **196 foram inspecionadas depois, com 93,9% de acerto**, contra 62,7% de todas as inspeções do período. Para voltar ao tempo real, comente a linha e reinicie.
+- **Para ver a fila na onda de quedas de 2025**, em `backend/.env` (copie de [`backend/.env.example`](backend/.env.example)) descomente `LOSS_REFERENCE_COMPETENCIA="2025-09"` e reinicie o backend. A tela mostra o aviso "Competência de referência fixada". Nessa competência a fila tem **39.243 UCs**, quase todas de baixa chance, porque a carteira inteira perdeu consumo em 2025 e a maioria das UCs passa do piso de queda; o que vale é o topo, e as páginas levam alguns segundos. Das 200 primeiras, **196 foram inspecionadas depois, com 93,9% de acerto**, contra 62,7% de todas as inspeções do período (medição e causa no [D9](docs/DECISOES_PERDAS.md)). Para voltar ao tempo real, comente a linha e reinicie.
 - **Roteiro:** "Selecionar top 10 prioritárias" → "Gerar ordens" → aba "Ordens de inspeção" → "Exportar planilha de campo" → "Importar resultados de campo" (a planilha `inspecoes.xlsx` do case ou a exportada pelo portal). As ordens ficam na tabela `ordem_inspecao` do `backend/v_energy.db`, que não vai para o Git.
-
-**Se perguntarem sobre a fila de 39 mil UCs (`2025-09`)**
-1. *Por que é tão grande?* Em 2025 a carteira inteira perdeu consumo: a mediana do consumo recente sobre a base foi de 0,61 a 0,75 de agosto a novembro (D12). Com isso, a maioria das UCs tem queda bruta de 20% ou mais e entra na lista.
-2. *Então todas valem a mesma inspeção?* Não. A chance de acerto é calibrada pela queda **além da carteira**: as UCs que caíram mais que as demais têm de 91,5% a 93% e ficam no topo; as que só acompanharam a queda geral têm 7,6%. A fila ordena pelo kWh esperado, então o que vale é o topo, e não o tamanho da lista. A aba "Prioritárias" já mostra só as de chance de 30% ou mais.
-3. *Isso funcionou?* Das 200 primeiras, 196 foram inspecionadas depois e 93,9% tinham irregularidade, contra 62,7% de todas as inspeções do período (D9).
-4. *O que admitir:* a taxa vale para UCs que o campo já escolhera inspecionar, e cada página da lista leva alguns segundos, porque a consulta pesada roda a cada página (D9). Em tempo real (2026-06) a fila tem 165 UCs e abre na hora.
 
 **Suposições**
 

@@ -821,3 +821,10 @@
 - **CORRECOES:** o item "Fila curta na competência mais recente" foi marcado `[x]` e movido para "Já resolvido", com a data e o PR #49 (aguardando merge).
 - **Decisão de escopo:** a tela não foi alterada. Uma nota na tela, quando a competência está fixada, ficou como possibilidade e não foi feita.
 - **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam.
+
+### [2026-10-29] - README: explicação da fila de 39 mil UCs reduzida a uma frase
+- **Autor:** Adrian César
+- **Motivo:** a subseção "Se perguntarem sobre a fila de 39 mil UCs", registrada na entrada anterior, era um roteiro de apresentação (quatro perguntas e respostas), com tom de fala e números que já estão no `DECISOES_PERDAS.md` (D2, D9 e D12). Em um README ela duplicava o D9 e envelheceria junto com ele.
+- **O que foi feito:** a subseção foi **removida** e o roteiro **apagado**, sem cópia em outro arquivo. Ficou uma frase no bullet da demonstração: a fila tem 39.243 UCs porque a carteira inteira perdeu consumo em 2025 e a maioria das UCs passa do piso de queda; o que vale é o topo (196 das 200 primeiras inspecionadas depois, 93,9% de acerto), com link para o D9. A explicação completa, com a tabela por competência, continua no D9.
+- **Ajustes:** o item resolvido da `CORRECOES.md` e a linha do checklist deixaram de citar o roteiro. O README continua com o passo a passo de `LOSS_REFERENCE_COMPETENCIA="2025-09"` e a tabela de suposições.
+- **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam.
