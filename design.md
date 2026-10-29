@@ -31,7 +31,7 @@ colors:
     accent: "#E1EEF4"
     destructive: "#B8322A"
     success: "#176B41"
-    warning: "#8A5A00"
+    warning: "#7F5200"
     border: "#DCE2E9"
     input: "#7C8BA0"
 typography:
@@ -109,7 +109,7 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 | `--accent` / `--accent-foreground` | `#123349` / `#5BB8DD` | `#E1EEF4` / `#0B5C7A` | `bg-accent text-accent-foreground` | Item de menu ativo, linha selecionada |
 | `--destructive` / `-foreground` | `#F28479` / `#1A0A09` | `#B8322A` / `#FFFFFF` | `bg-destructive text-destructive-foreground` | Piora, erro, atraso, recusa |
 | `--success` / `-foreground` | `#5BCB93` / `#06121C` | `#176B41` / `#FFFFFF` | `bg-success text-success-foreground` | Melhoria, pago, concluído |
-| `--warning` / `-foreground` | `#F2B92B` / `#1A1204` | `#8A5A00` / `#FFFFFF` | `bg-warning text-warning-foreground` | Atenção, selo "Gerado por IA" |
+| `--warning` / `-foreground` | `#F2B92B` / `#1A1204` | `#7F5200` / `#FFFFFF` | `bg-warning text-warning-foreground` | Atenção, selo "Gerado por IA" |
 | `--border` | `#24354D` | `#DCE2E9` | `border-border` | Divisórias, bordas de card e tabela |
 | `--input` | `#5A7396` | `#7C8BA0` | `border-input` | Borda de campos e botões de contorno (3:1) |
 | `--ring` | `#5BB8DD` | `#0B5C7A` | `ring-ring` | Anel de foco (2px, deslocado 2px) |
