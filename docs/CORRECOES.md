@@ -1,7 +1,7 @@
 # Correções pendentes do projeto
 
 > Lista única do que ainda precisa ser corrigido antes da entrega (04/11/2026).
-> Atualizada em 2026-10-28 por Bernardo H.
+> Atualizada em 2026-10-29 por Bernardo H, depois da conferência com o banco regerado.
 >
 > 🔴 bloqueia merge ou entrega · 🟡 importante · ⚪ melhoria
 
@@ -15,54 +15,29 @@
 
 ## 1. Dados e pipeline (Renan, com Ryei)
 
-- [ ] 🔴 **Faturas não pagas marcadas como "PAGA" na Gold.** No `faturas.csv`, o sistema legado marca fatura não paga com `status = EM ABERTO` e `data_pagamento` vazia **ou** `9999-12-31`. A Gold trata a data vazia como `VENCIDA`, mas transforma a `9999-12-31` em `PAGA`.
-  - **Tamanho:** 60.394 faturas (R$ 12,9 mi) em 33.142 UCs, cerca de 1.250 por mês até jun/2026. Nenhuma fatura tem status `ABERTA` (dentro do prazo) na Gold.
-  - **Impacto:**
-    - a inadimplência real é cerca de **5,6%, e não 3,6%** (Painel do Diretor e causa 6.3 do diagnóstico);
-    - na Visão 360, essas faturas aparecem como pagas e entram na pontualidade com atraso de mais de 8 mil anos (UC100095: atraso médio de 323.605 dias);
-    - as "faturas em aberto" da Visão 360 ficam incompletas.
-  - **Onde:** `data-engineering/notebooks/fatia02_silver.ipynb` (Fatia 02, Ryei), na regra `CASE WHEN f.data_pagamento IS NOT NULL THEN 'PAGA'`. O texto `9999-12-31` não é nulo, então vira `PAGA`. A Silver da Fatia 01 já trata essa mesma data como vazia em `data_retirada`.
-  - **Segundo problema na mesma regra:** `VENCIDA` é decidido com `current_date()`, a data do dia em que o pipeline roda. Rodado depois de jul/2026, nenhuma fatura fica `ABERTA`, e o resultado muda conforme o dia da execução. O certo é comparar com a data de corte da base (2026-06-30).
-  - **Correção:** na Silver, tratar `9999-12-31` como data ausente. `EM ABERTO` vira `VENCIDA` quando o vencimento é anterior à data de corte da base, e `ABERTA` quando ainda está no prazo. Depois, regerar o `v_energy.db`.
-  - **Conferência:** `SELECT count(*) FROM fato_faturamento WHERE data_pagamento = '9999-12-31'` deve voltar 0, e `status_pagamento` deve ter `ABERTA` nas faturas com vencimento depois de jun/2026.
+- [ ] 🔴 **O banco regerado não tem a correção de bairros do PR #45.** O código (`fix_mojibake` em `fatia01_silver.ipynb`) está na `main`, mas o `v_energy.db` distribuído em 29/10 foi exportado antes dele.
+  - **Evidência (29/10, banco novo):** `SELECT count(DISTINCT bairro) FROM dim_unidade_consumidora WHERE bairro GLOB '*[^ -~]*'` = 59, e há 358 pares município + bairro (o certo são 298). Ex.: `JARDIM JORDA£O` (30 UCs), `BRASA\xadLIA TEIMOSA` (55 UCs).
+  - **Impacto:** os nomes quebrados aparecem na Receita (cascata e ranking), na Visão 360 e na Fila de Perdas, e dividem bairros no diagnóstico. Inclui o caso do hífen invisível apontado pelo João.
+  - **Correção:** rodar o Workflow de novo com a `main` atual e distribuir o `v_energy.db` novo. A consulta acima deve voltar 0.
 
-- [ ] 🟡 **Volume da Gold diferente do texto do case.** A energia faturada cai **5,1%** entre jul/22–jun/23 e jul/25–jun/26, e o case fala em "quase 4%". A receita bate (+8,0%). Sem as 3.510 UCs com painel solar, o volume fica estável (−0,2%): a queda inteira vem da geração solar. Confirmar se a diferença vem da limpeza ou é só arredondamento da fala do diretor, e registrar como suposição no README.
-
-- [ ] ⚪ **Bairros com hífen suave (U+00AD) na `dim_unidade_consumidora`.** Dois bairros (56 UCs) trazem o caractere invisível no lugar do acento: `BRASA<U+00AD>LIA TEIMOSA` e `SA<U+00AD>TIO DOS PINTOS` (grafias certas: `BRASILIA TEIMOSA` e `SITIO DOS PINTOS`).
-  - **Impacto:** o mesmo bairro aparece com duas grafias; pesa no filtro de bairro da Continuidade e na tabela de clientes mais afetados.
-  - **Evidência:** `SELECT DISTINCT bairro FROM dim_unidade_consumidora WHERE bairro LIKE '%' || char(173) || '%'` (descoberto no ranking de clientes do ALM-REC-008).
-  - **Correção sugerida:** remover U+00AD na normalização de texto da Silver (ADR-009).
+- [ ] 🟡 **Volume da Gold diferente do texto do case.** A energia faturada cai **5,1%** entre jul/22–jun/23 e jul/25–jun/26, e o case fala em "quase 4%". A receita bate (+8,0%). Sem as 3.510 UCs com painel solar, o volume fica estável (−0,2%): a queda inteira vem da geração solar. Registrar como suposição no README.
 
 ## 2. Diagnóstico da receita (Renan e Célio)
 
-- [ ] 🔴 **`docs/DIAGNOSTICO_RECEITA.md` ainda é um esqueleto,** com os números `[a preencher]`. É entregável obrigatório do case (seção 5.4): explicar a variação, sustentar as causas com dados e terminar em recomendações com ordem de grandeza do impacto.
-- [ ] 🟡 Usar o achado acima: a queda de volume inteira vem das UCs com painel solar.
-- [ ] 🟡 Refazer os números por bairro depois da correção dos nomes (item 1).
+- [ ] 🔴 **A conclusão sobre os 4 bairros está errada.** O `docs/DIAGNOSTICO_RECEITA.md` (seção 6.5, linha "Causa: não sabemos") diz que a queda em Iputinga, Macaxeira, Jardim Jordão e Prazeres tem causa desconhecida, e a 6.2 diz que fraude não é causa mensurável. Mas 828 das 871 irregularidades confirmadas em `fato_inspecoes_perdas` (95%) estão nesses bairros, e 887 UCs deles caíram 40% ou mais a partir de mai/2025. Corrigir 1, 6.2, 6.5, 7 e 8.
+- [ ] 🔴 **Ainda há 10 `[a preencher]` e 12 `[a confirmar]`** no documento (contagem de 29/10). É entregável obrigatório (case, 5.4).
 
-## 3. PR #35, IA (Miguel)
+## 3. IA (Miguel)
 
-- [ ] 🔴 **O build quebra.** `bun run build` falha em `frontend/src/features/chat/components/feed/ChatMessage.tsx:66`: o tipo `ChatMessageData` não existe (o import é `ChatMessage as ChatMessageType`). O erro entrou no commit `51d7620`.
-- [ ] 🔴 **Conflito com a `main` em 6 arquivos:**
-  - `frontend/src/index.css`: manter os tokens do design novo da `main` e acrescentar só as classes do chat;
-  - `frontend/src/components/ui/input.tsx`: manter a propriedade `error` da `main` (usada na Gestão de Perdas) junto com o `variant` do PR;
-  - `frontend/src/components/layout/AppLayout.tsx`: header da `main`, com o `<ChatDrawer />` no ponto de encaixe;
-  - `frontend/package.json` e `bun.lock`: manter `remark-gfm`, `shiki` e `sonner` e regerar o lock;
-  - `docs/DECISOES.md`: não reescrever o arquivo; acrescentar as decisões do PR no fim, no formato ADR e com o próximo número livre (hoje a versão do PR usa "Decisão 003/004", números que já existem).
-- [ ] 🔴 **Quadro de IA com números fixos no código.** O `SmartInsightCard` está no `DashboardPage` antigo com valores escritos à mão (R$ 85,2 mi, DEC 4,8). O case pede insights fiéis aos dados. Além disso, o Painel do Diretor remove esse arquivo. Tirar o card de lá; ele volta no Painel novo ligado aos indicadores reais (item 4).
-- [ ] 🟡 **`AI_MODEL_NAME` do `.env` é ignorado.** Em `backend/app/core/llm_factory/factory.py`, sem `model` na chamada, o padrão fixo de cada provedor substitui o `.env` (com `AI_PROVIDER=local` e `AI_MODEL_NAME="Qwen3.5-4B-Q4_K_M"`, o sistema usa `local-model`). Usar `model or settings.ai_model_name or padrão_do_provedor`, com `ai_model_name` vazio por padrão em `config.py`.
-- [ ] 🟡 **Checklist marcado sem o código.** Em `docs/planning/miguel/agente_text_to_sql_ia.md`, linha 79, o item "plugar o `SmartInsightCard` na Visão 360 e no Dashboard de Receita" está `[x]`, mas o card não está nessas telas.
-- [ ] ⚪ Endpoint de insights aceita `metrics` livres do cliente; quando houver dados, buscar as métricas no servidor (apontado pelo Adrian).
+- [ ] ⚪ O endpoint de insights aceita `metricas` livres do cliente; o Painel envia os indicadores reais, mas o servidor não confere (apontado pelo Adrian).
 
 ## 4. Painel do Diretor (Bernardo)
 
-- [ ] 🟡 Abrir o PR de `feat/painel-diretor` e pedir revisão do Adrian (tela) e do João (menu e rotas).
-- [ ] 🟡 Quadro de IA no Painel com os indicadores reais, depois do merge do #35 (etapa 7 do plano).
 - [ ] ⚪ Avisar o Célio que `period_totals_query` (`backend/app/features/revenue/queries.py`) perdeu o filtro de competência no `WHERE` para ficar mais rápida (mesmos números, ADR-016).
 
 ## 5. Visão 360 (Bernardo)
 
-- [ ] 🟡 Abrir o PR de `feat/fatia-03-visao360-gold` (interrupções da UC, inspeções, leitura estimada, busca por nome).
-- [ ] ⚪ Plugar o `SmartInsightCard context="customer360"` depois do merge do #35.
+- [ ] ⚪ Plugar o `SmartInsightCard context="customer360"` (opcional: o case pede IA embutida em pelo menos uma tela, e ela já está no Painel).
 
 ## 6. Gestão de Perdas (Adrian)
 
@@ -71,6 +46,7 @@
 
 ## 7. Inteligência Comercial (Célio)
 
+- [ ] 🟡 **A Receita leva cerca de 4,5 s por consulta.** Medido em 29/10 com o banco novo: `/revenue/decomposition` 4,5 s e cada página de `/revenue/breakdown` (classe, município e bairro) 4,5 a 4,6 s. A tela dispara várias dessas ao abrir. Sugestão: o mesmo tratamento da ADR-016 (leitura sequencial sem `WHERE` por competência e cache por janela).
 - [ ] ⚪ Registrar no `docs/planning/celio/changelog.md` a correção do filtro de bairro (commit `07a69c0`: a lista lê todas as páginas, e Recife tem 106 bairros).
 
 ## 8. Fechamento (todos)
@@ -87,4 +63,8 @@
 - [x] Visão 360: o resumo de interrupções dizia "teve 50" em 33 UCs com mais de 50 (agora usa o total real), e o diagnóstico do mês sem leitura apontava o mês errado. Corrigido na branch `feat/fatia-03-visao360-gold` em 2026-10-28.
 - [x] Painel do Diretor: conflito com a `main` depois do merge do #34 (`navItems.ts` e `RbacNavigation.test.tsx`). Menu do diretor: Painel, Inteligência Comercial, Gestão de Perdas, Qualidade da Rede, Visão 360. Resolvido na branch `feat/painel-diretor` em 2026-10-28.
 - [x] Painel do Diretor: lentidão (de 11 s para 0,01 s) e inadimplência marcada como "piorou" por +0,05 ponto percentual (ADR-011 e ADR-016), em 2026-10-28.
-- [x] Bairros com o nome corrompido na Gold: UDF `fix_mojibake` implementado na Silver (`fatia01_silver.ipynb`) para reverter dupla codificação UTF-8/Latin-1 antes da remoção de acentos em `bairro`, `municipio`, `logradouro` e `nome_titular`. 61 bairros (348 UCs) unificados; conferência GLOB `*[^ -~]*` validada com zero falhas; testes de qualidade adicionados em `fatia01_testes_qualidade.ipynb` e ADR-009 atualizada. Resolvido na branch `feat/fatia-01-cadastro` em 2026-10-28.
+- [x] Faturas não pagas marcadas como "PAGA" (`9999-12-31`): corrigido na Silver da Fatia 02 (PR #44). Conferido no banco regerado em 2026-10-29: 0 faturas com `9999-12-31`, 1.700 `ABERTA`, inadimplência de 5,52% → 5,42% e pontualidade da Visão 360 sem atrasos absurdos.
+- [x] PR #35 (IA): build, conflitos com a `main`, quadro de IA com números fixos (agora no Painel do Diretor com os indicadores reais), `AI_MODEL_NAME` ignorado e checklist marcado sem código. Mesclado na `main` em 2026-10-28.
+- [x] PRs do Painel do Diretor (#42) e da Visão 360 (#43) abertos, revisados e mesclados em 2026-10-28.
+- [x] Painel do Diretor: DEC e FEC diferentes da Continuidade no primeiro ano (1,48 x 1,47). O Painel passou a usar as UCs atendidas da Gold (ADR-012 revisada). Branch `fix/painel-dec-ucs-atendidas`, 2026-10-29.
+- [x] Código da correção de bairros (`fix_mojibake`) no PR #45; falta regerar o banco (item 1, aberto). Bairros com o nome corrompido na Gold: UDF `fix_mojibake` implementado na Silver (`fatia01_silver.ipynb`) para reverter dupla codificação UTF-8/Latin-1 antes da remoção de acentos em `bairro`, `municipio`, `logradouro` e `nome_titular`. 61 bairros (348 UCs) unificados; conferência GLOB `*[^ -~]*` validada com zero falhas; testes de qualidade adicionados em `fatia01_testes_qualidade.ipynb` e ADR-009 atualizada. Resolvido na branch `feat/fatia-01-cadastro` em 2026-10-28.

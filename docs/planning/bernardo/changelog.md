@@ -203,3 +203,15 @@
 - **Validação de Testes:**
   - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (578) aprovados.
   - Frontend: ESLint, Fallow (sem duplicação), Vitest (215) e build aprovados.
+
+### [2026-10-29] - Painel conferido com o banco regerado e DEC alinhado à Continuidade
+- **Autor:** Bernardo H
+- **Branch:** `fix/painel-dec-ucs-atendidas`
+- **O que foi feito:**
+  - Banco local trocado pelo `v_energy.db` regerado depois do PR #44. Os 11 indicadores do Painel conferem com SQL independente em dois pares de períodos (22 de 22).
+  - DEC e FEC do Painel passaram a dividir pelas UCs atendidas de `fato_qualidade_alimentador`, com a mesma consulta da Continuidade (`feeder_ucs_query`). Antes, o primeiro ano saía 1,48 no Painel e 1,47 na Qualidade da Rede (ADR-012 revisada).
+  - Varredura do portal com o banco novo: Receita (cascata e ranking fecham nos 3 níveis; Recife com 106 bairros), Visão 360 (faturas em aberto, inclusive `ABERTA`, e interrupções batem com o banco; pontualidade sem atrasos absurdos), Fila de Perdas (773 UCs, ordenada, com motivo e energia) e acesso dos 5 perfis.
+  - Pendências de outras fatias registradas em `docs/CORRECOES.md`: o banco regerado ainda não tem a correção de bairros do #45, e a Receita leva cerca de 4,5 s por consulta.
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (655) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (391) e build aprovados.
