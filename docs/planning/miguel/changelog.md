@@ -6,6 +6,32 @@
 
 ## Registros de Execução
 
+### [2026-10-28] - Harmonização Visual e Padronização de Labels da Tabela Executiva (`IndicatorsTable.tsx`)
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Rastreamento Ponta a Ponta das Colunas e Métricas:**
+    - Elaborado plano e documentação de rastreamento completo de linhagem de dados para os 11 indicadores do Painel do Diretor desde a camada Gold SQLite (`fato_faturamento`, `fato_ocorrencias_rede`, `fato_atendimentos`, `fato_medicao`, `dim_unidade_consumidora`) até os DTOs e formatadores frontend.
+  - **Padronização de Labels e Variação em Pontos Percentuais (`indicatorFormatters.ts`):**
+    - Corrigido o bug que gerava `+0,05% ponto percentual` e `-3,1% pontos percentuais` com duplicidade de `%` e quebra de linha.
+    - Implementada a notação regulatória e executiva concisa **`p.p.`** (ex: `+0,05 p.p.` e `-3,1 p.p.`), com `title` e `aria-label` para acessibilidade.
+    - Padronizados sufixos e casas decimais das unidades em `UNIT_FORMATTERS`:
+      - `UCS`: formatado com sufixo `UCs` (`45.000 UCs`, `3.510 UCs`).
+      - `PCT`: precisão estável de 1 casa decimal (`19,0%` vs `15,9%`).
+      - `NOTA`: formato explícito da escala de avaliação (`4,10 / 5` e `3,90 / 5`).
+      - `VEZES`: 2 casas decimais consistentes (`0,90 vezes` vs `1,31 vezes`).
+  - **Harmonização do Layout da Tabela (`IndicatorsTable.tsx`):**
+    - Corrigido o bug conceitual onde `SEM_COMPARACAO` (ex.: painel solar de base zero) exibia o artefato confuso `≈ —`, agora exibindo unicamente `—`.
+    - Ajustado o tratamento de indicadores neutros (`INFORMATIVO`, como tarifa média que subiu +13,8%): exibem seta indicativa de tendência com cor neutra em vez do símbolo de aproximação `≈`.
+    - Harmonizadas larguras estáveis de colunas na escala do Design System sem quebra de linhas (`whitespace-nowrap` nas colunas numéricas de Base, Atual e Variação).
+    - Código mantido com 141 linhas (respeitando o limite $\le 150$ LOC do Fallow).
+  - **Ajustes de Testes Vitest:**
+    - Atualizados `dashboardPeriods.test.ts` e `ExecutiveDashboardPage.test.tsx` para cobrirem a nova notação `p.p.`, sufixos e alinhamento decimal.
+- **Validação:**
+  - `make lint-all`: 100% aprovado (Ruff, Pylint 10.00/10, import-linter 4/4 contratos mantidos, ESLint, Fallow).
+  - `make test-all`: 100% aprovado (655 testes backend pytest + 391 testes frontend vitest).
+
+---
+
 ### [2026-10-28] - Resolução dos Comentários da 2ª Rodada de Revisão (Bernardo) & Sincronização com `main`
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

@@ -1,4 +1,11 @@
-import { UserSearch, type LucideIcon } from 'lucide-react'
+import {
+  Activity,
+  LayoutDashboard,
+  ShieldAlert,
+  TrendingUp,
+  UserSearch,
+  type LucideIcon
+} from 'lucide-react'
 
 export interface NavItem {
   label: string
@@ -9,10 +16,10 @@ export interface NavItem {
 
 // Espelha `backend/app/shared/role_groups.py`; a ordem define a tela inicial de cada cargo (`homeRouteFor`).
 export const NAV_ITEMS: readonly NavItem[] = [
-  { label: 'Painel', path: '/dashboard', roles: ['diretor'] },
-  { label: 'Inteligência Comercial', path: '/revenue', roles: ['diretor'] },
-  { label: 'Fila de Inspeção', path: '/losses', roles: ['diretor', 'gerente_perdas'] },
-  { label: 'Qualidade da Rede', path: '/quality', roles: ['diretor', 'gerente_operacao'] },
+  { label: 'Painel', path: '/dashboard', roles: ['diretor'], icon: LayoutDashboard },
+  { label: 'Inteligência Comercial', path: '/revenue', roles: ['diretor'], icon: TrendingUp },
+  { label: 'Fila de Inspeção', path: '/losses', roles: ['diretor', 'gerente_perdas'], icon: ShieldAlert },
+  { label: 'Qualidade da Rede', path: '/quality', roles: ['diretor', 'gerente_operacao'], icon: Activity },
   {
     label: 'Visão 360 da UC',
     path: '/customers',

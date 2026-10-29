@@ -3,13 +3,13 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const cardVariants = cva(
-  'rounded-lg border border-border bg-card text-card-foreground shadow-sm transition-all duration-200',
+  'rounded-lg glass-panel text-card-foreground transition-all duration-200',
   {
     variants: {
       variant: {
         default: '',
-        glass: 'backdrop-blur-md bg-card/90 shadow-xl border-border/80',
-        interactive: 'hover:border-primary/40 shadow-sm hover:shadow'
+        glass: 'bg-card/40 backdrop-blur-2xl border-white/15 shadow-2xl',
+        interactive: 'glass-panel-interactive'
       }
     },
     defaultVariants: {
@@ -50,7 +50,7 @@ function Card({ className, variant, ...props }: CardProps) {
 function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex flex-col gap-1.5 p-6', className)}
+      className={cn('flex flex-col gap-1.5 p-4 sm:p-5', className)}
       {...props}
     />
   )
@@ -65,7 +65,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
 function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('text-lg font-bold leading-none tracking-tight text-foreground', className)}
+      className={cn('text-base font-semibold leading-none tracking-tight text-foreground', className)}
       {...props}
     />
   )
@@ -80,7 +80,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
 function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('text-sm text-muted-foreground', className)}
+      className={cn('text-sm text-muted-foreground leading-relaxed', className)}
       {...props}
     />
   )
@@ -93,7 +93,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
  * @returns Elemento CardContent renderizado.
  */
 function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('p-6 pt-0', className)} {...props} />
+  return <div className={cn('p-4 sm:p-5 pt-0', className)} {...props} />
 }
 
 /**
@@ -105,7 +105,7 @@ function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
 function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex items-center p-6 pt-0', className)}
+      className={cn('flex items-center p-4 sm:p-5 pt-0', className)}
       {...props}
     />
   )

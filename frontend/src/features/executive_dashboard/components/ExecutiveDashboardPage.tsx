@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { AsyncState } from '@/components/feedback/AsyncState'
-import { IndicatorGroup } from '@/features/executive_dashboard/components/IndicatorGroup'
+import { IndicatorsTable } from '@/features/executive_dashboard/components/IndicatorsTable'
 import { LossesSnapshotCard } from '@/features/executive_dashboard/components/LossesSnapshotCard'
 import { PeriodSelector } from '@/features/executive_dashboard/components/PeriodSelector'
 import { useExecutiveDashboardController } from '@/features/executive_dashboard/hooks/useExecutiveDashboardController'
@@ -72,9 +72,7 @@ export function ExecutiveDashboardPage() {
           emptyTitle="Nenhum indicador para os períodos escolhidos"
           skeletonCount={6}
         >
-          {groups.map((group) => (
-            <IndicatorGroup key={group.id} group={group} />
-          ))}
+          <IndicatorsTable groups={groups} />
         </AsyncState>
       ) : null}
 

@@ -7,11 +7,11 @@ const UNIT_FORMATTERS: Record<IndicatorUnit, (value: number) => string> = {
   KWH: (value) => `${new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 }).format(value)} kWh`,
   RS_KWH: (value) =>
     `${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 4 }).format(value)}/kWh`,
-  UCS: (value) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value),
-  PCT: (value) => `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value)}%`,
-  NOTA: (value) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value),
+  UCS: (value) => `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value)} UCs`,
+  PCT: (value) => `${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value)}%`,
+  NOTA: (value) => `${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} / 5`,
   HORAS: (value) => `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value)} h`,
-  VEZES: (value) => `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(value)} vezes`
+  VEZES: (value) => `${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} vezes`
 }
 
 const variationFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1, signDisplay: 'exceptZero' })
@@ -42,14 +42,18 @@ export function formatVariation(variationPct: number | null): string {
  *
  * @param variationPct - Variação relativa em %.
  * @param variationPoints - Diferença em pontos percentuais, só nos indicadores em %.
- * @returns Texto como "+8%", "+0,05 ponto percentual" ou "−3,1 pontos percentuais".
+ * @returns Texto como "+8%", "+0,05 p.p." ou "−3,1 p.p.".
  */
 export function formatIndicatorChange(variationPct: number | null, variationPoints: number | null): string {
   if (variationPoints === null) {
     return formatVariation(variationPct)
   }
-  const points = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2, signDisplay: 'exceptZero' }).format(variationPoints)
-  return `${points} ${Math.abs(variationPoints) < 2 ? 'ponto percentual' : 'pontos percentuais'}`
+  const points = new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 2,
+    signDisplay: 'exceptZero'
+  }).format(variationPoints)
+  return `${points} p.p.`
 }
 
 /**

@@ -118,7 +118,7 @@ describe('ExecutiveDashboardPage', () => {
     renderPage()
 
     const overdueCard = await screen.findByTestId('indicator-inadimplencia')
-    expect(within(overdueCard).getByText('+0,05 ponto percentual')).toBeTruthy()
+    expect(within(overdueCard).getByText('+0,05 p.p.')).toBeTruthy()
     expect(within(overdueCard).getByText(/Valor vencido: R\$\s6,1\smi/)).toBeTruthy()
     expect(within(overdueCard).getByText('Estável')).toBeTruthy()
   })
@@ -164,7 +164,7 @@ describe('ExecutiveDashboardPage', () => {
 
     const snapshot = await screen.findByTestId('losses-snapshot')
     expect(within(snapshot).getByText('Retrato atual, sem histórico para comparar')).toBeTruthy()
-    expect(within(snapshot).getByText('12')).toBeTruthy()
+    expect(within(snapshot).getByText('12 UCs')).toBeTruthy()
     expect(within(snapshot).getByText('20 inspeções avaliadas')).toBeTruthy()
     expect(within(snapshot).queryByText(/fixada para a demonstração/)).toBeNull()
   })
