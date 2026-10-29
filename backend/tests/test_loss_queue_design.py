@@ -158,6 +158,74 @@ async def test_queue_reports_the_total_before_the_limit_cut():
     assert (len(queue.itens), queue.total) == (1, 3)
 
 
+class RecordingQueueRepository(FakeQueueRepository):
+    def __init__(self, candidates: QueueCandidates) -> None:
+        super().__init__(candidates)
+        self.received_filters: list[SuspicionFilters] = []
+
+    async def fetch_consumption_profiles(self, filters: SuspicionFilters) -> QueueCandidates:
+        self.received_filters.append(filters)
+        return self.candidates
+
+
+def make_profile_in(
+    id_uc: str, municipio: str, bairro: str, classe: str, base_kwh: float, recent_kwh: float
+) -> ConsumptionProfile:
+    return ConsumptionProfile(
+        id_uc=id_uc,
+        municipio=municipio,
+        bairro=bairro,
+        classe_consumo=classe,
+        consumo_base_kwh=base_kwh,
+        consumo_recente_kwh=recent_kwh,
+        meses_zerados=0,
+    )
+
+
+RECIFE_TOP = make_profile_in("UC_RECIFE", "Recife", "Boa Viagem", "Residencial", base_kwh=300, recent_kwh=50)
+OLINDA_SMALL = make_profile_in("UC_OLINDA", "Olinda", "Varadouro", "Comercial", base_kwh=200, recent_kwh=80)
+
+
+@pytest.mark.parametrize(
+    ("queue_filter", "expected_ids"),
+    [
+        (SuspiciousUnitsFilterDTO(municipio="Olinda"), ["UC_OLINDA"]),
+        (SuspiciousUnitsFilterDTO(bairro="Varadouro"), ["UC_OLINDA"]),
+        (SuspiciousUnitsFilterDTO(classe="Comercial"), ["UC_OLINDA"]),
+        (SuspiciousUnitsFilterDTO(municipio="Recife", classe="Comercial"), []),
+    ],
+)
+async def test_territory_filters_keep_only_matching_units(queue_filter, expected_ids):
+    candidates = QueueCandidates(profiles=[RECIFE_TOP, OLINDA_SMALL], field_history_applied=True)
+    service = LossService(repository=FakeQueueRepository(candidates))  # type: ignore[arg-type]
+
+    queue = await service.list_suspicious_units(queue_filter)
+
+    assert ([unit.id_uc for unit in queue.itens], queue.total) == (expected_ids, len(expected_ids))
+
+
+async def test_score_does_not_change_when_a_territory_filter_hides_the_top_unit():
+    candidates = QueueCandidates(profiles=[RECIFE_TOP, OLINDA_SMALL], field_history_applied=True)
+    service = LossService(repository=FakeQueueRepository(candidates))  # type: ignore[arg-type]
+
+    unfiltered = await service.list_suspicious_units(SuspiciousUnitsFilterDTO())
+    filtered = await service.list_suspicious_units(SuspiciousUnitsFilterDTO(municipio="Olinda"))
+
+    scores_without_filter = {unit.id_uc: unit.score for unit in unfiltered.itens}
+    assert filtered.itens[0].score == scores_without_filter["UC_OLINDA"] == 48  # e não 100 só por estar sozinha
+
+
+async def test_territory_filters_are_applied_after_the_ranking_and_not_in_the_query():
+    candidates = QueueCandidates(profiles=[RECIFE_TOP, OLINDA_SMALL], field_history_applied=True)
+    repository = RecordingQueueRepository(candidates)
+    service = LossService(repository=repository)  # type: ignore[arg-type]
+
+    await service.list_suspicious_units(SuspiciousUnitsFilterDTO(municipio="Olinda", classe="Comercial"))
+
+    (received,) = repository.received_filters
+    assert (received.municipio, received.bairro, received.classe) == (None, None, None)
+
+
 async def test_queue_total_respects_the_filters():
     candidates = QueueCandidates(profiles=[BIG_DROP, SMALL_DROP, ZERO_ONLY], field_history_applied=True)
     service = LossService(repository=FakeQueueRepository(candidates))  # type: ignore[arg-type]

@@ -6,6 +6,7 @@ from app.features.loss_management.exceptions import ActiveOrderConflictError, In
 from app.features.loss_management.export import render_field_orders_csv
 from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.queue_summary import apply_situation, build_queue_summary, hit_rate_dto
+from app.features.loss_management.queue_territory import filter_by_territory
 from app.features.loss_management.repository import LossRepository
 from app.features.loss_management.schemas import (
     InspectionOrderCreateDTO,
@@ -126,14 +127,17 @@ class LossService:
         Raises:
             DatabaseReadError: Se as tabelas Gold não puderem ser consultadas.
         """
-        candidates = await self.repository.fetch_consumption_profiles(suspicion_filters(queue_filter))
+        candidates = await self.repository.fetch_consumption_profiles(suspicion_filters(SuspiciousUnitsFilterDTO()))
         tariff = await self.repository.fetch_average_tariff()
-        ranked_units = rank_suspicious_units(
-            candidates.profiles,
-            None,
-            tariff_rs_kwh=tariff.rs_per_kwh,
-            reason=queue_filter.motivo,
-            portfolio_ratio=candidates.portfolio_ratio,
+        ranked_units = filter_by_territory(
+            rank_suspicious_units(
+                candidates.profiles,
+                None,
+                tariff_rs_kwh=tariff.rs_per_kwh,
+                reason=queue_filter.motivo,
+                portfolio_ratio=candidates.portfolio_ratio,
+            ),
+            queue_filter,
         )
         page_end = queue_filter.offset + queue_filter.limit
         units = apply_situation(ranked_units[queue_filter.offset : page_end], candidates.active_orders)
