@@ -1,7 +1,7 @@
 # Correções pendentes do projeto
 
 > Lista única do que ainda precisa ser corrigido antes da entrega (04/11/2026).
-> Atualizada em 2026-10-28 por Bernardo H.
+> Atualizada em 2026-10-29 por Adrian C. (antes, 2026-10-28 por Bernardo H.)
 >
 > 🔴 bloqueia merge ou entrega · 🟡 importante · ⚪ melhoria
 
@@ -65,6 +65,10 @@
 
 - [ ] 🟡 Abrir o PR de `feat/fatia-03-visao360-gold` (interrupções da UC, inspeções, leitura estimada, busca por nome).
 - [ ] ⚪ Plugar o `SmartInsightCard context="customer360"` depois do merge do #35.
+- [ ] ⚪ **Situação da fatura fora do `StatusBadge`** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). `PAYMENT_STATUS` em `frontend/src/features/customer360/utils/customer360Formatters.ts:28` e o `PaymentStatusBadge` de `InvoicesTab.tsx:19` refazem à mão o que `StatusBadge kind="fatura"` (`components/ui/status-badge.tsx`) já tem, com os tons do design (paga = verde, em aberto = âmbar, vencida = vermelho). Hoje a fatura paga sai em cinza (`secondary`) e a aberta sem cor.
+  - **Correção sugerida:** trocar por `<StatusBadge kind="fatura" status={...} />` e apagar `PAYMENT_STATUS`. A API devolve `PAGA`, `ABERTA` e `VENCIDA` e o vocabulário usa `paga`, `em_aberto` e `vencida`: mapear `ABERTA` para `em_aberto`, e manter o texto bruto para qualquer valor desconhecido.
+- [ ] ⚪ **Sem "Tentar novamente" nos erros da Visão 360.** `features/customer360/components/Customer360Details.tsx` tem 4 `AsyncState` (linhas 63, 77, 82 e 92) e nenhum passa `onRetry`; numa falha o usuário só vê o aviso e precisa recarregar a página.
+  - **Correção sugerida:** `onRetry={() => void query.refetch()}` em cada um, com a consulta que alimenta o bloco (modelo em `features/loss_management/components/UnitDetailSheet.tsx:57`).
 
 ## 6. Gestão de Perdas (Adrian)
 
@@ -74,11 +78,21 @@
 ## 7. Inteligência Comercial (Célio)
 
 - [ ] ⚪ Registrar no `docs/planning/celio/changelog.md` a correção do filtro de bairro (commit `07a69c0`: a lista lê todas as páginas, e Recife tem 106 bairros).
+- [ ] ⚪ **Sem "Tentar novamente" nos erros da Inteligência Comercial** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Nenhum `AsyncState` passa `onRetry`: `RevenueResults.tsx:24`, `RevenueRankingCard.tsx:51`, `RevenueWaterfallCard.tsx:39` e `NeighborhoodHistorySheet.tsx:49`, em `frontend/src/features/revenue/components/`.
+  - **Correção sugerida:** `onRetry={() => void query.refetch()}` em cada um (modelo em `features/loss_management/components/UnitDetailSheet.tsx:57`).
 
-## 8. Fechamento (todos)
+## 8. Qualidade da Rede (João)
+
+- [ ] ⚪ **Sem "Tentar novamente" nos erros da Qualidade da Rede** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Nenhum `AsyncState` passa `onRetry`: `ContinuityView.tsx:35`, `CurrentQualityView.tsx:49` e `FeederHistorySheet.tsx` (linhas 43 e 53), todos em `frontend/src/features/grid_quality/components/`. O `ErrorState` já mostra o botão quando recebe `onRetry`.
+  - **Correção sugerida:** `onRetry={() => void query.refetch()}` em cada um (modelo em `features/loss_management/components/UnitDetailSheet.tsx:57`).
+
+## 9. Fechamento (todos)
 
 - [ ] 🔴 **README:** suposições de cada fatia, passo a passo de execução (incluindo `LOSS_REFERENCE_COMPETENCIA`), print do Workflow no Databricks e links para o dicionário de dados e o diagnóstico (case, seção 6).
 - [ ] 🟡 Rodar `make lint-all`, `make test-all` e `bun run build` na `main` depois de cada merge (o `make` não roda o `tsc`).
+- [ ] ⚪ **Componentes do design novo sem dono: `KpiCard`, `DeltaBadge`, `DataTable` e `FilterBar`** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Os `componentes-*.png` os preveem, mas nenhum existe em `frontend/src/components/ui/`: cada fatia tem a sua versão.
+  - **Evidência:** cartões de KPI em `revenue/RevenueKpiCard(s).tsx`, `grid_quality/ContinuityKpiCards.tsx` e `grid_quality/QualityKpiCards.tsx`; variação em `revenue/VariationBadge.tsx`; tabelas em `grid_quality/FeederRankingTable.tsx`, `FeederUcHoursTable.tsx`, `FeederCustomersTable.tsx` e `loss_management/PrioritizedQueueTable.tsx`; filtros em `revenue/RevenueFiltersBar.tsx`, `grid_quality/ContinuityFilters.tsx` e `loss_management/QueueFilters.tsx`.
+  - **Decisão da equipe:** quem cria cada componente compartilhado (sugestão: o dono da fatia com a versão mais completa) e se cabe antes de 04/11/2026. Pelo prazo, é aceitável manter as versões por fatia e só documentar a diferença; o que não pode é cada tela divergir do `design.md` sem registro.
 
 ---
 

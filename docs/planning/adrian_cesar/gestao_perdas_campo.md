@@ -176,7 +176,7 @@
 - [x] **10.3 — `StatusBadge`** (`fatura`, `ordem`, `leitura`) ligado à Fila de Inspeção. Código morto `InspectionStatusBadge` e `STATUS_LABELS` removidos. (Adrian César, 2026-10-27)
 - [x] **10.4 — `ErrorState`** em `AsyncState` e `ErrorBoundary`. (Adrian César, 2026-10-27)
 - [x] **10.5a — Conferência visual nos dois temas** da Fila de Inspeção, painel de detalhe, quadro de ordens e diálogos de importar e gerar ordens: contraste AA medido em todos os textos visíveis; 1 falha (selo "Pendente" no claro, 4,44:1), ver `changelog.md`. (Adrian César, 2026-10-29)
-- [ ] **10.5b — Pendências com outros donos:** `onRetry` nas telas de outras fatias, migração de UC 360 (`PAYMENT_STATUS`) para o `StatusBadge`, e `KpiCard`, `DeltaBadge`, `DataTable`, `FilterBar` (dono a definir com a equipe). Pelo AGENTS.md, vão para `docs/CORRECOES.md`.
+- [x] **10.5b — Pendências com outros donos registradas em `docs/CORRECOES.md`** (Adrian César, 2026-10-29): `onRetry` na Visão 360 (seção 5), na Inteligência Comercial (7) e na Qualidade da Rede (8, seção nova); `PAYMENT_STATUS` da Visão 360 para o `StatusBadge` (5); `KpiCard`, `DeltaBadge`, `DataTable` e `FilterBar` sem dono (9). A correção é de cada responsável.
 - [ ] **10.5c — Selo "Pendente" no tema claro** abaixo do AA (4,44:1; `--warning` `#8A5A00` sobre o tint de 15% em fundo cinza). Decidir com o design se escurece o token.
 
 ### Fase 12 — Fila em duas faixas (2026-10-27)

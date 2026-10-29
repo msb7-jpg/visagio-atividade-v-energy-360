@@ -779,3 +779,10 @@
 - **Resultado:** escuro sem nenhuma falha (menor contraste 5,86:1). Claro com uma falha: o selo "Pendente" do quadro de ordens, 4,44:1 em 12 px (4,78:1 em fundo branco); os demais textos passam, o menor é 4,71:1 (o aviso de capacidade). Causa: `--warning` `#8A5A00` com o tint de 15% sobre fundo cinza. Os valores vêm de `tokens-claro.png` (10.1), então ficou como pendência 10.5c, para decidir com o design.
 - **Ambiente:** o backend do desenvolvedor na porta 8000 estava sem responder; usei um backend meu (8001) e um Vite temporário (5180), já encerrados, sem alterar arquivos do repositório.
 - **Validação de Testes:** conferência manual, sem mudança de código.
+
+### [2026-10-29] - Fase 10.5b: pendências do design novo registradas na CORRECOES
+- **Autor:** Adrian César
+- **O que foi feito:** as pendências do 10.5 que são de outras fatias foram levadas a `docs/CORRECOES.md` (regra do `AGENTS.md`), cada uma com arquivo, linha e correção sugerida: `onRetry` ausente em `customer360` (4 `AsyncState`), `revenue` (4) e `grid_quality` (4, em 3 arquivos); `PAYMENT_STATUS` da Visão 360 no lugar do `StatusBadge kind="fatura"`, com o cuidado do mapeamento `ABERTA` para `em_aberto`; e `KpiCard`, `DeltaBadge`, `DataTable` e `FilterBar`, que não existem em `components/ui/` e têm versões por fatia, sem dono.
+- **Seção nova:** "8. Qualidade da Rede (João)", porque o arquivo não tinha uma para ele; o Fechamento passou a ser a seção 9 (nenhuma referência dependia do número 8).
+- **Não alterado:** nenhum código dessas fatias; a correção fica com cada responsável.
+- **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam.
