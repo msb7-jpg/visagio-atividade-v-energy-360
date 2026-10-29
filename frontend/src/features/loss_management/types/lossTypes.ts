@@ -54,6 +54,11 @@ export interface SuspiciousUnitsFilter {
   motivo?: SuspicionReason
 }
 
+/** Página da fila: os filtros e quantas UCs pular (`offset`); sem `offset` vem a primeira página. */
+export interface SuspiciousUnitsPageRequest extends SuspiciousUnitsFilter {
+  offset?: number
+}
+
 /** Taxa histórica de inspeções que confirmaram irregularidade. */
 export interface HitRate {
   inspecoes_total: number | null

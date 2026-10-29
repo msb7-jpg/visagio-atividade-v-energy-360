@@ -219,6 +219,34 @@ fora (1.385 de 1.389 entram).
   (nos meses de queda geral quase toda queda bruta passa de 50%). A taxa de 91,5% segue sendo histórica de UCs que o
   campo já escolhera inspecionar.
 
+### D13. Piloto de inspeção fora da fila (protocolo proposto, não executado)
+- **Por que:** todas as taxas de acerto vêm de UCs que o campo já escolhera inspecionar. Ninguém de fora da fila foi
+  visitado, então não se sabe o que a fila deixa de ver. Só inspecionar uma amostra de fora mede isso, e é o único
+  jeito de aprovar um sinal novo (D11 e D12).
+- **Estratos de 2026-06** (`v_energy.db` real, sem GD e sem inspeção desde 2025-04, 40.128 UCs; queda normalizada = D12):
+
+| Estrato | Definição | UCs |
+|---|---|---|
+| A | na fila, queda bruta e normalizada de 20% ou mais | 31 |
+| B | na fila, queda bruta de 20% ou mais e normalizada abaixo | 134 |
+| D | fora da fila, queda normalizada de 10% a 20% | 459 |
+| E | fora da fila, queda normalizada abaixo de 10% | 39.504 |
+
+- **Amostra proposta (cerca de 150 inspeções, uma parte da capacidade de mais de 200 por mês):** as 31 UCs de A (a
+  fila forte, que o campo visitaria de qualquer forma), 40 sorteadas de B, 40 de D e 40 de E, sorteio aleatório simples
+  dentro de cada estrato e com semente registrada.
+- **O que cada estrato responde:**
+  - A confirma os 91,5%. B mede de novo o 7,6% com UCs que o campo não escolheu (hoje a taxa vem de UCs escolhidas).
+  - D e E medem a taxa de quem a fila ignora. Com 40 inspeções e nenhuma irregularidade, o limite superior de 95% é de
+    cerca de 7,5% (regra dos três); com 3 irregularidades, a taxa fica entre cerca de 2% e 20%.
+- **Critério de decisão:** se D ou E ficarem acima de B (cerca de 7,6%) ou chegarem a 15% ou mais, o sinal de queda
+  de consumo está cego a esse grupo e a regra de entrada precisa de um sinal novo (por exemplo, leituras estimadas ou
+  comparação com vizinhos, já descartados na base atual). Se D e E ficarem abaixo de B, a exclusão está validada.
+- **Como registrar:** ordens normais, com o motivo `PILOTO-A`, `PILOTO-B`, `PILOTO-D` ou `PILOTO-E` (o campo `motivo`
+  aceita texto livre) e resultado pelo fluxo de sempre; a análise é uma consulta sobre `ordem_inspecao`. Sem código novo.
+- **Dependência:** autorização do gerente de perdas e da equipe de campo (pendência 12.2 do checklist). Mandar a
+  equipe a UCs sem sinal é um custo real, por isso o piloto é pequeno e fica fora da entrega de 04/11.
+
 ## 5. Limitações e pendências
 
 - A **Gold real** (Renan e Ryei) ainda não está no `v_energy.db`: todos os números de fila vêm de um banco de

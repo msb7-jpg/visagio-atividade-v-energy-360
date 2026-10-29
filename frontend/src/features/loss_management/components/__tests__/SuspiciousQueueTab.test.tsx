@@ -288,6 +288,29 @@ describe('Fila de Inspeção', () => {
     expect(screen.queryByLabelText('Score mínimo')).not.toBeInTheDocument()
   })
 
+  it('carrega a próxima página da fila quando há mais UCs do que as carregadas', async () => {
+    mockedApi.listSuspiciousUnits.mockImplementation(async (filters) =>
+      filters.offset ? buildQueue([buildUnit('UC100099', 70)], [], 6) : buildQueue(UNITS, [], 6)
+    )
+    renderPage()
+    await rowOf('UC100002')
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Carregar mais UCs' }))
+
+    expect(await rowOf('UC100099')).toBeInTheDocument()
+    expect(await rowOf('UC100002')).toBeInTheDocument()
+    expect(mockedApi.listSuspiciousUnits).toHaveBeenLastCalledWith({ offset: 5 }, expect.anything())
+    expect(screen.queryByRole('button', { name: 'Carregar mais UCs' })).not.toBeInTheDocument()
+  })
+
+  it('não oferece carregar mais quando todas as UCs da fila já estão na tela', async () => {
+    mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue(UNITS, [], UNITS.length))
+    renderPage()
+    await rowOf('UC100002')
+
+    expect(screen.queryByRole('button', { name: 'Carregar mais UCs' })).not.toBeInTheDocument()
+  })
+
   it('volta para a primeira página ao mudar os filtros', async () => {
     const manyUnits = Array.from({ length: 30 }, (_, index) => buildUnit(`UC2${String(index).padStart(5, '0')}`, 80))
     mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue(manyUnits))

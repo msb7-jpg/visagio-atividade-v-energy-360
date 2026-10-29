@@ -147,8 +147,8 @@
 - [x] Testes escritos antes (TDD), front com o novo motivo e filtro, `tests/conftest.py` isolando o `.env`.
 - [x] No `v_energy.db` real, a fila em tempo real (2026-06) passa de 0 para 165 UCs; backtest de 2025-07 mantém 94,9% de acerto no top 200.
 - [ ] Conferir a tela no navegador com a fila classificada.
-- [ ] Meses de queda generalizada: normalizar a queda pela queda mediana da carteira (hoje o piso de 20% não seleciona em 2025-07 e 2025-09).
-- [ ] Paginação (`offset`) além das 500 UCs da API.
+- [x] Meses de queda generalizada: queda normalizada pela mediana da carteira. (Fase 15.4: calibra a chance de acerto; a entrada na fila segue pela queda bruta.)
+- [x] Paginação (`offset`) além das 500 UCs da API. (Fase 15.5)
 
 ### Fase 8 — Documentação e suposições (README / changelog)
 > Tudo abaixo está documentado em [`docs/DECISOES_PERDAS.md`](../../DECISOES_PERDAS.md) (decisão, impacto e conformidade).
@@ -199,7 +199,9 @@
   - [x] GD remedido na Gold real: 1 de 31 (3,2%), a exclusão continua. Queda de 50% ou mais remedida: 92,6%.
   - [x] Leitura zerada: não mensurável, a Gold real não tem leituras com consumo zero. Reincidência: não mensurável, nenhuma UC foi inspecionada duas vezes.
   - [x] Queda normalizada pela mediana da carteira (decisão do dono da fatia em 2026-10-28): chance da `queda_moderada` de 91,5% (queda além da carteira de 20% ou mais) e 7,6% (abaixo), medida na população da fila. A entrada na fila não mudou; na fila de 2026-06 são 31 UCs fortes e 134 fracas. Backend: `normalized_drop_ratio`, `hit_rate.py`, `portfolio_repository.py`. Pendência 15.4: prazo de reincidência (sem dado).
-- [ ] **15.5 — Escala e validação:** paginação com `offset` no servidor (teto atual de 500 UCs) e piloto de inspeção fora da fila.
+- [x] **15.5 — Escala e validação (2026-10-28):**
+  - [x] Paginação no servidor: `offset` em `GET /losses/suspicious-units` (a lista passa de 200 UCs e do teto de 500 por página) e botão "Carregar mais UCs" na Fila de Inspeção; a ordem, as abas e a seleção valem sobre tudo o que foi carregado. O `total` continua sendo o da fila inteira.
+  - [x] Protocolo do piloto fora da fila escrito em `DECISOES_PERDAS.md` D13 (estratos medidos, amostra de cerca de 150, critério de decisão). **A execução depende de autorização do gerente de perdas e da equipe de campo e fica fora da entrega de 04/11.**
 
 ---
 

@@ -74,6 +74,8 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
             total={queue.total ?? units.length}
             selection={selection}
             onOpenDetail={queue.openDetail}
+            onLoadMore={queue.hasMoreUnits ? queue.loadMoreUnits : undefined}
+            isLoadingMore={queue.isLoadingMoreUnits}
           />
         </AsyncState>
       )}

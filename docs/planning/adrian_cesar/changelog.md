@@ -712,3 +712,15 @@
   - Pytest escritos antes (RED visto): queda normalizada, chance por motivo, ranking com e sem carteira, mediana da carteira no repositório (ímpar, par, com GD, com filtros, vazio), frase do motivo e detalhe da API (mediana 22% e queda de 26% conferidas à mão no seed).
   - Testes antigos que supunham 42% e 7% foram reescritos com a carteira explícita, sem enfraquecê-los.
   - `make lint-all` e `make test-all`: backend 750 passed, frontend 537 passed. **Não conferido no navegador.**
+
+### [2026-10-28] - Fase 15.5: paginação no servidor e protocolo do piloto fora da fila
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - Backend: `offset` (inteiro, 0 ou mais) em `GET /losses/suspicious-units`. A página é `fila[offset : offset + limit]`; o `total` segue sendo o da fila inteira e `offset` além do fim devolve lista vazia. Offset negativo responde 422.
+  - Frontend: a consulta da fila virou infinita (`infiniteQueryOptions`): a primeira página sai sem `offset`, como antes, e o botão "Carregar mais UCs" (ao lado do aviso "Carregadas as N primeiras UCs de M na fila") busca a seguinte. A ordem, as abas por chance de acerto e a seleção valem sobre tudo o que foi carregado. Antes a tela só via as 200 primeiras UCs e nunca chegava às demais nem ao teto de 500 por página.
+  - `DECISOES_PERDAS.md` D13: protocolo do piloto de inspeção fora da fila, com os estratos medidos no banco real (31, 134, 459 e 39.504 UCs), amostra de cerca de 150 inspeções, critério de decisão e registro pelo motivo `PILOTO-*`. **Não executado:** depende do gerente de perdas e da equipe de campo.
+- **Limite conhecido:** cada página recalcula o ranking no servidor (a consulta pesada da fila); o cálculo da tarifa e da carteira usa cache por dia, mas a lista não. Com a fila de 2026-06 (165 UCs) não há segunda página; ela aparece nas demonstrações com `LOSS_REFERENCE_COMPETENCIA` fixada.
+- **Validação de Testes:**
+  - Pytest novos escritos antes (RED visto): página seguinte com o mesmo total, offset além do fim e offset negativo (422).
+  - Vitest novos escritos antes (RED visto): botão carrega a página seguinte com `offset` igual ao número de UCs carregadas e some quando a fila inteira está na tela; não aparece quando já está tudo carregado.
+  - `make lint-all` e `make test-all` abaixo. **Não conferido no navegador.**

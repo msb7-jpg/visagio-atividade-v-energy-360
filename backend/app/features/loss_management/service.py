@@ -115,12 +115,12 @@ class LossService:
         """Monta a fila de UCs suspeitas priorizada pela energia estimada a recuperar.
 
         Args:
-            queue_filter: Filtros de município, bairro, classe e motivo, e o tamanho da fila.
+            queue_filter: Filtros de município, bairro, classe e motivo, e a página (`offset` e `limit`).
 
         Returns:
             UCs suspeitas, com score de 0 a 100 e situação (na fila, ordem gerada ou em campo), em ordem
-            decrescente de kWh esperado (a recuperar x taxa de acerto do sinal), limitadas a `queue_filter.limit`,
-            o total antes do corte do `limit` e os avisos de degradação da análise
+            decrescente de kWh esperado (a recuperar x taxa de acerto do sinal), só a página pedida (`offset` e
+            `limit`), o total antes do corte da página e os avisos de degradação da análise
             (ex.: histórico de campo não aplicado).
 
         Raises:
@@ -135,7 +135,8 @@ class LossService:
             reason=queue_filter.motivo,
             portfolio_ratio=candidates.portfolio_ratio,
         )
-        units = apply_situation(ranked_units[: queue_filter.limit], candidates.active_orders)
+        page_end = queue_filter.offset + queue_filter.limit
+        units = apply_situation(ranked_units[queue_filter.offset : page_end], candidates.active_orders)
         fixed_competencia = candidates.reference_competencia
         reference_warnings = [reference_competencia_warning(fixed_competencia)] if fixed_competencia else []
         history_warnings = [] if candidates.field_history_applied else [FIELD_HISTORY_NOT_APPLIED_WARNING]

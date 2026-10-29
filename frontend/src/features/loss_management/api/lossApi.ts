@@ -9,13 +9,13 @@ import type {
   QueueFilterOptions,
   QueueSummary,
   SuspiciousQueue,
-  SuspiciousUnitsFilter,
+  SuspiciousUnitsPageRequest,
   UploadResult
 } from '@/features/loss_management/types/lossTypes'
 import type { UnitDetail } from '@/features/loss_management/types/unitDetailTypes'
 
 export const lossApi = {
-  async listSuspiciousUnits(filters: SuspiciousUnitsFilter, signal?: AbortSignal): Promise<SuspiciousQueue> {
+  async listSuspiciousUnits(filters: SuspiciousUnitsPageRequest, signal?: AbortSignal): Promise<SuspiciousQueue> {
     const { data } = await apiClient.get<SuspiciousQueue>('/losses/suspicious-units', {
       params: filters,
       signal

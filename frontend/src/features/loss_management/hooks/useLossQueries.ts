@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
   inspectionsQueryOptions,
   inspectorsQueryOptions,
@@ -13,10 +13,10 @@ import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/los
  * Fila de UCs suspeitas priorizada pelo backend.
  *
  * @param filters - Filtros aplicados à fila.
- * @returns Estado da query da fila.
+* @returns Estado da query da fila, em páginas do servidor (`fetchNextPage` traz as UCs seguintes).
  */
 export function useSuspiciousUnitsQuery(filters: SuspiciousUnitsFilter) {
-  return useQuery(suspiciousUnitsQueryOptions(filters))
+  return useInfiniteQuery(suspiciousUnitsQueryOptions(filters))
 }
 
 /**

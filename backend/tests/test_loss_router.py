@@ -137,6 +137,27 @@ async def test_suspicious_units_ranked_and_solar_excluded(client):
     assert units[0]["kwh_estimado_recuperar"] == pytest.approx(750.0)
 
 
+async def test_suspicious_units_offset_pages_through_the_queue_without_changing_the_total(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    first_page = (await client.get(f"{BASE_URL}/suspicious-units?limit=2", headers=headers)).json()
+    second_page = (await client.get(f"{BASE_URL}/suspicious-units?limit=2&offset=2", headers=headers)).json()
+    past_the_end = (await client.get(f"{BASE_URL}/suspicious-units?limit=2&offset=10", headers=headers)).json()
+
+    assert [unit["id_uc"] for unit in first_page["itens"]] == ["UC_FRAUDE", "UC_INSPECAO_ANTIGA"]
+    assert [unit["id_uc"] for unit in second_page["itens"]] == ["UC_ZERADA"]
+    assert (first_page["total"], second_page["total"], past_the_end["total"]) == (3, 3, 3)
+    assert past_the_end["itens"] == []
+
+
+async def test_suspicious_units_rejects_a_negative_offset(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+
+    response = await client.get(f"{BASE_URL}/suspicious-units?offset=-1", headers=headers)
+
+    assert response.status_code == 422
+
+
 async def test_role_without_permission_is_forbidden(client):
     headers = await auth_headers(client, "atendimento@venergy.com")
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PrioritizedQueueTable } from '@/features/loss_management/components/PrioritizedQueueTable'
 import type { useQueueSelection } from '@/features/loss_management/hooks/useQueueSelection'
@@ -14,6 +15,9 @@ interface QueueBandTabsProps {
   total: number
   selection: ReturnType<typeof useQueueSelection>
   onOpenDetail: (idUc: string) => void
+  /** Busca a próxima página da fila no servidor; sem ele, o botão de carregar mais não aparece. */
+  onLoadMore?: () => void
+  isLoadingMore?: boolean
 }
 
 function firstBandWithUnits(priorityCount: number, lowChanceCount: number): BandKey {
@@ -29,7 +33,7 @@ function firstBandWithUnits(priorityCount: number, lowChanceCount: number): Band
  * @param props - UCs carregadas, total da fila e controle de seleção.
  * @returns Abas acima da tabela; abre nas prioritárias, ou na primeira aba com UCs quando elas não existem.
  */
-export function QueueBandTabs({ units, total, selection, onOpenDetail }: QueueBandTabsProps) {
+export function QueueBandTabs({ units, total, selection, onOpenDetail, onLoadMore, isLoadingMore = false }: QueueBandTabsProps) {
   const { priority, lowChance } = splitQueueBands(units)
   const [band, setBand] = useState<BandKey>(() => firstBandWithUnits(priority.length, lowChance.length))
   const minHitLabel = formatPercent(PRIORITY_MIN_HIT_PROBABILITY)
@@ -42,9 +46,16 @@ export function QueueBandTabs({ units, total, selection, onOpenDetail }: QueueBa
   return (
     <div className="flex flex-col gap-2">
       {total > units.length ? (
-        <p className="text-muted-foreground text-xs">
-          Carregadas as {formatInteger(units.length)} primeiras UCs de {formatInteger(total)} na fila.
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-muted-foreground text-xs">
+            Carregadas as {formatInteger(units.length)} primeiras UCs de {formatInteger(total)} na fila.
+          </p>
+          {onLoadMore ? (
+            <Button type="button" variant="outline" size="sm" onClick={onLoadMore} disabled={isLoadingMore}>
+              Carregar mais UCs
+            </Button>
+          ) : null}
+        </div>
       ) : null}
       <Tabs variant="line" value={band} onValueChange={(nextBand) => setBand(nextBand as BandKey)}>
         <TabsList aria-label="Faixa da fila por chance de acerto">

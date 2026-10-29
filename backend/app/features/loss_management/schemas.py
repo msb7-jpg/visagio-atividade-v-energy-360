@@ -58,6 +58,7 @@ class SuspiciousUnitsFilterDTO(BaseModel):
     classe: str | None = None
     motivo: SuspicionReason | None = None
     limit: int = Field(default=FILA_CAPACIDADE_MENSAL, ge=1, le=500)
+    offset: int = Field(default=0, ge=0, description="UCs da fila ignoradas antes da página (paginação)")
 
 
 class SuspiciousUnitDTO(BaseModel):
@@ -103,7 +104,7 @@ class SuspiciousQueueDTO(BaseModel):
     """Fila de suspeitas com os avisos de degradação da análise (lista vazia = análise completa)."""
 
     itens: list[SuspiciousUnitDTO]
-    total: int = Field(description="UCs que passam nos filtros, antes de cortar a fila no `limit`")
+    total: int = Field(description="UCs que passam nos filtros, antes de cortar a página (`offset` e `limit`)")
     avisos: list[QueueWarningDTO]
 
 

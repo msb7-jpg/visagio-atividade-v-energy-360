@@ -1,6 +1,6 @@
-import { keepPreviousData, queryOptions } from '@tanstack/react-query'
+import { infiniteQueryOptions, keepPreviousData, queryOptions } from '@tanstack/react-query'
 import { lossApi } from '@/features/loss_management/api/lossApi'
-import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
+import type { SuspiciousQueue, SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
 
 export const lossKeys = {
   all: ['losses'] as const,
@@ -29,16 +29,32 @@ function compactFilters(filters: SuspiciousUnitsFilter): SuspiciousUnitsFilter {
 }
 
 /**
- * Opções reutilizáveis da consulta da fila de suspeitas.
+ * Próximo `offset` da fila: quantas UCs já vieram, ou nada quando a fila inteira está carregada.
+ *
+ * @param pages - Páginas já carregadas, da primeira à última.
+ * @returns O `offset` da próxima página, ou undefined quando não há mais UCs.
+ */
+function nextQueueOffset(pages: SuspiciousQueue[]): number | undefined {
+  const lastPage = pages[pages.length - 1]
+  const loadedCount = pages.reduce((count, page) => count + page.itens.length, 0)
+  return lastPage.itens.length > 0 && loadedCount < lastPage.total ? loadedCount : undefined
+}
+
+/**
+ * Opções reutilizáveis da consulta da fila de suspeitas, paginada pelo servidor (`offset`).
  *
  * @param filters - Filtros de município, bairro, classe e motivo.
- * @returns Opções de query com chave hierárquica e cancelamento via signal.
+ * @returns Opções de query infinita com chave hierárquica e cancelamento via signal.
  */
 export function suspiciousUnitsQueryOptions(filters: SuspiciousUnitsFilter) {
   const activeFilters = compactFilters(filters)
-  return queryOptions({
+  return infiniteQueryOptions({
     queryKey: lossKeys.suspiciousUnits(activeFilters),
-    queryFn: ({ signal }) => lossApi.listSuspiciousUnits(activeFilters, signal),
+    // A primeira página não leva `offset`, para a chamada continuar igual à de antes da paginação.
+    queryFn: ({ pageParam, signal }) =>
+      lossApi.listSuspiciousUnits(pageParam > 0 ? { ...activeFilters, offset: pageParam } : activeFilters, signal),
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => nextQueueOffset(allPages),
     staleTime: LOSS_STALE_TIME_MS,
     // Mantém fila e avisos na tela enquanto o novo filtro carrega, sem piscar nem reanunciar o banner.
     placeholderData: keepPreviousData

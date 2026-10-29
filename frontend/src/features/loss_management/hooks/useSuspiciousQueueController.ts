@@ -20,7 +20,8 @@ export function useSuspiciousQueueController() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [detailUcId, setDetailUcId] = useState<string | null>(null)
   const queueQuery = useSuspiciousUnitsQuery(filters)
-  const units = queueQuery.data?.itens ?? []
+  const pages = queueQuery.data?.pages ?? []
+  const units = pages.flatMap((page) => page.itens)
   const selection = useQueueSelection(units)
   const summaryQuery = useQueueSummaryQuery(selection.selectedIds)
   const filterOptionsQuery = useQueueFiltersQuery()
@@ -50,8 +51,11 @@ export function useSuspiciousQueueController() {
     retrySummary: () => void summaryQuery.refetch(),
     filterOptions: filterOptionsQuery.data,
     units,
-    total: queueQuery.data?.total,
-    warnings: queueQuery.data?.avisos ?? [],
+    total: pages.at(-1)?.total,
+    warnings: pages[0]?.avisos ?? [],
+    hasMoreUnits: queueQuery.hasNextPage,
+    isLoadingMoreUnits: queueQuery.isFetchingNextPage,
+    loadMoreUnits: () => void queueQuery.fetchNextPage(),
     isLoading: queueQuery.isLoading,
     isError: queueQuery.isError,
     selection,
