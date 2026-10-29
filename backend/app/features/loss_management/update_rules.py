@@ -6,27 +6,28 @@ from app.shared.exceptions import BadRequestException
 IRREGULARITY_DETAIL_FIELDS = frozenset({"tipo_irregularidade", "kwh_recuperado", "numero_toi"})
 
 FIELDS_BY_TARGET_STATUS: dict[InspectionStatus, frozenset[str]] = {
-    InspectionStatus.PENDENTE: frozenset({"fiscal_responsavel"}),
-    InspectionStatus.CONCLUIDA: frozenset({"fiscal_responsavel", "irregularidade_constatada"})
+    InspectionStatus.PENDENTE: frozenset({"fiscal_responsavel", "inspetor"}),
+    InspectionStatus.CONCLUIDA: frozenset(
+        {"fiscal_responsavel", "inspetor", "data_inspecao", "irregularidade_constatada"}
+    )
     | IRREGULARITY_DETAIL_FIELDS,
-    InspectionStatus.CANCELADA: frozenset({"justificativa_cancelamento"}),
+    InspectionStatus.CANCELADA: frozenset({"motivo_cancelamento", "justificativa_cancelamento"}),
 }
 
 
 def ensure_required_fields(payload: InspectionOrderUpdateDTO) -> None:
-    """Exige o resultado de campo na conclusão e a justificativa no cancelamento.
+    """Exige o resultado de campo na conclusão.
+
+    O motivo do cancelamento é exigido pelo próprio `InspectionOrderUpdateDTO` (422), não aqui.
 
     Args:
         payload: Alteração solicitada.
 
     Raises:
-        BadRequestException: Se faltar o resultado de campo ou a justificativa.
+        BadRequestException: Se faltar o resultado de campo.
     """
     if payload.status == InspectionStatus.CONCLUIDA and payload.irregularidade_constatada is None:
         raise BadRequestException("Informe se houve irregularidade constatada para concluir a ordem.")
-    justification_text = (payload.justificativa_cancelamento or "").strip()
-    if payload.status == InspectionStatus.CANCELADA and not justification_text:
-        raise BadRequestException("Justificativa é obrigatória para cancelar a ordem.")
 
 
 def ensure_fields_match_status(payload: InspectionOrderUpdateDTO) -> None:

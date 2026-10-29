@@ -2,23 +2,16 @@
 
 from dataclasses import dataclass, field
 
+from app.features.loss_management.hit_rate import MESES_BASE_COMPLETO, hit_probability
 from app.features.loss_management.schemas import InspectionStatus, SuspicionReason, SuspiciousUnitDTO
 
 LIMIAR_QUEDA_SUBITA = 0.5
+LIMIAR_QUEDA_MODERADA = 0.2  # piso da fila classificada: abaixo disso a UC não entra
 JANELA_RECUPERACAO_MESES = 3
-TARIFA_MEDIA_RS_KWH = 0.714  # tarifa de referência do desenho da tela; a real virá de fato_faturamento (Fatia 02)
 MESES_POR_ANO = 12
 PESO_QUEDA_CONSUMO = 80.0
 BONUS_LEITURA_ZERADA = 20.0
 SCORE_MAXIMO = 100.0
-
-# Taxas de acerto medidas em fato_inspecoes_perdas (1.389 inspeções; ver changelog de 2026-10-20 e 2026-10-21).
-# Só a queda súbita tem taxa própria; a leitura zerada isolada ainda não foi medida e usa a taxa geral.
-TAXA_ACERTO_GERAL = 0.627
-TAXA_ACERTO_POR_MOTIVO = {
-    SuspicionReason.QUEDA_SUBITA: 0.93,
-    SuspicionReason.LEITURA_ZERADA: TAXA_ACERTO_GERAL,
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,6 +25,7 @@ class ConsumptionProfile:
     consumo_base_kwh: float
     consumo_recente_kwh: float
     meses_zerados: int
+    meses_base: int = MESES_BASE_COMPLETO  # meses com leitura na janela de base; menos que o completo = ligação recente
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +36,7 @@ class QueueCandidates:
     field_history_applied: bool
     reference_competencia: str | None = None  # só preenchida quando a fila não usa a competência mais recente
     active_orders: dict[str, InspectionStatus] = field(default_factory=dict)  # status da ordem ativa por id_uc
+    portfolio_ratio: float = 1.0  # razão mediana recente/base de todas as UCs; 1.0 = sem queda geral conhecida
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +64,25 @@ def consumption_drop_ratio(profile: ConsumptionProfile) -> float:
     return max(0.0, drop_ratio)
 
 
+def normalized_drop_ratio(profile: ConsumptionProfile, portfolio_ratio: float = 1.0) -> float:
+    """Calcula a queda da UC além da queda geral da carteira.
+
+    Em meses de queda generalizada (sazonalidade, clima) quase toda UC cai; o que separa a irregularidade é cair
+    mais que a carteira. A razão recente/base da UC é comparada com a razão mediana de todas as UCs.
+
+    Args:
+        profile: Consumo médio da UC nas janelas base e recente.
+        portfolio_ratio: Razão mediana recente/base da carteira inteira; 1.0 desconta nada (queda bruta).
+
+    Returns:
+        Queda relativa à carteira entre 0 e 1 (0 sem queda, base nula ou razão da carteira inválida).
+    """
+    if profile.consumo_base_kwh <= 0 or portfolio_ratio <= 0:
+        return 0.0
+    unit_ratio = profile.consumo_recente_kwh / profile.consumo_base_kwh
+    return max(0.0, 1.0 - unit_ratio / portfolio_ratio)
+
+
 def detect_reasons(profile: ConsumptionProfile) -> list[SuspicionReason]:
     """Lista os motivos de suspeita aplicáveis ao perfil de consumo.
 
@@ -76,12 +90,16 @@ def detect_reasons(profile: ConsumptionProfile) -> list[SuspicionReason]:
         profile: Consumo médio da UC nas janelas base e recente.
 
     Returns:
-        Motivos detectados (queda súbita e/ou leitura zerada); vazio se a UC não é suspeita.
+        Motivos detectados (queda súbita, queda moderada e/ou leitura zerada); vazio se a UC não é suspeita.
+        Queda súbita e queda moderada são excludentes: a moderada vai do piso até o limiar da súbita.
     """
-    has_sudden_drop = consumption_drop_ratio(profile) >= LIMIAR_QUEDA_SUBITA
+    drop_ratio = consumption_drop_ratio(profile)
+    has_sudden_drop = drop_ratio >= LIMIAR_QUEDA_SUBITA
+    has_moderate_drop = LIMIAR_QUEDA_MODERADA <= drop_ratio < LIMIAR_QUEDA_SUBITA
     has_zero_reading = profile.meses_zerados > 0
     reason_checks = (
         (has_sudden_drop, SuspicionReason.QUEDA_SUBITA),
+        (has_moderate_drop, SuspicionReason.QUEDA_MODERADA),
         (has_zero_reading, SuspicionReason.LEITURA_ZERADA),
     )
     return [reason for is_detected, reason in reason_checks if is_detected]
@@ -101,19 +119,6 @@ def risk_score(profile: ConsumptionProfile) -> float:
     raw_score = drop_points + zero_points
     capped_score = min(SCORE_MAXIMO, raw_score)
     return round(capped_score, 1)
-
-
-def hit_probability(reasons: list[SuspicionReason]) -> float:
-    """Estima a chance de uma inspeção achar irregularidade a partir dos sinais da UC.
-
-    Args:
-        reasons: Motivos de suspeita detectados na UC.
-
-    Returns:
-        A maior taxa histórica de acerto entre os sinais presentes (0 a 1); 0 sem sinais.
-    """
-    rates = [TAXA_ACERTO_POR_MOTIVO[reason] for reason in reasons]
-    return max(rates, default=0.0)
 
 
 def monthly_deficit_kwh(profile: ConsumptionProfile) -> float:
@@ -142,11 +147,15 @@ def estimated_recoverable_kwh(profile: ConsumptionProfile) -> float:
     return round(recoverable_kwh, 1)
 
 
-def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | None:
+def build_suspicious_unit(
+    profile: ConsumptionProfile, tariff_rs_kwh: float, portfolio_ratio: float = 1.0
+) -> SuspiciousUnitDTO | None:
     """Converte um perfil de consumo em item da fila de suspeitas.
 
     Args:
         profile: Consumo médio da UC nas janelas base e recente.
+        tariff_rs_kwh: Tarifa média da base (R$/kWh) que converte kWh em R$.
+        portfolio_ratio: Razão mediana recente/base da carteira, que calibra a chance de acerto da queda moderada.
 
     Returns:
         O item da fila com motivos, score e energia a recuperar, ou None se não há suspeita.
@@ -155,9 +164,9 @@ def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | No
     if not reasons:
         return None
     recoverable_kwh = estimated_recoverable_kwh(profile)
-    recoverable_value_rs = recoverable_kwh * TARIFA_MEDIA_RS_KWH
+    recoverable_value_rs = recoverable_kwh * tariff_rs_kwh
     monthly_kwh = monthly_deficit_kwh(profile)
-    annual_value_rs = monthly_kwh * MESES_POR_ANO * TARIFA_MEDIA_RS_KWH
+    annual_value_rs = monthly_kwh * MESES_POR_ANO * tariff_rs_kwh
     return SuspiciousUnitDTO(
         id_uc=profile.id_uc,
         municipio=profile.municipio,
@@ -165,7 +174,10 @@ def build_suspicious_unit(profile: ConsumptionProfile) -> SuspiciousUnitDTO | No
         classe_consumo=profile.classe_consumo,
         motivos=reasons,
         score_risco=risk_score(profile),
-        probabilidade_acerto=hit_probability(reasons),
+        probabilidade_acerto=hit_probability(
+            reasons, normalized_drop_ratio(profile, portfolio_ratio), profile.meses_base
+        ),
+        meses_base=profile.meses_base,
         consumo_base_kwh=round(profile.consumo_base_kwh, 1),
         consumo_recente_kwh=round(profile.consumo_recente_kwh, 1),
         kwh_estimado_recuperar=recoverable_kwh,
@@ -187,7 +199,7 @@ def order_estimated_kwh(unit: RegisteredUnit) -> float:
     """
     if unit.possui_gd or not unit.has_recent_reading:
         return 0.0
-    suspicious_unit = build_suspicious_unit(unit.profile)
+    suspicious_unit = build_suspicious_unit(unit.profile, tariff_rs_kwh=0.0)  # só o kWh interessa aqui
     return suspicious_unit.kwh_estimado_recuperar if suspicious_unit else 0.0
 
 
@@ -229,8 +241,9 @@ def rank_suspicious_units(
     profiles: list[ConsumptionProfile],
     limit: int | None,
     *,
+    tariff_rs_kwh: float,
     reason: SuspicionReason | None = None,
-    min_score: int = 0,
+    portfolio_ratio: float = 1.0,
 ) -> list[SuspiciousUnitDTO]:
     """Monta a fila priorizada pelo kWh esperado (kWh a recuperar x taxa de acerto do sinal).
 
@@ -240,18 +253,18 @@ def rank_suspicious_units(
     Args:
         profiles: Perfis de consumo candidatos.
         limit: Tamanho máximo da fila; None devolve todas as que passam nos filtros.
+        tariff_rs_kwh: Tarifa média da base (R$/kWh) usada nos valores em R$.
         reason: Mantém só as UCs com este motivo; None não filtra.
-        min_score: Mantém só as UCs com score a partir deste valor.
+        portfolio_ratio: Razão mediana recente/base da carteira inteira, para a chance de acerto de cada UC.
 
     Returns:
         Itens suspeitos em ordem decrescente de kWh esperado (desempate por score de risco), até `limit` itens.
     """
-    candidates = [unit for profile in profiles if (unit := build_suspicious_unit(profile)) is not None]
+    built_units = (build_suspicious_unit(profile, tariff_rs_kwh, portfolio_ratio) for profile in profiles)
+    candidates = [unit for unit in built_units if unit is not None]
     candidates_by_id = sorted(candidates, key=lambda unit: unit.id_uc)
     ranked = sorted(candidates_by_id, key=priority_key, reverse=True)
     top_expected_kwh = priority_key(ranked[0])[0] if ranked else 0.0
     scored = [unit.model_copy(update={"score": priority_score(unit, top_expected_kwh)}) for unit in ranked]
-    visible = [
-        unit for unit in scored if unit.score >= min_score and (reason is None or reason in unit.motivos)
-    ]
+    visible = [unit for unit in scored if reason is None or reason in unit.motivos]
     return visible if limit is None else visible[:limit]

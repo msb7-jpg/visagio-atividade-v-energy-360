@@ -18,7 +18,7 @@ export interface NavItem {
 export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Painel', path: '/dashboard', roles: ['diretor'], icon: LayoutDashboard },
   { label: 'Inteligência Comercial', path: '/revenue', roles: ['diretor'], icon: TrendingUp },
-  { label: 'Gestão de Perdas', path: '/losses', roles: ['diretor', 'gerente_perdas'], icon: ShieldAlert },
+  { label: 'Fila de Inspeção', path: '/losses', roles: ['diretor', 'gerente_perdas'], icon: ShieldAlert },
   { label: 'Qualidade da Rede', path: '/quality', roles: ['diretor', 'gerente_operacao'], icon: Activity },
   {
     label: 'Visão 360 da UC',

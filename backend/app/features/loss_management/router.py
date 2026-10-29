@@ -2,18 +2,21 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Path, Query, Response, UploadFile, status
 from pydantic import StringConstraints
 
-from app.features.loss_management.dependencies import LossSvc
+from app.features.loss_management.dependencies import LossSvc, UnitDetailSvc
+from app.features.loss_management.detail_schemas import UnitDetailDTO
 from app.features.loss_management.exceptions import UploadTooLargeError
 from app.features.loss_management.router_metadata import (
     create_inspection_doc,
     export_inspections_doc,
     list_inspections_doc,
+    list_inspectors_doc,
     list_suspicious_units_doc,
     queue_filters_doc,
     queue_summary_doc,
+    unit_detail_doc,
     update_inspection_doc,
     upload_inspections_doc,
 )
@@ -23,6 +26,7 @@ from app.features.loss_management.schemas import (
     InspectionOrderDTO,
     InspectionOrderUpdateDTO,
     InspectionStatus,
+    InspectorDTO,
     QueueFiltersDTO,
     QueueSummaryDTO,
     SuspiciousQueueDTO,
@@ -30,12 +34,14 @@ from app.features.loss_management.schemas import (
     UploadResultDTO,
 )
 from app.shared.dependencies import CurrentUser, require_role
-from app.shared.role_groups import PERDAS_ACCESS
+from app.shared.role_groups import PERDAS_ACCESS, PERDAS_WRITE
 
 EXPORT_FILENAME = "ordens_inspecao_campo.csv"
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 MAX_SELECTED_UNITS = FILA_CAPACIDADE_MENSAL * 2
 UnitId = Annotated[str, StringConstraints(min_length=1, max_length=20)]
+# Escrita só para o gerente de perdas; o diretor lê (o router já exige PERDAS_ACCESS).
+WRITE_ONLY = [Depends(require_role(PERDAS_WRITE))]
 
 router = APIRouter(
     prefix="/losses",
@@ -56,6 +62,12 @@ async def list_suspicious_units(
     return await service.list_suspicious_units(queue_filter)
 
 
+@router.get("/suspicious-units/{id_uc}", response_model=UnitDetailDTO, **unit_detail_doc.to_dict())
+async def get_suspicious_unit_detail(id_uc: Annotated[UnitId, Path()], service: UnitDetailSvc) -> UnitDetailDTO:
+    """Devolve o detalhe de uma UC da fila: motivo, conta do score, consumo de 12 meses e inspeções anteriores."""
+    return await service.get_unit_detail(id_uc)
+
+
 @router.get("/queue-summary", response_model=QueueSummaryDTO, **queue_summary_doc.to_dict())
 async def queue_summary(
     service: LossSvc,
@@ -69,6 +81,12 @@ async def queue_summary(
 async def queue_filters(service: LossSvc) -> QueueFiltersDTO:
     """Devolve as opções dos filtros de município e classe."""
     return await service.list_queue_filters()
+
+
+@router.get("/inspectors", response_model=list[InspectorDTO], **list_inspectors_doc.to_dict())
+async def list_inspectors(service: LossSvc) -> list[InspectorDTO]:
+    """Devolve os inspetores de campo (INSP-001 a INSP-040)."""
+    return await service.list_inspectors()
 
 
 @router.get(
@@ -103,6 +121,7 @@ async def export_inspections(service: LossSvc) -> Response:
     "/inspections",
     response_model=InspectionOrderDTO,
     status_code=status.HTTP_201_CREATED,
+    dependencies=WRITE_ONLY,
     **create_inspection_doc.to_dict(),
 )
 async def create_inspection(
@@ -115,6 +134,7 @@ async def create_inspection(
 @router.patch(
     "/inspections/{id_inspecao}",
     response_model=InspectionOrderDTO,
+    dependencies=WRITE_ONLY,
     **update_inspection_doc.to_dict(),
 )
 async def update_inspection(
@@ -127,6 +147,7 @@ async def update_inspection(
 @router.post(
     "/inspections/upload",
     response_model=UploadResultDTO,
+    dependencies=WRITE_ONLY,
     **upload_inspections_doc.to_dict(),
 )
 async def upload_inspections(

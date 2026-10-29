@@ -5,19 +5,26 @@ import type {
   InspectionOrderCreate,
   InspectionOrderUpdate,
   InspectionStatus,
+  Inspector,
   QueueFilterOptions,
   QueueSummary,
   SuspiciousQueue,
-  SuspiciousUnitsFilter,
+  SuspiciousUnitsPageRequest,
   UploadResult
 } from '@/features/loss_management/types/lossTypes'
+import type { UnitDetail } from '@/features/loss_management/types/unitDetailTypes'
 
 export const lossApi = {
-  async listSuspiciousUnits(filters: SuspiciousUnitsFilter, signal?: AbortSignal): Promise<SuspiciousQueue> {
+  async listSuspiciousUnits(filters: SuspiciousUnitsPageRequest, signal?: AbortSignal): Promise<SuspiciousQueue> {
     const { data } = await apiClient.get<SuspiciousQueue>('/losses/suspicious-units', {
       params: filters,
       signal
     })
+    return data
+  },
+
+  async getUnitDetail(idUc: string, signal?: AbortSignal): Promise<UnitDetail> {
+    const { data } = await apiClient.get<UnitDetail>(`/losses/suspicious-units/${encodeURIComponent(idUc)}`, { signal })
     return data
   },
 
@@ -33,6 +40,11 @@ export const lossApi = {
 
   async getQueueFilters(signal?: AbortSignal): Promise<QueueFilterOptions> {
     const { data } = await apiClient.get<QueueFilterOptions>('/losses/queue-filters', { signal })
+    return data
+  },
+
+  async listInspectors(signal?: AbortSignal): Promise<Inspector[]> {
+    const { data } = await apiClient.get<Inspector[]>('/losses/inspectors', { signal })
     return data
   },
 

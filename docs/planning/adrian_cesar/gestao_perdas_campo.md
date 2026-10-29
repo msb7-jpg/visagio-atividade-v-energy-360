@@ -79,8 +79,8 @@
 > Prioridade: **obrigatórios do PDF primeiro, diferenciais depois** ("qualidade acima de quantidade", `atividade.pdf` §7).
 
 ### Fase 0 — Alinhamentos com outras fatias (sem código)
-- [ ] Confirmar com **Renan** que `fato_medicao.competencia` sai como `'YYYY-MM'` (o checklist dele também cita `MM/YYYY` na `dim_calendario`; o backend de perdas assume `YYYY-MM`).
-- [ ] Confirmar com **Ryei** as colunas de `fato_inspecoes_perdas` (`id_inspecao`, `id_uc`, `data_inspecao`, `irregularidade_constatada`, `tipo_irregularidade`, `kwh_recuperado`).
+- [x] Confirmar com **Renan** que `fato_medicao.competencia` sai como `'YYYY-MM'` (o checklist dele também cita `MM/YYYY` na `dim_calendario`; o backend de perdas assume `YYYY-MM`). (Conferido no `v_energy.db` real em 2026-10-28: 2.152.336 de 2.152.336 linhas em `YYYY-MM`, de 2022-07 a 2026-06. Verificado na base, não por resposta do Renan; a `dim_calendario` não foi conferida.)
+- [x] Confirmar com **Ryei** as colunas de `fato_inspecoes_perdas` (`id_inspecao`, `id_uc`, `data_inspecao`, `irregularidade_constatada`, `tipo_irregularidade`, `kwh_recuperado`). (Conferido no `v_energy.db` real em 2026-10-28: as seis colunas existem, mais `id_inspetor`. Verificado na base, não por resposta do Ryei.)
 
 ### Fase 1 — ⚠️ Script PROVISÓRIO de dados de desenvolvimento
 > [!WARNING]
@@ -106,7 +106,7 @@
 - [x] Prioridade pela taxa histórica de acerto: a fila ordena por kWh esperado (kWh a recuperar × taxa de acerto do sinal) e o score só desempata. (taxas 0,93 para queda súbita e 0,627 geral para leitura zerada isolada; a de leitura zerada ainda não foi medida)
 - [x] Consumo negativo ignorado na fila: leituras com `consumo_kwh < 0` (troca de medidor ou sinal invertido na origem) não entram nas médias. Na base bruta, 81 de 81 UCs da fila vinham dessas leituras.
 - [x] Competência de referência configurável para a demonstração (`LOSS_REFERENCE_COMPETENCIA`, formato `YYYY-MM`; ausente = competência mais recente): a fila e o kWh das novas ordens usam os dados até essa competência, só as inspeções feitas até o fim dela excluem a UC, e a tela mostra o aviso "Competência de referência fixada". Com `2025-08` nos dados do case, a fila tem 200 UCs e o top 200 acertou 94,9% (198 conciliadas, 188 irregulares).
-- [ ] Tarifa real de `fato_faturamento` no valor a recuperar (aguarda Ryei).
+- [x] Tarifa real de `fato_faturamento` no valor a recuperar. (Passo 12, Fase 14.4: tarifa média ponderada dos últimos 12 meses, sem depender da resposta da Fatia 02.)
 
 ### Fase 3 — Conformidade com `backend-coding-standards`
 - [x] Docstrings Google-style nos métodos públicos (repositório, serviço, rotas, fábrica de DI). Também em `queries.py` e `scoring.py`.
@@ -134,7 +134,21 @@
 - [x] Upload aceita o formato real do campo (`inspecoes.xlsx`): apelidos `data`, `resultado` e `inspetor`; quando o `id_inspecao` não é um id do portal (ex.: `IN0000007`), a linha casa pela ordem ativa da `id_uc`. Com ordens ativas, as 1.389 linhas reais são conciliadas.
 
 ### Fase 7 — Troca do provisório pela Gold real
-- [ ] Quando Renan/Ryei exportarem a Gold: **apagar** o seed local da Fase 1 e as tabelas geradas por ele, rodar a fila contra os dados reais e conferir os números.
+> A equipe de dados enviou o `backend/v_energy.db` real (Gold). Conferência feita em 2026-10-27; detalhes no `changelog.md`.
+- [x] Seed local da Fase 1 sem resíduos: o `v_energy.db` real só tem as tabelas da Gold e a `ordem_inspecao` (nenhuma tabela marcada `_seed_provisorio_fatia05`); o `v_energy_dev.db` é só da Visão 360.
+- [x] Fila rodada contra os dados reais e números conferidos: 45.000 UCs, 2.152.336 medições (2022-07 a 2026-06), 1.389 inspeções (871 irregulares, 62,7%). Fila em tempo real (2026-06): **0 UCs** (as 559 quedas ≥ 50% são todas de UCs com GD, que a regra exclui); com a competência fixada em 2025-07: **827 UCs**, top 200 com **94,6%** de acerto nas inspeções dos 3 meses seguintes.
+- [x] Taxa geral 0,627 confirmada (871/1.389). Taxa da queda súbita (0,93): o backtest na Gold real dá 91 a 95% por competência, então a constante segue defensável.
+- [x] Tarifa: definida na P4 como `valor_total_rs / consumo_faturado_kwh` dos últimos 12 meses (R$ 0,7876/kWh); as medidas de 0,774 e 0,561 foram descartadas. Ver `DECISOES_PERDAS.md` D8.
+- [x] Remedir na Gold real os números que ainda vêm do seed: limiar de 50% (92,6%, D2), exclusão de GD (3,2%, D3) e a taxa da leitura zerada isolada (usa a geral). Feito na Fase 15.4 (D12, 2026-10-28): 50% e GD confirmados; a leitura zerada não é mensurável (0 leituras zeradas na Gold real) e segue como suposição.
+
+### Fase 11 — Fila classificada (2026-10-27)
+> Pedido do dono da fatia: em vez de cortar a fila no limiar de 50%, classificar as UCs e deixar a chance de acerto por faixa mostrar o quanto cada uma vale a inspeção. Detalhes no `changelog.md`.
+- [x] `queda_moderada` (queda de 20% a 50%) entra na fila com chance de acerto por faixa: 0,42 (30% a 50%) e 0,07 (20% a 30%); a queda súbita (50% ou mais, 0,93) continua no topo.
+- [x] Testes escritos antes (TDD), front com o novo motivo e filtro, `tests/conftest.py` isolando o `.env`.
+- [x] No `v_energy.db` real, a fila em tempo real (2026-06) passa de 0 para 165 UCs; backtest de 2025-07 mantém 94,9% de acerto no top 200.
+- [x] Conferir a tela no navegador com a fila classificada. (Adrian César, 2026-10-29; achados corrigidos no mesmo dia, ver `changelog.md`: selo da coluna Situação em uma linha e score igual com ou sem filtro territorial.)
+- [x] Meses de queda generalizada: queda normalizada pela mediana da carteira. (Fase 15.4: calibra a chance de acerto; a entrada na fila segue pela queda bruta.)
+- [x] Paginação (`offset`) além das 500 UCs da API. (Fase 15.5)
 
 ### Fase 8 — Documentação e suposições (README / changelog)
 > Tudo abaixo está documentado em [`docs/DECISOES_PERDAS.md`](../../DECISOES_PERDAS.md) (decisão, impacto e conformidade).
@@ -144,6 +158,9 @@
 - [x] Exclusão de UCs com GD: **3,2%** de acerto nas 31 inspeções em UCs com painel solar. (D3)
 - [x] Fila quase vazia na competência mais recente (2026-06) é esperada: a onda de quedas de meados de 2025 já foi inspecionada. (D9)
 - [x] Fórmula da energia estimada a recuperar (déficit mensal × 3 meses) como suposição. Medido: o recuperado foi 1,87× o estimado (mediana), com correlação de 0,87. (D7)
+- [x] **README da Fatia 05** (seção "Suposições e Demonstração por Fatia"): como a fila é montada, passo a passo da demonstração com `LOSS_REFERENCE_COMPETENCIA="2025-09"`, tabela de suposições e limites. (Adrian César, 2026-10-29)
+- [x] **Causa da fila de 39 mil UCs** (`2025-09`) no README, em uma frase no passo a passo da demonstração (a carteira inteira perdeu consumo em 2025; o que vale é o topo), com a medição no D9. O roteiro de perguntas e respostas para a banca foi escrito e depois removido do README, por ser fala de apresentação e não documentação. Sem mudança na tela. (Adrian César, 2026-10-29)
+- [x] **Decisões de 2026-10-29 registradas** em `DECISOES_PERDAS.md`: competência da demonstração (D9), score sem efeito dos filtros territoriais (D15), D4 e seção 5 corrigidos; contraste do `--warning` em `design.md`. (Adrian César, 2026-10-29)
 
 ### Fase 9 — Nova tela "Fila de Inspeção" (desenho de 2026-10-24)
 > Referência visual: [`assets/fila-inspecao-escuro.png`](assets/fila-inspecao-escuro.png) e [`assets/fila-inspecao-claro.png`](assets/fila-inspecao-claro.png) (mesmo layout, temas escuro e claro). Branch: `feat/fatia-05-fila-inspecao-nova-tela`.
@@ -161,7 +178,38 @@
 - [x] **10.2 — Componentes existentes alinhados** a `componentes-*.png`: `EmptyState`, `LoadingSkeleton`, `Badge` (tint de 15% e variantes `accent`/`muted`), `SidebarNav`, `AppLayout`. (Adrian César, 2026-10-27)
 - [x] **10.3 — `StatusBadge`** (`fatura`, `ordem`, `leitura`) ligado à Fila de Inspeção. Código morto `InspectionStatusBadge` e `STATUS_LABELS` removidos. (Adrian César, 2026-10-27)
 - [x] **10.4 — `ErrorState`** em `AsyncState` e `ErrorBoundary`. (Adrian César, 2026-10-27)
-- [ ] **10.5 — Pendências:** conferência visual nos dois temas, `onRetry` nas telas de outras fatias, migração de UC 360 (`PAYMENT_STATUS`) para o `StatusBadge`, e `KpiCard`, `DeltaBadge`, `DataTable`, `FilterBar` (dono a definir com a equipe).
+- [x] **10.5a — Conferência visual nos dois temas** da Fila de Inspeção, painel de detalhe, quadro de ordens e diálogos de importar e gerar ordens: contraste AA medido em todos os textos visíveis; 1 falha (selo "Pendente" no claro, 4,44:1), ver `changelog.md`. (Adrian César, 2026-10-29)
+- [x] **10.5b — Pendências com outros donos registradas em `docs/CORRECOES.md`** (Adrian César, 2026-10-29): `onRetry` na Visão 360 (seção 5), na Inteligência Comercial (7) e na Qualidade da Rede (8, seção nova); `PAYMENT_STATUS` da Visão 360 para o `StatusBadge` (5); `KpiCard`, `DeltaBadge`, `DataTable` e `FilterBar` sem dono (9). A correção é de cada responsável.
+- [x] **10.5c — Selo de aviso no tema claro abaixo do AA** (4,44:1 no "Pendente"; 4,09:1 sobre `--accent`): `--warning` claro de `#8A5A00` para `#7F5200` (mínimo 4,61:1 em todas as superfícies), com teste de contraste dos dois temas. O `--chart-4` segue `#8A5A00`. (Adrian César, 2026-10-29)
+
+### Fase 12 — Fila em duas faixas (2026-10-27)
+- [x] **12.1 — Abas Prioritárias, Baixa chance e Todas** na Fila de Inspeção (`QueueBandTabs`, `queueBands.ts`), acima da tabela e com contagem, corte de 30% de chance de acerto e "Selecionar top 10 prioritárias" só entre as prioritárias. Decisão D11 em `docs/DECISOES_PERDAS.md`. (Adrian César, 2026-10-27)
+- [ ] **12.2 — Pendências com a equipe:** prazo de reincidência para UC com irregularidade constatada e autorização de um piloto de inspeção fora da fila.
+
+### Fase 13 — Filtros da fila enxutos (2026-10-27)
+- [x] **13.1 — Remover o filtro "Score mínimo"** da Fila de Inspeção: as abas por chance de acerto já cortam a fila. A explicação do score passa para o cabeçalho da coluna. Backend (`score_minimo`) fica por compatibilidade. (Adrian César, 2026-10-27)
+
+### Fase 14 — Painel de detalhe da UC (2026-10-28)
+- [x] **14.1 — Passo 8: `Sheet` de detalhe da UC** na Fila de Inspeção (`UnitDetailSheet`, `UnitDetailBody`, `UnitScoreCalculation`, `UnitConsumptionChart`, `PriorInspectionsList`, `useUnitDetailQuery`). Abre por clique ou Enter na linha; mostra motivo, conta do score, consumo de 12 meses (mês sem leitura = lacuna) e inspeções anteriores; carregando, erro com "Tentar novamente" e vazio; "Gerar ordem desta UC" reaproveita o diálogo de lote e não aparece para o `diretor`. (Adrian César, 2026-10-28)
+- [x] **14.2 — Captura em modo escuro** (`assets/fila-inspecao/14-detalhe-da-uc-modo-escuro.jpg`) e **retorno de foco à linha** ao fechar (Esc e botão X) conferidos no navegador. (Adrian César, 2026-10-29)
+- [ ] **14.2b — Pendência:** passo 10 em diante não iniciado.
+- [x] **14.3 — Passo 9: diálogos de campo com lista** (`InspectorField`, `RegisterResultDialog`, `CancelOrderDialog`, `DispatchOrderDialog`, `apiFieldErrors`, `cancellationReasons`). Inspetor (lista da API, busca acima de 15), data dd/mm/aaaa sem data futura e motivo de cancelamento em lista; erros 422 ao lado do campo sem fechar o diálogo; cartão do quadro mostra inspetor, data e motivo. (Adrian César, 2026-10-28)
+- [x] **14.4 — Passo 12: tarifa média calculada da base (P4).** `valor_total_rs / consumo_faturado_kwh` de `fato_faturamento` nos últimos 12 meses (R$ 0,7876/kWh em 2025-07 a 2026-06), com cache por dia; `tarifa_rs_kwh` e o período no resumo; texto de apoio no cartão; sem tarifa de reserva. Registrado em `changelog.md`. [Concluído por Adrian Cesar - 2026-10-28]
+
+### Fase 15 — Conferência com a fala do gerente de perdas (2026-10-28)
+> Correção de 2026-10-29: conferência dos dados por UC achou o histórico curto (D14); ver 15.6.
+> Plano de melhora a partir da conferência da fala de Rafael Coutinho (`atividade.pdf`, pág. 6) com o sistema.
+- [x] **15.1 — Consistência:** painel do diretor passa a usar o mesmo limiar da fila (20%), com teste; `DECISOES_PERDAS.md` D8 e D9 atualizados (tarifa calculada, funil de 45.000 para 165 UCs) e pendências de tarifa fechadas. (Adrian César, 2026-10-28)
+- [x] **15.2 — Honestidade na tela:** aviso "N UCs prioritárias para uma capacidade de 200 inspeções por mês" (`QueueCapacityNotice`), expectativa da seleção "cerca de X de N inspeções devem achar irregularidade" e aviso de baixa chance, na barra de ações e no diálogo de geração (`SelectionOutlookNote`, `queueOutlook.ts`). Só frontend; nada bloqueia a decisão do gerente. (Adrian César, 2026-10-28)
+- [x] **15.3 — Motivo e valor mais úteis:** a frase do motivo no painel de detalhe traz a faixa de queda e a taxa de acerto da faixa ("Na faixa de queda de 30% a 50%, 42% das inspeções históricas acharam irregularidade"), calculada no backend (`drop_band_label`); o cartão da energia recuperável avisa que a estimativa de 3 meses ficou abaixo do recuperado (1,87×, D7). Sem coluna Motivo na tabela: as 165 UCs têm o mesmo motivo e o teste "não repete o motivo em cada linha" é uma decisão anterior. (Adrian César, 2026-10-28)
+- [x] **15.4 — Mais sinais, com evidência:** medição feita em 2026-10-28 e registrada em `DECISOES_PERDAS.md` D12.
+  - [x] GD remedido na Gold real: 1 de 31 (3,2%), a exclusão continua. Queda de 50% ou mais remedida: 92,6%.
+  - [x] Leitura zerada: não mensurável, a Gold real não tem leituras com consumo zero. Reincidência: não mensurável, nenhuma UC foi inspecionada duas vezes.
+  - [x] Queda normalizada pela mediana da carteira (decisão do dono da fatia em 2026-10-28): chance da `queda_moderada` de 91,5% (queda além da carteira de 20% ou mais) e 7,6% (abaixo), medida na população da fila. A entrada na fila não mudou; na fila de 2026-06 são 31 UCs fortes e 134 fracas. Backend: `normalized_drop_ratio`, `hit_rate.py`, `portfolio_repository.py`. Pendência 15.4: prazo de reincidência (sem dado).
+- [x] **15.5 — Escala e validação (2026-10-28):**
+  - [x] Paginação no servidor: `offset` em `GET /losses/suspicious-units` (a lista passa de 200 UCs e do teto de 500 por página) e botão "Carregar mais UCs" na Fila de Inspeção; a ordem, as abas e a seleção valem sobre tudo o que foi carregado. O `total` continua sendo o da fila inteira.
+  - [x] Protocolo do piloto fora da fila escrito em `DECISOES_PERDAS.md` D13 (estratos medidos, amostra de cerca de 150, critério de decisão). **A execução depende de autorização do gerente de perdas e da equipe de campo e fica fora da entrega de 04/11.**
+- [x] **15.6 — Histórico mínimo (2026-10-29):** a conferência dos números de cada UC (caso UC106967) mostrou que 25 das 31 UCs fortes eram ligações recentes (menos de 11 meses de base), fora da população em que a taxa de 91,5% foi medida. `MESES_BASE_MINIMO` = 11: abaixo disso a chance não passa de 7,6%, a linha mostra "Ligação recente: base de N meses", o cabeçalho "Queda" explica que são médias e a frase do detalhe avisa. Fila forte real: 7 UCs. `DECISOES_PERDAS.md` D14. (Adrian César)
 
 ---
 

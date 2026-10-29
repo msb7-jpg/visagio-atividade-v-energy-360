@@ -14,6 +14,7 @@ function makeUnit(idUc: string, situacao: QueueSituation = 'na_fila'): Suspiciou
     score: 80,
     situacao,
     probabilidade_acerto: 0.93,
+    meses_base: 12,
     consumo_base_kwh: 300,
     consumo_recente_kwh: 50,
     kwh_estimado_recuperar: 750,
@@ -67,6 +68,20 @@ describe('useQueueSelection', () => {
     act(() => result.current.selectTop(3))
 
     expect(result.current.selectedIds).toEqual(['UC2', 'UC3', 'UC5'])
+  })
+
+  it('seleciona o topo só entre as UCs que passam no filtro informado', () => {
+    const queue = [
+      { ...makeUnit('UC1'), probabilidade_acerto: 0.07 },
+      { ...makeUnit('UC2'), probabilidade_acerto: 0.42 },
+      { ...makeUnit('UC3'), probabilidade_acerto: 0.07 },
+      { ...makeUnit('UC4'), probabilidade_acerto: 0.93 }
+    ]
+    const { result } = renderHook(() => useQueueSelection(queue))
+
+    act(() => result.current.selectTop(3, (unit) => unit.probabilidade_acerto >= 0.3))
+
+    expect(result.current.selectedIds).toEqual(['UC2', 'UC4'])
   })
 
   it('substitui a seleção anterior ao selecionar o topo', () => {

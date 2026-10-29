@@ -52,7 +52,7 @@ export function StatusBadge<Kind extends StatusKind>({ kind, status }: StatusBad
   const Icon = entry.icon
 
   return (
-    <Badge variant={entry.tone} data-testid="status-badge" className="gap-1">
+    <Badge variant={entry.tone} data-testid="status-badge" className="gap-1 whitespace-nowrap">
       {Icon ? <Icon aria-hidden="true" className="size-3" /> : null}
       {entry.label}
     </Badge>

@@ -15,6 +15,9 @@ import type {
 } from '@/features/loss_management/types/lossTypes'
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn() } }))
+vi.mock('@/features/auth/hooks/useAuth', () => ({
+  useAuth: () => ({ user: { role: 'gerente_perdas' } })
+}))
 
 vi.mock('@/features/loss_management/api/lossApi', () => ({
   lossApi: {
@@ -22,6 +25,7 @@ vi.mock('@/features/loss_management/api/lossApi', () => ({
     getQueueSummary: vi.fn(),
     getQueueFilters: vi.fn(),
     listInspections: vi.fn(),
+    listInspectors: vi.fn(),
     createInspection: vi.fn(),
     updateInspection: vi.fn()
   }
@@ -39,6 +43,7 @@ const suspiciousUnit: SuspiciousUnit = {
   score: 100,
   situacao: 'na_fila',
   probabilidade_acerto: 0.93,
+  meses_base: 12,
   consumo_base_kwh: 10544.8,
   consumo_recente_kwh: 3069.3,
   kwh_estimado_recuperar: 22426.2,
@@ -53,8 +58,11 @@ const summaryFixture: QueueSummary = {
   selecionadas: 0,
   kwh_mes_selecionadas: 0,
   valor_ano_selecionadas_rs: 0,
-  tarifa_rs_kwh: 0.714,
+  tarifa_rs_kwh: 0.7876,
+  tarifa_periodo_inicio: '2025-07',
+  tarifa_periodo_fim: '2026-06',
   retorno_esperado_kwh_mes: 0,
+  retorno_esperado_valor_ano_rs: 0,
   taxa_acerto: { inspecoes_total: null, irregularidades_confirmadas: null, taxa: 0.627, periodo_inicio: null, periodo_fim: null }
 }
 
@@ -105,6 +113,7 @@ describe('LossManagementPage', () => {
     mockedApi.getQueueSummary.mockResolvedValue(summaryFixture)
     mockedApi.getQueueFilters.mockResolvedValue({ municipios: [], classes: [] })
     mockedApi.listInspections.mockResolvedValue([])
+    mockedApi.listInspectors.mockResolvedValue([{ codigo: 'INSP-007' }, { codigo: 'INSP-014' }])
     mockedApi.createInspection.mockResolvedValue(buildOrder({}))
     mockedApi.updateInspection.mockResolvedValue(buildOrder({}))
   })
@@ -125,19 +134,20 @@ describe('LossManagementPage', () => {
     expect(screen.getByRole('button', { name: /Exportar planilha de campo/ })).toBeEnabled()
   })
 
-  it('envia ordem gerada para campo com o fiscal responsável', async () => {
+  it('envia ordem gerada para campo com o inspetor escolhido na lista', async () => {
     mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'gerada' })])
     renderPage()
     const board = await openOrdersTab()
 
     fireEvent.click(within(board).getByRole('button', { name: /^Enviar a campo OI-/ }))
-    fireEvent.change(await screen.findByLabelText('Fiscal responsável'), { target: { value: 'Equipe 3' } })
+    await screen.findByRole('option', { name: 'INSP-014' })
+    fireEvent.change(screen.getByLabelText('Inspetor'), { target: { value: 'INSP-014' } })
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar envio' }))
 
     await waitFor(() => expect(mockedApi.updateInspection).toHaveBeenCalledWith(1, {
-      status: 'pendente', fiscal_responsavel: 'Equipe 3'
+      status: 'pendente', inspetor: 'INSP-014'
     }))
-    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('OI-2026-0001 enviada a campo com Equipe 3.'))
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('OI-2026-0001 enviada a campo com INSP-014.'))
   })
 
   it('registra o resultado de campo de uma ordem pendente', async () => {
@@ -146,18 +156,44 @@ describe('LossManagementPage', () => {
     const board = await openOrdersTab()
 
     fireEvent.click(within(board).getByRole('button', { name: /^Registrar resultado OI-/ }))
-    fireEvent.change(await screen.findByLabelText(/Irregularidade constatada\?/), { target: { value: 'sim' } })
+    await screen.findByRole('option', { name: 'INSP-007' })
+    fireEvent.change(screen.getByLabelText(/^Inspetor/), { target: { value: 'INSP-007' } })
+    fireEvent.change(screen.getByLabelText(/Data da inspeção/), { target: { value: '2026-10-27' } })
+    fireEvent.change(screen.getByLabelText(/Irregularidade constatada\?/), { target: { value: 'sim' } })
     fireEvent.change(screen.getByLabelText(/Tipo de irregularidade/), { target: { value: 'BY-PASS' } })
     fireEvent.change(screen.getByLabelText(/kWh recuperado/), { target: { value: '680' } })
     fireEvent.click(screen.getByRole('button', { name: 'Salvar resultado' }))
 
     await waitFor(() => expect(mockedApi.updateInspection).toHaveBeenCalledWith(1, expect.objectContaining({
-      status: 'concluida', irregularidade_constatada: true, kwh_recuperado: 680
+      status: 'concluida', inspetor: 'INSP-007', data_inspecao: '2026-10-27', irregularidade_constatada: true, kwh_recuperado: 680
     })))
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Resultado de OI-2026-0001 registrado.'))
   })
 
-  it('exige justificativa para cancelar uma ordem', async () => {
+  it('move a ordem para Concluída com inspetor e data, sem recarregar a página, depois de salvar o resultado', async () => {
+    const concludedOrder = buildOrder({
+      status: 'concluida', irregularidade_constatada: false, inspetor: 'INSP-007', data_inspecao: '2026-10-27'
+    })
+    mockedApi.listInspections.mockResolvedValueOnce([buildOrder({ status: 'pendente' })])
+    mockedApi.listInspections.mockResolvedValue([concludedOrder])
+    renderPage()
+    const board = await openOrdersTab()
+
+    fireEvent.click(within(board).getByRole('button', { name: /^Registrar resultado OI-/ }))
+    await screen.findByRole('option', { name: 'INSP-007' })
+    fireEvent.change(screen.getByLabelText(/^Inspetor/), { target: { value: 'INSP-007' } })
+    fireEvent.change(screen.getByLabelText(/Data da inspeção/), { target: { value: '2026-10-27' } })
+    fireEvent.change(screen.getByLabelText(/Irregularidade constatada\?/), { target: { value: 'nao' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar resultado' }))
+
+    const concludedColumn = await screen.findByRole('region', { name: 'Concluída (1)' })
+    expect(within(concludedColumn).getByText('INSP-007')).toBeInTheDocument()
+    expect(within(concludedColumn).getByText('Inspeção em 27/10/2026')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Em campo (0)' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('só habilita o cancelamento depois de escolher o motivo da lista', async () => {
     mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'pendente' })])
     renderPage()
     const board = await openOrdersTab()
@@ -166,11 +202,12 @@ describe('LossManagementPage', () => {
     const confirmButton = await screen.findByRole('button', { name: 'Confirmar cancelamento' })
     expect(confirmButton).toBeDisabled()
 
-    fireEvent.change(screen.getByLabelText(/^Justificativa/), { target: { value: 'Cliente regularizou' } })
+    fireEvent.change(screen.getByLabelText(/^Motivo do cancelamento/), { target: { value: 'cliente_regularizou' } })
+    expect(confirmButton).toBeEnabled()
     fireEvent.click(confirmButton)
 
     await waitFor(() => expect(mockedApi.updateInspection).toHaveBeenCalledWith(1, {
-      status: 'cancelada', justificativa_cancelamento: 'Cliente regularizou'
+      status: 'cancelada', motivo_cancelamento: 'cliente_regularizou'
     }))
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('OI-2026-0001 cancelada.'))
   })
@@ -186,7 +223,7 @@ async function openCancelDialog() {
   renderPage()
   const board = await openOrdersTab()
   fireEvent.click(within(board).getByRole('button', { name: /^Cancelar OI-/ }))
-  fireEvent.change(await screen.findByLabelText(/^Justificativa/), { target: { value: 'Cliente regularizou' } })
+  fireEvent.change(await screen.findByLabelText(/^Motivo do cancelamento/), { target: { value: 'cliente_regularizou' } })
   return screen.getByRole('button', { name: 'Confirmar cancelamento' })
 }
 

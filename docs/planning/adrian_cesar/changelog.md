@@ -460,3 +460,371 @@
 - **Diferenças conhecidas em relação ao desenho:** selos e abas em 8 px (o spec pede 6 px, degrau que o Tailwind v4 não tem sem criar token); hover do botão primário em `/90` (spec: `/85`); ícone do selo "Estimada" é aproximado (`CircleDashed`); `EmptyState` sem `reason`/`activeFilters`; `AppShell` sem busca de UC, menu recolhível, selos "Dados até" e "Modo demonstração" nem seletor de tema.
 - **Efeito na entrega do dia 26:** o raio do quadro de ordens, antes 12 px "do design system", agora segue a escala nova (cartões `rounded-md`, colunas `rounded-lg`).
 - **Pendente / outras fatias:** `onRetry` do `ErrorState` ainda não ligado ao `refetch` em `Customer360Details`, `GridQualityPage` e `SuspiciousQueueTab`; UC 360 (`PAYMENT_STATUS`, Bernardo) e `QualityStatusBadge` (João Henrique) não migraram para o `StatusBadge`; `KpiCard`, `DeltaBadge`, `DataTable` e `FilterBar` seguem sem dono (compartilhados); `ChartCard`/`DrillDownTable` (Célio) e `ChatDrawer`/`SqlAuditPanel` (Miguel) ficam com os donos das fatias.
+
+### [2026-10-27] - Fase 7: fila conferida contra a Gold real (`v_energy.db`)
+- **Autor:** Adrian César (Fatia 05)
+- **Contexto:** a equipe de dados enviou o `backend/v_energy.db` real. Até aqui a fila foi desenvolvida e validada em bancos de simulação (o seed de 45.200 UCs com fila de 83 UCs e o banco sintético de 400 UCs). Nesta data o `v_energy.db` passou a ser a fonte de verdade; as entradas anteriores com números do seed ficam como histórico.
+- **O que foi conferido (somente leitura, nenhum código alterado):**
+  - **Banco usado:** análises e backend abrem `backend/v_energy.db` (sem `.env` de banco nem `DATABASE_URL`). O `v_energy_dev.db` (65 KB, seed da Visão 360) e os `-wal`/`-shm` órfãos de `v_energy_perdas_dev` não foram usados. O `v_energy.db` não tem tabela de seed.
+  - **Esquema:** colunas e formatos batem com o contrato usado em `queries.py` (`competencia` 'YYYY-MM', `data_inspecao` texto ISO, `possui_gd` 0/1). Contagens: 45.000 UCs, 2.152.336 medições (2022-07 a 2026-06, sem consumo negativo), 1.389 inspeções (871 irregulares, 62,7%), 3.510 UCs com GD (iguais às de `geracao_distribuida.csv`). `ordem_inspecao` e `fato_anomalia_leitura` vazias.
+  - **Fila em tempo real (2026-06): 0 UCs.** As 559 UCs com queda ≥ 50% são todas com GD e todas conectaram entre 2025-06 e 2026-04, ou seja, a queda é explicada pela geração solar e a regra as exclui. Entre as UCs sem GD, a maior queda é de 38%. As 1.358 UCs sem GD inspecionadas desde 2025-04 saem da fila. O resultado é o esperado (ver `DECISOES_PERDAS.md` D9) e a regra não foi alterada.
+  - **Poder do sinal nas 1.385 inspeções analisáveis** (consumo dos 3 meses antes da inspeção contra os 12 anteriores): queda ≥ 50% acerta 91% (713 de 780); faixa de 0,5 a 0,7 do consumo, 42%; de 0,7 a 0,85, 7%; sem queda, cerca de 6 a 10%. Nas 391 UCs com GD medidas, o consumo cai a uma mediana de 27% depois da conexão.
+- **Backtest com o `LossService` real** (competência fixada, só as inspeções até o mês contam; acerto nas inspeções dos 3 meses seguintes):
+
+| Referência | UCs na fila | Inspecionadas depois | Acerto | Top 200 inspecionadas | Acerto do top 200 |
+|---|---|---|---|---|---|
+| 2025-06 | 3 | 0 | n/a | 0 | n/a |
+| 2025-07 | 827 | 300 | 94,0% | 129 | 94,6% |
+| 2025-08 | 773 | 369 | 94,9% | 155 | 96,8% |
+| 2025-09 | 590 | 492 | 91,5% | 197 | 93,9% |
+| 2025-10 | 352 | 336 | 90,8% | 197 | 92,9% |
+| 2025-11 | 71 | 70 | 90,0% | 70 | 90,0% |
+| 2026-06 | 0 | 0 | n/a | 0 | n/a |
+
+  - A API limita a 500 UCs por consulta, então "UCs na fila" é o `total` e o acerto da fila é medido nas 500 primeiras.
+  - Fila de 2025-07 contra todas as inspeções posteriores (sem limite de 3 meses): 500 UCs, 497 inspecionadas depois, 467 irregulares (94,0%); top 200 com 189 de 199 (95,0%), contra 62,7% de toda a base.
+- **Configuração para demonstração:** criado `backend/.env` local (ignorado pelo git) com `LOSS_REFERENCE_COMPETENCIA="2025-07"`. A API devolve 827 UCs (200 exibidas) e o aviso `competencia_referencia_fixada`, que a tela mostra. Para voltar ao tempo real, remover a linha e reiniciar o backend. Não conferido no navegador.
+- **Decisões e limitações:**
+  - Quase todas as UCs da fila fixada (497 de 500) foram depois inspecionadas: o campo já seguia esse padrão de queda. O backtest mostra que a regra reproduz bem a escolha do campo, mas **não prova** que ache irregularidades em UCs que ninguém inspecionou; apresentar como "taxa histórica de acerto".
+  - `possui_gd` é o estado atual: UCs que conectaram GD depois da referência ficam fora do backtest (conservador).
+  - A tabela do D9 de `DECISOES_PERDAS.md` foi medida no banco de simulação (por exemplo 354 UCs em 2025-06); na Gold real a onda de quedas começa mais tarde (3 UCs em 2025-06). A tabela acima a substitui.
+- **Pendências:**
+  - Tarifa: `TARIFA_MEDIA_RS_KWH` = 0,714 no código e 0,85 no D8; no `fato_faturamento` real a média de `tarifa_aplicada_rs_kwh` é 0,774 e `valor_energia_rs / consumo_faturado_kwh` é 0,561. Definir com Ryei qual medida usar.
+  - Remedir na Gold real: limiar de 50% (92,6% no D2), exclusão de GD (3,2% no D3) e a taxa da leitura zerada isolada (usa a geral 0,627).
+  - Taxa da queda súbita (0,93): mantida; o backtest na Gold real dá 91 a 95%.
+  - Fila em tempo real vazia: `SuspiciousQueueTab.tsx` já explica ("Nenhuma UC atende aos critérios. UCs com geração distribuída ou já inspecionadas na janela de análise ficam fora da fila"). Opcional: citar também o limiar de queda de 50%.
+- **Validação:** consultas somente leitura (`mode=ro`) e a `LossService` do backend; sem alteração de código, então `make lint-all` e `make test-all` não foram reexecutados.
+
+### [2026-10-27] - Fase 11: fila classificada (piso de 20% e chance de acerto por faixa)
+- **Autor:** Adrian César (Fatia 05)
+- **Motivação:** com o limiar duro de 50%, a fila em tempo real (2026-06) ficava vazia e os dados de 2026 não apareciam. Pedido: uma fila classificada, sem corte duro, com a chance de acerto calibrada por faixa de queda.
+- **O que foi feito (TDD, testes escritos antes):**
+  - `schemas.py`: novo motivo `SuspicionReason.QUEDA_MODERADA` (`"queda_moderada"`).
+  - `scoring.py`: piso `LIMIAR_QUEDA_MODERADA` = 0,2 e `LIMIAR_QUEDA_MODERADA_FORTE` = 0,3. Queda de 50% ou mais segue `queda_subita` (0,93); de 20% a 50% vira `queda_moderada`, com `probabilidade_acerto` por faixa: **0,42** (30% a 50%) e **0,07** (20% a 30%). Novas `reason_hit_rate` e `hit_probability(reasons, drop_ratio)`. A ordenação não mudou: kWh esperado = kWh a recuperar × chance de acerto, então a queda súbita continua no topo.
+  - `service.py`: `suspicion_filters` passa o piso de 20% como critério de candidata (vale para a lista, o resumo e o kWh das ordens novas).
+  - Front: tipo `SuspicionReason`, rótulo "Queda moderada de consumo" e opção no filtro Motivo. Texto OpenAPI de `GET /losses/suspicious-units` atualizado.
+  - Tabela da fila: a coluna "Motivos" saiu, porque o motivo não está no banco (é calculado na API) e vinha igual em todas as linhas. Entraram "Queda" (`formatConsumptionDrop`, com consumo base → recente) e "Chance de acerto" (`probabilidade_acerto`), que variam por UC. O filtro por motivo continua. Validação: `make lint-all` e `make test-all` verdes (backend 543, frontend 209).
+  - `backend/tests/conftest.py`: isola a suíte do `backend/.env` local. Sem isso, a competência fixada para demonstração fazia 12 testes falharem.
+  - Fixture `UC_ZERADA` (base 150 para 120) e o teste unitário de leitura zerada isolada (recente 100 para 130) ajustados: com o piso novo, a queda de 33% deixou de ser "sem queda grande".
+- **Taxas das faixas** (medidas no `v_energy.db`, inspeções de 2025-08 a 2025-12): 30% a 50% de queda = 42% (132 de 314); 15% a 30% = 7% (13 de 176); a faixa de 20% a 30% usa a segunda. Amostras pequenas e escolhidas pelo campo.
+- **Resultado nos dados reais:**
+  - Tempo real (2026-06): **165 UCs** sem GD e não inspecionadas, 19 com chance de 42% e 146 com 7%. Os dados de 2026 passam a aparecer.
+  - Backtest 2025-07: top 200 com **94,9%** de acerto (188 de 198 inspecionadas depois) e fila de 500 com 94,1%; a ordenação do topo não piorou.
+- **Limitações:**
+  - **Meses de queda generalizada:** em 2025-07 e 2025-09 quase toda a carteira cai 20% ou mais (34.240 e 39.247 UCs acima do piso). O topo continua certo (queda súbita primeiro), mas o `total` perde o sentido e a consulta carrega todos os candidatos em memória. Melhoria possível: normalizar a queda pela queda mediana da carteira.
+  - A API continua limitada a 500 UCs por consulta e não tem paginação (`offset`).
+  - Taxas de 42% e 7% a remedir com mais dados; a de 0,93 segue confirmada pelo backtest (91 a 95%).
+- **Configuração:** a competência fixada em 2025-07 foi comentada no `backend/.env` (a fila usa a mais recente, 2026-06). Reiniciar o backend para valer.
+- **Validação:** `make lint-all` exit 0 (Ruff, Pylint 10/10, import-linter 4/4, ESLint, Fallow 0 acima do limite); `make test-all` exit 0: backend **543 passed** (6 novos), frontend **201 passed** (1 novo). **Não conferido no navegador.**
+
+### [2026-10-27] - Fase 12: fila em abas (prioritárias, baixa chance e todas)
+- **Autor:** Adrian César (Fatia 05)
+- **Motivação:** a fila real (2026-06) tem 165 UCs, todas `queda_moderada`: 19 com chance de acerto de 42% e 146 com 7%. Misturadas, a posição 100 parecia tão boa quanto a 10. A primeira versão recolhia a baixa chance atrás de um botão no fim da lista; o usuário não descobria as outras UCs sem rolar a página, então virou abas acima da tabela.
+- **O que foi feito (só frontend; o backend não mudou):**
+  - `utils/queueBands.ts`: `PRIORITY_MIN_HIT_PROBABILITY` = 0,3 (entre 7% e 42%), `isPriorityUnit` e `splitQueueBands`, que mantêm a ordem do backend dentro de cada faixa.
+  - `QueueBandTabs.tsx`: abas **Prioritárias**, **Baixa chance** e **Todas** acima da tabela, com a contagem em cada uma e uma linha que explica a faixa. Usam o estilo sublinhado (`Tabs variant="line"`, variante nova em `ui/tabs.tsx`; o padrão `segmented` não mudou), para não parecerem as abas da página. Abre nas prioritárias; aba sem UC fica desligada e, sem nenhuma prioritária, abre a primeira com UC. Avisa quando a fila foi cortada pelo limite da API.
+  - `PrioritizedQueueTable.tsx`: `total` opcional e `label` próprio por tabela. A posição (#) vale dentro da aba.
+  - `useQueueSelection.selectTop(count, include?)` e `QueueActionsBar`: o botão passou a "Selecionar top 10 prioritárias" e só marca UCs prioritárias, em qualquer aba. A seleção vale entre abas.
+  - Testes: `queueBands.test.ts`, `QueueBandTabs.test.tsx` e um caso novo em `useQueueSelection.test.ts`.
+- **Medições que sustentam a decisão** (consultas somente leitura no `v_energy.db`; D11 em `DECISOES_PERDAS.md`):
+  - Funil: 45.000 UCs, 41.490 sem GD, 40.128 sem as 1.358 inspecionadas, 165 com queda de 20% ou mais. Antes de excluir as inspecionadas eram 656 (491 removidas, 93% delas com irregularidade).
+  - Taxas no ponto do tempo (queda até o mês anterior à inspeção, 1.385 inspeções): 7% (12 de 161) em 20% a 30%, 42% (132 de 314) em 30% a 50% e 91% (713 de 780) a partir de 50%. Confirmam as taxas do código; a análise com a queda de hoje dava 93% na faixa de 20% a 30% por olhar para o futuro.
+  - Sinais testados e não adotados: consumo frente à mediana das UCs da mesma classe e alimentador, e leituras estimadas nos 3 meses anteriores. Entre as 130 inspeções com queda abaixo de 20% (11 irregularidades), nenhum separa as irregulares.
+- **Pendências com a equipe:** prazo de reincidência para UC com irregularidade constatada; autorização de um piloto de 40 a 50 inspeções fora da fila para validar um sinal novo. **Não conferido no navegador** (nem as abas dentro das abas da página, nos dois temas).
+- **Validação:** `make lint-all` exit 0; `make test-all` exit 0: backend **543 passed**, frontend **227 passed**.
+
+### [2026-10-27] - Fase 13: filtros da fila enxutos (sem "Score mínimo")
+- **Autor:** Adrian César (Fatia 05)
+- **Motivação:** com as abas por chance de acerto (Fase 12), o select "Score mínimo" (50, 70, 90) virou um segundo corte de prioridade, em outra escala e relativo à UC do topo, sem critério operacional.
+- **O que foi feito (só frontend; o backend não mudou):**
+  - `QueueFilters.tsx`: ficam Motivo, Município e Classe (grid de 3 colunas); saíram o select, `MIN_SCORE_OPTIONS` e o link "como calculamos o score".
+  - `PrioritizedQueueTable.tsx`: o cabeçalho "Score" virou um botão com a explicação do score (abre com mouse e com foco de teclado).
+  - `lossTypes.ts`: `score_minimo` saiu de `SuspiciousUnitsFilter`; `lossQueries.ts`: `compactFilters` só trata texto.
+  - Testes: `SuspiciousQueueTab`, `lossQueries` e `lossApiRequests` sem `score_minimo`; caso novo em `PrioritizedQueueTable.test.tsx` para a explicação do score.
+- **Backend (removido no mesmo dia, depois de conferir que ninguém mais usava):** `score_minimo` saiu de `SuspiciousUnitsFilterDTO` e de `GET /losses/suspicious-units` (a documentação OpenAPI foi ajustada); `min_score` saiu de `rank_suspicious_units` e do `LossService.list_suspicious_units`. O `score` de cada UC continua calculado sobre todas as candidatas, antes do filtro de motivo. Um cliente antigo que ainda mande `?score_minimo=` não recebe erro: o parâmetro é ignorado.
+  - Testes removidos: corte por score mínimo no ranking e validação de `score_minimo` acima de 100. Os casos de motivo no serviço e na rota ficaram, sem o `score_minimo`.
+- **Validação:** `make lint-all` exit 0; `make test-all` exit 0: backend **541 passed** (543 antes, menos os 2 testes removidos), frontend **228 passed** (1 novo). **Não conferido no navegador.**
+
+### [2026-10-28] - Fila de Inspeção: passos 1 e 2 do raio-x (textos, formatação, kWh) e P5
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Menu "Gestão de Perdas" renomeado para "Fila de Inspeção".
+  - Município, classe e tipo de irregularidade exibidos com acento e sem caixa alta (`utils/textFormat.ts`); o valor enviado à API continua o do banco.
+  - Botão "Limpar filtros" e estado vazio "Nenhuma UC com esses filtros." com ação de limpar.
+  - Toast "N ordens geradas." ao concluir o lote sem falhas; texto do cancelamento informa que o score é recalculado no próximo processamento.
+  - `ErrorState` com "Tentar novamente" na fila e no resumo dos cartões.
+  - Campo de kWh do resultado passou a texto com `inputMode="decimal"`; `parseKwh` aceita "1.240", "1240,5" e "1.240,5" e rejeita entradas ambíguas. Mensagem: "Informe o kWh recuperado (número maior que zero)."
+  - P5: removido o botão "Exportar fila" da aba Fila; "Exportar planilha de campo" permanece na aba Ordens.
+- **Fora desta entrega:** passo 3 em diante (RBAC de escrita, novas colunas, detalhe da UC) e atualização do protótipo.
+- **Validação de Testes:**
+  - `make lint-all` sem erros; `make test-all`: 541 passed (backend) e 268 passed (frontend).
+
+### [2026-10-28] - Fila de Inspeção: passo 3, escrita só para o gerente de perdas (P10)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Backend: novo grupo `PERDAS_WRITE` (só `gerente_perdas`) em `shared/role_groups.py`; `POST /inspections`, `PATCH /inspections/{id}` e `POST /inspections/upload` passam a exigi-lo (403 para `diretor`). Os `GET`, inclusive a exportação da planilha de campo, seguem com `PERDAS_ACCESS`.
+  - Frontend: hook `useCanWriteLosses`; para quem só consulta somem "Gerar N ordens", "Importar resultados de campo" e as ações dos cartões (enviar a campo, registrar resultado, cancelar). Seleção de UCs e cartões de resumo continuam visíveis.
+- **Validação de Testes:**
+  - Pytest: `diretor` lê os 5 `GET`, recebe 403 em `POST`/`PATCH`/upload e a ordem existente não muda. Vitest: hook por papel, botões escondidos para `diretor` e presentes para `gerente_perdas`.
+
+### [2026-10-28] - Fila de Inspeção: passo 4 reduzido, colunas novas em `ordem_inspecao` (P3)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Banco: `ordem_inspecao` ganhou 3 colunas anuláveis: `data_inspecao` (data), `inspetor` (código `INSP-001` a `INSP-040`) e `motivo_cancelamento` (lista fechada). As 7 ordens existentes seguem válidas, com as colunas novas nulas. Sem `executar_ate`, distribuição e observações (fora da entrega).
+  - Migração: o projeto não usa Alembic e não foi instalado. Novo `schema_upgrade.py`, idempotente (`ALTER TABLE ... ADD COLUMN` só se a coluna não existir), chamado na subida da API (`main.py`) e por `make db-upgrade`. Passo para bancos já criados documentado em `backend/README.md`.
+  - Motivos de cancelamento (enum `CancellationReason`, única fonte, vinda do protótipo): `cliente_regularizou`, `ordem_duplicada`, `endereco_nao_localizado`, `repriorizacao_equipe`, `outro`. Os rótulos em pt-BR ficam para o passo 9.
+  - Registrar resultado e importar planilha agora gravam `data_inspecao` e `inspetor` (antes a data era validada e descartada). O servidor rejeita inspetor fora de `INSP-001` a `INSP-040` e data futura (422 na API; na planilha, a linha é rejeitada com mensagem em pt-BR). O código do inspetor é normalizado (`insp-001` vira `INSP-001`).
+  - Cancelar exige `motivo_cancelamento` da lista (422 se faltar ou for outro valor). A `justificativa_cancelamento` em texto livre continua aceita, mas deixou de ser obrigatória.
+  - Planilha de campo: a coluna `inspetor` passou a gravar em `inspetor` (antes ia para `fiscal_responsavel`); a planilha exportada ganhou a coluna `inspetor`, em branco.
+  - Permissões do passo 3 mantidas: só `gerente_perdas` escreve; `diretor` segue com 403.
+  - Frontend: só tipos em `lossTypes.ts` (`CancellationReason` e campos novos opcionais). Nenhuma interface alterada.
+- **Dificuldades / Desafios:**
+  - O `uvicorn --reload` que estava rodando recarregou ao editar o `main.py` e aplicou a atualização no `v_energy.db` real, sem comando manual. Conferido depois: as 7 ordens seguem `gerada`, as 3 colunas estão nulas e o índice único parcial está intacto. O script foi validado também numa cópia do banco devolvida ao formato antigo (1ª execução adiciona as colunas, 2ª não faz nada, 7 ordens preservadas).
+  - **Cancelar pela tela retorna 422 até o passo 9**: o `CancelOrderDialog` ainda envia só a justificativa em texto livre, e o servidor agora exige o motivo da lista.
+- **Fora desta entrega:** passo 5 em diante (diálogos com lista de inspetor e motivo, endpoint de inspetores, detalhe da UC).
+- **Validação de Testes:**
+  - Pytest novos/ajustados: migração roda duas vezes e preserva as 7 ordens; resultado grava data e inspetor; inspetor inválido e data futura retornam 422; cancelamento sem motivo ou fora da lista retorna 422; motivo válido é gravado; `diretor` segue com 403.
+  - `make lint-all` sem erros; `make test-all`: 572 passed (backend) e 278 passed (frontend); `tsc` do app sem erros. **Não conferido no navegador.**
+
+### [2026-10-28] - Fila de Inspeção: passo 5 (inspetores e território nas ordens) e P13 (retorno esperado por UC)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Novo `GET /losses/inspectors` (leitura: `gerente_perdas` e `diretor`). A fonte real é `fato_inspecoes_perdas.id_inspetor` (40 códigos, `INSP-001` a `INSP-040`). A base **não tem nome de exibição** (nenhuma tabela de inspetores, nenhuma coluna de nome), então a resposta é só `[{"codigo": "INSP-001"}, ...]`. Sem a tabela de histórico responde 500, como os demais `GET` que leem a Gold.
+  - `GET /losses/inspections` passa a trazer `municipio`, `bairro` e `classe_consumo` da UC, por um único LEFT JOIN com `dim_unidade_consumidora` (sem N+1; ordem de UC fora do cadastro vem com os três nulos). `POST`/`PATCH`/upload e a planilha de campo continuam sem esses campos. Frontend: o cartão do quadro mostra "Bairro · Município" (formatados como na fila) e "—" quando não há dado.
+  - P13: `retorno_esperado_kwh_mes` e o novo `retorno_esperado_valor_ano_rs` passam a ser a soma, por UC selecionada, de `kwh_mes_recuperavel × probabilidade_acerto` (e de `valor_ano_rs × probabilidade_acerto`), não mais a taxa histórica global. O cálculo mora só no backend (`queue_summary.expected_return`); o front antes multiplicava `valor_ano × taxa` por conta própria e agora só exibe o valor do servidor. O card "Taxa de acerto" segue com a taxa histórica (62,7%). A tarifa continua a constante de hoje (R$ 0,714); a troca é o passo 12.
+  - Correção pequena: `_distinct_values` usava `distinct(coluna)`, que gerava `SAWarning`; passou a `select(coluna).distinct()`.
+- **Exemplo numérico do P13:** UC A com queda de 40% (chance 42%, déficit 80 kWh/mês) e UC B com queda de 25% (chance 7%, déficit 50 kWh/mês). Retorno por UC: 80 × 0,42 + 50 × 0,07 = 33,6 + 3,5 = **37,1 kWh/mês**, ou 685,44 × 0,42 + 428,40 × 0,07 = **R$ 317,87/ano** (a R$ 0,714). Com a taxa global de 62,7% o mesmo par daria 81,5 kWh/mês e R$ 698,35/ano, mais que o dobro.
+- **Divergência registrada (não alterada):** sem UC selecionada, o resumo **não** mostra o retorno da fila filtrada: `GET /queue-summary` sem `ucs` devolve energia e retorno **zero** (há teste para isso), e o resumo ignora os filtros da tela. Mantido como está, à espera de decisão.
+- **Fora desta entrega:** cliente da API de inspetores no front (entra no passo 9, com os diálogos); passo 6 em diante.
+- **Validação de Testes:**
+  - Pytest novos: inspetores (200, `diretor` 200, perfil sem permissão 403, sem tabela de histórico 500), ordens com bairro/município/classe e ordem de UC fora do cadastro, retorno esperado com o exemplo acima e com seleção vazia. O teste do resumo existente passou de 75,0 (150 × 50%) para 139,5 (150 × 93%, a UC é queda súbita).
+  - Vitest novos: cartão com bairro e município, sem os dois ("—") e só com um; card "Retorno esperado" usa o valor do servidor.
+  - `make lint-all` exit 0; `make test-all` exit 0: backend **580 passed**, frontend **281 passed**. **Não conferido no navegador.**
+
+### [2026-10-28] - Fila de Inspeção: passo 8 (painel lateral de detalhe da UC)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Clicar na linha da Fila (ou Enter com a linha focada) abre um `Sheet` com o detalhe da UC, lido de `GET /losses/suspicious-units/{id_uc}` e guardado em cache por UC. Clicar no link da UC ou no checkbox não abre o painel.
+  - Conteúdo: cabeçalho (UC, bairro, município, classe, situação); "Por que está na fila" (motivo e frase da API); "Como o score é calculado" com os números (kWh/mês × meses da janela × chance de acerto = kWh esperado, relativo ao topo da fila = score); consumo dos 12 meses com `recharts` e token `chart-1`, mês sem leitura como lacuna; inspeções anteriores (data dd/mm/aaaa, resultado, inspetor).
+  - Estados: skeleton, erro em pt-BR com "Tentar novamente", vazio (404) e "Nenhuma inspeção anterior para esta UC.".
+  - Rodapé: "Gerar ordem desta UC" marca só essa UC e abre o diálogo de lote existente; desligado se a UC já tem ordem; oculto para o `diretor`.
+- **Diferenças do protótipo:** sem pontos por motivo (P1) e sem linha dos vizinhos (fora da entrega); a conta mostra a janela de meses porque o backend calcula `kWh/mês × meses × chance`; sem rótulo "Gerado por IA", pois a frase é calculada por regra; foco visível da linha é o padrão do navegador (o lint proíbe estilizar `TableRow`).
+- **Dificuldades / Desafios:** o resumo do diálogo é omitido ao gerar pelo painel, porque ele congela o valor ao abrir e o resumo da nova seleção ainda carrega.
+- **Fora desta entrega:** passo 9 em diante; captura em modo escuro (o screenshot do Chrome expirou).
+- **Validação de Testes:** Vitest novos (`UnitDetailSheet.test.tsx`, `UnitConsumptionChart.test.tsx`): abre por clique e por Enter, Esc fecha, checkbox não abre, carregando/erro/vazio, cache ao reabrir, gerar ordem, botão desligado com ordem, `diretor` sem o botão, lacuna no gráfico. `make lint-all` exit 0; `make test-all`: backend 607 passed, frontend 296 passed. Conferido no navegador com dados reais (UC106967), sem captura.
+
+### [2026-10-28] - Fila de Inspeção: passo 9 (diálogos de campo com inspetor, data e motivo em lista)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Registrar resultado:** "Inspetor" (obrigatório) vem de `GET /losses/inspectors` e vira busca por digitação quando há mais de 15 itens (hoje 40); "Data da inspeção" (obrigatória, dd/mm/aaaa, máximo hoje). Inspetor, data e resultado são validados juntos antes de enviar. O payload passa a levar `inspetor` e `data_inspecao` e deixa de enviar `fiscal_responsavel`. O inspetor em texto livre saiu.
+  - **Cancelar ordem:** motivo obrigatório em lista (`CANCELLATION_REASON_LABELS`, `Record` tipado sobre `CancellationReason`: um motivo novo na API deixa de compilar até ter rótulo) e observação opcional enviada em `justificativa_cancelamento`. O botão de confirmar fica desabilitado até escolher o motivo. Resolve o 422 ao cancelar pela tela, registrado no passo 4.
+  - **Enviar a campo:** o "Fiscal responsável" em texto livre virou a lista de inspetores (opcional), seguindo a regra de trocar texto livre por lista. Fora das três telas pedidas.
+  - **Gerar ordens:** sem alteração (não tem campo de inspetor e o raio-x não prevê campo novo).
+  - **Erros do servidor:** 422 vira mensagem em pt-BR ao lado do campo (`apiFieldErrors.ts`); os demais erros aparecem no rodapé do diálogo. O diálogo só fecha com sucesso, e o erro some quando o usuário edita o campo.
+  - **Sucesso:** toast curto e invalidação de fila e ordens, então o quadro atualiza sem recarregar.
+  - **Cartão do quadro:** mostra inspetor, "Inspeção em dd/mm/aaaa" e "Cancelada: motivo · observação".
+  - **Acessibilidade:** rótulos ligados aos campos, foco inicial no primeiro campo, Esc cancela, erros com `role="alert"` e `aria-describedby`.
+- **Diferenças e limites:**
+  - **Painel de detalhe da UC:** já mostrava inspetor e data nas inspeções anteriores. O motivo de cancelamento não aparece porque `GET /suspicious-units/{id_uc}` devolve só inspeções, não ordens canceladas; mostrá-lo exige mudar o backend, fora desta entrega.
+  - **Seletor de data:** é o `<input type="date">` nativo; o dd/mm/aaaa depende do navegador em pt-BR (há `lang="pt-BR"` e o formato no rótulo).
+  - **Busca de inspetores:** aparece já durante o carregamento, para não perder o foco inicial quando a lista chega; se a lista tiver 15 itens ou menos, o campo troca para a lista simples depois de carregar.
+  - **Teste:** `src/test/setup.ts` ganhou stubs de `ResizeObserver` e `scrollIntoView`, exigidos pelo `cmdk` no jsdom.
+- **Fora desta entrega:** passo 10 em diante; observações do resultado (fora por P3); backend intacto.
+- **Validação de Testes:**
+  - Vitest novos: validação de campos obrigatórios e data futura (`resultFormValidation.test.ts`), 422 por campo (`apiFieldErrors.test.ts`), diálogos de resultado e cancelamento com erro sem fechar, motivo obrigatório, foco e Esc, busca com 40 inspetores e quadro atualizado após salvar (`FieldDialogs.test.tsx`, `LossManagementPage.test.tsx`).
+  - `make lint-all` exit 0; `make test-all`: backend 607 passed, frontend 330 passed. **Não conferido no navegador.**
+
+### [2026-10-28] - Fila de Inspeção: passo 12 (tarifa média calculada da base, P4)
+- **Autor:** Adrian Cesar (Fatia 05, Gestão de Perdas)
+- **O que foi feito:**
+  - Tarifa = `SUM(valor_total_rs) / SUM(consumo_faturado_kwh)` de `fato_faturamento`, nos 12 meses até a última competência faturada (média ponderada pelo consumo; não é a média simples de `tarifa_aplicada_rs_kwh`). Mesma fórmula da Visão Geral (`revenue/kpis.py::average_tariff`).
+  - Ponto único no backend: `loss_management/tariff.py` (cálculo puro) e `tariff_repository.py` (`fetch_average_tariff`, cache por banco e por dia). A constante `TARIFA_MEDIA_RS_KWH` (0,714) foi removida; `build_suspicious_unit` e `rank_suspicious_units` recebem a tarifa como parâmetro. Lista da fila, resumo e detalhe da UC usam o mesmo valor.
+  - `GET /losses/queue-summary` passa a trazer `tarifa_rs_kwh` calculada e `tarifa_periodo_inicio` / `tarifa_periodo_fim`.
+  - Tabela vazia, sem energia faturada ou ausente devolve `DatabaseReadError` (500) com mensagem clara; não há tarifa de reserva e o erro não entra no cache.
+  - Front: o cartão "Energia recuperável das selecionadas" mostra "Tarifa média de 12 meses: R$ 0,79/kWh (jul/2025–jun/2026)" (`formatTariffNote`); o texto fixo "a R$ 0,714/kWh" saiu.
+- **Números na base real (`v_energy.db`, 2025-07 a 2026-06, 539.768 faturas):** receita R$ 169.683.459 / energia 215.432.924 kWh = **R$ 0,7876/kWh**, 10,3% acima dos 0,714 antigos; todo R$ da fila sobe cerca de 10%. Para comparação: `valor_energia_rs` / consumo = 0,5907 (sem tributos) e a média simples de `tarifa_aplicada_rs_kwh` = 0,7738. O 0,561 citado na D8 não corresponde a nenhuma janela de 12 meses medida.
+- **Ocorrências de 0,714:** código (`scoring.py`, `queue_summary.py`) e testes de backend e frontend foram trocados pela tarifa semeada (0,75 no backend; 0,7876 nas fixtures do front). Os documentos (`DECISOES_PERDAS.md`, protótipo, raio-x, `gestao_perdas_campo.md` e entradas antigas deste diário) mantêm 0,714 como registro histórico.
+- **Escopo da tarifa (esclarecido):** o período 2025-07 a 2026-06 é só a janela de tempo. A tarifa soma **todas** as faturas da base nesses 12 meses (539.768 faturas, todas as UCs), sem filtrar pelas UCs da fila (165 no momento da conferência). A tarifa é a mesma para qualquer UC; as UCs da fila só a usam para converter kWh em R$. Tarifa por classe ou só das UCs suspeitas ficaria fora da P4.
+- **Operação:** a primeira chamada do dia a `/losses/queue-summary` levou cerca de 11 s (cálculo sobre 2,1 milhões de faturas); as seguintes saem do cache. Dois uvicorn na porta 8000 serviam o código antigo e causaram o erro `split` no front até um deles ser encerrado.
+- **Fora desta entrega:** passo 13 em diante; o banco não foi alterado; pendente alinhar com a Fatia 02 se a tarifa deve ser por classe.
+- **Validação de Testes:**
+  - Pytest novos em `test_loss_tariff.py`: resultado exato (750 / 1000 = 0,75), ponderação (600 / 1100, e não 0,75 da média simples), janela de 12 meses, arredondamento, tabela vazia e ausente, cache por dia, tarifa e período no resumo, R$ da fila com a tarifa calculada e erro 500 claro.
+  - Vitest novos: `formatTariffNote` em pt-BR e texto de apoio no `QueueSummaryCards`.
+  - `make lint-all` exit 0; `make test-all`: backend 620 passed, frontend 332 passed. **Não conferido no navegador.**
+
+### [2026-10-28] - Fase 15.1: consistência entre o painel do diretor e a Fila de Inspeção
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - `executive_dashboard/service.py`: o retrato de perdas do painel pedia à fila o limiar de queda de 50% (`LIMIAR_QUEDA_SUBITA`), e a tela de perdas usa 20% (`LIMIAR_QUEDA_MODERADA`). No `v_energy.db` real, o painel mostrava 0 UCs enquanto a fila mostrava 165. Agora os dois usam o mesmo limiar.
+  - Merge de `origin/main` na branch: `rank_suspicious_units` exige `tariff_rs_kwh`, e o painel também passou a usar a tarifa média real (R$ 0,7876/kWh). O valor recuperável do teste do painel passou de 599,76 para 756,00.
+  - `DECISOES_PERDAS.md`: D8 reescrita (tarifa calculada da base) e D9 com o funil de 2026-06 (45.000 cadastradas, 1.823 com queda de 20% ou mais, 656 sem GD, 165 sem as já inspecionadas). Pendências de tarifa fechadas em `gestao_perdas_campo.md`; nova Fase 15 com o plano de melhora.
+- **Funil medido:** 559 quedas de 50% ou mais, todas em UCs com GD; 491 das 656 candidatas já foram inspecionadas desde 2025-04; 14.295 UCs com queda de 10% a 20% ficam fora porque o sinal acerta 7% ou menos.
+- **Próximos Passos:** Fase 15.2 (a fila curta na tela) e 15.3 (motivo e valor).
+- **Validação de Testes:**
+  - Novo teste: o painel pede o mesmo limiar da fila. Escrito antes e visto falhar.
+  - `make lint-all` e `make test-all` na validação final abaixo.
+
+### [2026-10-28] - Fase 15.2: a Fila de Inspeção diz a verdade sobre a capacidade e a seleção
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - `QueueCapacityNotice`: alerta acima da fila quando as UCs prioritárias livres (chance de acerto de 30% ou mais) não enchem a capacidade mensal. Com a fila de hoje: "19 UCs prioritárias para uma capacidade de 200 inspeções por mês" e quantas UCs de baixa chance existem, com a melhor chance entre elas (7%).
+  - `SelectionOutlookNote`: com UCs marcadas, mostra "cerca de X de N inspeções devem achar irregularidade; Y devem voltar sem achado" (soma da chance de acerto de cada UC) e, havendo UC abaixo de 30%, um aviso. Aparece na barra de ações e no diálogo de geração de ordens. O aviso não bloqueia: a decisão continua do gerente.
+  - Lógica pura em `utils/queueOutlook.ts` (`selectionOutlook`, `describeCapacityGap`), reaproveitando `isPriorityUnit`. Só frontend; o backend não mudou.
+  - Dois testes antigos de `SuspiciousQueueTab` ficaram mais específicos porque o texto novo repetia "de 200 inspeções" e usava `role="status"`.
+- **Próximos Passos:** Fase 15.3 (motivo com a queda e valor com a razão observada de 1,87×).
+- **Validação de Testes:**
+  - Vitest novos escritos antes do código (RED visto): `queueOutlook.test.ts` (6) e `QueueExpectationNotes.test.tsx` (5), mais 2 cenários em `SuspiciousQueueTab.test.tsx`.
+  - Frontend: 536 passed. Backend inalterado. **Não conferido no navegador.**
+
+### [2026-10-28] - Fase 15.3: motivo com a faixa de queda e valor com a razão observada
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - Backend: `explain_reasons` (`unit_detail.py`) acrescenta à frase do motivo a faixa de queda e a taxa de acerto dela, por exemplo "Na faixa de queda de 30% a 50%, 42% das inspeções históricas acharam irregularidade". `drop_band_label` fica em `scoring.py`, junto dos limiares e das taxas, para os rótulos não divergirem do cálculo.
+  - Frontend: o cartão "Energia recuperável das selecionadas" ganha a nota "Estimativa de 3 meses de déficit: em campo, o recuperado foi 1,87× o estimado (mediana)" (`recoveryEstimate.ts`). O número exibido não mudou: a janela de 3 meses segue como no D7.
+  - **Decisão de desenho:** não criei coluna Motivo na tabela. Uma primeira tentativa foi desfeita porque as 165 UCs têm o mesmo motivo (`queda_moderada`) e o teste existente "não repete o motivo em cada linha" registra essa decisão. O motivo e a faixa ficam no painel de detalhe; a queda em % já está na coluna Queda.
+- **Próximos Passos:** Fase 15.4 (remedir sinais, queda normalizada pela mediana, reincidência).
+- **Validação de Testes:**
+  - Pytest novos escritos antes (RED visto): faixa e taxa na frase do motivo nas três faixas, e as duas frases já existentes atualizadas.
+  - Vitest novo: nota de valor no `QueueSummaryCards`.
+  - `make lint-all` e `make test-all` abaixo. **Não conferido no navegador.**
+
+### [2026-10-28] - Fase 15.4: remedição dos sinais na Gold real (só medição e documentação)
+- **Autor:** Adrian César
+- **O que foi feito:** consultas somente de leitura no `v_energy.db`, sem alterar código nem regra. Resultados em `DECISOES_PERDAS.md` D12.
+  - GD confirmado (1 de 31, 3,2%) e queda de 50% ou mais confirmada (92,6%).
+  - Leitura zerada e reincidência não são mensuráveis com a Gold atual (nenhuma leitura zerada; nenhuma UC inspecionada duas vezes).
+  - Achado principal: a carteira inteira caiu em meados de 2025 (mediana da razão recente/base de 0,61 a 0,75). Com a queda normalizada pela mediana do mês, o acerto das inspeções acima de 20% fica entre 89,8% e 94,3% em cada mês, e abaixo de 20% entre 6,5% e 9,3%. Na fila de hoje, 31 das 165 UCs são fortes (cerca de 92%) e 134 fracas (cerca de 8%).
+- **Pendente de decisão:** trocar a queda bruta pela normalizada muda os números principais da fila (42% e 7% para cerca de 92% e 8%) e a ordem das UCs. Limites: só UCs que o campo já inspecionou, sem período de teste separado.
+- **Validação:** nenhum código alterado; `make lint-all` e `make test-all` não precisaram rodar de novo para esta entrada (o último passou na 15.3).
+
+### [2026-10-28] - Fase 15.4: chance de acerto pela queda além da carteira
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - Backend: a chance de acerto da `queda_moderada` passa a depender da queda da UC descontada a queda geral da carteira (`normalized_drop_ratio`): **91,5%** quando é de 20% ou mais e **7,6%** abaixo, medido na população da fila (sem GD, queda bruta de 20% a 50%: 118 de 129 e 25 de 330). Antes eram 42% e 7% por faixa de queda bruta.
+  - A mediana de recente/base de todas as UCs é calculada em `portfolio_repository.py` (uma consulta, cache por dia e por competência, como a tarifa) e viaja em `QueueCandidates.portfolio_ratio` até a lista, o resumo, o detalhe e o Painel do Diretor.
+  - As taxas e `hit_probability`/`reason_hit_rate` saíram de `scoring.py` para `hit_rate.py` (o teto de 300 linhas por módulo); `has_field_history_table` foi para o mixin da fila, que já repetia a verificação.
+  - A frase do motivo no detalhe agora diz: "Descontada a variação da carteira (mediana em N% do consumo base), a queda da UC é de X%; nessa situação, Y% das inspeções históricas acharam irregularidade". Substitui a frase por faixa da 15.3.
+  - A **regra de entrada na fila não mudou** (queda bruta de 20% ou mais): a lista, a energia recuperável e os números do Painel do Diretor ficam iguais.
+- **Resultado no `v_energy.db` real (2026-06):** as mesmas 165 UCs e 7.265 kWh/mês, com mediana da carteira 0,9176: **31 a 91,5% e 134 a 7,6%**, como a medição previu. O retorno esperado da fila inteira sobe de cerca de 908 para cerca de 2.046 kWh/mês, só pela classificação.
+- **Limites:** nenhuma UC de fora da fila foi inspecionada; a maior parte das UCs com queda além da carteira na população da fila vem de agosto e dezembro de 2025. Reincidência e leitura zerada seguem sem dado.
+- **Avisos a outros membros** em `docs/CORRECOES.md`: Célio (seção 6.2 do diagnóstico cita taxas e tarifa antigas) e Bernardo (ciência sobre o Painel). Nenhum arquivo de outro membro foi editado.
+- **Validação de Testes:**
+  - Pytest escritos antes (RED visto): queda normalizada, chance por motivo, ranking com e sem carteira, mediana da carteira no repositório (ímpar, par, com GD, com filtros, vazio), frase do motivo e detalhe da API (mediana 22% e queda de 26% conferidas à mão no seed).
+  - Testes antigos que supunham 42% e 7% foram reescritos com a carteira explícita, sem enfraquecê-los.
+  - `make lint-all` e `make test-all`: backend 750 passed, frontend 537 passed. **Não conferido no navegador.**
+
+### [2026-10-28] - Fase 15.5: paginação no servidor e protocolo do piloto fora da fila
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - Backend: `offset` (inteiro, 0 ou mais) em `GET /losses/suspicious-units`. A página é `fila[offset : offset + limit]`; o `total` segue sendo o da fila inteira e `offset` além do fim devolve lista vazia. Offset negativo responde 422.
+  - Frontend: a consulta da fila virou infinita (`infiniteQueryOptions`): a primeira página sai sem `offset`, como antes, e o botão "Carregar mais UCs" (ao lado do aviso "Carregadas as N primeiras UCs de M na fila") busca a seguinte. A ordem, as abas por chance de acerto e a seleção valem sobre tudo o que foi carregado. Antes a tela só via as 200 primeiras UCs e nunca chegava às demais nem ao teto de 500 por página.
+  - `DECISOES_PERDAS.md` D13: protocolo do piloto de inspeção fora da fila, com os estratos medidos no banco real (31, 134, 459 e 39.504 UCs), amostra de cerca de 150 inspeções, critério de decisão e registro pelo motivo `PILOTO-*`. **Não executado:** depende do gerente de perdas e da equipe de campo.
+- **Limite conhecido:** cada página recalcula o ranking no servidor (a consulta pesada da fila); o cálculo da tarifa e da carteira usa cache por dia, mas a lista não. Com a fila de 2026-06 (165 UCs) não há segunda página; ela aparece nas demonstrações com `LOSS_REFERENCE_COMPETENCIA` fixada.
+- **Validação de Testes:**
+  - Pytest novos escritos antes (RED visto): página seguinte com o mesmo total, offset além do fim e offset negativo (422).
+  - Vitest novos escritos antes (RED visto): botão carrega a página seguinte com `offset` igual ao número de UCs carregadas e some quando a fila inteira está na tela; não aparece quando já está tudo carregado.
+  - `make lint-all` e `make test-all` abaixo. **Não conferido no navegador.**
+
+### [2026-10-29] - Correção: carregamento lento da Fila de Inspeção na partida a frio
+- **Autor:** Adrian César
+- **Problema:** logo depois de subir a API, a tela mostrava erro ao carregar. No log, `queue-summary` levou de 18 a 23 s e cada consulta pesada passou de 9 s. O pré-cálculo do Painel do Diretor e as chamadas da tela rodam ao mesmo tempo, e cada chamada refazia sozinha a tarifa média e a mediana da carteira (a da Fase 15.4), porque o cache só era preenchido quando o cálculo terminava.
+- **Medido no banco real:** a mediana sozinha leva 3,0 s; 4 chamadas simultâneas levavam 6,4 s cada. Com o servidor já aquecido a tela carrega sem erros (conferido no navegador: 6 chamadas à API com 200 e nenhum erro no console).
+- **Correção:** `daily_cache.py` (`DailyEngineCache`): cache por dia e por banco com trava, em que chamadas simultâneas esperam o mesmo cálculo. A tarifa e a mediana da carteira passaram a usá-lo (a falha continua sem entrar no cache). Depois da correção, 8 chamadas simultâneas (4 de tarifa e 4 de mediana) terminam em 3,7 s no total.
+- **Não resolvido:** a consulta dos perfis de consumo (cerca de 3 s sozinha) continua rodando uma vez por chamada, porque depende dos filtros e das ordens ativas e não pode ser guardada por dia. Com várias chamadas em paralelo ela ainda se acumula na primeira carga.
+- **Validação de Testes:** pytest novos escritos antes (RED visto): cálculo único para chamadas simultâneas, reaproveitamento, chaves e bancos diferentes, expiração no fim do dia, falha sem cache, e a consulta pesada da mediana executada uma vez com 4 sessões em paralelo. `make lint-all` e `make test-all`: backend 758 passed, frontend 539 passed.
+
+### [2026-10-29] - Fase 15.6: histórico mínimo para a chance de acerto
+- **Autor:** Adrian César
+- **Origem:** conferência dos números de cada UC. Na UC106967, a tabela mostrava 309 → 212 kWh/mês (−31%) e o gráfico do detalhe, 307 no primeiro ponto e 158 no último. Os dois estão certos: a tabela usa médias e o gráfico, meses isolados. Mas a UC foi ligada em 24/12/2025 e tem 6 leituras, então a base de 12 meses eram 3.
+- **Achado:** 25 das 31 UCs fortes tinham menos de 11 meses de base (na carteira, só cerca de 90 de 45.000 têm). O campo inspecionou só 7 UCs assim, então os 91,5% não valiam para elas. As 165 UCs foram conferidas contra uma conta independente (base, recente, kWh/mês e kWh estimado): 0 divergências.
+- **O que foi feito:**
+  - Backend: `meses_base` (meses com leitura na janela de base) no perfil, na consulta e na API. `MESES_BASE_MINIMO` = 11 em `hit_rate.py`: abaixo disso a chance não passa da taxa fraca (7,6%). A frase do detalhe avisa "Ligação recente: só N meses de leitura na janela de base; a chance medida em UCs com histórico completo não se aplica".
+  - Frontend: a linha mostra "Ligação recente: base de N meses" e o cabeçalho "Queda" explica "média dos 3 últimos meses contra a média dos 12 anteriores", com o gráfico mês a mês.
+- **Resultado no banco real (2026-06):** as mesmas 165 UCs, agora 7 fortes (6 com 12 meses e 1 com 11) e 158 fracas, 35 delas ligações recentes. O retorno esperado cai de cerca de 2.046 para cerca de 788 kWh/mês. A energia recuperável (7.265 kWh/mês) não muda.
+- **Limite:** a taxa fraca para ligação recente é prudência, não medição; o piloto do D13 passa a ter um estrato de ligações recentes.
+- **Validação de Testes:** pytest e vitest escritos antes (RED visto): regra do histórico mínimo, contagem de meses no repositório, frase do motivo, contrato da API, aviso na linha e dica do cabeçalho. `make lint-all` e `make test-all` abaixo.
+
+### [2026-10-29] - Fase 14.2: captura em modo escuro e retorno de foco do painel de detalhe
+- **Autor:** Adrian César
+- **O que foi feito:** conferência no navegador (backend e frontend locais, perfil gerente de perdas, modo escuro, competência 2026-06). Captura do painel de detalhe da UC109003 em `assets/fila-inspecao/14-detalhe-da-uc-modo-escuro.jpg`: motivo, conta do score, gráfico de 12 meses, "Inspeções anteriores" e "Gerar ordem desta UC" legíveis, sem texto cortado.
+- **Retorno de foco:** ao fechar o painel, o foco volta à linha da UC que o abriu, tanto por Enter + Esc (mesma linha) quanto por clique na linha + botão X (linha clicada). Nenhum código alterado.
+- **Pasta:** o checklist citava `assets/fila-inspecao-atual/`, que não existe; a captura foi para `assets/fila-inspecao/`, onde estão as de 01 a 13.
+- **Validação de Testes:** conferência manual; sem mudança de código, então `make lint-all` e `make test-all` não se aplicam a esta entrega.
+
+### [2026-10-29] - Fase 11: conferência no navegador da fila classificada
+- **Autor:** Adrian César
+- **O que foi conferido** (backend e frontend locais, Gold real, competência 2026-06, perfil gerente de perdas, modo escuro):
+  - Contagens: Fila priorizada 165 = Prioritárias 7 + Baixa chance 158; Todas 165, paginada em 25 por página (7 páginas), com "Mostrando 1–25 de N".
+  - Seleção "top 10 prioritárias" pega só as 7 prioritárias: 281 kWh/mês recuperáveis, retorno esperado 257 kWh/mês (281 × 91,5%) e o aviso "cerca de 6 de 7 inspeções devem achar irregularidade".
+  - Aviso de capacidade: "7 UCs prioritárias para uma capacidade de 200 inspeções por mês" e "158 UCs de baixa chance acertam no máximo 7,6%".
+  - Filtro de município (Recife): 72 UCs = 5 prioritárias + 67 de baixa chance, todas de Recife. O filtro de motivo "Queda moderada" não muda a lista, porque as 165 UCs são todas desse motivo.
+  - Carga da página: 4 chamadas à API (`suspicious-units`, `queue-summary`, `queue-filters`, `inspections`) com 200 e nenhum erro no console.
+- **Achados (sem correção nesta entrega):**
+  - Na aba "Todas", a coluna Situação quebra "Na fila" em duas linhas.
+  - Com um filtro ativo, o score é recalculado em relação ao topo da lista filtrada (em Recife, a UC142443 aparece com 100). Consistente com o texto do detalhe ("relativo ao topo da fila"), mas o mesmo UC muda de score conforme o filtro.
+- **Validação de Testes:** conferência manual, sem mudança de código; nada foi gerado nem gravado em `ordem_inspecao`.
+
+### [2026-10-29] - Fase 11: correção dos dois achados da conferência da fila classificada
+- **Autor:** Adrian César
+- **Achado 2 (score mudava com o filtro territorial):** o município, o bairro e a classe eram aplicados na consulta dos perfis, antes do ranking, e o topo usado para normalizar o score passava a ser o da lista filtrada. Em Recife, a UC142443 aparecia com 100 na lista e com 72 no painel de detalhe (que usa a fila inteira). O `rank_suspicious_units` já prometia o contrário ("antes dos filtros") para o filtro de motivo.
+- **Correção:** `LossService.list_suspicious_units` busca os perfis sem filtro territorial, ranqueia a fila inteira e só então aplica município, bairro e classe (`queue_territory.filter_by_territory`, módulo novo). O `service.py` ficou em exatamente 300 linhas, o teto do Pylint; qualquer acréscimo ali precisa de um novo módulo.
+- **Medido no banco real (2026-06):** `municipio=RECIFE` devolve as mesmas 72 UCs, e a UC142443 agora tem 72 na lista e no detalhe (a UC140404, 68 nos dois). Tempo por consulta de cerca de 3,3 s, igual ao da fila sem filtro. Os valores de filtro são os do banco (`RECIFE`, `COMERCIAL`), que a tela envia no `<select>`; com `Recife` a lista volta vazia, como antes.
+- **Achado 1 (selo "Na fila" em duas linhas):** `StatusBadge` ganhou `whitespace-nowrap`. Só o `StatusBadge` (rótulos curtos e fechados), e não o `Badge`, usado em 20 arquivos de outras fatias.
+- **Validação de Testes:** escritos antes (RED visto): 4 casos de filtro territorial, "score não muda quando o filtro esconde o topo", "filtro territorial fora da consulta" e "selo não quebra linha". `make lint-all` e `make test-all` verdes (pytest 776, vitest 544). Conferência visual do selo no navegador não feita: o backend do desenvolvedor na porta 8000 estava ocupado e o frontend na 5173 também era dele; só a API foi conferida.
+
+### [2026-10-29] - Fase 10.5a: conferência visual da Fila de Inspeção nos dois temas
+- **Autor:** Adrian César
+- **Método:** app local com a Gold real (perfil gerente de perdas), tema alternado pela classe `dark` do `<html>`. Para cada estado, medi a razão de contraste de todos os textos visíveis (cor do texto sobre o fundo composto, critério WCAG AA: 4,5:1, ou 3:1 para texto grande). A medição só vale com a página estabilizada: logo após alternar o tema as transições de cor davam falsos 1,09:1 que sumiam depois de alguns segundos.
+- **Estados conferidos:** fila priorizada (135 textos), painel de detalhe da UC (165), quadro de ordens (73), diálogo de importar resultados de campo (80) e diálogo de gerar ordens (143), cada um em claro e escuro. Nada foi gerado nem enviado.
+- **Resultado:** escuro sem nenhuma falha (menor contraste 5,86:1). Claro com uma falha: o selo "Pendente" do quadro de ordens, 4,44:1 em 12 px (4,78:1 em fundo branco); os demais textos passam, o menor é 4,71:1 (o aviso de capacidade). Causa: `--warning` `#8A5A00` com o tint de 15% sobre fundo cinza. Os valores vêm de `tokens-claro.png` (10.1), então ficou como pendência 10.5c, para decidir com o design.
+- **Ambiente:** o backend do desenvolvedor na porta 8000 estava sem responder; usei um backend meu (8001) e um Vite temporário (5180), já encerrados, sem alterar arquivos do repositório.
+- **Validação de Testes:** conferência manual, sem mudança de código.
+
+### [2026-10-29] - Fase 10.5b: pendências do design novo registradas na CORRECOES
+- **Autor:** Adrian César
+- **O que foi feito:** as pendências do 10.5 que são de outras fatias foram levadas a `docs/CORRECOES.md` (regra do `AGENTS.md`), cada uma com arquivo, linha e correção sugerida: `onRetry` ausente em `customer360` (4 `AsyncState`), `revenue` (4) e `grid_quality` (4, em 3 arquivos); `PAYMENT_STATUS` da Visão 360 no lugar do `StatusBadge kind="fatura"`, com o cuidado do mapeamento `ABERTA` para `em_aberto`; e `KpiCard`, `DeltaBadge`, `DataTable` e `FilterBar`, que não existem em `components/ui/` e têm versões por fatia, sem dono.
+- **Seção nova:** "8. Qualidade da Rede (João)", porque o arquivo não tinha uma para ele; o Fechamento passou a ser a seção 9 (nenhuma referência dependia do número 8).
+- **Não alterado:** nenhum código dessas fatias; a correção fica com cada responsável.
+- **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam.
+
+### [2026-10-29] - Fase 10.5c: token `--warning` do tema claro no AA
+- **Autor:** Adrian César
+- **Origem:** a conferência visual (10.5a) achou o selo "Pendente" com 4,44:1 no tema claro. A conta por superfície mostrou que o problema era maior que o selo: com o tint de 15% (`bg-warning/15`), o texto `#8A5A00` dava 4,40:1 sobre `--background`, 4,48:1 sobre `--muted`, 4,15:1 sobre `--secondary` e 4,09:1 sobre `--accent`; só passava sobre `--card`.
+- **Correção:** `--warning` claro de `#8A5A00` para `#7F5200`, o menor ajuste que passa em todas as superfícies (mínimo 4,61:1 sobre `--accent`; texto branco sobre o token, 6,75:1). `index.css` e as duas linhas do `design.md` atualizados. O `--chart-4` não mudou: é série de gráfico, não texto de selo. O valor sai do que está em `tokens-claro.png`; o desvio é só neste token e está registrado aqui.
+- **Efeito em outras fatias:** `text-warning` e `bg-warning` também aparecem no `Alert`, no `IndicatorCard` do painel, no `CauseSharesCard` da Qualidade da Rede e no `ScoreBar`; o tom fica um pouco mais escuro no claro, sem mudar de significado.
+- **Teste:** `components/ui/__tests__/warning-token-contrast.test.ts` lê o `index.css` e exige 4,5:1 do `--warning` sobre as cinco superfícies nos dois temas. Escrito antes (RED visto: 4 falhas no claro, com os valores acima); o escuro já passava. Lê o arquivo com `node:fs` porque o Vitest zera `.css`, mesmo com `?raw`.
+- **Validação de Testes:** `make lint-all` e `make test-all` verdes (pytest 776, vitest 554) e `bun run build` sem erros de tipo (o primeiro build achou que o teste precisava dos tipos do Node, corrigido). Conferência visual no navegador não refeita: o contraste é calculado pelo teste e bate com a medição do DOM de antes (4,44:1 medido, 4,40 a 4,79 calculado conforme a superfície).
+
+### [2026-10-29] - Competência de referência da demonstração: medição na regra atual e escolha de 2025-09
+- **Autor:** Adrian César
+- **Pergunta:** o `LOSS_REFERENCE_COMPETENCIA` para a demonstração seria `2025-08`? Os documentos se contradiziam: `.env.example` e `CORRECOES.md` diziam `2025-08`, e o changelog da demonstração dizia `2025-07` com "827 UCs", número da regra antiga de 50%.
+- **Achado:** na regra atual (queda de 20% ou mais, D11), os meses de queda generalizada da carteira trazem 34 a 39 mil UCs para a fila, quase todas de baixa chance, e não as 827, 773 e 590 da tabela antiga do D9.
+- **Método:** para cada mês fixado, subi o backend com a variável, li as 500 primeiras UCs da API e cruzei as 200 primeiras com `fato_inspecoes_perdas`, contando só as inspeções dos 3 meses seguintes ao mês (a de 2025-10 só tem novembro e dezembro, porque os dados acabam em 2025-12-31). Acerto = inspeções com irregularidade constatada sobre as inspeções feitas. Os scripts ficaram fora do repositório.
+- **Resultado:** 2025-07: 120 inspecionadas e 94,2%; 2025-08: 155 e 96,8%; 2025-09: 196 e 93,9%; 2025-10: 195 e 93,8%; acerto geral das inspeções nas mesmas janelas de 59,4% a 64,9%. Chance prevista média do top 200: 92,6% a 93,0%, perto do medido.
+- **Decisão:** `2025-09`, pela cobertura (196 de 200 inspecionadas); as diferenças de acerto entre os meses estão dentro do ruído. O palpite anterior, `2025-07`, caiu: só 120 das 200 foram inspecionadas. Tabela e justificativa em `DECISOES_PERDAS.md` (D9), que substitui a da regra de 50%.
+- **Ajustes:** `backend/.env.example` com `2025-09`; item "Fila curta" da `CORRECOES.md` com `2025-09`, a medição e o custo (39.243 UCs, páginas lentas), e a contagem corrigida para 7 de chance alta e 158 de baixa (D14). O `backend/.env` local, que não vai ao Git, não foi alterado e segue comentado com `2025-07`.
+- **Limites:** o acerto vale para UCs que o campo já inspecionava com esse padrão, não prova que a regra ache irregularidade em UCs que ninguém inspecionou (já dito no D9). Pendente: o passo a passo do README e combinar com a banca a explicação da fila longa e lenta.
+- **Validação de Testes:** medição manual contra a Gold real, sem mudança de código; `make lint-all` e `make test-all` não se aplicam (só documentação e um comentário do `.env.example`).
+
+### [2026-10-29] - README da Fatia 05 e registro das decisões do dia
+- **Autor:** Adrian César
+- **README:** nova seção "Suposições e Demonstração por Fatia" (antes de "Testes e Qualidade"), com a subseção da Fatia 05: o que a fila responde, como é montada (entrada, chance de acerto, ordenação, abas), como demonstrar (tempo real com 165 UCs e 7 prioritárias; `LOSS_REFERENCE_COMPETENCIA="2025-09"` com 39.243 UCs e o custo das páginas lentas; roteiro de selecionar, gerar, exportar e importar), tabela de suposições com a decisão de origem (D2 a D14) e o que a fila não garante (taxas de UCs que o campo já escolhera; reincidência sem dado). As taxas, o nome da tabela e a leitura do `backend/.env` foram conferidos no código antes de escrever. A seção foi pensada para as outras fatias acrescentarem a delas no mesmo lugar.
+- **Decisões registradas em `DECISOES_PERDAS.md`:** D9 com a competência da demonstração (`2025-09`) e o título corrigido (7 de chance alta, e não 19); **D15** novo, score fixo com os filtros de município, bairro e classe; D4 corrigido (a UC com ordem ativa continua na lista, marcada na coluna Situação); seção 5 reescrita (a Gold real já chegou; leitura zerada, fator de 3 meses e ligação recente como suposições; reincidência e piloto como limites). O `design.md` ganhou a decisão do contraste do `--warning`.
+- **Checklist:** a pendência da linha 142 (remedir limiar de 50%, GD e leitura zerada na Gold real) já estava resolvida pelo D12 desde 2026-10-28 e foi marcada; o README e o registro das decisões entraram na Fase 8.
+- **CORRECOES:** o item 🔴 do README segue aberto por ser de todos, com o andamento anotado: falta a seção das outras fatias e o link para o diagnóstico (hoje um esqueleto).
+- **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam (última rodada verde: pytest 776, vitest 554).
+
+### [2026-10-29] - Resposta à banca sobre a fila de 39 mil UCs
+- **Autor:** Adrian César
+- **Pergunta:** a explicação da fila longa de `2025-09` estava registrada só como fato (D9 e README), sem um roteiro de resposta; o item "combinar como explicar à banca" da `CORRECOES.md` seguia aberto.
+- **O que foi feito:** subseção "Se perguntarem sobre a fila de 39 mil UCs (`2025-09`)" no README, na parte da Fatia 05, em quatro respostas: por que é grande (a carteira inteira perdeu consumo em 2025, mediana de 0,61 a 0,75 de agosto a novembro, D12, então a maioria das UCs passa do piso de 20%), por que o topo continua valendo (chance calibrada pela queda além da carteira: 91,5% a 93% contra 7,6%; a fila ordena pelo kWh esperado e a aba Prioritárias separa as de 30% ou mais), a evidência (196 das 200 primeiras inspecionadas depois, 93,9% de acerto contra 62,7%) e o que admitir (a taxa vale para UCs que o campo já escolhera inspecionar; páginas lentas, porque a consulta pesada roda a cada página).
+- **CORRECOES:** o item "Fila curta na competência mais recente" foi marcado `[x]` e movido para "Já resolvido", com a data e o PR #49 (aguardando merge).
+- **Decisão de escopo:** a tela não foi alterada. Uma nota na tela, quando a competência está fixada, ficou como possibilidade e não foi feita.
+- **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam.
+
+### [2026-10-29] - README: explicação da fila de 39 mil UCs reduzida a uma frase
+- **Autor:** Adrian César
+- **Motivo:** a subseção "Se perguntarem sobre a fila de 39 mil UCs", registrada na entrada anterior, era um roteiro de apresentação (quatro perguntas e respostas), com tom de fala e números que já estão no `DECISOES_PERDAS.md` (D2, D9 e D12). Em um README ela duplicava o D9 e envelheceria junto com ele.
+- **O que foi feito:** a subseção foi **removida** e o roteiro **apagado**, sem cópia em outro arquivo. Ficou uma frase no bullet da demonstração: a fila tem 39.243 UCs porque a carteira inteira perdeu consumo em 2025 e a maioria das UCs passa do piso de queda; o que vale é o topo (196 das 200 primeiras inspecionadas depois, 93,9% de acerto), com link para o D9. A explicação completa, com a tabela por competência, continua no D9.
+- **Ajustes:** o item resolvido da `CORRECOES.md` e a linha do checklist deixaram de citar o roteiro. O README continua com o passo a passo de `LOSS_REFERENCE_COMPETENCIA="2025-09"` e a tabela de suposições.
+- **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam.
