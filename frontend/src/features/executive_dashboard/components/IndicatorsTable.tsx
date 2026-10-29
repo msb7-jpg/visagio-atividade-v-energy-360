@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip } from '@/components/ui/tooltip-card'
 import type { IndicatorGroup } from '@/features/executive_dashboard/types/executiveDashboardTypes'
 import { formatIndicatorChange, formatIndicatorValue } from '@/features/executive_dashboard/utils/indicatorFormatters'
+import { EVALUATIONS, variationArrow } from '@/features/executive_dashboard/utils/indicatorTrend'
 import { cn } from '@/lib/utils'
 import {
   AlertTriangle,
@@ -13,35 +14,9 @@ interface IndicatorsTableProps {
   groups: IndicatorGroup[]
 }
 
-const MUTED_COLOR = 'text-muted-foreground'
-
-function evaluationLabel(evaluation: string): string {
-  if (evaluation === 'MELHOROU') return 'Melhorou'
-  if (evaluation === 'PIOROU') return 'Piorou'
-  if (evaluation === 'ESTAVEL') return 'Estável'
-  if (evaluation === 'INFORMATIVO') return 'Informativo'
-  return 'Sem comparação'
-}
-
-function variationStyle(
-  evaluation: string,
-  variationPct: number | null
-): { color: string; symbol: string } {
-  if (evaluation === 'MELHOROU') return { color: 'text-success', symbol: '↑ ' }
-  if (evaluation === 'PIOROU') return { color: 'text-destructive', symbol: '↓ ' }
-  if (evaluation === 'ESTAVEL') return { color: MUTED_COLOR, symbol: '≈ ' }
-  if (evaluation === 'INFORMATIVO') {
-    if (variationPct === null) return { color: MUTED_COLOR, symbol: '' }
-    if (variationPct > 0) return { color: MUTED_COLOR, symbol: '↑ ' }
-    if (variationPct < 0) return { color: MUTED_COLOR, symbol: '↓ ' }
-    return { color: MUTED_COLOR, symbol: '≈ ' }
-  }
-  return { color: MUTED_COLOR, symbol: '' }
-}
-
 /**
  * Tabela executiva consolidada de comparação de indicadores temporais.
- * Exibe variações coloridas diretamente sem badges redundantes e avisos em chip elegante.
+ * A seta segue o sentido do número; a cor e o selo dizem se melhorou ou piorou.
  *
  * @param props - Grupos de indicadores devolvidos pela API.
  * @returns Tabela com todas as métricas alinhadas em colunas executivas.
@@ -63,7 +38,8 @@ export function IndicatorsTable({ groups }: IndicatorsTableProps) {
         <TableBody>
           {groups.flatMap((group) => {
             return group.indicadores.map((indicator, index) => {
-              const { color, symbol } = variationStyle(indicator.avaliacao, indicator.variacao_pct)
+              const evaluation = EVALUATIONS[indicator.avaliacao]
+              const arrow = variationArrow(indicator)
               return (
                 <TableRow
                   key={indicator.id}
@@ -101,13 +77,15 @@ export function IndicatorsTable({ groups }: IndicatorsTableProps) {
                   </TableCell>
 
                   <TableCell className="text-right whitespace-nowrap">
-                    <span className={cn('font-mono tabular-nums font-semibold text-xs', color)}>
-                      {symbol ? <span aria-hidden="true">{symbol}</span> : null}
-                      <span title={indicator.variacao_pp !== null ? 'Pontos percentuais' : undefined}>
-                        {formatIndicatorChange(indicator.variacao_pct, indicator.variacao_pp)}
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={cn('font-mono tabular-nums font-semibold text-xs', evaluation.textColor)}>
+                        {arrow ? <span aria-hidden="true">{arrow}</span> : null}
+                        <span title={indicator.variacao_pp !== null ? 'Pontos percentuais' : undefined}>
+                          {formatIndicatorChange(indicator.variacao_pct, indicator.variacao_pp)}
+                        </span>
                       </span>
-                    </span>
-                    <span className="sr-only">{evaluationLabel(indicator.avaliacao)}</span>
+                      <Badge variant={evaluation.tone}>{evaluation.label}</Badge>
+                    </div>
                   </TableCell>
 
                   <TableCell>
