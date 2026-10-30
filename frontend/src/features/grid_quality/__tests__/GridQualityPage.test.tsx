@@ -29,7 +29,11 @@ const indicators: QualityIndicators = {
   fec_medio_vezes: 9.25,
   total_alimentadores: 2,
   alimentadores_em_violacao: 1,
-  percentual_violacao: 50
+  percentual_violacao: 50,
+  alimentadores_em_alerta: 0,
+  percentual_alerta: 0,
+  alimentadores_conformes: 1,
+  percentual_conforme: 50
 }
 
 const violatingFeeder: FeederRanking = {
@@ -111,8 +115,11 @@ describe('GridQualityPage', () => {
 
     expect(await screen.findByText('18,5')).toBeInTheDocument()
     expect(screen.getByText('9,25')).toBeInTheDocument()
-    expect(screen.getByText('50%')).toBeInTheDocument()
-    expect(screen.getByText('1 de 2 circuitos.')).toBeInTheDocument()
+    // Cartões de situação: 1 violação (50%), 0 alertas (0%), 1 conforme (50%) de 2 circuitos.
+    expect(screen.getAllByText('50%')).toHaveLength(2)
+    expect(screen.getByText('0%')).toBeInTheDocument()
+    expect(screen.getAllByText('1 de 2 circuitos.')).toHaveLength(2)
+    expect(screen.getByText('0 de 2 circuitos.')).toBeInTheDocument()
     expect(screen.getAllByText(/Média do acumulado no ano até 03\/2000/)).toHaveLength(2)
     expect(screen.getAllByText(/comparado ao limite de referência/)).toHaveLength(2)
   })
