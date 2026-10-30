@@ -43,7 +43,7 @@ Notebooks associados: `Landing_to_Bronze`, `Bronze_to_Silver`, `fatia01_gold`, e
 | `subestacao` | TEXT | Projetado como Nulo na primeira versão. |
 | `numero_medidor_ativo` | TEXT | Número do medidor fisicamente instalado hoje (calculado via ADR-007: status = ATIVO ou retirada nula). |
 | `possui_gd` | BOOLEAN | `1` se existe no cadastro de geração distribuída, senão `0`. |
-| `potencia_gd_kw` | REAL | Potência instalada de geração solar em kW (se aplicável). |
+| `potencia_gd_kw` | REAL | Valor original de `geracao_distribuida.csv:potencia_kwp`, convertido para número e mantido sem conversão ou limite. Apesar do nome da coluna Gold, a origem está expressa em kWp; a unidade e os valores extremos precisam de validação antes de usar este campo como capacidade instalada. Há 35 UCs acima de 100 kWp (todas acima de 1.000), com máximo de 8.994,91 kWp. Esses registros são preservados para rastreabilidade, não truncados silenciosamente e não usados no diagnóstico de volume. |
 | `data_conexao_gd` | TEXT | Data de ligação da geração própria. |
 | `status` | TEXT | `ATIVA` ou `INATIVA`. |
 
@@ -72,6 +72,8 @@ Notebooks associados: `Landing_to_Bronze`, `Bronze_to_Silver`, `fatia01_gold`, e
 - **Grão:** 1 leitura inválida/anômala identificada pela engenharia. **Chave Primária:** `id_anomalia`.
 - **Origem:** Isolado das leituras brutas.
 - **Uso:** Fila de prioridade de Perdas (Adrian César).
+- **Por que está vazia:** a regra operacional marca anomalia quando `leitura_atual < leitura_anterior` e não há rollover nem retirada de medidor para a mesma UC e competência. Na recontagem dos CSVs brutos de leituras e medidores, 6.327 quedas de índice com valores numéricos coincidem com uma retirada de medidor no mesmo mês; por isso, nenhuma atende à regra atual e a Gold tem zero linhas. O notebook de qualidade também registra paridade entre as contagens da Gold e SQLite e que nenhuma anomalia aparece em `fato_medicao`.
+- **Limite da regra:** o vínculo da retirada é por `id_uc` + competência, não pelo `id_medidor` da leitura. A tabela vazia significa “nenhuma anomalia segundo essa regra e esses dados de troca”, não “nenhuma fraude no sistema”. Fraudes confirmadas em inspeção de campo pertencem a `fato_inspecoes_perdas` e são uma evidência diferente.
 
 | Coluna | Tipo | Descrição e Regra |
 |---|---|---|
@@ -211,6 +213,8 @@ Notebooks: `fatia02_bronze`, `fatia02_silver`, `fatia02_gold`, `fatia02_testes_q
 | `irregularidade_constatada` | BOOLEAN | `1` quando o resultado indica irregularidade confirmada (8 grafias da origem unificadas). |
 | `tipo_irregularidade` | TEXT | Tipo de irregularidade (ex.: `BY-PASS`); nulo quando não há. |
 | `kwh_recuperado` | REAL | Energia recuperada pela inspeção, em kWh (decimais com vírgula convertidos). |
+
+Na conferência territorial de 29/10/2026, 828 das 871 inspeções com irregularidade confirmada (95,1%) estavam em Iputinga, Macaxeira, Jardim Jordão e Prazeres. Essa concentração sustenta a investigação de fraude nesses bairros, mas não permite concluir que toda UC ou todo kWh em queda tenha irregularidade ou seja recuperável.
 
 ### Testes de qualidade da Fatia 02
 

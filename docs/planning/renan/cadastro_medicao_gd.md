@@ -7,6 +7,14 @@
 
 ---
 
+## Trabalho compartilhado atual — Diagnóstico da Receita
+
+- [- Em andamento por Renan - 2026-10-30] Contribuição para fechar `docs/DIAGNOSTICO_RECEITA.md`: consolidar a evidência de fraude nos quatro bairros, explicar divergências de receita/volume e reconciliar a contagem divulgada de 887 UCs com queda ≥40% antes de validar os sete valores territoriais contra a tela.
+- [x] Documentar no dicionário de dados por que `fato_anomalia_leitura` está vazia e a origem/tratamento dos 35 valores de GD acima de 100 kWp.
+- [x] Conferir a fatia de IA de Miguel usando `docs/CHECKLIST.md` e registrar evidências ou pendências transversais sem editar o checklist coordenado por João.
+
+---
+
 ## 1. Citações Oficiais e Requisitos (`atividade.pdf`)
 
 ### Citação da Liderança (`atividade.pdf`, pág. 10):

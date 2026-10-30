@@ -94,3 +94,14 @@
   - Movido o apontamento correspondente em `docs/CORRECOES.md` para "Já resolvido".
 - **Validação:**
   - Simulação direta na base bruta confirmou a unificação exata de todos os bairros apontados (ex.: `Brasília Teimosa` unificada de 2.075 + 55 para 2.130 UCs; `Águas Compridas` de 224 + 12 para 236 UCs) e zero violações na consulta GLOB.
+
+### [2026-10-30] - Evidências para o diagnóstico da receita e conferência da IA
+- **Autor:** Renan
+- **O que foi feito:**
+  - Atualizado `docs/DIAGNOSTICO_RECEITA.md` com a conclusão de fraude nos quatro bairros, concentração de 828 das 871 irregularidades confirmadas, comparações de volume e tarifa, e valores estimados separados entre perda, saldo vencido e retorno esperado.
+  - Atualizado `docs/DATA_DICTIONARY.md` explicando a tabela de anomalias vazia e a preservação dos 35 valores de GD acima de 100 kWp.
+  - Conferidos os CSVs brutos: 6.327 quedas de índice com valores numéricos coincidem com retirada de medidor na mesma UC e competência segundo a regra atual; 35 potências de GD excedem 100 kWp, com máximo de 8.994,91.
+  - Revisados o serviço e os testes da IA; registrada em `docs/CORRECOES.md` a aceitação de métricas livres do cliente e a ausência de comparação do resultado esperado no avaliador.
+  - Reconstruída a contagem territorial a partir dos CSVs com uma aproximação local das regras atuais da Silver: 888 UCs com queda ≥40% comparando totais de maio/2024–abril/2025 e maio/2025–abril/2026; 890 comparando médias mensais dos meses disponíveis; 880 exigindo 12 meses completos nas duas janelas. Nenhuma definição reproduz os 887 divulgados.
+- **Pendências de evidência:** obter a consulta e os critérios originais da contagem de 887 UCs e validá-los na Gold; a comparação dos sete valores territoriais com a tela também precisa ser anexada.
+- **Validação:** testes focados da IA não executaram: `uv` não está instalado e `python -m pytest` não conseguiu coletar por dependências ausentes (`langchain_core`, `email_validator`). Nenhum código de aplicação ou notebook foi alterado.
