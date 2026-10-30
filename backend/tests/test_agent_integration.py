@@ -104,8 +104,7 @@ async def test_insights_reject_a_summary_with_an_invented_number(monkeypatch):
 
 
 async def test_insights_are_unavailable_without_a_configured_provider(monkeypatch):
-    no_provider = SimpleNamespace(ai_provider=None, gemini_api_key=None)
-    monkeypatch.setattr(insights_service, "get_settings", lambda: no_provider)
+    monkeypatch.setattr(insights_service, "resolve_configured_provider", lambda: None)
 
     with pytest.raises(ServiceUnavailableError, match="indisponível"):
         await generate_proactive_insights_service(painel_request())

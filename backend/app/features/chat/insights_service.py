@@ -10,8 +10,8 @@ from typing import Any
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.agent.utils.faithfulness_checker import check_numerical_faithfulness
-from app.core.config import get_settings
 from app.core.llm_factory import get_chat_model
+from app.core.llm_factory.availability import resolve_configured_provider
 from app.features.chat.schemas import ProactiveInsightsRequest, ProactiveInsightsResponse
 from app.shared.exceptions import ServiceUnavailableError
 
@@ -61,14 +61,8 @@ def _filter_faithful_insights(
 
 
 def _is_provider_configured() -> bool:
-    """Verifica se há um provedor de LLM configurado e disponível."""
-    settings = get_settings()
-    configured_provider = settings.ai_provider
-    if configured_provider == "mock":
-        return True
-    if configured_provider in ("google", None) and settings.gemini_api_key:
-        return True
-    return configured_provider in ("groq", "openrouter", "local")
+    """Verifica se há um provedor de LLM configurado (o modo simulado só quando escolhido no `.env`)."""
+    return resolve_configured_provider() is not None
 
 
 async def generate_proactive_insights_service(

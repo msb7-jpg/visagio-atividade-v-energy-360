@@ -69,19 +69,19 @@ class GroundedMockChatModel(SimpleChatModel):
             return (
                 "```json\n"
                 "{\n"
-                '  "resumo_executivo": "Identificamos oportunidade imediata de recuperação de receita neste painel.",\n'
+                '  "resumo_executivo": "Modo demonstração: insight simulado, sem IA real e sem análise dos dados.",\n'
                 '  "insights": [\n'
-                '    "Comportamento operacional em linha com as metas regulatórias.",\n'
-                '    "Priorização de ações preventivas na gestão da carteira."\n'
+                '    "Configure GEMINI_API_KEY ou AI_PROVIDER no backend/.env para gerar insights reais.",\n'
+                '    "Este texto é fixo e não descreve os indicadores da tela."\n'
                 "  ]\n"
                 "}\n"
                 "```"
             )
 
         return (
-            "### Análise Operacional e Executiva\n\n"
-            "Com base nas informações consolidadas no banco de dados, os indicadores operacionais "
-            "apresentam conformidade com os padrões estabelecidos."
+            "**Modo demonstração:** esta resposta é simulada, sem IA real. A consulta e a tabela acima são fixas "
+            "e não respondem à pergunta. Configure GEMINI_API_KEY ou AI_PROVIDER no backend/.env para usar o "
+            "assistente com os dados reais."
         )
 
     async def _acall(
