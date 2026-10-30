@@ -10,6 +10,8 @@
 ## Trabalho compartilhado atual — Diagnóstico da Receita
 
 - [- Em andamento por Renan - 2026-10-30] Contribuição para fechar `docs/DIAGNOSTICO_RECEITA.md`: consolidar a evidência de fraude nos quatro bairros, explicar divergências de receita/volume e reconciliar a contagem divulgada de 887 UCs com queda ≥40% antes de validar os sete valores territoriais contra a tela.
+- [x] Medir planos e tempos das consultas analíticas no `v_energy.db`, comparar os PRAGMAs de cache/temporários/mmap e registrar recomendações compartilhadas com evidência (2026-10-30).
+- [- Em andamento por Renan - 2026-10-30] Aplicar a omissão do JOIN de Receita sem filtros territoriais e o intervalo semiaberto em Atendimento; avaliar o índice de data e cobrir as consultas com testes.
 - [x] Documentar no dicionário de dados por que `fato_anomalia_leitura` está vazia e a origem/tratamento dos 35 valores de GD acima de 100 kWp.
 - [x] Conferir a fatia de IA de Miguel usando `docs/CHECKLIST.md` e registrar evidências ou pendências transversais sem editar o checklist coordenado por João.
 
