@@ -6,6 +6,38 @@
 
 ## Registros de Execução
 
+### [2026-10-29] - Fechamento de Robustez GenAI: Execution Accuracy, Suíte de Recusa, Fidelidade Numérica e Benchmark Local
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Métrica Real de Execution Accuracy (EX) com `result_comparator.py`:**
+    - Criado comparador semântico agnóstico a aliases e ordenação de colunas em `app/agent/utils/result_comparator.py` (Pure Python), suportando tolerância para ponto flutuante (`math.isclose` com `rel_tol=1e-3, abs_tol=0.05`), escalares isolados (`SUM`, `COUNT`, `AVG`) e multiconjuntos de linhas.
+    - O script de avaliação `evaluate_agent.py` agora executa a consulta canônica esperada no banco real `v_energy.db` e compara o conjunto de dados retornado pelo agente com o gabarito real, acabando com a limitação de apenas verificar se a query rodou sem erros.
+  - **Suíte de Recusa Obrigatória ("Não Sei" / Escopo / Segurança) no Golden Dataset:**
+    - Expandido o dataset `backend/tests/golden_dataset.json` de 25 para **36 casos**:
+      - 28 casos analíticos (`tipo: "sql"`), incluindo as 3 perguntas canônicas das lideranças Patrícia (#26 - queda solar > 30% em Olinda: 153 UCs), Henrique (#27 - bairro perdendo mais volume: Iputinga) e Henrique (#28 - receita comercial em Jaboatão: -5,12%).
+      - 8 casos de recusa mandatória (`tipo: "recusa"`, #29 a #36), cobrindo dados inexistentes (CPF de cliente, dados climáticos/chuva), fora da área de concessão (Caruaru), fora do período temporal (2020), tentativa de injeção de prompt e comandos de mutação DDL/DML (`DROP TABLE`, `DELETE`, `UPDATE`).
+  - **Conferência Semântica de Fidelidade aos Dados (`faithfulness_checker.py` & `insights_service.py`):**
+    - Criado o verificador de fidelidade em `app/agent/utils/faithfulness_checker.py` com regex que analisa citações numéricas em Markdown (lidando com pontuação brasileira e internacional, moedas `R$`, percentuais e inteiros) e valida se pertencem ao conjunto de dados real retornado pelo SQLite ou às métricas do painel.
+    - Integrada a validação em `app/features/chat/insights_service.py` (`_filter_faithful_insights`), expurgando qualquer insight ou bullet point que contenha números inventados antes de entregar a resposta na interface do Painel do Diretor.
+    - Sanada a pendência transversal da seção 3 do `docs/CORRECOES.md`.
+  - **Integração e Benchmark com Modelo Local (`Qwen3.5-4B-Q4_K_M` via `lcpp`):**
+    - Configurado o servidor `llama-server` com `LD_PRELOAD` resolvendo compatibilidade de ABI com CUDA na GPU RTX 5060, escutando em `http://127.0.0.1:8080/v1`.
+    - Atualizados `backend/.env`, `config.py` e provedor `local.py` para utilizar o modelo local como padrão.
+    - Criada suíte de testes de integração em `backend/tests/test_agent_integration.py` cobrindo o comparador, o checador de fidelidade, a filtragem do `insights_service`, a recusa de escopo e o bloqueio de segurança contra mutações.
+    - **Execução Real do Benchmark (36 casos contra `Qwen3.5-4B-Q4_K_M.gguf`):**
+      - Taxa de Recusa Correta ("Não Sei" / Segurança): **100,0%** (8/8 casos de recusa cumpridos com sucesso).
+      - Execução sem erro no SQLite: **82,14%**.
+      - Execution Accuracy (EX - Acerto Semântico Real): **53,57%**.
+      - Fidelidade aos Dados (Groundedness Score): **83,33%**.
+      - Latência p50: **35,6 s** (ciclo completo de 4 nós: roteamento, geração SQL, execução e síntese analítica).
+      - Relatórios gerados em `docs/planning/miguel/benchmark_resultado.json` e `benchmark_resultado.md`.
+- **Validação:**
+  - `make lint-backend`: 100% verde (Ruff limpo, Pylint 10.00/10, import-linter 4/4 contratos preservados).
+  - `make lint-frontend`: 100% verde (ESLint limpo, Fallow 0 violações, 0 duplicações).
+  - `cd frontend && bun run build`: 100% verde (0 erros de tipagem TypeScript).
+  - `cd frontend && bun run test`: 100% verde (65 suítes, 539 testes vitest aprovados).
+  - `pytest tests/test_agent*.py`: 100% verde (16 testes unitários e de integração do agente aprovados).
+
 ### [2026-10-28] - Harmonização Visual e Padronização de Labels da Tabela Executiva (`IndicatorsTable.tsx`)
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

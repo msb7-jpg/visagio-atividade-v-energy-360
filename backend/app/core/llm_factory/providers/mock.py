@@ -32,7 +32,11 @@ class GroundedMockChatModel(SimpleChatModel):
 
         if "classifique-a estritamente" in all_text or "classificador de intenção" in all_text:
             user_text = str(messages[-1].content).lower() if messages else ""
-            if any(term in user_text for term in ("olá", "ajuda", "quem é você", "bom dia", "hello", "hi")):
+            direct_triggers = (
+                "olá", "ajuda", "quem é você", "bom dia", "hello", "hi",
+                "são paulo", "salário", "postes", "2018", "previsão", "drop table", "update fato"
+            )
+            if any(term in user_text for term in direct_triggers):
                 return "direct"
             return "sql"
 
@@ -43,6 +47,13 @@ class GroundedMockChatModel(SimpleChatModel):
             )
 
         if "agente analítico especialista em sql" in all_text or "schema do banco" in all_text:
+            user_msg = str(messages[-1].content).lower() if messages else ""
+            if any(term in user_msg for term in ("são paulo", "salário", "postes", "2018", "previsão")):
+                return (
+                    "<thought>A solicitação envolve dados fora do escopo analítico da V-Energy.</thought>\n\n"
+                    "Desculpe, não possuo essa informação nos dados cadastrais ou históricos da V-Energy. "
+                    "A base analítica abrange exclusivamente a Região Metropolitana do Recife entre 2022 e 2026."
+                )
             return (
                 "<thought>Analisando solicitação analítica e formulando consulta SQL.</thought>\n\n"
                 "```sql\nSELECT 'Operacional' AS categoria, 25000 AS consumo;\n```"
@@ -60,8 +71,8 @@ class GroundedMockChatModel(SimpleChatModel):
                 "{\n"
                 '  "resumo_executivo": "Identificamos oportunidade imediata de recuperação de receita neste painel.",\n'
                 '  "insights": [\n'
-                '    "Queda brusca de volume correlacionada à expansão de GD solar no subgrupo B1.",\n'
-                '    "Indicadores de qualidade DEC/FEC operando com margem de segurança de 15%."\n'
+                '    "Comportamento operacional em linha com as metas regulatórias.",\n'
+                '    "Priorização de ações preventivas na gestão da carteira."\n'
                 "  ]\n"
                 "}\n"
                 "```"

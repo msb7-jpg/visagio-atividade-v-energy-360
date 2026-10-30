@@ -92,6 +92,12 @@ SCHEMA DAS TABELAS ANALÍTICAS (CAMADA GOLD NO SQLITE):
      'LIGACAO CLANDESTINA', 'MEDIDOR ADULTERADO'.
    - kwh_recuperado (REAL): Volume recuperado em kWh via TOI.
 
+COBERTURA TEMPORAL DA BASE ANALÍTICA (MANDATÓRIO):
+- A base contém exatamente 48 competências mensais fechadas, de '2022-07' a '2026-06'.
+- "Último ano" ou "últimos 12 meses": periodo entre '2025-07' e '2026-06'.
+- "Ano anterior": periodo entre '2024-07' e '2025-06' (ou ano civil correspondente).
+- "Último mês" ou "mês mais recente": '2026-06'.
+
 VALORES REAIS MANDATÓRIOS (EM MAIÚSCULAS E SEM ACENTO):
 - Todos os textos e valores categóricos no banco usam MAIÚSCULAS e sem acentos:
   * Municípios: 'RECIFE', 'OLINDA', 'JABOATAO DOS GUARARAPES', 'PAULISTA', 'CAMARAGIBE',

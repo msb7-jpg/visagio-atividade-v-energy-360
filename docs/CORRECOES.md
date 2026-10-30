@@ -31,7 +31,8 @@
 
 ## 3. IA (Miguel)
 
-- [ ] ⚪ O endpoint de insights aceita `metricas` livres do cliente; o Painel envia os indicadores reais, mas o servidor não confere (apontado pelo Adrian).
+- [x] ⚪ **O endpoint de insights aceita `metricas` livres do cliente; o Painel envia os indicadores reais, mas o servidor não confere** (apontado pelo Adrian).
+  - **Evidência e Resolução (2026-10-29):** Implementado validador semântico `faithfulness_checker.py` e filtragem proativa `_filter_faithful_insights` no `insights_service.py`. Todo insight ou bullet com valor numérico que diverge das métricas recebidas do cliente/Painel é automaticamente expurgado antes do retorno ao usuário, impedindo qualquer alucinação numérica. Testes unitários e de integração adicionados em `test_agent_integration.py`.
 
 ## 4. Painel do Diretor (Bernardo)
 

@@ -22,7 +22,7 @@ class LocalOpenAIProviderStrategy(LLMProviderStrategy):
         api_key: str | None = None,
         base_url: str | None = None,
         temperature: float = 0.0,
-        timeout_seconds: int = 30,
+        timeout_seconds: int = 90,
         **kwargs: Any,
     ) -> BaseChatModel:
         """
@@ -42,17 +42,16 @@ class LocalOpenAIProviderStrategy(LLMProviderStrategy):
         Raises:
             ValueError: Se base_url não for informada.
         """
-        if not base_url:
-            raise ValueError("O parâmetro 'base_url' é obrigatório para provedores locais.")
+        resolved_url = base_url or "http://127.0.0.1:8080/v1"
 
         extra_body = kwargs.pop("extra_body", {})
         if "chat_template_kwargs" not in extra_body:
             extra_body["chat_template_kwargs"] = {"enable_thinking": False}
 
         return ChatOpenAI(
-            model=model or "local-model",
+            model=model or "models/Qwen3.5-4B-Q4_K_M.gguf",
             api_key=api_key or "not-needed",
-            base_url=base_url,
+            base_url=resolved_url,
             temperature=temperature,
             timeout=float(timeout_seconds),
             extra_body=extra_body,

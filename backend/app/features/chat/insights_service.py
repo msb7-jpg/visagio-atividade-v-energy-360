@@ -9,6 +9,7 @@ from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from app.agent.utils.faithfulness_checker import check_numerical_faithfulness
 from app.core.config import get_settings
 from app.core.llm_factory import get_chat_model
 from app.features.chat.schemas import ProactiveInsightsRequest, ProactiveInsightsResponse
@@ -20,12 +21,38 @@ SYSTEM_PROMPT = (
     "Você é um especialista sênior em regulação e economia do Setor Elétrico Brasileiro (V-Energy).\n"
     "Sua missão é analisar proativamente métricas operacionais e comerciais de um painel "
     "e gerar diagnósticos executivos relevantes de alto impacto acionável.\n\n"
-    "Diretrizes:\n"
+    "DIRETRIZES MANDATÓRIAS:\n"
     '1. Responda estritamente em JSON puro com as chaves "resumo_executivo" e "insights".\n'
     '2. "resumo_executivo": Uma frase direta sintetizando o achado principal.\n'
     '3. "insights": Lista de 2 a 3 pontos acionáveis abordando elasticidade, GD solar, perdas ou DEC/FEC.\n'
-    "4. Sem preâmbulos, sem blocos adicionais."
+    "4. FIDELIDADE ABSOLUTA AOS DADOS (ZERO ALUCINAÇÃO): É terminantemente proibido inventar números. "
+    "Todo valor percentual ou monetário citado deve existir exatamente em 'metricas_observadas'.\n"
+    "5. Sem preâmbulos, sem blocos adicionais."
 )
+
+
+def _filter_faithful_insights(
+    summary: str,
+    raw_insights: list[str],
+    metrics_context: dict[str, Any] | None,
+) -> tuple[str, list[str]]:
+    """Valida a fidelidade factual dos números e descarta alegações desfundamentadas."""
+    if not metrics_context:
+        return summary, raw_insights
+
+    summary_ok, _, ungrounded_summary = check_numerical_faithfulness(summary, metrics_context)
+    if not summary_ok and ungrounded_summary:
+        logger.warning("Resumo executivo do insight contém números não fundamentados: %s", ungrounded_summary)
+
+    faithful_bullets: list[str] = []
+    for bullet in raw_insights:
+        bullet_ok, _, ungrounded_bullet = check_numerical_faithfulness(bullet, metrics_context)
+        if bullet_ok or not ungrounded_bullet:
+            faithful_bullets.append(bullet)
+        else:
+            logger.warning("Descartando insight infiel aos dados: '%s' (números: %s)", bullet, ungrounded_bullet)
+
+    return summary, faithful_bullets
 
 
 def _is_provider_configured() -> bool:
@@ -104,9 +131,18 @@ async def generate_proactive_insights_service(
             logger.warning("LLM retornou campos vazios para insights.")
             raise ValueError("Resposta do LLM com campos incompletos.")
 
+        validated_summary, validated_bullets = _filter_faithful_insights(
+            executive_summary.strip(),
+            insights_list,
+            request.metricas,
+        )
+        if not validated_bullets:
+            logger.warning("Todos os insights foram descartados por ausência de lastro nos dados.")
+            raise ServiceUnavailableError("Insights gerados reprovados na verificação de fidelidade aos dados.")
+
         return ProactiveInsightsResponse(
-            insights=insights_list,
-            resumo_executivo=executive_summary.strip(),
+            insights=validated_bullets,
+            resumo_executivo=validated_summary,
         )
     except json.JSONDecodeError as decode_err:
         logger.error("JSON malformado retornado pelo LLM para insights: %s", decode_err)
