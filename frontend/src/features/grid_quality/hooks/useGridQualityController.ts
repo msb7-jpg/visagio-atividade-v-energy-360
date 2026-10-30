@@ -6,6 +6,7 @@ import {
   feedersQueryOptions,
   indicatorsQueryOptions
 } from '@/features/grid_quality/queries/qualityQueries'
+import { paginate } from '@/features/grid_quality/utils/qualityPagination'
 import type { QualityStatus } from '@/features/grid_quality/types/qualityTypes'
 
 /**
@@ -15,6 +16,7 @@ import type { QualityStatus } from '@/features/grid_quality/types/qualityTypes'
  */
 export function useGridQualityController() {
   const [status, setStatus] = useState<QualityStatus | undefined>(undefined)
+  const [page, setPage] = useState(1)
   const [selectedFeederId, setSelectedFeederId] = useState<string | null>(null)
 
   const indicators = useQuery(indicatorsQueryOptions())
@@ -22,9 +24,15 @@ export function useGridQualityController() {
   const history = useQuery(feederHistoryQueryOptions(selectedFeederId))
   const customers = useQuery(affectedCustomersQueryOptions(selectedFeederId))
 
+  const changeStatus = (nextStatus: QualityStatus | undefined) => {
+    setStatus(nextStatus)
+    setPage(1)
+  }
+
   return {
     status,
-    setStatus,
+    setStatus: changeStatus,
+    pagination: paginate(feeders.data ?? [], page, setPage),
     selectedFeederId,
     openFeeder: setSelectedFeederId,
     closeFeeder: () => setSelectedFeederId(null),

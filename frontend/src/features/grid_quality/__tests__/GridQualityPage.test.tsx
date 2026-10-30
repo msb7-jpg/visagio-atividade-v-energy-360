@@ -176,6 +176,28 @@ describe('GridQualityPage', () => {
     expect(screen.getByRole('link', { name: 'Ver ficha' })).toHaveAttribute('href', '/customers?uc=UC-TESTE-01')
   })
 
+  it('pagina o ranking, abre a gaveta de qualquer página e volta à primeira ao trocar o filtro', async () => {
+    const manyFeeders = Array.from({ length: 20 }, (_, index) => ({
+      ...violatingFeeder,
+      id_alimentador: `ALIM-PAG-${String(index + 1).padStart(2, '0')}`
+    }))
+    mockedApi.listFeeders.mockResolvedValue(manyFeeders)
+    renderPage()
+
+    expect(await screen.findByText('Página 1 de 2 · 20 circuitos')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'ALIM-PAG-16' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
+    expect(await screen.findByText('Página 2 de 2 · 20 circuitos')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'ALIM-PAG-16' }))
+    expect(await screen.findByText('Alimentador ALIM-PAG-16')).toBeInTheDocument()
+    expect(mockedApi.getFeederHistory).toHaveBeenCalledWith('ALIM-PAG-16', expect.anything())
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+
+    fireEvent.change(screen.getByLabelText('Situação em relação ao limite de referência'), { target: { value: 'violacao' } })
+    expect(await screen.findByText('Página 1 de 2 · 20 circuitos')).toBeInTheDocument()
+  })
+
   it('explica quando nenhum alimentador atende ao filtro', async () => {
     mockedApi.listFeeders.mockResolvedValue([])
     renderPage()
