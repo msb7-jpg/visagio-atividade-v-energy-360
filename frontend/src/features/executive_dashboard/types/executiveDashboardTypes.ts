@@ -58,9 +58,15 @@ export interface LossesSnapshot {
   competencia_referencia: string | null
   /** A competência foi fixada na configuração (demonstração), e não é a mais recente. */
   competencia_fixada: boolean
+  /** UCs da fila de qualquer chance de acerto. */
   ucs_na_fila: number
-  energia_recuperavel_kwh_mes: number
-  valor_recuperavel_rs_ano: number
+  /** UCs com chance de acerto de 30% ou mais, como na aba "Prioritárias" da Fila de Inspeção. */
+  ucs_prioritarias: number
+  energia_prioritaria_kwh_mes: number
+  /** Valor por ano se todas as UCs prioritárias confirmarem a irregularidade. */
+  valor_prioritario_rs_ano: number
+  /** Valor por ano das UCs prioritárias ponderado pela chance de acerto de cada uma. */
+  retorno_esperado_rs_ano: number
   taxa_acerto_pct: number
   inspecoes_avaliadas: number | null
 }

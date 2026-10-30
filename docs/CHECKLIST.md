@@ -37,29 +37,29 @@
 
 ## 2. Portal Web (seção 5.2 e Módulo 2)
 - [ ] **Stack do case:** React + TypeScript (Vite), FastAPI e SQLite com as tabelas Gold. (`package.json`, `pyproject.toml`)
-- [ ] **Diretor: indicadores comparados entre períodos.** O Painel do Diretor abre, mostra os 5 grupos, os selos melhorou/piorou e a troca de período funciona. (tela + `GET /dashboard/indicators`)
+- [x] **Diretor: indicadores comparados entre períodos.** O Painel do Diretor abre, mostra os 5 grupos, os selos melhorou/piorou e a troca de período funciona. (tela + `GET /dashboard/indicators`)
 - [ ] **Diretor comercial: efeito-preço x efeito-volume** com investigação por município, bairro e classe. A cascata soma igual à variação, e o drill até o bairro funciona (Recife com os 106 bairros). (tela `/revenue`)
-- [ ] **Atendente: tudo numa tela** (Camila):
-  - [ ] quem é o cliente (nome);
-  - [ ] consumo dos últimos meses ao lado do mesmo período do ano passado;
-  - [ ] faturas em aberto (agora existem faturas ABERTA além das VENCIDAS);
-  - [ ] medidor instalado;
-  - [ ] painel solar;
-  - [ ] falta de luz na rua (alimentador) e na própria UC;
-  - [ ] chamados;
-  - [ ] **"conta alta": responder se o consumo realmente subiu.**
-  (tela `/customers` com UCs reais: UC100095, UC100002, UC114218)
+- [x] **Atendente: tudo numa tela** (Camila):
+  - [x] quem é o cliente (nome);
+  - [x] consumo dos últimos meses ao lado do mesmo período do ano passado;
+  - [x] faturas em aberto (agora existem faturas ABERTA além das VENCIDAS);
+  - [x] medidor instalado;
+  - [x] painel solar;
+  - [x] falta de luz na rua (alimentador) e na própria UC;
+  - [x] chamados;
+  - [x] **"conta alta": responder se o consumo realmente subiu.**
+  (tela `/customers` com UCs reais: UC100094 tem dados em todas as abas; também UC100095, UC100002, UC114218)
 - [ ] **Perdas: fila ordenada por prioridade** com motivo da suspeita e energia a recuperar. (tela `/losses`)
-- [ ] ⚠️ **A fila não pode aparecer vazia na demonstração:** no mês mais recente ela fica vazia (todas as quedas fortes são de painel solar). `LOSS_REFERENCE_COMPETENCIA=2025-08` precisa estar no `.env` e explicado no README.
+- [x] ⚠️ **A fila não pode aparecer vazia na demonstração:** desde o PR #49, o mês mais recente tem 165 UCs (7 prioritárias). Para a onda de 2025, `LOSS_REFERENCE_COMPETENCIA="2025-09"` no `.env`, explicado no README (Fatia 05).
 - [ ] **Capacidade do Rafael:** "mais de 200 inspeções por mês" e "pouco mais da metade encontra algo" aparecem coerentes na tela (capacidade mensal, taxa de 62,7%).
 - [ ] **Ordens de inspeção:** gerar a partir da fila, mudar status, registrar o resultado de campo e cancelar. Testar o ciclo inteiro na tela.
 - [ ] **Operação: DEC e FEC por alimentador ao longo do tempo** e os piores, mais regiões e onde a manutenção dá retorno. Textos sem falar em "multa" ou "violação" (glossário: o limite é só referência). (tela `/quality`)
 - [ ] **Filtrar e recortar:** cada tela tem filtros que funcionam (período, município, bairro, classe, status). Listar quais são.
-- [ ] **Mesmos números entre telas:**
-  - [ ] Receita = Painel = diagnóstico (+8,0%, −5,1%, +13,8%);
-  - [ ] inadimplência do Painel = diagnóstico;
-  - [ ] retrato de perdas do Painel = Fila;
-  - [ ] ⚠️ DEC do Painel (1,48) x Continuidade (1,47): alinhar o divisor ou explicar.
+- [x] **Mesmos números entre telas:** (conferido em 30/10 com o banco regerado)
+  - [x] Receita = Painel = diagnóstico (+8,0%, −5,1%, +13,8%);
+  - [x] inadimplência do Painel = diagnóstico (5,52% → 5,42%);
+  - [x] retrato de perdas do Painel = Fila: mesmo ranking e mesmo corte de prioridade (chance de 30% ou mais). Em 2026-06, 7 prioritárias de 165 nas duas telas; em 2025-09, o Painel conta 587 de 39.243 na fila inteira, e a aba da Fila conta só as UCs já carregadas (ADR-028);
+  - [x] DEC do Painel = Continuidade (1,47 → 3,45), com a mesma base de UCs atendidas (ADR-012 revisada).
 - [ ] *(Diferencial)* **Exportar a fila** para a equipe de campo.
 - [ ] *(Diferencial)* **Subir a planilha de campo** pelo portal.
 - [ ] *(Diferencial)* **Login por perfil** com as telas do cargo. Cada um dos 5 logins abre na tela certa e recebe 403 fora dela.

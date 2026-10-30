@@ -228,3 +228,15 @@
 - **Validação de Testes:**
   - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (697) aprovados.
   - Frontend: ESLint, Fallow (sem duplicação), Vitest (539) e build aprovados.
+
+### [2026-10-30] - Retrato de perdas com as UCs prioritárias, Visão 360 no padrão do design e README da Fatia 03
+- **Autor:** Bernardo H
+- **Branch:** `feat/fatia-03-pendencias-finais`
+- **O que foi feito:**
+  - Painel: o card de perdas passou a contar só as UCs prioritárias (chance de acerto de 30% ou mais, o corte da Fila) e a mostrar o retorno esperado, com o total da fila como informação secundária (ADR-028). No banco real: 7 de 165 em 2026-06; 587 de 39.243 e R$ 1,53 mi/ano em 2025-09, contra R$ 31,6 mi/ano da soma da fila inteira.
+  - Visão 360: situação da fatura com o `StatusBadge kind="fatura"` (paga verde, em aberto âmbar, vencida vermelha) e "Tentar novamente" nos 4 erros das abas.
+  - README: seção da Fatia 03 com o que cada tela responde, como demonstrar, suposições com links para as ADRs e limites.
+  - `CHECKLIST.md`, `CORRECOES.md` e checklists da pasta atualizados; a consulta que reproduz as 887 UCs com queda de 40% foi registrada para o diagnóstico.
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest e build aprovados.

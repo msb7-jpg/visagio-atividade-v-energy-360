@@ -44,13 +44,18 @@ class FakeLossRepository:
     def __init__(self, reference_competencia: str | None = None) -> None:
         self.reference_competencia = reference_competencia
         self.received_filters = []
+        self.extra_profiles: list[ConsumptionProfile] = []
+        self.portfolio_ratio = 1.0
 
     async def fetch_consumption_profiles(self, filters):
         self.received_filters.append(filters)
         drop = ConsumptionProfile("UC1", "RECIFE", "CENTRO", "Residencial", 300.0, 50.0, 0)
         steady = ConsumptionProfile("UC2", "RECIFE", "CENTRO", "Residencial", 200.0, 200.0, 0)
         return QueueCandidates(
-            profiles=[drop, steady], field_history_applied=True, reference_competencia=self.reference_competencia
+            profiles=[drop, steady, *self.extra_profiles],
+            field_history_applied=True,
+            reference_competencia=self.reference_competencia,
+            portfolio_ratio=self.portfolio_ratio,
         )
 
     async def fetch_average_tariff(self):
@@ -119,10 +124,23 @@ async def test_losses_snapshot_counts_ranked_units_and_hit_rate():
 
     assert snapshot.competencia_referencia == "2026-06"
     assert snapshot.competencia_fixada is False
-    assert snapshot.ucs_na_fila == 1
-    assert snapshot.energia_recuperavel_kwh_mes == pytest.approx(250.0)
+    assert (snapshot.ucs_na_fila, snapshot.ucs_prioritarias) == (1, 1)
+    assert snapshot.energia_prioritaria_kwh_mes == pytest.approx(250.0)
     assert snapshot.taxa_acerto_pct == pytest.approx(25.0)
     assert snapshot.inspecoes_avaliadas == 8
+
+
+async def test_losses_snapshot_counts_value_only_for_priority_units_weighted_by_hit_chance():
+    service, _ = build_service()
+    service.loss_repository.portfolio_ratio = 0.7
+    low_chance = ConsumptionProfile("UC3", "RECIFE", "CENTRO", "Residencial", 300.0, 210.0, 0)
+    service.loss_repository.extra_profiles = [low_chance]
+
+    snapshot = await service.get_losses_snapshot()
+
+    assert (snapshot.ucs_na_fila, snapshot.ucs_prioritarias) == (2, 1)
+    assert snapshot.valor_prioritario_rs_ano == pytest.approx(2250.0)
+    assert snapshot.retorno_esperado_rs_ano == pytest.approx(2250.0 * 0.93)
 
 
 async def test_losses_snapshot_prefers_fixed_reference_competencia():

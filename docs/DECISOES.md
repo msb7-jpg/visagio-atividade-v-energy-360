@@ -197,6 +197,7 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 - **Data:** 2026-10-27 · **Fatia:** 03 / Painel (Bernardo H) · **Status:** Aceita
 - **Contexto:** O histórico de inspeções (`fato_inspecoes_perdas`) só cobre ago a dez/2025: não existe primeiro ano para comparar.
 - **Decisão:** Rota separada `GET /dashboard/losses` com UCs suspeitas, energia (kWh/mês) e valor (R$/ano) recuperáveis e a taxa de acerto das inspeções. Ela usa o mesmo ranking (`rank_suspicious_units`) e a mesma taxa (`hit_rate_dto`) da Fila de Perdas (Fatia 05). A tela mostra o selo "Retrato atual, sem histórico para comparar". A rota é separada porque o cálculo da fila é o mais pesado e não deve atrasar os demais cards.
+- **Revisão (2026-10-30):** energia e valor passaram a contar só as UCs prioritárias (ADR-028).
 - **Conformidade:** `test_losses_snapshot_uses_loss_queue_ranking`.
 
 ## ADR-015 — Painel só para o diretor; tela inicial pela ordem do menu
@@ -255,3 +256,12 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 - **Decisão:** Implementar o assistente como um widget flutuante, arrastável e redimensionável globalmente acionável (ou expansível para tela cheia), com selo de modo seguro (Read-Only) e atalhos rápidos.
 - **Justificativa:** Proporciona ao usuário não técnico e ao analista a liberdade de consultar dados operacionais sem perder o contexto visual da tela ativa, consultando métricas e comparando valores em tempo real.
 - **Conformidade:** Testes unitários no Vitest cobrindo ativação, arraste, redimensionamento e acessibilidade via teclado.
+
+## ADR-028 — Retrato de perdas do Painel conta só as UCs prioritárias
+
+- **Data:** 2026-10-30 · **Fatia:** 03 / Painel (Bernardo H) · **Status:** Aceita
+- **Contexto:** Depois do PR #49, o Painel usa o mesmo ranking e o mesmo piso de queda (20%) da Fila de Inspeção. A fila inteira inclui milhares de UCs com chance de acerto baixa (7,6%). Com `LOSS_REFERENCE_COMPETENCIA="2025-09"`, o card somava 39.243 UCs e R$ 31,6 mi/ano recuperáveis, e 95% desse valor vinha de UCs de baixa chance.
+- **Decisão:** O card mostra as **UCs prioritárias** (chance de acerto de 30% ou mais, o mesmo corte da aba "Prioritárias" da Fila, `PRIORITY_MIN_HIT_PROBABILITY`), a energia recuperável delas e o **retorno esperado** (valor anual de cada UC × a chance de acerto dela). O total da fila e o valor "se todas confirmarem" aparecem como informação secundária.
+- **Números no banco real (30/10):** em 2026-06, 7 prioritárias de 165 UCs, retorno esperado de R$ 2,4 mil/ano. Em 2025-09, 587 de 39.243, retorno esperado de R$ 1,53 mi/ano (até R$ 1,64 mi se todas confirmarem).
+- **Alternativa descartada:** somar a fila inteira ponderada pela chance, que ainda inclui as UCs que a Fila manda para a aba "Baixa chance" e não seriam inspecionadas no mês.
+- **Conformidade:** `test_losses_snapshot_counts_value_only_for_priority_units_weighted_by_hit_chance`, `test_losses_snapshot_uses_loss_queue_ranking` e `ExecutiveDashboardPage.test.tsx`.

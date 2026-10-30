@@ -111,6 +111,39 @@ Execução de ponta a ponta do Workflow no Databricks, com todas as tarefas conc
 
 Cada fatia descreve aqui o que assumiu e como demonstrar o que entregou. As decisões completas, com números e alternativas descartadas, ficam em `docs/`.
 
+### 📊 Fatia 03: Painel do Diretor e Visão 360 da UC
+
+**Painel do Diretor** (`/dashboard`, perfil `diretor`). Responde ao diretor: **o negócio melhorou ou piorou entre dois períodos?** São onze indicadores em cinco áreas, cada um com o valor dos dois períodos, a variação e o selo "Melhorou", "Piorou" ou "Estável". Ao lado ficam o retrato da Fila de Perdas e o insight da IA.
+
+**Visão 360 da UC** (`/customers`, perfis `atendente`, `gerente_atendimento`, `gerente_perdas`, `gerente_operacao` e `diretor`). Responde ao atendente: **por que a conta deste cliente veio alta, e a rua dele ficou sem luz?** O atendente busca pelo número da UC, do medidor ou pelo nome do titular e vê cadastro, consumo de 12 meses contra o ano anterior, faturas, interrupções, chamados e inspeções de perdas, com o diagnóstico da conta alta em frases prontas.
+
+Os usuários de teste estão em [`backend/app/core/config.py`](backend/app/core/config.py) (senha `venergy123`).
+
+**Como demonstrar**
+
+- **Painel:** entre como `diretor@venergy.com`. Os períodos padrão comparam jul/2022–jun/2023 com jul/2025–jun/2026: faturamento **+8,0%**, energia faturada **−5,1%** e tarifa média **+13,8%**. Troque os períodos no seletor; as janelas ficam no endereço da página. Passe o mouse no nome de cada indicador para ver como ele é calculado.
+- **Retrato de perdas no Painel:** sem configurar nada, mostra **7 UCs prioritárias de 165 na fila** (2026-06). Com `LOSS_REFERENCE_COMPETENCIA="2025-09"` (ver Fatia 05), mostra **587 prioritárias de 39.243** e retorno esperado de **R$ 1,53 mi/ano**.
+- **Visão 360:** entre como `atendimento@venergy.com` e busque `UC100094` (ou só `100094`, ou parte do nome do titular). Essa UC tem faturas em aberto, interrupções, chamados e uma inspeção de perdas, então todas as abas têm dados.
+
+**Suposições**
+
+| Suposição | Valor | Onde está o detalhe |
+|---|---|---|
+| Períodos padrão do Painel | base jul/2022–jun/2023 e atual jul/2025–jun/2026, os mesmos da Receita e do diagnóstico | ADR-010 |
+| "Estável" no Painel | variação abaixo de 1%; indicadores em % são avaliados pela diferença em pontos percentuais | ADR-011 |
+| DEC e FEC do Painel | horas e interrupções divididas pelas UCs atendidas da Gold, a mesma base da Qualidade da Rede; aviso quando o período inclui o temporal de jul/2025 | ADR-012 |
+| Inadimplência | valor das faturas `VENCIDA` ÷ valor faturado; faturas `ABERTA` ainda estão no prazo e não contam | ADR-013 |
+| Perdas no Painel | retrato atual, sem comparação (as inspeções só cobrem ago–dez/2025); conta só as UCs prioritárias | ADR-014 e ADR-028 |
+| Consumo "subiu" ou "caiu" na Visão 360 | mais de 10% contra o mesmo mês do ano anterior | ADR-017 |
+| Diagnóstico da conta alta | cinco causas: consumo, leitura estimada, dias faturados, bandeira e preço médio do kWh; o reajuste não é isolado porque não existe na Gold | ADR-018 |
+| Janela da Visão 360 | 12 meses até a última leitura da própria UC; os totais só somam meses que existem nos dois anos | ADR-019 |
+| Falta de luz | interrupções da própria UC depois da ligação; a região é "acima do normal" quando o alimentador passa de 1,5 vez a própria média, sem limite ANEEL | ADR-020 |
+
+**Limites conhecidos**
+- O Painel calcula outro par de períodos em cerca de 2,5 s na primeira vez; os períodos padrão abrem na hora, porque são calculados na subida da API (ADR-016). Ao trocar o `v_energy.db`, reinicie a API para limpar o cache.
+
+Detalhes: [`docs/DECISOES.md`](docs/DECISOES.md) (ADR-010 a ADR-023 e ADR-028) e os planos em [`docs/planning/bernardo/`](docs/planning/bernardo/painel_diretor.md).
+
 ### 🔎 Fatia 05: Gestão de Perdas e Fila de Inspeção
 
 Responde ao gerente de perdas: **quais UCs mandar a campo primeiro**. No portal (`/losses`, perfil `gerente_perdas`; os usuários de teste estão em [`backend/app/core/config.py`](backend/app/core/config.py)) o gerente vê a fila priorizada, abre cada UC para entender por que ela está lá (motivo, conta do score, consumo de 12 meses e inspeções anteriores), gera ordens de inspeção, exporta a planilha para a equipe de campo e importa os resultados de volta.
