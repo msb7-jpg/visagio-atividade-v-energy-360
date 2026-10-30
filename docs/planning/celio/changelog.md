@@ -116,3 +116,22 @@
   - Conferir as janelas padrão com o banco real entregue pelo Ryei.
 - **Validação de Testes:**
   - `make lint-all` e `make test-all` passando (frontend 302 testes; backend 537).
+
+### [2026-10-28] - Diagnóstico da receita com os números do banco real
+- **Autor:** Celio
+- **O que foi feito:**
+  - Conferido o `v_energy.db` real: 2.152.336 faturas, competências de 2022-07 a 2026-06 (48 meses), sem fatura sem UC e sem par UC x competência duplicado. As janelas padrão da tela estão certas.
+  - `docs/DIAGNOSTICO_RECEITA.md` preenchido com as consultas D1 e C0 a C9 e com a cascata e o ranking (classe, município e bairro) da tela `/revenue`. Receita +8,0%, volume -5,1% e tarifa média +13,8%. A geração distribuída (3.496 UCs mantidas com GD, consumo cerca de 62% menor) responde por 97% da queda líquida de volume. Inadimplência, leituras estimadas e anomalias de leitura não explicam a queda.
+  - Achado em aberto: nas UCs sem GD, o consumo de Iputinga, Macaxeira, Jardim Jordão e Prazeres cai de uma vez a partir de maio de 2025 (de 10% a 21% por mês), em seis alimentadores diferentes. Causa não identificada.
+  - Registro do que entrou no módulo de receita por outras mãos (pedido em `docs/CORRECOES.md`, seção 7): a lista de bairros do filtro agora lê todas as páginas (commit `07a69c0`, Recife tem 106 bairros) e a `period_totals_query` perdeu o filtro de competência no `WHERE` (mesmos números, de 5,1 s para 2,8 s, ADR-016).
+- **Dificuldades / Desafios:**
+  - Os números do case não batem com o banco: volume "quase -4%" contra -5,1%, e tarifa de 10,5% contra +13,8% (residencial +14,6%). A receita bate (+8,0%). Diferença registrada no diagnóstico.
+  - Dados da Gold a confirmar: `potencia_gd_kw` com valores de até 9.000 kW em residência, coluna `subestacao` vazia e tabela `fato_anomalia_leitura` sem linhas.
+  - Faturas com `data_pagamento = 9999-12-31` marcadas como pagas (`docs/CORRECOES.md`, seção 1): a consulta C3b, que as conta como não pagas, deu o mesmo resultado da C3 no banco usado (5,52% na base e 5,42% na atual); falta o Ryei confirmar se esta versão do banco já é a corrigida.
+  - Respostas de Adrian (tarifa média real de R$ 0,7876/kWh e taxa de acerto por sinal) e de Renan (ações e valores de GD, fraude e leituras estimadas) incorporadas ao diagnóstico, com os pontos que ainda não fecham marcados como `[a confirmar]`.
+  - Nas abas Município e Classe do ranking, a tela mostra as linhas da aba anterior enquanto a nova consulta carrega.
+- **Próximos Passos:**
+  - Receber de Renan, Adrian e Ryei as ações, os ganhos em R$ e as conferências marcadas `[a confirmar]` no diagnóstico.
+  - Corrigir o carregamento das abas do ranking.
+- **Validação de Testes:**
+  - Não se aplica (apenas documentação).

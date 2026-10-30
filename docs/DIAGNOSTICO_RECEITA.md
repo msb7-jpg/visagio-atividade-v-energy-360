@@ -11,7 +11,7 @@
 
 **Resposta em uma frase** (escrever por último, depois das seções 4 a 8):
 
-> *(rascunho, a fechar depois de conferir com o time)* A energia faturada caiu 5,1% e a tarifa média subiu 13,8%, por isso a receita subiu só 8,0%. A queda de volume vem quase toda da geração distribuída (painéis solares): 3.496 UCs com GD consumiram cerca de 62% menos, o que representa 97% da queda líquida. Inadimplência, leituras estimadas e anomalias de leitura não explicam a queda. Fraude e consumo menor em alguns bairros ficam como pontos a investigar.
+> *(rascunho)* A receita subiu 8,0%, impulsionada pelo reajuste tarifário (tarifa média +13,8%), mas o volume faturado caiu 5,1%, principalmente porque 3.496 clientes passaram a gerar a própria energia solar: eles consumiram cerca de 62% menos, o que explica cerca de 97% da queda líquida de volume (≈ 11,3 GWh, ≈ R$ 8 a 10 mi por ano de receita). As ações de recuperação são a cobrança do Fio B sobre a energia injetada (Lei 14.300/2022) e a fiscalização orientada pela fila de perdas; os valores em R$ de cada uma estão em fechamento (seções 6.1, 6.2 e 8). Inadimplência, leituras estimadas e anomalias de leitura não explicam a queda, e a queda de consumo em quatro bairros desde maio de 2025 segue sem causa conhecida.
 
 ---
 
@@ -76,7 +76,7 @@ Em palavras: a tarifa traria +R$ 22,6 mi, mas a queda de volume tira R$ 8,0 mi, 
 
 **Conferência com o diretor:**
 - Receita +8,0%: bate.
-- Volume: o banco dá -5,1%, e o case fala em "quase -4%". Não bate. `[a confirmar]` se o case usa outro recorte (por exemplo outra fonte de consumo ou só uma classe).
+- Volume: o banco dá -5,1%, e o case fala em "quase -4%". Não bate: a diferença é de 1,1 ponto percentual, mais que um arredondamento. O -5,1% é o valor apurado no banco. O time registrou como premissa (changelog e dicionário de dados) que o "quase 4%" da fala do diretor é aproximado. `[a confirmar]` se a banca vai aceitar essa explicação.
 - Tarifa: a média sobe 13,8% (residencial +14,6%), e o case fala em reajuste homologado de 10,5%. Não bate. O reajuste homologado é uma regra regulatória; a tarifa média cobrada também reflete bandeira, mix de classes e consumo. `[a confirmar]` com o time de onde vem o 10,5%.
 - A receita bate mesmo com essas duas diferenças, então a conta em si está consistente. As diferenças precisam de explicação antes de a banca perguntar.
 
@@ -100,8 +100,8 @@ Cada causa tem **uma consulta direta no banco** (seção 9), **uma ação** e **
 
 | # | Causa | O que medir | Fonte (tabela.coluna) | Responsável | Energia (MWh) | Receita (R$/ano) |
 |---|---|---|---|---|---|---|
-| 6.1 | **Painéis solares (GD)** | queda de consumo faturado das UCs com GD depois da `data_conexao_gd`, comparada com UCs sem GD da mesma classe | `dim_unidade_consumidora.possui_gd`, `potencia_gd_kw`, `data_conexao_gd` · `fato_faturamento` | Renan | -11.314 (medido) | ≈ -8,3 mi/ano (estimado a tarifa média da base) |
-| 6.2 | **Fraude e furto** | energia não faturada com indício de irregularidade; usar **o mesmo cálculo de energia recuperável da fila de perdas** (Adrian), mais o que as inspeções de campo já recuperaram | `fato_anomalia_leitura` · `fato_inspecoes_perdas` · fila de perdas (`/api/v1/losses`) | Renan + Adrian | não é causa mensurável da queda | `[a preencher]` depende da fila do Adrian |
+| 6.1 | **Painéis solares (GD)** | queda de consumo faturado das UCs com GD depois da `data_conexao_gd`, comparada com UCs sem GD da mesma classe | `dim_unidade_consumidora.possui_gd`, `potencia_gd_kw`, `data_conexao_gd` · `fato_faturamento` | Renan | -11.314 (medido) | ≈ -8,3 mi/ano na tarifa da base, ≈ -9,7 mi/ano na tarifa atual por classe (Renan); Fio B pode recuperar R$ 1,5 a 2,9 mi/ano (Renan, premissa a confirmar) |
+| 6.2 | **Fraude e furto** | energia não faturada com indício de irregularidade; usar **o mesmo cálculo de energia recuperável da fila de perdas** (Adrian), mais o que as inspeções de campo já recuperaram | `fato_anomalia_leitura` · `fato_inspecoes_perdas` · fila de perdas (`/api/v1/losses`) | Renan + Adrian | não é causa mensurável da queda | potencial de recuperação ≈ R$ 3,0 a 3,2 mi/ano (200 vistorias por mês, Renan); o número oficial é o da fila do Adrian, `[a preencher]` |
 | 6.3 | **Inadimplência** | faturas vencidas e não pagas e o valor delas | `fato_faturamento.status_pagamento = 'VENCIDA'` | Ryei | n/a | não explica a queda; R$ 9,2 mi vencidos na janela atual (caixa) |
 | 6.4 | **Leituras estimadas** | leituras fechadas pela média (participação em cada janela) e quanto elas se afastam da leitura real seguinte | `fato_medicao.tipo_leitura = 'ESTIMADA'` | Renan | não explica a queda (a participação caiu) | efeito líquido não medido |
 | 6.5 | **Clientes que passaram a consumir menos** | queda de consumo das UCs mantidas, sem GD e sem anomalia, por classe e bairro (o que sobra depois de 6.1 a 6.4) | `fato_faturamento` · `dim_unidade_consumidora` | Célio (ranking da tela) | -1.101 no total das UCs mantidas sem GD; 4 bairros concentram -2.714 | até ≈ R$ 2,0 mi/ano em jogo nos 4 bairros (teto) |
@@ -128,28 +128,31 @@ Antes de atribuir a queda a qualquer causa, separar de onde ela vem. A base de c
   1. **Potência:** a soma de `potencia_gd_kw` das residenciais dá 227 mil kW para 3.115 UCs (cerca de 73 kW por UC). Os máximos por ano de conexão (C6) chegam a cerca de 9.000 kW em residência e 5.900 kW em comercial de 2024, o que não faz sentido para esses perfis, e a média é puxada por eles. Nas conexões comerciais de 2025 e 2026 o máximo é 75 kW. `[a confirmar com Renan]` a unidade e se há UCs com potência errada. A conclusão sobre volume não usa a potência.
   2. **Quando a GD ligou:** `possui_gd` é o estado atual da UC. Pela `data_conexao_gd` (C6), todas as UCs com GD ligaram a partir de 2024: 1.845 em 2024, 1.304 em 2025 e 361 em 2026. Nenhuma tinha GD na janela base, então a base é limpa. Já as ligadas em 2025 e 2026 passaram parte da janela atual sem GD, e por isso a queda média de 62% provavelmente subestima o efeito de uma UC com a GD funcionando o ano inteiro.
   3. **Consumo líquido:** `[a confirmar com Renan]` se o consumo faturado já é líquido da energia injetada.
-- **Ação proposta:** `[a confirmar com Renan]` (hipóteses: acompanhar a cada mês as novas conexões de GD e a potência instalada para projetar a perda de volume; rever com o regulatório como a rede é remunerada nessas UCs).
-- **Ganho estimado e premissa:** não é um ganho a recuperar, é uma perda a medir: ≈ R$ 8,3 mi por ano de receita (6.565 MWh × R$ 0,7145 residencial + 4.749 MWh × R$ 0,7540 comercial, tarifas médias da janela base na consulta D1). Aproximação: a conta exata por UC fica para depois da conferência.
+- **Conferência independente:** o time mediu que, sem as 3.510 UCs com GD, o volume fica estável (cerca de -0,2%, `docs/CORRECOES.md`, seção 1). É a mesma ordem de grandeza do que aparece aqui para o resto da base (UCs sem GD e novas, somadas: -304 MWh).
+- **Conferência do Renan (30/10):** ele conferiu contra o pipeline e confirma 3.496 UCs com GD, queda de 61,8% e residenciais sem GD com +0,9%. Dois pontos ainda não batem com esta consulta: (1) ele fala em 11,44 GWh e a C1 dá 11,31 GWh (diferença de 0,13 GWh); (2) os 249,3 MW de potência instalada são a soma de `potencia_gd_kw` (227,0 MW residencial e 22,3 MW comercial), que inclui UCs com até 9.000 kW. `[a confirmar com Renan]` a origem da diferença e se há UCs com potência errada. Ele também ainda não respondeu se o consumo faturado é líquido da energia injetada.
+- **Ação proposta (Renan):** aplicação gradual do Fio B sobre a energia injetada, conforme a Lei 14.300/2022; oferta de serviços de O&M e baterias pela comercializadora do grupo; readequação dos contratos de compra de energia (PPA) da distribuidora.
+- **Ganho estimado e premissa:** é uma perda a medir mais do que um ganho a recuperar. A receita que a GD tira é de ≈ R$ 8,3 mi por ano na tarifa média da janela base (6.565 MWh × R$ 0,7145 residencial + 4.749 MWh × R$ 0,7540 comercial, consulta D1) e de ≈ R$ 9,7 mi por ano na tarifa atual por classe (R$ 9,72 mi no cálculo do Renan). A cobrança plena do Fio B na TUSD pode recuperar de R$ 1,5 a R$ 2,9 mi por ano segundo o Renan. `[a confirmar com Renan]` a conta e a premissa desses R$ 1,5 a 2,9 mi (percentual do Fio B sobre a energia injetada e a regra de transição da lei, que é gradual).
 
 ### 6.2 Fraude e furto
 
-- **Como medir:** usar o **mesmo cálculo da fila de perdas** (Adrian), para não existirem dois números. No código dele (`backend/app/features/loss_management/scoring.py`):
-  - kWh/mês recuperável = consumo médio da base − consumo médio recente da UC (mínimo 0);
-  - valor/ano = kWh/mês × 12 × tarifa de referência;
-  - retorno esperado = kWh/mês × taxa histórica de acerto (62,7% no geral e 93% para queda súbita, medidas em 1.389 inspeções de campo).
-- **Conferir com o Adrian:** a tarifa de referência da fila é uma constante provisória (R$ 0,714/kWh, "tarifa de referência do desenho da tela"), diferente da tarifa média da tela de receita. Combinar qual vale no diagnóstico e usar a mesma nos dois.
+- **Como medir:** usar o **mesmo cálculo da fila de perdas** (Adrian), para não existirem dois números. Regras confirmadas pelo Adrian em 30/10, no código dele (`backend/app/features/loss_management/scoring.py` e `hit_rate.py`), que devem ser **usados, não reimplementados**:
+  - a tarifa é a **média real dos últimos 12 meses** (receita ÷ energia faturada em `fato_faturamento`), hoje R$ 0,7876/kWh (jul/2025 a jun/2026). A constante 0,714 saiu. É a mesma tarifa média da tela de receita;
+  - valor/ano de cada UC = déficit mensal (base − recente) × 12 × tarifa;
+  - retorno esperado = valor/ano × probabilidade de acerto do sinal: queda súbita 93%, queda moderada 91,5% ou 7,6% (conforme a queda além da carteira), leitura zerada 62,7% e ligação recente no máximo 7,6%. A janela de 3 meses vale só para o kWh recuperável e a ordenação da fila. O 62,7% **não** é mais a taxa de todas as UCs.
 - **Também medir (campo):** o que as inspeções já recuperaram de fato (consulta **C2a**) e quantas UCs têm leitura anômala (consulta **C2b**), como contexto, sem somar com a estimativa da fila.
-- **Medido (C2a):** 1.389 inspeções, 871 com irregularidade (62,7%, igual à taxa usada pelo Adrian), 1.473 MWh recuperados, em média 1.691 kWh por irregularidade. Com a tarifa provisória de 0,714 R$/kWh seriam cerca de R$ 1,05 mi recuperados no total das inspeções (o período dessas inspeções não foi conferido).
-- **Medido (C2b):** `fato_anomalia_leitura` está **vazia** (0 UCs, 0 leituras). Não há indício de desvio nas leituras anômalas, então fraude **não** aparece como causa mensurável da queda de volume neste banco.
-- **Para a fila:** `[a preencher]` UCs na fila, kWh/mês recuperável e valor/ano, vindos do cálculo do Adrian (API de perdas), com a tarifa que vocês combinarem.
-- **Ação proposta:** `[a confirmar com Adrian]` (ex.: quantas UCs do topo da fila inspecionar).
-- **Ganho estimado e premissa:** `[a preencher]` depende da tarifa e da fila do Adrian. Isto é potencial de recuperação, não explicação da queda observada.
+- **Medido (C2a):** 1.389 inspeções de campo, 871 com irregularidade (62,7%, taxa histórica das inspeções), 1.473 MWh recuperados, em média 1.691 kWh por irregularidade. Na tarifa de R$ 0,7876/kWh seriam cerca de R$ 1,16 mi recuperados no total das inspeções (o período dessas inspeções não foi conferido).
+- **Medido (C2b):** `fato_anomalia_leitura` está **vazia** (0 UCs, 0 leituras), e isso é esperado: na Silver, as 6.327 quedas brutas de leitura foram cruzadas com `medidores.csv` e justificadas como trocas físicas de medidor no mesmo mês (Renan, 30/10). Então a fraude **não** aparece como causa mensurável da queda de volume neste banco. Os números de fraude vêm da C2a (campo) e da fila do Adrian.
+- **Atenção à fila:** em jun/2026 a fila de perdas fica vazia, porque todas as 559 UCs com queda de consumo acima de 50% têm painel solar e a fila as exclui de propósito. A demonstração usa `LOSS_REFERENCE_COMPETENCIA=2025-08` (`docs/CORRECOES.md`, seção 6). O ganho da fila precisa dizer em que competência foi calculado.
+- **Para a fila:** `[a preencher]` UCs selecionadas, kWh/mês e valor/ano, e o **retorno esperado em R$/ano** (cartão `retorno_esperado_valor_ano_rs` da tela Gestão de Perdas, com as 200 UCs do topo selecionadas e a competência de referência indicada acima).
+- **Ação proposta (Renan):** direcionar toda a capacidade da equipe de campo (200 vistorias por mês) para a fila automatizada de perdas, que prioriza UCs com queda súbita de consumo de 50% ou mais e sem GD, e blindar a medição nas UCs reincidentes.
+- **Ganho estimado e premissa:** o Renan calcula cerca de R$ 800 mil por trimestre (critério de 3 meses) e cerca de R$ 3,21 mi por ano. Essa conta equivale a 200 UCs por mês × 1.691 kWh × R$ 0,7876 × 12 e **não aplica a probabilidade de acerto**; com os 93% da queda súbita ficaria em ≈ R$ 2,97 mi por ano. O número oficial tem que vir do cartão de retorno esperado da fila do Adrian (calculado UC a UC com `scoring.py`). `[a preencher]`. Isto é potencial de recuperação, não explicação da queda observada.
 
 ### 6.3 Inadimplência
 
 - **Como medir:** percentual do faturado que está vencido e não pago, em cada janela (consulta **C3**).
 - **Cuidado:** muda o caixa, não a receita faturada nem o volume. Entra no documento como problema de arrecadação, em separado das causas de volume.
 - **Medido (C3):** 5,52% do faturado estava vencido na janela base (R$ 8,66 mi de R$ 157,1 mi) e 5,42% na atual (R$ 9,20 mi de R$ 169,7 mi). O percentual ficou estável, então a inadimplência não explica a queda de volume nem o crescimento menor da receita.
+- **Atenção ao dado:** a Gold marca como `PAGA` 60.394 faturas (R$ 12,9 mi) que no legado têm `data_pagamento = 9999-12-31`, isto é, não foram pagas (`docs/CORRECOES.md`, seção 1). A consulta C3 conta só `VENCIDA`, então a C3b refez a conta contando também essas faturas. **No `v_energy.db` usado aqui a C3b deu exatamente o mesmo resultado da C3** (5,52% na base e 5,42% na atual), ou seja, nenhuma fatura das duas janelas tem `data_pagamento = 9999-12-31` marcada como paga. Ou o banco já veio com a correção, ou essas faturas estão fora das janelas. `[a confirmar com Ryei]` se esta versão do banco já é a corrigida. A conclusão não muda: inadimplência é caixa, não volume faturado.
 - **Ação proposta:** `[a confirmar com Ryei]` (a inadimplência segue sendo um tema de caixa, mas não de volume).
 - **Ganho estimado e premissa:** `[a preencher]` só se o grupo decidir tratar arrecadação; não entra na conta da queda.
 
@@ -158,9 +161,10 @@ Antes de atribuir a queda a qualquer causa, separar de onde ela vem. A base de c
 - **Como medir:** participação das leituras estimadas em cada janela e o kWh que elas carregam (consulta **C4**). Depois comparar o consumo estimado com a leitura real seguinte da mesma UC.
 - **Cuidado:** tende a mudar o mês da cobrança, não o total do ano. Só entra como causa se houver efeito líquido nas duas janelas.
 - **Medido (C4):** 18,95% das leituras eram estimadas na janela base (101.630 de 536.267) e 15,85% na atual (85.536 de 539.768). A participação caiu, e o kWh estimado caiu de 42.555 MWh para 33.705 MWh. Estimativa não explica a queda de volume.
+- **Conferência do Renan:** ele cita 18,96% para 15,83% e uma redução de 10,92 GWh estimados. Meus números (18,95% para 15,85% e -8,85 GWh) são ligeiramente diferentes. `[a confirmar com Renan]` a janela e a fonte da diferença. Ele concorda que o efeito sobre o volume é neutro no ciclo anual, porque a estimativa antecipa ou posterga a cobrança.
 - **Ainda não medido:** a comparação do consumo estimado com a leitura real seguinte da mesma UC.
-- **Ação proposta:** `[a confirmar com Renan]` (manter a redução de leituras estimadas).
-- **Ganho estimado e premissa:** `[a preencher]` não medido; sem efeito líquido comprovado.
+- **Ação proposta (Renan):** roteirização inteligente para contornar imóveis fechados, incentivo à autoleitura pelo aplicativo e telemetria com Smart Meters nas UCs com impedimento recorrente.
+- **Ganho estimado e premissa:** economia operacional de cerca de R$ 525 mil por ano (15 mil chamados × R$ 35 por protocolo, cálculo do Renan). Não é ganho de receita. `[a confirmar com Renan]` de onde vêm os 15 mil chamados e os R$ 35 por protocolo.
 
 ### 6.5 Clientes que passaram a consumir menos
 
@@ -191,10 +195,12 @@ A GD explica quase toda a queda líquida. O resto é a soma de dois movimentos q
 
 | Ação | Causa | Escopo | Ganho estimado (R$/ano) | Premissa | Prioridade |
 |---|---|---|---|---|---|
-| Acompanhar novas conexões de GD e projetar a perda de volume | 6.1 | 3.496 UCs com GD | Perda estimada de ≈ R$ 8,3 mi/ano a medir (não é ganho a recuperar) | tarifa média da base por classe | Alta |
+| Cobrar o Fio B sobre a energia injetada (Lei 14.300/2022), oferecer O&M e baterias e readequar os PPAs | 6.1 | 3.496 UCs com GD | Recupera de R$ 1,5 a 2,9 mi/ano (Renan); a perda de receita que a GD causa é de ≈ R$ 8,3 a 9,7 mi/ano | cálculo e transição do Fio B `[a confirmar com Renan]` | Alta |
+| Acompanhar todo mês as novas conexões de GD e a potência instalada | 6.1 | base de UCs com GD | mede a perda, não recupera | corrigir antes a potência com valores impossíveis | Média |
 | Investigar a queda de consumo que começou em maio de 2025 em Iputinga, Macaxeira, Jardim Jordão e Prazeres | 6.5 | 4 bairros, 2.714 MWh | até ≈ R$ 2,0 mi/ano em jogo (teto) | depende da causa encontrada | Alta |
-| Inspecionar o topo da fila de perdas | 6.2 | `[a preencher]` UCs | `[a preencher]` | tarifa e cálculo do Adrian | Média |
-| Acompanhar arrecadação (caixa) | 6.3 | faturas vencidas | não entra na conta de volume | 5,4% do faturado vencido | Baixa |
+| Direcionar as 200 vistorias mensais à fila automatizada de perdas e blindar a medição das UCs reincidentes | 6.2 | 200 UCs por mês | ≈ R$ 2,97 mi/ano com a taxa de acerto de 93% (Renan calcula R$ 3,21 mi sem a taxa); o oficial é o retorno esperado da fila `[a preencher]` | tarifa R$ 0,7876/kWh, competência de referência da fila | Alta |
+| Roteirização inteligente, autoleitura e Smart Meters nas UCs com leitura estimada recorrente | 6.4 | leituras estimadas (15,85% das leituras) | economia operacional de ≈ R$ 525 mil/ano (não é receita) | 15 mil chamados × R$ 35 `[a confirmar fonte]` | Baixa |
+| Acompanhar arrecadação (caixa) | 6.3 | faturas vencidas | não entra na conta de volume | cerca de 5,4% do faturado vencido (C3 e C3b iguais) | Baixa |
 
 `[a confirmar]` ações e ganhos com Renan, Adrian e Ryei antes de entregar.
 
@@ -378,6 +384,35 @@ ORDER BY janela;
 |---|---|---|---|---|
 | base | 536.267 | 157.107.191,43 | 8.664.981,08 | 5,52 |
 | atual | 539.768 | 169.683.458,59 | 9.199.032,90 | 5,42 |
+
+**C3b: inadimplência contando as faturas com `data_pagamento = '9999-12-31'` (causa 6.3)**
+
+No legado, essa data quer dizer "não paga", mas a Gold hoje as marca como `PAGA` (ver `docs/CORRECOES.md`, seção 1). Esta consulta conta como não paga tanto a `VENCIDA` quanto essa data.
+
+```sql
+SELECT CASE WHEN competencia BETWEEN '2022-07' AND '2023-06' THEN 'base' ELSE 'atual' END AS janela,
+       COUNT(*)                                                                AS faturas,
+       ROUND(SUM(valor_total_rs), 2)                                           AS faturado_rs,
+       ROUND(SUM(CASE WHEN status_pagamento = 'VENCIDA' OR data_pagamento = '9999-12-31'
+                      THEN valor_total_rs ELSE 0 END), 2)                      AS nao_pago_rs,
+       ROUND(100.0 * SUM(CASE WHEN status_pagamento = 'VENCIDA' OR data_pagamento = '9999-12-31'
+                              THEN valor_total_rs ELSE 0 END)
+             / SUM(valor_total_rs), 2)                                         AS nao_pago_pct
+FROM fato_faturamento
+WHERE competencia BETWEEN '2022-07' AND '2023-06'
+   OR competencia BETWEEN '2025-07' AND '2026-06'
+GROUP BY janela
+ORDER BY janela;
+```
+
+**Resultado** (banco real, 30/10/2026; levou 3 min 43 s, não precisa rodar de novo):
+
+| Janela | Faturas | Faturado (R$) | Não pago (R$) | Não pago (%) |
+|---|---|---|---|---|
+| base | 536.267 | 157.107.191,43 | 8.664.981,08 | 5,52 |
+| atual | 539.768 | 169.683.458,59 | 9.199.032,90 | 5,42 |
+
+Igual ao resultado da C3.
 
 **C4: leituras estimadas por janela (causa 6.4)**
 
@@ -571,7 +606,8 @@ As demais 18 linhas do top 25 ficam entre -4,2% e -1,6%. Os seis alimentadores d
 - Banco real conferido em 28/10/2026: 2.152.336 faturas, nenhuma sem UC no cadastro, 6.329 sem consumo, nenhum par UC e competência com mais de uma fatura, 5 classes (COMERCIAL, INDUSTRIAL, PODER PUBLICO, RESIDENCIAL, RURAL) e 14 municípios.
 - `possui_gd` é o estado atual da UC, não o da época de cada janela.
 - A coluna `subestacao` de `dim_unidade_consumidora` está vazia no banco real; só o `alimentador` está preenchido.
-- O seletor de bairro da tela mostra no máximo 100 bairros por município (limite da API); Recife tem 106. Correção pendente.
+- O seletor de bairro da tela agora lê todas as páginas (commit `07a69c0` do PR #34), então os 106 bairros de Recife aparecem.
+- Dois bairros têm grafia dupla na Gold, por um caractere invisível (`BRASILIA TEIMOSA` e `SITIO DOS PINTOS`, 56 UCs, `docs/CORRECOES.md`, seção 1). Os quatro bairros da causa 6.5 não são afetados, mas os números por bairro devem ser refeitos depois da correção.
 - Uma fatura por UC por competência (usada no ticket médio).
 - Os valores de DEC/FEC e qualquer limite de referência são só comparativos; **não** são multas nem violações regulatórias reais (glossário do case).
 - Satisfação do cliente está na escala de 1 a 5 (ADR-001), não de 0 a 10.

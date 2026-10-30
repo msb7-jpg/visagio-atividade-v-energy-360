@@ -1,7 +1,7 @@
 # 📈 Fatia 04: Inteligência Comercial, Receita & Decomposição (Fullstack)
 
 > **Dono Único:** Celio  
-> **Status:** Em andamento (frontend entregue no PR #34; falta o diagnóstico)  
+> **Status:** Em andamento (frontend entregue e mesclado no PR #34; diagnóstico em PR, falta conferir com Renan, Adrian e Ryei)  
 > **Skills de Referência:** [`.agents/skills/backend-coding-standards/SKILL.md`](.agents/skills/backend-coding-standards/SKILL.md) & [`.agents/skills/frontend-coding-standards/SKILL.md`](.agents/skills/frontend-coding-standards/SKILL.md)  
 > **Log Individual:** [`changelog.md`](changelog.md)
 
@@ -63,7 +63,8 @@
 - [x] Criar pasta `frontend/src/features/revenue/` com componentes atômicos $\le 150$ linhas.
 - [x] Adicionar rota `/revenue` em `frontend/src/routes/AppRoutes.tsx`.
 - [x] Criar testes unitários no frontend com Vitest em `RevenueDashboardPage.test.tsx`.
-- [- Em andamento por Celio - 2026-10-27] Redigir relatório e conclusões em `docs/DIAGNOSTICO_RECEITA.md`.
+- [- Em andamento por Celio - 2026-10-28] Redigir relatório e conclusões em `docs/DIAGNOSTICO_RECEITA.md`. Feito: números do banco real, cascata e ranking da tela, causas 6.0 a 6.5 (rascunho no PR da branch `docs/fatia-04-receita-diagnostico`). Falta: ação e ganho em R$ de cada causa (Renan e Adrian), refazer a inadimplência com a regra corrigida (Ryei) e investigar os 4 bairros com queda desde mai/2025.
+- [ ] Corrigir a aba Municípios/Classes do ranking: enquanto a nova consulta carrega, a tela mostra as linhas da aba anterior com o cabeçalho novo (usar `isPlaceholderData` para mostrar o carregamento).
 - [x] Garantir conformidade com `make lint-frontend`.
 
 ---
