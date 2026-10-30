@@ -1,5 +1,6 @@
 """Regras puras de classificação, ranking e resumo de DEC/FEC por alimentador."""
 
+from collections import Counter
 from dataclasses import dataclass
 
 from app.features.grid_quality.schemas import (
@@ -62,6 +63,10 @@ def _empty_indicators(competencia: str | None) -> QualityIndicatorsDTO:
         total_alimentadores=0,
         alimentadores_em_violacao=0,
         percentual_violacao=0.0,
+        alimentadores_em_alerta=0,
+        percentual_alerta=0.0,
+        alimentadores_conformes=0,
+        percentual_conforme=0.0,
     )
 
 
@@ -187,7 +192,10 @@ def summarize_indicators(competencia: str | None, rows: list[FeederQualityRow]) 
     total_feeders = len(rows)
     if total_feeders == 0:
         return _empty_indicators(competencia)
-    violating_feeders = sum(1 for row in rows if classify_status(row) is QualityStatus.VIOLACAO)
+    status_counts = Counter(classify_status(row) for row in rows)
+    violating_feeders = status_counts[QualityStatus.VIOLACAO]
+    warning_feeders = status_counts[QualityStatus.ALERTA]
+    compliant_feeders = status_counts[QualityStatus.CONFORME]
     return QualityIndicatorsDTO(
         competencia=competencia,
         dec_medio_horas=_mean([row.dec_acumulado_ano_horas for row in rows]),
@@ -195,4 +203,8 @@ def summarize_indicators(competencia: str | None, rows: list[FeederQualityRow]) 
         total_alimentadores=total_feeders,
         alimentadores_em_violacao=violating_feeders,
         percentual_violacao=violating_feeders / total_feeders * PERCENTUAL_TOTAL,
+        alimentadores_em_alerta=warning_feeders,
+        percentual_alerta=warning_feeders / total_feeders * PERCENTUAL_TOTAL,
+        alimentadores_conformes=compliant_feeders,
+        percentual_conforme=compliant_feeders / total_feeders * PERCENTUAL_TOTAL,
     )

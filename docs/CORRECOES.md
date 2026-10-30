@@ -63,11 +63,6 @@
 - [ ] ⚪ **Sem "Tentar novamente" nos erros da Inteligência Comercial** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Nenhum `AsyncState` passa `onRetry`: `RevenueResults.tsx:24`, `RevenueRankingCard.tsx:51`, `RevenueWaterfallCard.tsx:39` e `NeighborhoodHistorySheet.tsx:49`, em `frontend/src/features/revenue/components/`.
   - **Correção sugerida:** `onRetry={() => void query.refetch()}` em cada um (modelo em `features/loss_management/components/UnitDetailSheet.tsx:57`).
 
-## 8. Qualidade da Rede (João)
-
-- [ ] ⚪ **Sem "Tentar novamente" nos erros da Qualidade da Rede** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Nenhum `AsyncState` passa `onRetry`: `ContinuityView.tsx:35`, `CurrentQualityView.tsx:49` e `FeederHistorySheet.tsx` (linhas 43 e 53), todos em `frontend/src/features/grid_quality/components/`. O `ErrorState` já mostra o botão quando recebe `onRetry`.
-  - **Correção sugerida:** `onRetry={() => void query.refetch()}` em cada um (modelo em `features/loss_management/components/UnitDetailSheet.tsx:57`).
-
 ## 9. Fechamento (todos)
 
 - [ ] 🔴 **README:** suposições de cada fatia, passo a passo de execução (incluindo `LOSS_REFERENCE_COMPETENCIA`), print do Workflow no Databricks e links para o dicionário de dados e o diagnóstico (case, seção 6).
@@ -82,6 +77,7 @@
 
 ## Já resolvido
 
+- [x] **Sem "Tentar novamente" nos erros da Qualidade da Rede** (Joao Henrique, apontado pelo Adrian em 2026-10-29). `onRetry={() => void query.refetch()}` nos quatro pontos (e também no erro dos indicadores, que agora usa `ErrorState`), como em `loss_management/components/UnitDetailSheet.tsx`. Testes em `ContinuityView.test.tsx` e `GridQualityPage.test.tsx` conferem que o botão aparece no erro e refaz a chamada. Na mesma branch: cartões de % acima do limite, em alerta e conforme (`becfe32`, `e9df772`), paginação da tabela de circuitos (`3d9b296`) e `whitespace-nowrap` em "Ver ficha" e no bairro da gaveta. Branch `feat/fatia-06-acabamento-qualidade` (commit `02cac07`), 2026-10-30.
 - [x] PR #34: lista de bairros limitada a 100 (Recife tem 106). Corrigido em `07a69c0` e mesclado na `main` em 2026-10-28.
 - [x] Numeração das ADRs: as da Visão 360 passaram para ADR-017 a ADR-023 (a `main` usa 006–009 da Fatia 01, e o Painel, 010–016). Resolvido na branch `feat/fatia-03-visao360-gold` em 2026-10-28, junto com o merge da `main`.
 - [x] Visão 360: o resumo de interrupções dizia "teve 50" em 33 UCs com mais de 50 (agora usa o total real), e o diagnóstico do mês sem leitura apontava o mês errado. Corrigido na branch `feat/fatia-03-visao360-gold` em 2026-10-28.

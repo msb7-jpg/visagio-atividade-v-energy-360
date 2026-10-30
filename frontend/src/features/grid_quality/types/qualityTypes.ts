@@ -10,6 +10,10 @@ export interface QualityIndicators {
   total_alimentadores: number
   alimentadores_em_violacao: number
   percentual_violacao: number
+  alimentadores_em_alerta: number
+  percentual_alerta: number
+  alimentadores_conformes: number
+  percentual_conforme: number
 }
 
 export interface FeederRanking {
