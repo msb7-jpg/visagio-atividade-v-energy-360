@@ -54,8 +54,19 @@
 - [ ] ⚪ Plugar o `SmartInsightCard context="customer360"` (opcional: o case pede IA embutida em pelo menos uma tela, e ela já está no Painel).
 - [ ] ⚪ **Situação da fatura fora do `StatusBadge`** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). `PAYMENT_STATUS` em `frontend/src/features/customer360/utils/customer360Formatters.ts:28` e o `PaymentStatusBadge` de `InvoicesTab.tsx:19` refazem à mão o que `StatusBadge kind="fatura"` (`components/ui/status-badge.tsx`) já tem, com os tons do design (paga = verde, em aberto = âmbar, vencida = vermelho). Hoje a fatura paga sai em cinza (`secondary`) e a aberta sem cor.
   - **Correção sugerida:** trocar por `<StatusBadge kind="fatura" status={...} />` e apagar `PAYMENT_STATUS`. A API devolve `PAGA`, `ABERTA` e `VENCIDA` e o vocabulário usa `paga`, `em_aberto` e `vencida`: mapear `ABERTA` para `em_aberto`, e manter o texto bruto para qualquer valor desconhecido.
-- [x] ⚪ **Sem "Tentar novamente" nos erros da Qualidade da Rede** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Nenhum `AsyncState` passava `onRetry`: `ContinuityView.tsx`, `CurrentQualityView.tsx` e `FeederHistorySheet.tsx` (as duas ocorrências), todos em `frontend/src/features/grid_quality/components/`.
-  - **Resolvido em 2026-10-30 (branch `feat/fatia-06-acabamento-qualidade`, commit `02cac07`):** `onRetry={() => void query.refetch()}` nos quatro pontos (e também no erro dos indicadores, que agora usa `ErrorState`), como em `loss_management/components/UnitDetailSheet.tsx`. Testes em `ContinuityView.test.tsx` e `GridQualityPage.test.tsx` conferem que o botão aparece no erro e refaz a chamada. Na mesma branch: cartões de % acima do limite, em alerta e conforme (`becfe32`, `e9df772`), paginação da tabela de circuitos (`3d9b296`) e `whitespace-nowrap` em "Ver ficha" e no bairro da gaveta.
+- [ ] ⚪ **Sem "Tentar novamente" nos erros da Visão 360.** `features/customer360/components/Customer360Details.tsx` tem 4 `AsyncState` (linhas 63, 77, 82 e 92) e nenhum passa `onRetry`; numa falha o usuário só vê o aviso e precisa recarregar a página.
+  - **Correção sugerida:** `onRetry={() => void query.refetch()}` em cada um, com a consulta que alimenta o bloco (modelo em `features/loss_management/components/UnitDetailSheet.tsx:57`).
+
+## 6. Gestão de Perdas (Adrian)
+
+- [ ] ⚪ Adotar o `components/ui/pagination.tsx` (criado no #34) no `QueuePagination`.
+
+## 7. Inteligência Comercial (Célio)
+
+- [ ] 🟡 **A Receita leva cerca de 4,5 s por consulta.** Medido em 29/10 com o banco novo: `/revenue/decomposition` 4,5 s e cada página de `/revenue/breakdown` (classe, município e bairro) 4,5 a 4,6 s. A tela dispara várias dessas ao abrir. Sugestão: o mesmo tratamento da ADR-016 (leitura sequencial sem `WHERE` por competência e cache por janela).
+- [ ] ⚪ Registrar no `docs/planning/celio/changelog.md` a correção do filtro de bairro (commit `07a69c0`: a lista lê todas as páginas, e Recife tem 106 bairros).
+- [ ] ⚪ **Sem "Tentar novamente" nos erros da Inteligência Comercial** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Nenhum `AsyncState` passa `onRetry`: `RevenueResults.tsx:24`, `RevenueRankingCard.tsx:51`, `RevenueWaterfallCard.tsx:39` e `NeighborhoodHistorySheet.tsx:49`, em `frontend/src/features/revenue/components/`.
+  - **Correção sugerida:** `onRetry={() => void query.refetch()}` em cada um (modelo em `features/loss_management/components/UnitDetailSheet.tsx:57`).
 
 ## 9. Fechamento (todos)
 
@@ -70,6 +81,7 @@
 
 ## Já resolvido
 
+- [x] **Sem "Tentar novamente" nos erros da Qualidade da Rede** (Joao Henrique, apontado pelo Adrian em 2026-10-29). `onRetry={() => void query.refetch()}` nos quatro pontos (e também no erro dos indicadores, que agora usa `ErrorState`), como em `loss_management/components/UnitDetailSheet.tsx`. Testes em `ContinuityView.test.tsx` e `GridQualityPage.test.tsx` conferem que o botão aparece no erro e refaz a chamada. Na mesma branch: cartões de % acima do limite, em alerta e conforme (`becfe32`, `e9df772`), paginação da tabela de circuitos (`3d9b296`) e `whitespace-nowrap` em "Ver ficha" e no bairro da gaveta. Branch `feat/fatia-06-acabamento-qualidade` (commit `02cac07`), 2026-10-30.
 - [x] PR #34: lista de bairros limitada a 100 (Recife tem 106). Corrigido em `07a69c0` e mesclado na `main` em 2026-10-28.
 - [x] Numeração das ADRs: as da Visão 360 passaram para ADR-017 a ADR-023 (a `main` usa 006–009 da Fatia 01, e o Painel, 010–016). Resolvido na branch `feat/fatia-03-visao360-gold` em 2026-10-28, junto com o merge da `main`.
 - [x] Visão 360: o resumo de interrupções dizia "teve 50" em 33 UCs com mais de 50 (agora usa o total real), e o diagnóstico do mês sem leitura apontava o mês errado. Corrigido na branch `feat/fatia-03-visao360-gold` em 2026-10-28.
