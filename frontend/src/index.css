@@ -161,6 +161,64 @@ body {
   animation: shimmer 1.8s infinite ease-in-out;
 }
 
+/* Movimento da tela de login (docs/planning/adrian_cesar/assets/login/login-animacoes.md): só opacity e transform, até 300 ms. */
+@keyframes login-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes login-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes login-pop {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes login-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+@keyframes login-spin {
+  to { transform: rotate(360deg); }
+}
+
+.login-anim-panel { animation: login-rise 300ms ease-out both; }
+.login-anim-fade { animation: login-fade 300ms ease-out both; }
+.login-anim-swap { animation: login-fade 200ms ease-out both; }
+.login-anim-error { animation: login-fade 150ms ease-out both; }
+.login-anim-shake { animation: login-shake 300ms ease-in-out both; }
+.login-anim-step { animation: login-fade 200ms ease-out both; }
+.login-anim-step:nth-child(2) { animation-delay: 100ms; }
+.login-anim-step:nth-child(3) { animation-delay: 200ms; }
+.login-anim-check { animation: login-pop 250ms ease-out both; }
+.login-anim-avatar { animation: login-pop 300ms ease-out both; }
+.login-anim-cta { animation: login-fade 300ms ease-out 100ms both; }
+.login-spin { animation: login-spin 800ms linear infinite; }
+
+/* Botões: cor em 150 ms e afundar a 98% ao pressionar (100 ms). */
+.login-motion button {
+  transition-property: color, background-color, border-color, box-shadow, filter, translate, scale;
+  transition-duration: 150ms;
+}
+
+.login-motion button:active:not(:disabled) {
+  scale: 0.98;
+  transition-duration: 100ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="login-anim-"], .login-spin, .login-motion button {
+    animation: none;
+    transition: none;
+    scale: none;
+  }
+}
+
 /* Classes de suporte do Assistente IA (Fatia 07) */
 .chat-widget-panel {
   width: var(--container-xs, 28rem);
