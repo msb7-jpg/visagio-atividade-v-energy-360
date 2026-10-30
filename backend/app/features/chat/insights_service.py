@@ -36,13 +36,18 @@ def _filter_faithful_insights(
     raw_insights: list[str],
     metrics_context: dict[str, Any] | None,
 ) -> tuple[str, list[str]]:
-    """Valida a fidelidade factual dos números e descarta alegações desfundamentadas."""
+    """Valida a fidelidade factual dos números e descarta alegações desfundamentadas.
+
+    Raises:
+        ServiceUnavailableError: Se o resumo executivo citar número que não está nas métricas.
+    """
     if not metrics_context:
         return summary, raw_insights
 
     summary_ok, _, ungrounded_summary = check_numerical_faithfulness(summary, metrics_context)
     if not summary_ok and ungrounded_summary:
         logger.warning("Resumo executivo do insight contém números não fundamentados: %s", ungrounded_summary)
+        raise ServiceUnavailableError("Resumo do insight reprovado na verificação de fidelidade aos dados.")
 
     faithful_bullets: list[str] = []
     for bullet in raw_insights:

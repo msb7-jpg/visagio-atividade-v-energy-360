@@ -37,9 +37,9 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 1440  # 24 horas
 
     gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
-    ai_model_name: str | None = Field(default="models/Qwen3.5-4B-Q4_K_M.gguf", alias="AI_MODEL_NAME")
-    ai_provider: str | None = Field(default="local", alias="AI_PROVIDER")
-    ai_base_url: str | None = Field(default="http://127.0.0.1:8080/v1", alias="AI_BASE_URL")
+    ai_model_name: str | None = Field(default=None, alias="AI_MODEL_NAME")
+    ai_provider: str | None = Field(default=None, alias="AI_PROVIDER")
+    ai_base_url: str | None = Field(default=None, alias="AI_BASE_URL")
 
     default_users: dict[str, dict[str, str]] = {
         "diretor@venergy.com": {
