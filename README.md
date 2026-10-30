@@ -141,7 +141,6 @@ Os usuários de teste estão em [`backend/app/core/config.py`](backend/app/core/
 
 **Limites conhecidos**
 - O Painel calcula outro par de períodos em cerca de 2,5 s na primeira vez; os períodos padrão abrem na hora, porque são calculados na subida da API (ADR-016). Ao trocar o `v_energy.db`, reinicie a API para limpar o cache.
-- O banco distribuído em 29/10 ainda tem 59 bairros com o nome quebrado (correção do PR #45 não exportada; `docs/CORRECOES.md`, item 1). Eles aparecem assim na Visão 360.
 
 Detalhes: [`docs/DECISOES.md`](docs/DECISOES.md) (ADR-010 a ADR-023 e ADR-028) e os planos em [`docs/planning/bernardo/`](docs/planning/bernardo/painel_diretor.md).
 
