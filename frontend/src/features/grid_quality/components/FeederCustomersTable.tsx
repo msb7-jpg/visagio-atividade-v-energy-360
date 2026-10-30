@@ -27,14 +27,14 @@ export function FeederCustomersTable({ customers }: { customers: AffectedCustome
             </TableCell>
             <TableCell>
               <div className="flex flex-col">
-                <span>{customer.bairro ?? '—'}</span>
+                <span className="whitespace-nowrap">{customer.bairro ?? '—'}</span>
                 <span className="text-muted-foreground text-xs">{customer.municipio ?? '—'}</span>
               </div>
             </TableCell>
             <TableCell><strong>{formatDecimal(customer.horas_sem_energia)} h</strong></TableCell>
             <TableCell>{formatInteger(customer.ocorrencias)}</TableCell>
             <TableCell>
-              <Link className="text-primary underline" to={`/customers?uc=${encodeURIComponent(customer.id_uc)}`}>
+              <Link className="text-primary whitespace-nowrap underline" to={`/customers?uc=${encodeURIComponent(customer.id_uc)}`}>
                 Ver ficha
               </Link>
             </TableCell>
