@@ -16,9 +16,12 @@ from app.agent.nodes.sql_validator import validate_sql_query
 from app.agent.tools.query_runner import execute_sql_query
 from app.agent.utils.faithfulness_checker import check_numerical_faithfulness
 from app.agent.utils.result_comparator import compare_query_results
+from app.core.constants import SqlErrorCategory
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
+
+REFUSAL_CATEGORIES = {SqlErrorCategory.UNSUPPORTED_REQUEST, SqlErrorCategory.SECURITY_VIOLATION}
 
 
 def _execute_canonical_query(expected_sql: str | None) -> list[dict[str, Any]]:
@@ -75,11 +78,13 @@ async def _run_single_case(
     }
 
     start_time = time.perf_counter()
+    crashed = False
     try:
         result = await graph.ainvoke(inputs, config=run_config)
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.error("Falha na execução do caso %d: %s", case_id, exc)
         result = {"error_count": 1, "last_error": str(exc), "messages": []}
+        crashed = True
     elapsed_ms = max(1, int((time.perf_counter() - start_time) * 1000))
 
     generated_sql = result.get("generated_sql") or ""
@@ -100,13 +105,13 @@ async def _run_single_case(
             has_order = bool(expected_sql and "ORDER BY" in expected_sql.upper() and "LIMIT" in expected_sql.upper())
             result_matched, _ = compare_query_results(actual_rows, expected_rows, strict_order=has_order)
     else:
-        # Em casos de recusa, o sucesso é não gerar SQL ou ser bloqueado por segurança/escopo
-        has_blocked_error = bool(result.get("error_category") or result.get("last_error"))
-        is_direct_route = bool(result.get("route") == "direct")
-        has_no_query_result = bool(actual_rows is None)
-        refusal_ok = bool(has_blocked_error or is_direct_route or (has_no_query_result and not generated_sql))
+        was_blocked = result.get("error_category") in REFUSAL_CATEGORIES
+        answered_directly = result.get("route") == "direct" and bool(ai_text)
+        refusal_ok = bool(not crashed and actual_rows is None and (was_blocked or answered_directly))
 
-    faithful_ok, _, _ = check_numerical_faithfulness(ai_text, actual_rows or {})
+    faithful_ok: bool | None = None
+    if ai_text:
+        faithful_ok, _, _ = check_numerical_faithfulness(ai_text, actual_rows or {})
 
     return {
         "id": case_id,
@@ -118,6 +123,7 @@ async def _run_single_case(
         "result_matched": result_matched,
         "refusal_ok": refusal_ok,
         "faithful_ok": faithful_ok,
+        "crashed": crashed,
         "generated_sql": generated_sql,
     }
 
@@ -135,7 +141,9 @@ def _calculate_metrics(results: list[dict[str, Any]]) -> dict[str, Any]:
     exec_ok_count = sum(1 for res in sql_cases if res["exec_ok"])
     matched_count = sum(1 for res in sql_cases if res["result_matched"])
     refusal_count = sum(1 for res in refusal_cases if res["refusal_ok"])
-    faithful_count = sum(1 for res in results if res["faithful_ok"])
+    answered = [res for res in results if res["faithful_ok"] is not None]
+    faithful_count = sum(1 for res in answered if res["faithful_ok"])
+    crashed_count = sum(1 for res in results if res["crashed"])
 
     latencies = [res["elapsed_ms"] for res in results]
     latencies.sort()
@@ -151,7 +159,9 @@ def _calculate_metrics(results: list[dict[str, Any]]) -> dict[str, Any]:
         "execution_success_pct": round((exec_ok_count / total_sql) * 100.0, 2) if total_sql else 0.0,
         "execution_accuracy_pct": round((matched_count / total_sql) * 100.0, 2) if total_sql else 0.0,
         "refusal_accuracy_pct": round((refusal_count / total_refusal) * 100.0, 2) if total_refusal else 0.0,
-        "faithfulness_pct": round((faithful_count / total_cases) * 100.0, 2) if total_cases else 0.0,
+        "faithfulness_pct": round((faithful_count / len(answered)) * 100.0, 2) if answered else 0.0,
+        "answered_cases": len(answered),
+        "crashed_cases": crashed_count,
         "average_latency_ms": round(avg_latency, 2),
         "p50_latency_ms": p50_latency,
         "p95_latency_ms": p95_latency,
@@ -183,7 +193,8 @@ def _export_reports(metrics: dict[str, Any], results: list[dict[str, Any]], prov
 | **Execução sem Erro no SQLite** | {metrics['execution_success_pct']}% |
 | **Execution Accuracy (EX - Acerto Real)** | **{metrics['execution_accuracy_pct']}%** |
 | **Taxa de Recusa Correta ("Não Sei" / Segurança)** | **{metrics['refusal_accuracy_pct']}%** |
-| **Fidelidade aos Dados (Groundedness Score)** | **{metrics['faithfulness_pct']}%** |
+| **Fidelidade aos Dados (sobre {metrics['answered_cases']} respostas)** | **{metrics['faithfulness_pct']}%** |
+| **Casos com erro ou tempo esgotado** | {metrics['crashed_cases']} |
 | **Latência Média** | {metrics['average_latency_ms']} ms |
 | **Latência p50 / p95** | {metrics['p50_latency_ms']} ms / {metrics['p95_latency_ms']} ms |
 
@@ -194,7 +205,7 @@ def _export_reports(metrics: dict[str, Any], results: list[dict[str, Any]], prov
 """
     for res in results:
         status_str = "✅ Acertou" if (res["result_matched"] or res["refusal_ok"]) else "❌ Divergiu"
-        faith_str = "✅ Fiel" if res["faithful_ok"] else "⚠️ Alucinou"
+        faith_str = {True: "✅ Fiel", False: "⚠️ Alucinou", None: "— Sem resposta"}[res["faithful_ok"]]
         short_q = f"{res['pergunta'][:40]}..."
         md_content += (
             f"| #{res['id']} | {res['tipo']} | {short_q} | {status_str} | {faith_str} | {res['elapsed_ms']} ms |\n"

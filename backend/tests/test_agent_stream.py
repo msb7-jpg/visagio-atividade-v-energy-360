@@ -22,15 +22,10 @@ async def test_agent_chat_stream_and_insights():
             headers=auth_headers,
             json={"context": "operacao", "metricas": {"dec": 8.4, "fec": 4.1}},
         )
-        assert insights_resp.status_code in (200, 503)
-        if insights_resp.status_code == 200:
-            data = insights_resp.json()
-            assert "insights" in data
-            assert "resumo_executivo" in data
-        else:
-            error_data = insights_resp.json()
-            assert "detail" in error_data
-            assert error_data.get("error_type") == "ServiceUnavailableError"
+        assert insights_resp.status_code == 503
+        error_data = insights_resp.json()
+        assert "detail" in error_data
+        assert error_data.get("error_type") == "ServiceUnavailableError"
 
         stream_resp = await ac.post(
             "/api/v1/chat/stream",
