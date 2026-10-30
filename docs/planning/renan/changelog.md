@@ -105,3 +105,16 @@
   - Reconstruída a contagem territorial a partir dos CSVs com uma aproximação local das regras atuais da Silver: 888 UCs com queda ≥40% comparando totais de maio/2024–abril/2025 e maio/2025–abril/2026; 890 comparando médias mensais dos meses disponíveis; 880 exigindo 12 meses completos nas duas janelas. Nenhuma definição reproduz os 887 divulgados.
 - **Pendências de evidência:** obter a consulta e os critérios originais da contagem de 887 UCs e validá-los na Gold; a comparação dos sete valores territoriais com a tela também precisa ser anexada.
 - **Validação:** testes focados da IA não executaram: `uv` não está instalado e `python -m pytest` não conseguiu coletar por dependências ausentes (`langchain_core`, `email_validator`). Nenhum código de aplicação ou notebook foi alterado.
+
+### [2026-10-30] - Benchmark das consultas analíticas do SQLite
+- **Autor:** Renan
+- **O que foi feito:**
+  - Medidos planos e tempos no `v_energy.db` da raiz, em modo somente leitura, com 773,6 MB e 2.152.336 faturas e medições. Os scans de faturamento e medição, os `COUNT(DISTINCT)` da Receita e o `GROUP BY` da fila foram confirmados nos planos.
+  - Comparados os PRAGMAs padrão com `mmap_size=268435456`, `cache_size=-64000` e `temp_store=MEMORY`. O mmap isolado foi o principal ganho: fila de perdas 3,72 s → 1,31 s e leituras 1,02 s → 0,88 s; os demais tiveram regressões pequenas. Cache maior e armazenamento temporário em memória isoladamente não melhoraram consistentemente.
+  - Identificada outra consulta pesada no warmup: a agregação da razão da carteira (`PortfolioRepositoryMixin`) faz scan/agrupamento de medições e retornou 44.996 razões; mediana 4,07 s no padrão e 1,44 s com mmap.
+  - Executado o warmup completo com os repositórios/serviços reais: 17,4 s no padrão e 12,0 s com mmap de 256 MiB. Duas execuções concorrentes levaram 19,7 s e 13,6 s; o pico RSS subiu 16 MiB no padrão, 121 MiB com 64 MiB mmap, 214 MiB com 128 MiB e 396 MiB com 256 MiB. Os resultados permaneceram em 165 UCs e cinco grupos de indicadores.
+  - Confirmada a equivalência da Receita sem o JOIN no caso sem filtros (3,64 s → 2,66 s; oito resultados iguais; zero UCs órfãs) e do intervalo semiaberto de datas em atendimentos (227 ms → 184 ms; mesmos resultados).
+  - Registradas as recomendações e ressalvas por fatia em `docs/CORRECOES.md`; nenhum código de outras fatias foi alterado.
+- **Limite:** a base somente leitura não continha `ordem_inspecao`; a consulta da fila usou uma tabela temporária vazia, portanto deve ser repetida após o startup/migração operacional.
+- **Decisão:** não aplicar `mmap_size` globalmente sem orçamento de memória para a concorrência observada; preferir primeiro as otimizações locais e reavaliar com a configuração real do pool.
+- **Validação:** medições repetidas em conexões SQLite novas e warmup em modo somente leitura; sem alteração de código, não se aplicam testes de aplicação.

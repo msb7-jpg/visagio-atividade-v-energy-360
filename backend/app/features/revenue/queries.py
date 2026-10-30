@@ -78,6 +78,7 @@ def period_totals_query(base: PeriodWindow, current: PeriodWindow, filters: Reve
 
     Sem `WHERE` por competência: cada soma filtra a janela no `CASE`, o que é mais rápido no SQLite (ADR-016).
     """
+    territorial_conditions = optional_conditions(filters)
     volume = fato_faturamento.c.consumo_faturado_kwh
     revenue = fato_faturamento.c.valor_total_rs
     id_uc = fato_faturamento.c.id_uc
@@ -92,8 +93,8 @@ def period_totals_query(base: PeriodWindow, current: PeriodWindow, filters: Reve
             func.count(case((in_window(current), 1))).label("faturas_atual"),
             func.count(distinct(case((in_window(current), id_uc)))).label("ucs_atual"),
         )
-        .select_from(faturas_com_cadastro)
-        .where(*optional_conditions(filters))
+        .select_from(faturas_com_cadastro if territorial_conditions else fato_faturamento)
+        .where(*territorial_conditions)
     )
 
 

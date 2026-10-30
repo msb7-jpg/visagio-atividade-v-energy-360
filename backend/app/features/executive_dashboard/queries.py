@@ -6,7 +6,7 @@ competência: cada métrica filtra a janela no `CASE`, o que é mais rápido no 
 # pylint: disable=not-callable
 from collections.abc import Callable
 
-from sqlalchemy import Float, Select, String, case, column, func, select, table
+from sqlalchemy import Float, Select, String, and_, case, column, func, select, table
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.features.revenue.schemas import PeriodWindow
@@ -57,6 +57,20 @@ def in_window(competencia: ColumnElement[str], window: PeriodWindow) -> ColumnEl
     return competencia.between(window.competencia_inicio, window.competencia_fim)
 
 
+def _next_competencia(competencia: str) -> str:
+    """Retorna a competência seguinte, tratando a virada de ano."""
+    year_text, month_text = competencia.split("-")
+    next_year, next_month_zero_based = divmod(int(year_text) * 12 + int(month_text), 12)
+    return f"{next_year:04d}-{next_month_zero_based + 1:02d}"
+
+
+def _service_window(data_abertura: ColumnElement[str], window: PeriodWindow) -> ColumnElement[bool]:
+    """Filtra datas ISO pelo intervalo semiaberto correspondente às competências."""
+    first_day = f"{window.competencia_inicio}-01"
+    first_day_after_window = f"{_next_competencia(window.competencia_fim)}-01"
+    return and_(data_abertura >= first_day, data_abertura < first_day_after_window)
+
+
 def paired_columns(metrics: dict[str, WindowMetric], base: PeriodWindow, current: PeriodWindow) -> list:
     """Calcula cada métrica nas duas janelas, com os rótulos `<métrica>_base` e `<métrica>_atual`."""
     windows = ((SUFFIX_BASE, base), (SUFFIX_ATUAL, current))
@@ -99,13 +113,13 @@ def service_query(base: PeriodWindow, current: PeriodWindow) -> Select:
 
     A média do SQL ignora as notas vazias (chamado sem pesquisa respondida).
     """
-    competencia = func.substr(fato_atendimentos.c.data_abertura, 1, COMPETENCIA_LENGTH)
+    data_abertura = fato_atendimentos.c.data_abertura
     metrics: dict[str, WindowMetric] = {
         "nota_media_csat": lambda window: func.avg(
-            case((in_window(competencia, window), fato_atendimentos.c.nota_csat))
+            case((_service_window(data_abertura, window), fato_atendimentos.c.nota_csat))
         ),
         "tempo_medio_resolucao_h": lambda window: func.avg(
-            case((in_window(competencia, window), fato_atendimentos.c.tempo_resolucao_horas))
+            case((_service_window(data_abertura, window), fato_atendimentos.c.tempo_resolucao_horas))
         ),
     }
     return select(*paired_columns(metrics, base, current))

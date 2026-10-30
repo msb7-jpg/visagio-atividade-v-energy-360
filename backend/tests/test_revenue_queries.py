@@ -29,3 +29,17 @@ def test_queries_apply_only_the_filters_that_were_given():
         assert "BOA VIAGEM" in compiled.params.values()
         assert "dim_unidade_consumidora.bairro = ?" in str(compiled)
         assert "dim_unidade_consumidora.municipio = ?" not in str(compiled)
+
+
+def test_period_totals_skip_the_dimension_join_without_territorial_filters():
+    compiled = compile_to(period_totals_query(BASE, CURRENT, RevenueFilters()), sqlite.dialect())
+
+    assert "FROM fato_faturamento JOIN" not in str(compiled)
+    assert "JOIN dim_unidade_consumidora" not in str(compiled)
+
+
+def test_period_totals_keep_the_dimension_join_when_territorial_filters_are_applied():
+    compiled = compile_to(period_totals_query(BASE, CURRENT, RevenueFilters(municipio="RECIFE")), sqlite.dialect())
+
+    assert "JOIN dim_unidade_consumidora" in str(compiled)
+    assert "dim_unidade_consumidora.municipio = ?" in str(compiled)

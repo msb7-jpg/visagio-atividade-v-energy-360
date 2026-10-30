@@ -21,6 +21,10 @@
   - **Correção:** rodar o Workflow de novo com a `main` atual e distribuir o `v_energy.db` novo. A consulta acima deve voltar 0.
 
 - [ ] 🟡 **Volume da Gold diferente do texto do case.** A energia faturada cai **5,1%** entre jul/22–jun/23 e jul/25–jun/26, e o case fala em "quase 4%". A receita bate (+8,0%). Sem as 3.510 UCs com painel solar, o volume fica estável (−0,2%): a queda inteira vem da geração solar. Registrar como suposição no README.
+- [ ] 🟡 **Avaliar `mmap_size` para as consultas analíticas.** Medido em 30/10 no `v_energy.db` da raiz (773,6 MB; SQLite 3.50.4; 2.152.336 linhas em faturamento e medição): habilitar `PRAGMA mmap_size=268435456` reduziu as medianas de `suspicious_profiles_query` de 3,72 s para 1,31 s (−64,8%), da agregação de razão da carteira em `PortfolioRepositoryMixin` de 4,07 s para 1,44 s (−64,7%; 44.996 UCs) e `readings_query` de 1,02 s para 0,88 s (−14,1%). No conjunto das seis consultas medidas, a soma das medianas caiu de 9,82 s para 7,48 s. Em contrapartida, `period_totals_query` subiu 4,7%, `billing_query` 1,5%, min/max 3,6% e atendimento 8,6%. `cache_size=-64000` e `temp_store=MEMORY`, testados isoladamente, não trouxeram ganho consistente.
+  - **Validação do warmup completo (modo somente leitura):** serviços e repositórios reais levaram 17,4 s sem mmap e 12,0 s com 256 MiB; duas execuções concorrentes levaram 19,7 s e 13,6 s, respectivamente, com os mesmos 165 itens na fila e cinco grupos de indicadores. O RSS/working set subiu 16 MiB no padrão e 396 MiB com 256 MiB de mmap; limites de 64 e 128 MiB ficaram em 18,3 s / +121 MiB e 16,3 s / +214 MiB. RSS inclui páginas mapeadas e não equivale a memória privada.
+  - **Limite da evidência:** a cópia somente leitura não tinha `ordem_inspecao`; a fila foi medida com uma tabela temporária vazia, e a API normalmente cria a tabela operacional no startup. Repetir a comparação após a migração no arquivo efetivamente usado pela API.
+  - **Correção sugerida:** não habilitar mmap globalmente sem definir um orçamento de memória para conexões concorrentes. Priorizar primeiro as otimizações locais já medidas (JOIN condicional na Receita e intervalo de datas no atendimento) e repetir o warmup na configuração/pool de produção antes de reconsiderar mmap.
 
 ## 2. Diagnóstico da receita (Renan e Célio)
 
@@ -39,7 +43,11 @@
 
 - [ ] 🟡 **O retrato de perdas do Painel soma a fila inteira.** Depois do PR #49, `/dashboard/losses` usa o mesmo ranking e o mesmo limiar de 20% da Fila de Inspeção. Com `LOSS_REFERENCE_COMPETENCIA="2025-09"` (a competência da demonstração), o card mostra 39.243 UCs e R$ 31,6 mi/ano recuperáveis, mas só 587 UCs têm chance alta (R$ 1,6 mi/ano); 95% do valor vem de UCs com 7,6% de chance de acerto (medido em 29/10 com o banco regerado).
   - **Correção sugerida:** mostrar no card as UCs prioritárias e o retorno esperado (valor × chance de acerto), com o total da fila como informação secundária.
+- [ ] ⚪ **O indicador de atendimento aplica `substr()` à data.** Em 30/10, `service_query` levou cerca de 227 ms na mediana e o plano fez scan de `fato_atendimentos`. O intervalo semiaberto (`data_abertura >= YYYY-MM-01 AND data_abertura < primeiro dia do mês seguinte`) preserva os valores e levou cerca de 184 ms.
+  - **Índice avaliado numa cópia temporária do banco:** a condição OR entre as duas janelas fez o plano usar `idx_benchmark_service_date`, mas elevou a mediana para 229,5 ms e aumentou a cópia em 8,5 MB. **Não adicionar o índice nem restringir a consulta com OR**; aplicar apenas a condição de intervalo semiaberto dentro dos `CASE`, mantendo o scan sequencial mais rápido.
 - [ ] ⚪ Avisar o Célio que `period_totals_query` (`backend/app/features/revenue/queries.py`) perdeu o filtro de competência no `WHERE` para ficar mais rápida (mesmos números, ADR-016).
+  - **Evidência adicional (30/10):** na base local de 2.152.336 faturas, a consulta sem filtros territoriais teve mediana pareada de 3,64 s com o JOIN ao cadastro e 2,66 s sem JOIN (−27%); os oito totais comparados foram iguais e não há faturas órfãs no snapshot. Avaliar omitir o JOIN apenas quando município, bairro e classe estiverem ausentes; manter o JOIN quando houver filtro e cobrir ambos os caminhos com teste.
+  - **Implementação local (30/10):** `period_totals_query` omite o JOIN quando não há filtros territoriais e o mantém quando município, bairro ou classe estão preenchidos; os dois caminhos têm testes de SQL. A pendência de comunicação/merge permanece até integrar a alteração na branch da Fatia 04.
 
 ## 5. Visão 360 (Bernardo)
 
