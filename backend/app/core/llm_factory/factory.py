@@ -23,7 +23,7 @@ provider_registry.register(LLMProvider.MOCK.value, GroundedMockStrategy())
 
 PROVIDER_DEFAULT_MODELS: dict[str, str] = {
     LLMProvider.OPENROUTER.value: "google/gemini-2.5-flash-lite",
-    LLMProvider.LOCAL.value: "local-model",
+    LLMProvider.LOCAL.value: "models/Qwen3.5-4B-Q4_K_M.gguf",
     LLMProvider.GOOGLE.value: "gemini-2.5-flash-lite",
     LLMProvider.MOCK.value: "mock",
 }
@@ -35,7 +35,7 @@ def get_chat_model(
     api_key: str | None = None,
     base_url: str | None = None,
     temperature: float = 0.0,
-    timeout_seconds: int = 30,
+    timeout_seconds: int = 90,
     **kwargs: Any,
 ) -> BaseChatModel:
     """

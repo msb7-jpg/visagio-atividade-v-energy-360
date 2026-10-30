@@ -4,10 +4,34 @@ import { IndicatorsTable } from '@/features/executive_dashboard/components/Indic
 import { LossesSnapshotCard } from '@/features/executive_dashboard/components/LossesSnapshotCard'
 import { PeriodSelector } from '@/features/executive_dashboard/components/PeriodSelector'
 import { useExecutiveDashboardController } from '@/features/executive_dashboard/hooks/useExecutiveDashboardController'
+import type { Indicator, IndicatorGroup } from '@/features/executive_dashboard/types/executiveDashboardTypes'
 import { competenciasOf, describeWindow } from '@/features/executive_dashboard/utils/dashboardPeriods'
 import { SmartInsightCard } from '@/features/insights/SmartInsightCard'
 
 const FALLBACK_AVAILABLE_PERIOD = { competencia_inicio: '2022-07', competencia_fim: '2026-06' }
+
+function recordIndicatorMetrics(
+  metricMap: Record<string, string | number>,
+  indicator: Indicator
+): void {
+  if (indicator.atual !== null) metricMap[`${indicator.id}_atual`] = indicator.atual
+  if (indicator.base !== null) metricMap[`${indicator.id}_base`] = indicator.base
+  if (indicator.variacao_pct !== null) metricMap[`${indicator.id}_var_pct`] = indicator.variacao_pct
+  if (indicator.variacao_pp !== null) metricMap[`${indicator.id}_var_pp`] = indicator.variacao_pp
+}
+
+function extractMetricsFromGroups(
+  groups?: IndicatorGroup[]
+): Record<string, string | number> | undefined {
+  if (!groups) return undefined
+  const metricMap: Record<string, string | number> = {}
+  for (const group of groups) {
+    for (const indicator of group.indicadores) {
+      recordIndicatorMetrics(metricMap, indicator)
+    }
+  }
+  return metricMap
+}
 
 /**
  * Painel do Diretor: os principais indicadores do negócio comparados entre dois períodos (case, seção 5.2).
@@ -20,18 +44,10 @@ export function ExecutiveDashboardPage() {
   const groups = indicators.data?.grupos ?? []
   const months = competenciasOf(indicators.data?.periodo_disponivel ?? FALLBACK_AVAILABLE_PERIOD)
 
-  const executiveMetrics = useMemo(() => {
-    if (!indicators.data?.grupos) return undefined
-    const metricMap: Record<string, string | number> = {}
-    for (const group of indicators.data.grupos) {
-      for (const item of group.indicadores) {
-        if (item.atual !== null) {
-          metricMap[item.id] = item.atual
-        }
-      }
-    }
-    return metricMap
-  }, [indicators.data])
+  const executiveMetrics = useMemo(
+    () => extractMetricsFromGroups(indicators.data?.grupos),
+    [indicators.data?.grupos]
+  )
 
   return (
     <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">

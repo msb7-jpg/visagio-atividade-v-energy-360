@@ -79,6 +79,7 @@
 - [x] Implementar e exportar `SmartInsightCard.tsx` (componente plugável e desacoplado, pronto para ser consumido nas telas da Fatia 03 - Bernardo e Fatia 04 - Célio conforme contrato de integração).
 - [x] Criar testes no frontend com Vitest em `ChatDrawer.test.tsx`.
 - [x] Expor `<ChatDrawer />` globalmente nas telas ativas, corrigir autenticação JWT do streaming/insights, follow-up multi-turno com `MemorySaver` e métricas completas em `evaluate_agent.py`.
+- [x] Implementar avaliação real de Execution Accuracy (`result_comparator.py`), suíte de recusa ("não sei") e perguntas canônicas do case no `golden_dataset.json`, conferência de fidelidade numérica (`faithfulness_checker.py`) no Agente e no Quadro de IA (`insights_service.py`), testes de integração (`test_agent_integration.py`) e benchmark real com modelo local (`Qwen3.5-4B-Q4_K_M` via `lcpp`).
 - [x] Garantir 100% verde em `make lint-all` e `make test-all`.
 
 ---

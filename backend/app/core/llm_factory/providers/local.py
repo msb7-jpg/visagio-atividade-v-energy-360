@@ -22,7 +22,7 @@ class LocalOpenAIProviderStrategy(LLMProviderStrategy):
         api_key: str | None = None,
         base_url: str | None = None,
         temperature: float = 0.0,
-        timeout_seconds: int = 30,
+        timeout_seconds: int = 90,
         **kwargs: Any,
     ) -> BaseChatModel:
         """
@@ -50,7 +50,7 @@ class LocalOpenAIProviderStrategy(LLMProviderStrategy):
             extra_body["chat_template_kwargs"] = {"enable_thinking": False}
 
         return ChatOpenAI(
-            model=model or "local-model",
+            model=model or "models/Qwen3.5-4B-Q4_K_M.gguf",
             api_key=api_key or "not-needed",
             base_url=base_url,
             temperature=temperature,
