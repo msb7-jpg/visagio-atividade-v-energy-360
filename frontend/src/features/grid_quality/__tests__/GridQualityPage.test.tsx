@@ -184,4 +184,31 @@ describe('GridQualityPage', () => {
     expect(await screen.findByText('Não foi possível carregar os indicadores')).toBeInTheDocument()
     expect(await screen.findByText('Não foi possível carregar os alimentadores')).toBeInTheDocument()
   })
+
+  it('refaz as chamadas ao clicar em "Tentar novamente" nos erros da visão atual', async () => {
+    mockedApi.getIndicators.mockRejectedValueOnce(new Error('falha'))
+    mockedApi.listFeeders.mockRejectedValueOnce(new Error('falha'))
+    renderPage()
+    await screen.findByText('Não foi possível carregar os alimentadores')
+
+    screen.getAllByRole('button', { name: 'Tentar novamente' }).forEach((button) => fireEvent.click(button))
+
+    expect(await screen.findByRole('row', { name: /ALIM-TESTE-01/ })).toBeInTheDocument()
+    expect(mockedApi.getIndicators).toHaveBeenCalledTimes(2)
+    expect(mockedApi.listFeeders).toHaveBeenCalledTimes(2)
+  })
+
+  it('refaz o histórico e os clientes da gaveta ao tentar novamente', async () => {
+    mockedApi.getFeederHistory.mockRejectedValueOnce(new Error('falha'))
+    mockedApi.getAffectedCustomers.mockRejectedValueOnce(new Error('falha'))
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'ALIM-TESTE-01' }))
+    await screen.findByText('Não foi possível carregar os clientes')
+
+    screen.getAllByRole('button', { name: 'Tentar novamente' }).forEach((button) => fireEvent.click(button))
+
+    expect(await screen.findByText('TITULAR TESTE')).toBeInTheDocument()
+    expect(mockedApi.getFeederHistory).toHaveBeenCalledTimes(2)
+    expect(mockedApi.getAffectedCustomers).toHaveBeenCalledTimes(2)
+  })
 })

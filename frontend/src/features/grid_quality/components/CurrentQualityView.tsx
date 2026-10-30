@@ -1,6 +1,6 @@
-import { AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 import { AsyncState } from '@/components/feedback/AsyncState'
-import { EmptyState } from '@/components/feedback/EmptyState'
+import { ErrorState } from '@/components/feedback/ErrorState'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { FeederHistorySheet } from '@/features/grid_quality/components/FeederHistorySheet'
@@ -30,7 +30,7 @@ export function CurrentQualityView() {
     <div className="flex flex-col gap-6">
       {indicators.data ? <QualityKpiCards indicators={indicators.data} /> : null}
       {indicators.isError ? (
-        <EmptyState title="Não foi possível carregar os indicadores" icon={<AlertTriangle className="size-10" />} />
+        <ErrorState title="Não foi possível carregar os indicadores" onRetry={() => void indicators.refetch()} />
       ) : null}
 
       <div className="flex max-w-sm flex-col gap-1.5">
@@ -51,6 +51,7 @@ export function CurrentQualityView() {
         isError={feeders.isError}
         isEmpty={rankedFeeders.length === 0}
         errorTitle="Não foi possível carregar os alimentadores"
+        onRetry={() => void feeders.refetch()}
         emptyTitle="Nenhum alimentador neste filtro"
         emptyIcon={<CheckCircle2 className="size-10" />}
       >
@@ -65,6 +66,8 @@ export function CurrentQualityView() {
         customers={customers.data}
         isCustomersLoading={customers.isLoading}
         isCustomersError={customers.isError}
+        onRetryHistory={() => void history.refetch()}
+        onRetryCustomers={() => void customers.refetch()}
         onClose={closeFeeder}
       />
     </div>

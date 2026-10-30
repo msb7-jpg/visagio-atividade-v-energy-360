@@ -12,6 +12,8 @@ interface FeederHistorySheetProps {
   customers: AffectedCustomer[] | undefined
   isCustomersLoading: boolean
   isCustomersError: boolean
+  onRetryHistory: () => void
+  onRetryCustomers: () => void
   onClose: () => void
 }
 
@@ -29,6 +31,8 @@ export function FeederHistorySheet({
   customers,
   isCustomersLoading,
   isCustomersError,
+  onRetryHistory,
+  onRetryCustomers,
   onClose
 }: FeederHistorySheetProps) {
   const points = history?.pontos ?? []
@@ -45,6 +49,7 @@ export function FeederHistorySheet({
           isError={isError}
           isEmpty={points.length === 0}
           errorTitle="Não foi possível carregar o histórico"
+          onRetry={onRetryHistory}
           emptyTitle="Sem histórico para este alimentador"
         >
           <FeederTimeSeriesChart points={points} />
@@ -55,6 +60,7 @@ export function FeederHistorySheet({
           isError={isCustomersError}
           isEmpty={affectedCustomers.length === 0}
           errorTitle="Não foi possível carregar os clientes"
+          onRetry={onRetryCustomers}
           emptyTitle="Nenhum cliente com interrupção neste alimentador"
         >
           <FeederCustomersTable customers={affectedCustomers} />
