@@ -59,7 +59,7 @@
 
 ## 6. Gestão de Perdas (Adrian)
 
-- [ ] ⚪ Adotar o `components/ui/pagination.tsx` (criado no #34) no `QueuePagination`.
+- [x] ⚪ Adotar o `components/ui/pagination.tsx` (criado no #34) no `QueuePagination`. (Adrian César, 2026-10-30; `QueuePagination` removido, PR a abrir)
 
 ## 7. Inteligência Comercial (Célio)
 

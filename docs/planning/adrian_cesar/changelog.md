@@ -828,3 +828,8 @@
 - **O que foi feito:** a subseção foi **removida** e o roteiro **apagado**, sem cópia em outro arquivo. Ficou uma frase no bullet da demonstração: a fila tem 39.243 UCs porque a carteira inteira perdeu consumo em 2025 e a maioria das UCs passa do piso de queda; o que vale é o topo (196 das 200 primeiras inspecionadas depois, 93,9% de acerto), com link para o D9. A explicação completa, com a tabela por competência, continua no D9.
 - **Ajustes:** o item resolvido da `CORRECOES.md` e a linha do checklist deixaram de citar o roteiro. O README continua com o passo a passo de `LOSS_REFERENCE_COMPETENCIA="2025-09"` e a tabela de suposições.
 - **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam.
+
+### [2026-10-30] - Fila de Inspeção passa a usar o `Pagination` compartilhado
+- **Autor:** Adrian César
+- **O que foi feito:** o `PrioritizedQueueTable` usa `components/ui/pagination.tsx` (criado no #34) no lugar do `QueuePagination`, que foi removido. A página da fila é de base 0 e o `Pagination` é de base 1, então a conversão (`page + 1` e `nextPage - 1`) fica no ponto de uso. O nome acessível "Paginação da fila" foi mantido com `label`.
+- **Validação de Testes:** `bun run test -- loss_management` (27 arquivos, 280 testes) e `make lint-frontend` passaram, sem mudar nenhum teste. `make lint-all` e `make test-all` completos ainda não foram rodados.
