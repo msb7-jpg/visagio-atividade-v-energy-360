@@ -874,3 +874,8 @@
 - **Conferência no navegador:** Painel, Inteligência Comercial, Fila de Inspeção, Qualidade da Rede, Visão 360 da UC e Assistente IA capturados no claro e conferidos no escuro. "Estados", "Componentes", "Tokens" e "Sobre os dados" das imagens de referência são páginas do protótipo que não existem no app.
 - **Pendências:** `public/favicon.svg` e `icons.svg` são do template Vite (cores fixas, fora de uso como marca).
 - **Validação de Testes:** `make lint-all` e `make test-all` rodados ao final (ver commit).
+
+### [2026-10-30] - Fila de Inspeção passa a usar o `Pagination` compartilhado
+- **Autor:** Adrian César
+- **O que foi feito:** o `PrioritizedQueueTable` usa `components/ui/pagination.tsx` (criado no #34) no lugar do `QueuePagination`, que foi removido. A página da fila é de base 0 e o `Pagination` é de base 1, então a conversão (`page + 1` e `nextPage - 1`) fica no ponto de uso. O nome acessível "Paginação da fila" foi mantido com `label`.
+- **Validação de Testes:** `bun run test -- loss_management` (27 arquivos, 280 testes) e `make lint-frontend` passaram, sem mudar nenhum teste. `make lint-all` e `make test-all` completos ainda não foram rodados.
