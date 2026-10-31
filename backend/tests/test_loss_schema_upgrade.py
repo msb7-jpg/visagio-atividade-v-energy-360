@@ -1,12 +1,16 @@
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import inspect, select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.features.loss_management.models import InspectionOrder
 from app.features.loss_management.schema_upgrade import ADDED_COLUMN_NAMES, add_missing_columns
 
+BACKEND_DIR = Path(__file__).resolve().parent.parent
 EXISTING_ORDERS = 7
 LEGACY_TABLE = """
 CREATE TABLE ordem_inspecao (
@@ -90,3 +94,27 @@ async def test_upgrade_creates_the_table_when_the_database_is_new(tmp_path):
 
     assert added == []
     assert {"id_inspecao", *ADDED_COLUMN_NAMES} <= present
+
+
+async def test_alembic_upgrade_head_creates_operational_table_preserving_lakehouse_tables(tmp_path):
+    db_file = tmp_path / "alembic_test.db"
+    engine = create_async_engine(f"sqlite+aiosqlite:///{db_file.as_posix()}")
+    async with engine.begin() as connection:
+        await connection.execute(text("CREATE TABLE dim_tempo (ano INT, mes INT, competencia TEXT PRIMARY KEY)"))
+        await connection.execute(text("INSERT INTO dim_tempo VALUES (2026, 6, '2026-06')"))
+
+    alembic_cfg = Config(str(BACKEND_DIR / "alembic.ini"))
+    alembic_cfg.set_main_option("script_location", str(BACKEND_DIR / "migrations"))
+    alembic_cfg.set_main_option("sqlalchemy.url", f"sqlite:///{db_file.as_posix()}")
+
+    command.upgrade(alembic_cfg, "head")
+
+    present_cols = await column_names(engine)
+    async with engine.connect() as connection:
+        dim_count = (await connection.execute(text("SELECT COUNT(*) FROM dim_tempo"))).scalar_one()
+        version_num = (await connection.execute(text("SELECT version_num FROM alembic_version"))).scalar_one()
+    await engine.dispose()
+
+    assert {"id_inspecao", *ADDED_COLUMN_NAMES} <= present_cols
+    assert dim_count == 1
+    assert version_num == "0001_ordem_inspecao"

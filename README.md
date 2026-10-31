@@ -121,6 +121,19 @@ Execução de ponta a ponta do Workflow no Databricks, com todas as tarefas conc
 
 ![Execução bem-sucedida do Workflow no Databricks](docs/img/workflow_databricks.png)
 
+### Rodar o pipeline sem o Databricks (opcional)
+
+Os mesmos 10 notebooks também rodam localmente, num Spark com Delta Lake na própria máquina. Cada notebook detecta se está no Databricks (`DATABRICKS_RUNTIME_VERSION`); fora dele, usa [`data-engineering/notebooks/local_runtime.py`](data-engineering/notebooks/local_runtime.py) no lugar do Unity Catalog, dos Volumes e do `dbutils`.
+
+Requisitos: Linux, macOS ou WSL (no Windows nativo, o Spark exige configuração extra do Hadoop), Java 17 e as bases brutas em `data/landing/`.
+
+```bash
+cd backend && uv sync --extra pipeline && cd ..
+make pipeline-local
+```
+
+O banco sai em `data/gold_exports/v_energy.db`, e o `backend/v_energy.db` do portal **não é alterado**. O Spark local não é idêntico ao do Databricks, então confira as contagens que o comando mostra contra o banco oficial antes de publicar com `cp data/gold_exports/v_energy.db backend/v_energy.db` (e apague `backend/v_energy.db-wal` e `backend/v_energy.db-shm`).
+
 ---
 
 ## 📋 Suposições e Demonstração por Fatia
