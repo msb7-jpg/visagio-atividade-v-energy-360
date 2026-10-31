@@ -221,18 +221,19 @@ Os números dos exemplos são ilustrativos.
 - [x] `/dashboard` só para o diretor (`AppRoutes.tsx` e `navItems.ts`). (27/10; falta a revisão do João)
 - [x] Telas iniciais: gerente de perdas → `/losses`, gerente de operação → `/quality`. (27/10)
 - [x] Remover o `DashboardPage` antigo. (27/10)
-- [ ] Avisar o Miguel por causa do #35 (pendência da seção 11).
+- [x] Avisar o Miguel por causa do #35 (pendência da seção 11). (#35 mesclado em 28/10)
 - [x] Conferir os números com o banco real e com a tela de receita. (28/10)
 - [x] Desempenho: leitura sequencial, cache e pré-cálculo na subida da API (ADR-016). (28/10)
 - [x] Taxas avaliadas em pontos percentuais (ADR-011 revisada). (28/10)
 - [ ] **Célio:** avisar que `period_totals_query` (`revenue/queries.py`) perdeu o filtro de competência no `WHERE` para ficar mais rápida (mesmos números, ADR-016).
-- [ ] Quadro de IA com números reais (após o #35).
+- [x] Quadro de IA com números reais (após o #35). (28/10; base e variação enviadas desde o #52, 30/10)
+- [x] Retrato de perdas só com as UCs prioritárias e o retorno esperado (ADR-028). (30/10)
 
 ### Documentação
 - [x] ADRs do Painel no `docs/DECISOES.md`: escolha dos indicadores, períodos, avaliação, DEC/FEC da área, inadimplência e perdas sem comparação. (27/10)
 - [x] Linha do Painel na matriz de integração do `ROADMAP.md`, com aprovação do time. (27/10)
 - [x] Registro no `changelog.md` a cada entrega. (27/10)
-- [ ] Suposições do Painel separadas para a seção de suposições do README (fechamento).
+- [x] Suposições do Painel separadas para a seção de suposições do README (fechamento). (30/10, seção da Fatia 03)
 
 ---
 
@@ -259,11 +260,11 @@ Os números dos exemplos são ilustrativos.
 ---
 
 ## 11. Pendências para confirmar
-- [ ] **Adrian (para depois):** revisar o frontend no PR e confirmar o contrato da seção 6, que já foi implementado nesse formato.
+- [x] **Adrian (para depois):** revisar o frontend no PR e confirmar o contrato da seção 6, que já foi implementado nesse formato. (#42 revisado e mesclado em 28/10)
 - [x] **Banco real:** dump `.db` obtido no Drive em 27/10; será colocado em `backend/v_energy.db` (fora do repositório) na etapa 4.
-- [ ] **Miguel (para depois):** o `DashboardPage` antigo foi removido nesta branch. No #35, tirar o `SmartInsightCard` dele; o quadro volta no Painel novo, ligado aos indicadores reais (etapa 7).
+- [x] **Miguel (para depois):** o `DashboardPage` antigo foi removido nesta branch. No #35, tirar o `SmartInsightCard` dele; o quadro volta no Painel novo, ligado aos indicadores reais (etapa 7).
 - [x] **ADRs:** a `main` tem ADR-006 a ADR-009 (Fatia 01), o Painel usa ADR-010 a ADR-016, e as da Visão 360 foram renumeradas para ADR-017 a ADR-023 (28/10). Não há mais colisão, qualquer que seja a ordem dos merges.
-- [ ] **João:** revisão das mudanças em `AppRoutes.tsx` e `navItems.ts`.
+- [x] **João:** revisão das mudanças em `AppRoutes.tsx` e `navItems.ts`. (#42 mesclado em 28/10; matriz de rotas coberta pelo `RbacMatrix.test.tsx`)
 - [x] **Time:** autorização para incluir a linha do Painel no `ROADMAP.md` (confirmada em 27/10).
 
 ---

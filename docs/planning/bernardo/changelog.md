@@ -229,6 +229,18 @@
   - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (697) aprovados.
   - Frontend: ESLint, Fallow (sem duplicação), Vitest (539) e build aprovados.
 
+### [2026-10-30] - Retrato de perdas com as UCs prioritárias, Visão 360 no padrão do design e README da Fatia 03
+- **Autor:** Bernardo H
+- **Branch:** `feat/fatia-03-pendencias-finais`
+- **O que foi feito:**
+  - Painel: o card de perdas passou a contar só as UCs prioritárias (chance de acerto de 30% ou mais, o corte da Fila) e a mostrar o retorno esperado, com o total da fila como informação secundária (ADR-028). No banco real: 7 de 165 em 2026-06; 587 de 39.243 e R$ 1,53 mi/ano em 2025-09, contra R$ 31,6 mi/ano da soma da fila inteira.
+  - Visão 360: situação da fatura com o `StatusBadge kind="fatura"` (paga verde, em aberto âmbar, vencida vermelha) e "Tentar novamente" nos 4 erros das abas.
+  - README: seção da Fatia 03 com o que cada tela responde, como demonstrar, suposições com links para as ADRs e limites.
+  - `CHECKLIST.md`, `CORRECOES.md` e checklists da pasta atualizados; a consulta que reproduz as 887 UCs com queda de 40% foi registrada para o diagnóstico.
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest e build aprovados.
+
 ### [2026-10-30] - Banco com bairros corrigidos, avaliação do CHECKLIST.md e chat sem IA que não inventa
 - **Autor:** Bernardo H
 - **Branch:** `docs/avaliacao-checklist-banco-corrigido` (a partir da `main` em `c3cc124`)
@@ -239,6 +251,6 @@
   - `CORRECOES.md`: correção de bairros movida para "Já resolvido"; registrados a consulta das 887 UCs (894 no banco novo), os números do diagnóstico que mudam com os bairros unificados, o chat que inventa resposta sem chave de IA, as lacunas do README e duas decisões de dados em aberto.
   - Correção na fatia de IA (a pedido, com aviso ao Miguel): sem provedor de IA configurado, o chat inventava uma resposta (tabela fixa "Operacional, 25000" e texto de "conformidade" para qualquer pergunta, até para CPF). Agora a regra única `resolve_configured_provider` (`app/core/llm_factory/availability.py`) decide se há IA; sem provedor, o chat envia só o aviso "Assistente de IA indisponível" (evento `error`, código `AI_UNAVAILABLE`), a fábrica de modelos não cai mais em silêncio no modo simulado, e o modo simulado só liga com `AI_PROVIDER="mock"`, marcado como "Modo demonstração". README ganhou a seção "Inteligência Artificial" e o `.env.example` foi corrigido.
 - **Validação de Testes:**
-  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (719, com `test_ai_availability.py`) aprovados.
-  - Frontend: ESLint, Fallow (sem duplicação), Vitest (539) e build aprovados.
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (720, com `test_ai_availability.py`, depois de trazer a `main` com os PRs #54 e #57) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (545) e build aprovados.
   - Ponta a ponta com o banco de 30/10 e sem `.env`: as perguntas do case e a de CPF recebem só o aviso de IA indisponível; `/ai/insights` responde 503.

@@ -76,9 +76,11 @@ const indicators: DashboardIndicators = {
 const losses: LossesSnapshot = {
   competencia_referencia: '2026-06',
   competencia_fixada: false,
-  ucs_na_fila: 12,
-  energia_recuperavel_kwh_mes: 1500,
-  valor_recuperavel_rs_ano: 12000,
+  ucs_na_fila: 40,
+  ucs_prioritarias: 12,
+  energia_prioritaria_kwh_mes: 1500,
+  valor_prioritario_rs_ano: 12000,
+  retorno_esperado_rs_ano: 11000,
   taxa_acerto_pct: 50,
   inspecoes_avaliadas: 20
 }
@@ -165,8 +167,19 @@ describe('ExecutiveDashboardPage', () => {
     const snapshot = await screen.findByTestId('losses-snapshot')
     expect(within(snapshot).getByText('Retrato atual, sem histórico para comparar')).toBeTruthy()
     expect(within(snapshot).getByText('12 UCs')).toBeTruthy()
+    expect(within(snapshot).getByText('de 40 UCs na fila')).toBeTruthy()
+    expect(within(snapshot).getByText(/R\$\s11 mil/)).toBeTruthy()
+    expect(within(snapshot).getByText(/até R\$\s12 mil se todas confirmarem/)).toBeTruthy()
     expect(within(snapshot).getByText('20 inspeções avaliadas')).toBeTruthy()
     expect(within(snapshot).queryByText(/fixada para a demonstração/)).toBeNull()
+  })
+
+  it('avisa quando a fila só tem UCs de baixa chance', async () => {
+    mockedApi.getLossesSnapshot.mockResolvedValue({ ...losses, ucs_prioritarias: 0 })
+    renderPage()
+
+    const snapshot = await screen.findByTestId('losses-snapshot')
+    expect(within(snapshot).getByText(/Nenhuma UC com chance alta de acerto; as 40 da fila têm chance baixa/)).toBeTruthy()
   })
 
   it('avisa a competência fixada e a fila vazia', async () => {

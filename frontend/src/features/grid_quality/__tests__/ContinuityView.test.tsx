@@ -80,6 +80,14 @@ describe('ContinuityView', () => {
     expect(screen.queryByText(/Dados de exemplo/)).not.toBeInTheDocument()
   })
 
+  it('refaz a chamada ao clicar em "Tentar novamente" quando a Continuidade falha', async () => {
+    mockedGet.mockRejectedValueOnce(new Error('falha'))
+    renderView()
+    fireEvent.click(await screen.findByRole('button', { name: 'Tentar novamente' }))
+    expect(await screen.findByText('Nº de interrupções')).toBeInTheDocument()
+    expect(mockedGet).toHaveBeenCalledTimes(2)
+  })
+
   it('mostra KPIs, o cartão do evento e o rótulo do mês detectado', async () => {
     renderView()
     expect(await screen.findByText('Nº de interrupções')).toBeInTheDocument()

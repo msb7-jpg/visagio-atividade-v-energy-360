@@ -58,12 +58,12 @@
 - [x] **Mesmos números entre telas:** (conferido em 30/10 com o banco regerado)
   - [x] Receita = Painel = diagnóstico (+8,0%, −5,1%, +13,8%);
   - [x] inadimplência do Painel = diagnóstico (5,52% → 5,42%);
-  - [x] retrato de perdas do Painel = Fila: o mesmo ranking, com 39.243 UCs nas duas telas em 2025-09 e 165 em 2026-06. ⚠️ Na `main`, o valor do card soma a fila inteira (R$ 31,6 mi/ano em 2025-09); o PR #54 passa a contar só as prioritárias (ADR-028);
+  - [x] retrato de perdas do Painel = Fila: mesmo ranking e mesmo corte de prioridade (chance de 30% ou mais). Em 2026-06, 7 prioritárias de 165 nas duas telas; em 2025-09, o Painel conta 587 de 39.243 na fila inteira, e a aba da Fila conta só as UCs já carregadas (ADR-028);
   - [x] DEC do Painel = Continuidade (1,47 → 3,45), com a mesma base de UCs atendidas (ADR-012 revisada).
 - [x] *(Diferencial)* **Exportar a fila** para a equipe de campo. (`/losses/inspections/export` responde; testes em `test_loss_export.py`)
 - [x] *(Diferencial)* **Subir a planilha de campo** pelo portal. (`test_loss_upload_router.py`)
 - [x] *(Diferencial)* **Login por perfil** com as telas do cargo. Cada um dos 5 logins abre na tela certa e recebe 403 fora dela. (conferido em 30/10: 5 perfis × 5 rotas na API; `RbacMatrix.test.tsx` no frontend)
-- [x] *(Diferencial)* **Testes automatizados no backend.** (709 testes no pytest em 30/10)
+- [x] *(Diferencial)* **Testes automatizados no backend.** (720 testes no pytest em 30/10, depois dos PRs #54, #56 e #57)
 - [x] **Telas sem dado sujo** (Orientações Gerais: "um portal que exibe dados sujos é pior"). Conferir bairros, datas e valores, sem "9999" e sem caractere quebrado. (varredura das respostas da API em 30/10 com o banco corrigido: 0 ocorrências)
 - [ ] **Desempenho:** nenhuma tela leva mais de cerca de 2 s com o banco real. (medição do Célio. ⚠️ Em 30/10, a decomposição e o ranking da Receita ainda levam cerca de 4,6 s)
 

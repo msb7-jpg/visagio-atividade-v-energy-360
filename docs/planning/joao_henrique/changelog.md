@@ -244,3 +244,16 @@
 - **Pendências:** validar a lista de causas atacáveis com a Fatia 02. Nome de bairro sujo na Gold registrado em `docs/CORRECOES.md`.
 - **Validação de Testes:**
   - `make lint-all` aprovado; `make test-all`: 644 pytest e 360 vitest. Testes novos: `test_grid_quality_continuity.py` e `test_grid_quality_customers.py` (seed pequeno, valores à mão) e rotas novas em `test_grid_quality_router.py`.
+
+
+### [2026-10-30] - Acabamento da Qualidade da Rede: nova tentativa, cartões por situação e paginação
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - "Tentar novamente" (`onRetry` com `refetch`) na Continuidade, na Visão atual (indicadores e ranking) e nas duas consultas da gaveta do circuito. O erro dos indicadores passou de `EmptyState` para `ErrorState`.
+  - Backend: `GET /quality/indicators` ganhou `alimentadores_em_alerta`, `percentual_alerta`, `alimentadores_conformes` e `percentual_conforme` (antes só vinha a violação). Teste de agregação com 4 alimentadores calculados à mão (1 violação, 1 alerta, 2 conformes: 25%, 25% e 50%).
+  - Frontend: o cartão único virou três cartões de situação (Badge destructive, warning e success) com "n de N circuitos", mantendo DEC e FEC médios numa linha acima.
+  - Paginação da tabela de circuitos com o componente `components/ui/pagination.tsx` (15 por página); volta à página 1 ao trocar o filtro de situação e a gaveta abre de qualquer página.
+  - Gaveta: `whitespace-nowrap` em "Ver ficha" e no bairro de "Clientes mais afetados".
+- **Fora desta entrega:** conferência visual no navegador (só testes automatizados).
+- **Validação de Testes:**
+  - `make lint-all` aprovado; `make test-all`: 708 pytest e 543 vitest.

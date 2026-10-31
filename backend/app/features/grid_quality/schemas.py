@@ -48,6 +48,10 @@ class QualityIndicatorsDTO(BaseModel):
     total_alimentadores: int
     alimentadores_em_violacao: int
     percentual_violacao: float
+    alimentadores_em_alerta: int
+    percentual_alerta: float
+    alimentadores_conformes: int
+    percentual_conforme: float
 
 
 class FeederTimeSeriesPointDTO(BaseModel):

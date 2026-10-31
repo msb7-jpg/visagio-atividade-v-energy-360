@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AxiosError, type AxiosResponse } from 'axios'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { customer360Api } from '@/features/customer360/api/customer360Api'
@@ -296,7 +296,7 @@ describe('Customer360Page', () => {
     expect(screen.getByText('Últimas 11 contas: 8 pagas em dia, 2 com atraso (atraso médio de 6 dias) e 1 vencida em aberto.')).toBeInTheDocument()
     const table = screen.getByRole('table', { name: 'Faturas da unidade consumidora' })
     expect(within(table).getByText('Vencida')).toBeInTheDocument()
-    expect(within(table).getByText('Aberta')).toBeInTheDocument()
+    expect(within(table).getByText('Em aberto')).toBeInTheDocument()
     expect(within(table).getByText('Paga')).toBeInTheDocument()
   })
 
@@ -428,6 +428,19 @@ describe('Customer360Page', () => {
     expect(within(recents).getByText('UC100004')).toBeInTheDocument()
     fireEvent.click(within(recents).getByRole('button', { name: 'Limpar' }))
     expect(screen.queryByRole('navigation', { name: 'Buscas recentes' })).not.toBeInTheDocument()
+  })
+
+  it('oferece tentar de novo quando o histórico falha e recarrega ao clicar', async () => {
+    const networkError = new Error('falha de rede')
+    mockedApi.getHistory.mockRejectedValueOnce(networkError).mockRejectedValueOnce(networkError)
+    renderPage()
+    searchFor('UC100004')
+
+    expect(await screen.findByText('Não foi possível carregar o consumo', {}, { timeout: 5000 })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+
+    await waitFor(() => expect(screen.queryByText('Não foi possível carregar o consumo')).not.toBeInTheDocument())
+    expect(mockedApi.getHistory).toHaveBeenCalledTimes(3)
   })
 
   it('avisa quando a UC não existe', async () => {

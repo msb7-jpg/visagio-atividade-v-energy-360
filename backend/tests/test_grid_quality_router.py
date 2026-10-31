@@ -62,6 +62,10 @@ INDICATORS = QualityIndicatorsDTO(
     total_alimentadores=2,
     alimentadores_em_violacao=1,
     percentual_violacao=50.0,
+    alimentadores_em_alerta=0,
+    percentual_alerta=0.0,
+    alimentadores_conformes=1,
+    percentual_conforme=50.0,
 )
 RANKING_ENTRY = FeederRankingDTO(
     id_alimentador=FEEDER_ID,
