@@ -23,7 +23,7 @@ export function QueueActionsBar({ selectedUnits, onSelectTop, onGenerate }: Queu
   const selectedCount = selectedUnits.length
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="ml-auto flex flex-wrap items-center gap-3">
       <SelectionSummary units={selectedUnits} />
       <Button type="button" variant="outline" size="sm" aria-label={`Selecionar top ${TOP_SELECTION_COUNT} prioritárias`} onClick={onSelectTop}>
         Top {TOP_SELECTION_COUNT}
