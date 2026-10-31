@@ -14,8 +14,17 @@ import { useContinuityController } from '@/features/grid_quality/hooks/useContin
  * @returns Filtros e blocos da tela.
  */
 export function ContinuityView() {
-  const { includeEventMonth, setIncludeEventMonth, municipality, setMunicipality, municipalityNames, snapshot } =
-    useContinuityController()
+  const {
+    includeEventMonth,
+    setIncludeEventMonth,
+    municipality,
+    setMunicipality,
+    municipalityNames,
+    cause,
+    setCause,
+    causeOptions,
+    snapshot
+  } = useContinuityController()
 
   return (
     <div className="flex flex-col gap-6">
@@ -29,6 +38,9 @@ export function ContinuityView() {
         municipality={municipality}
         onMunicipalityChange={setMunicipality}
         municipalityNames={municipalityNames}
+        cause={cause}
+        onCauseChange={setCause}
+        causeOptions={causeOptions}
         eventCompetencia={snapshot.data?.event?.competencia}
       />
 
@@ -41,7 +53,7 @@ export function ContinuityView() {
         {snapshot.data ? (
           <div className="flex flex-col gap-6">
             <ContinuityKpiCards kpis={snapshot.data.kpis} />
-            {snapshot.data.event ? <ContinuityEventCard event={snapshot.data.event} /> : null}
+            {snapshot.data.event ? <ContinuityEventCard event={snapshot.data.event} cause={cause} /> : null}
             <ContinuityMapCard municipalities={snapshot.data.municipalities} />
             <ContinuityFeedersCard feeders={snapshot.data.feeders} />
             <div className="grid gap-6 lg:grid-cols-2">

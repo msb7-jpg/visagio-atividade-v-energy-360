@@ -11,7 +11,7 @@ export const continuityKeys = {
 /**
  * Opções da consulta da visão de Continuidade.
  *
- * @param filters - Município e inclusão do mês do evento.
+ * @param filters - Município, causa e inclusão do mês do evento.
  * @returns Opções de query que mantém a visão anterior enquanto o filtro carrega.
  */
 export function continuityQueryOptions(filters: ContinuityFilters) {
