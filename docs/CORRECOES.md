@@ -63,6 +63,27 @@
 - [ ] ⚪ **Sem "Tentar novamente" nos erros da Inteligência Comercial** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Nenhum `AsyncState` passa `onRetry`: `RevenueResults.tsx:24`, `RevenueRankingCard.tsx:51`, `RevenueWaterfallCard.tsx:39` e `NeighborhoodHistorySheet.tsx:49`, em `frontend/src/features/revenue/components/`.
   - **Correção sugerida:** `onRetry={() => void query.refetch()}` em cada um (modelo em `features/loss_management/components/UnitDetailSheet.tsx:57`).
 
+## 8. Devolutiva de design (Eduarda Albuquerque, 30/10/2026)
+
+> Origem: `docs/planning/feedbackdesign.pdf` (arquivo local; `*.pdf` está no `.gitignore`). Registrado em 2026-10-31 por Adrian C. Cada item tem uma issue no quadro (Backlog). A design apontou 6 obstáculos; os destaques (perfis, Dark Mode, IA funcional) não geram tarefa. As referências de arquivo abaixo vêm da leitura do código em 31/10, sem validação visual das telas.
+
+- [ ] 🟡 **Contraste e acessibilidade no Dark Mode** (João Henrique, [#67](https://github.com/msb7-jpg/visagio-atividade-v-energy-360/issues/67)). Login com texto azul escuro sobre fundo azul/cinza; notas pequenas de tabela em cinza escuro sobre fundo quase preto.
+  - **Evidência:** `LoginFormPanel.tsx:95` usa `variant="outline"`; `--muted-foreground` do tema escuro já é `#A8B6C8`, então o problema pode estar em opacidade ou cor fixa nas notas.
+  - **Correção sugerida:** botão primário (`--primary` com `--primary-foreground`), auditar as notas de tabela, garantir 4,5:1 (WCAG AA) e estender o teste de contraste do commit `31138a7`. Conferir no navegador nos dois temas, pois a análise pode ter sido feita sobre uma versão anterior.
+- [ ] 🟡 **Hierarquia visual da Visão 360** (Bernardo, [#66](https://github.com/msb7-jpg/visagio-atividade-v-energy-360/issues/66)). Faturas, alertas e chamados com o mesmo peso e sem agrupamento; a atendente varre a tela inteira na ligação.
+  - **Correção sugerida:** blocos "Cliente e consumo", "Histórico Financeiro" (`InvoicesTab`, `HighBillDiagnosisBanner`) e "Problemas Técnicos" (`UnitOutagesList`, `FeederOutagesList`, `ServiceTicketsList`); `Card` com variante e `StatusBadge` vermelho/laranja para fatura em atraso; bloco crítico no topo.
+- [ ] ⚪ **Registro manual de inspeção pouco visível** (Adrian, [#64](https://github.com/msb7-jpg/visagio-atividade-v-energy-360/issues/64)). A tela destaca exportar e "Importar resultados de campo".
+  - **Evidência:** o `RegisterResultDialog` existe, mas só abre pelo card de cada ordem (`InspectionOrdersTab.tsx`). É problema de descoberta.
+  - **Correção sugerida:** botão "Registrar achado" em `OrderFlowBar.tsx` (~linha 40), com seletor de UC/ordem para o caso sem ordem aberta, e invalidação das queries ao salvar.
+- [ ] ⚪ **Raciocínio da IA exposto antes da resposta** (Miguel, [#65](https://github.com/msb7-jpg/visagio-atividade-v-energy-360/issues/65)). Os passos da FSM aparecem na frente e com termos técnicos para o Diretor Comercial.
+  - **Correção sugerida:** resposta em linguagem natural com valores em destaque primeiro; `NodeStepper`/`StepItem`/`ThoughtInspector` (`features/chat`) num bloco recolhido "Ver raciocínio da IA (Auditoria)"; rótulos de negócio nos nós.
+- [ ] ⚪ **Filtros ocupam espaço fixo** (Célio, com Adrian e João Henrique, [#68](https://github.com/msb7-jpg/visagio-atividade-v-energy-360/issues/68)).
+  - **Evidência:** `RevenueFiltersBar`, `QueueFilters`, `ContinuityFilters`; `CustomerSearchBar` provavelmente deve continuar visível.
+  - **Correção sugerida:** um `FilterPopover` compartilhado (botão com contador, chips de filtros ativos, fecha ao aplicar), construído por uma pessoa e adotado pelas outras para não passar de 5% de duplicação. Sugestão: Célio constrói.
+- [ ] ⚪ **Síntese de IA ocupa a tela de forma permanente** (Miguel e Bernardo, [#69](https://github.com/msb7-jpg/visagio-atividade-v-energy-360/issues/69)).
+  - **Correção sugerida:** `SmartInsightCard` recolhido por padrão, com resumo de uma linha e botão "Gerar Insight"/"Expandir"; hoje só é usado em `ExecutiveDashboardPage.tsx:71`. Se o `customer360` (seção 5) for plugado, já nascer recolhível.
+  - **Decisão da equipe:** pelo prazo de 04/11/2026, definir quais dos 6 cabem; os de contraste (#67) e Visão 360 (#66) têm maior efeito para o avaliador.
+
 ## 9. Fechamento (todos)
 
 - [ ] 🔴 **README:** suposições de cada fatia, passo a passo de execução (incluindo `LOSS_REFERENCE_COMPETENCIA`), print do Workflow no Databricks e links para o dicionário de dados e o diagnóstico (case, seção 6).
