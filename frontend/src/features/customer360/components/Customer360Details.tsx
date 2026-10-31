@@ -9,6 +9,8 @@ import { InvoicesTab } from '@/features/customer360/components/InvoicesTab'
 import { LossInspectionsList } from '@/features/customer360/components/LossInspectionsList'
 import { useCustomerEventsQuery, useCustomerHistoryQuery } from '@/features/customer360/hooks/useCustomer360Queries'
 import type { SolarGeneration } from '@/features/customer360/types/customer360Types'
+import { buildCustomerInsightMetrics } from '@/features/customer360/utils/insightMetrics'
+import { SmartInsightCard } from '@/features/insights/SmartInsightCard'
 
 const RETRY_HINT = 'Verifique a conexão com a API e tente novamente.'
 
@@ -18,7 +20,7 @@ interface Customer360DetailsProps {
 }
 
 /**
- * Diagnóstico de conta alta, resumo rápido e abas de consumo, faturas, interrupções, chamados e inspeções da UC.
+ * Diagnóstico de conta alta, resumo rápido, insight de IA e abas de consumo, faturas, interrupções, chamados e inspeções da UC.
  *
  * @param props - Número da UC já encontrada e a geração solar dela.
  * @returns Aviso de conta alta, cards de resumo e abas da Visão 360.
@@ -38,6 +40,13 @@ export function Customer360Details({ idUc, solar }: Customer360DetailsProps) {
     <div className="flex flex-col gap-4">
       {diagnosis ? <HighBillDiagnosisBanner diagnosis={diagnosis} solar={solar} /> : null}
       <CustomerQuickFacts history={history} events={events} />
+      {history && events ? (
+        <SmartInsightCard
+          context="customer360"
+          filters={{ id_uc: idUc }}
+          metrics={buildCustomerInsightMetrics(history, events, solar)}
+        />
+      ) : null}
       <Tabs defaultValue="consumption">
         <TabsList className="flex-wrap">
           <TabsTrigger value="consumption">

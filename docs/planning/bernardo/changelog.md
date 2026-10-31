@@ -254,3 +254,16 @@
   - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (720, com `test_ai_availability.py`, depois de trazer a `main` com os PRs #54 e #57) aprovados.
   - Frontend: ESLint, Fallow (sem duplicação), Vitest (545) e build aprovados.
   - Ponta a ponta com o banco de 30/10 e sem `.env`: as perguntas do case e a de CPF recebem só o aviso de IA indisponível; `/ai/insights` responde 503.
+
+### [2026-10-31] - Insight de IA na Visão 360, documentação da API e diagnóstico com o banco corrigido
+- **Autor:** Bernardo H
+- **Branch:** `feat/fatia-03-visao360-insight-e-diagnostico`
+- **O que foi feito:**
+  - Visão 360: `SmartInsightCard context="customer360"` abaixo do resumo rápido, com as métricas da própria UC (`buildCustomerInsightMetrics`): consumo e diagnóstico do mês, totais de 12 meses, faturas em aberto, interrupções, chamados, inspeções e painel solar. O card só aparece com o histórico e os eventos carregados, e some quando a IA está indisponível (503).
+  - API da Visão 360 documentada no padrão `EndpointDoc` (`customer360/router_metadata.py`): resumo, descrição com as ADRs e respostas 401, 403, 404 e 500 nos 4 endpoints.
+  - `DIAGNOSTICO_RECEITA.md` atualizado com o banco de bairros corrigidos: 835 de 871 irregularidades nos quatro bairros, queda de 2.735 MWh e até R$ 2,02 mi em jogo, ranking (Jardim Jordão −0,80 mi, Brasília Teimosa −0,34 mi, quatro bairros −1,41 mi), tabelas C5, C8 e C9 refeitas e a consulta C2d, que reproduz as UCs com queda de 40% ou mais (894; eram 887 no banco de 29/10). Acrescentada a resposta em uma frase para o slide principal.
+  - Modo demonstração (`AI_PROVIDER="mock"`): o insight falhava com 503 em qualquer tela, porque o modelo simulado procurava uma frase que o pedido de insight não usa mais. Gatilho corrigido, com teste em `test_ai_availability.py`.
+  - `CORRECOES.md`, `CHECKLIST.md` e checklist da Visão 360 atualizados.
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (725) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação e sem função acima do limite), Vitest e build aprovados.

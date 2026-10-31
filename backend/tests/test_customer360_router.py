@@ -222,3 +222,11 @@ async def test_history_reports_payment_punctuality(client, attendant_headers):
     assert (punctuality["pagas_em_dia"], punctuality["pagas_com_atraso"]) == (8, 2)
     assert punctuality["atraso_medio_dias"] == pytest.approx(6.0)
     assert punctuality["vencidas_em_aberto"] == 1
+
+
+@pytest.mark.parametrize("path", ["/{id_uc}/summary", "/{id_uc}/history", "/{id_uc}/events"])
+def test_endpoints_document_auth_not_found_and_gold_errors(path):
+    operation = app.openapi()["paths"][f"{BASE_URL}{path}"]["get"]
+
+    assert operation["summary"]
+    assert {"401", "403", "404", "500"} <= operation["responses"].keys()
