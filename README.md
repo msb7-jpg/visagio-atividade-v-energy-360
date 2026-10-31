@@ -207,6 +207,36 @@ Responde ao gerente de perdas: **quais UCs mandar a campo primeiro**. No portal 
 
 Detalhes e medições: [`docs/DECISOES_PERDAS.md`](docs/DECISOES_PERDAS.md) (D1 a D15) e o plano da fatia em [`docs/planning/adrian_cesar/`](docs/planning/adrian_cesar/gestao_perdas_campo.md).
 
+### 📡 Fatia 06: Qualidade da Rede (DEC/FEC) e Plataforma com RBAC
+
+Responde ao gerente de operação: **onde e por quê a rede ficou sem luz, e o que a manutenção consegue atacar**. No portal (`/quality`, perfis `gerente_operacao` e `diretor`; os usuários de teste estão em [`backend/app/core/config.py`](backend/app/core/config.py)) a aba "Visão atual" mostra os alimentadores por situação em relação ao limite de referência, e a aba "Continuidade" compara os últimos 12 meses (B) com os primeiros 12 (A): DEC, FEC, mapa por município, maiores circuitos, causas e tipos.
+
+**Como demonstrar**
+
+- Entre como `operacao@venergy.com`, abra "Continuidade" e troque o município, a causa e o mês do evento. Com o mês do evento incluído, o DEC de B é **3,45 h por UC**; filtrando por `CLIMATICA` é **2,14 h** e por `VEGETACAO` **0,24 h**. A soma das sete causas reproduz o total.
+- Clique em um circuito para abrir a gaveta com a série de DEC/FEC e os clientes mais afetados, com link para a Visão 360 da UC.
+
+**Suposições**
+
+| Suposição | Decisão | Onde está |
+|---|---|---|
+| DEC/FEC simplificado | denominador = `ucs_atendidas` contado uma vez por alimentador | ADR-003, ADR-012 e ADR-025 |
+| Limite de referência | alerta a partir de 85% do limite (`LIMIAR_ALERTA`); é referência, não violação | `rules.py`; o ADR-003 define o limite como referência |
+| Períodos | A = primeiros 12 meses (2022-07 a 2023-06) e B = últimos 12 (2025-07 a 2026-06) | ADR-025 |
+| Evento extremo | mês com mais de 3 vezes a mediana mensal da rede (`LIMIAR_EVENTO_EXTREMO`); hoje 2025-07 | ADR-025 |
+| Causas atacáveis | vegetação, falha de equipamento e sobrecarga (`CAUSAS_ATACAVEIS`) | ADR-025 |
+| Causa não informada | aparece como "Sem causa registrada" | ADR-025 |
+| Filtros da Continuidade | município e causa, além do mês do evento | ADR-025 |
+| Coordenadas do mapa | aproximadas e estáticas, 14 municípios | `municipalities.py` e ADR-025 |
+| Circuitos no ranking | 20 maiores por UC-horas | `continuity_rules.py` |
+| Acesso à Visão 360 | inclui o gerente de operação | ADR-022 e ADR-024 |
+
+**Fora de escopo**
+- **Filtro por bairro na Continuidade:** 103 dos 122 alimentadores atendem mais de um bairro, então exigiria filtrar a ocorrência por UC. O bairro fica em Receita e Perdas.
+- **Causa principal por circuito** e bloco **"Gerado por IA"**.
+
+Detalhes: [`docs/DECISOES.md`](docs/DECISOES.md) (ADR-003, ADR-024 e ADR-025) e o plano da fatia em [`docs/planning/joao_henrique/`](docs/planning/joao_henrique/qualidade_rede_rbac.md).
+
 ---
 
 ## 🧪 Testes e Qualidade

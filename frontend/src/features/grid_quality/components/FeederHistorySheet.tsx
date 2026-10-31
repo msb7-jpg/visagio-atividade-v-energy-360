@@ -39,7 +39,7 @@ export function FeederHistorySheet({
   const affectedCustomers = customers ?? []
   return (
     <Sheet open={feederId !== null} onOpenChange={(isOpen) => (isOpen ? undefined : onClose())}>
-      <SheetContent side="right" className="overflow-y-auto sm:max-w-xl">
+      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
         <SheetHeader>
           <SheetTitle>Alimentador {feederId}</SheetTitle>
           <SheetDescription>DEC acumulado no ano contra o limite anual de referência; o valor do mês aparece ao passar o mouse.</SheetDescription>

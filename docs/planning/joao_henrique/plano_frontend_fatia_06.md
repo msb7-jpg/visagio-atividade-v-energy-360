@@ -63,7 +63,7 @@ Pasta `frontend/src/features/grid_quality/` no mesmo padrão de `loss_management
 | `ChatDrawer` (Miguel) ainda não existe | Slot vazio no header | Deixar só o ponto de encaixe |
 
 ### Etapa 3b: aba Continuidade com dados reais (2026-10-28)
-`continuityApi` chama `GET /quality/continuity` (`municipio`, `incluir_evento`); mock e agregações no cliente removidos. Períodos A e B de 12 meses vêm da série; evento extremo com K = 3 sobre a mediana mensal da rede inteira; causas atacáveis (`VEGETACAO`, `FALHA DE EQUIPAMENTO`, `SOBRECARGA`) são suposição a validar com a Fatia 02; coordenadas do mapa são estáticas e aproximadas. A lista de 14 municípios do filtro é constante (o snapshot filtrado traz só um). A gaveta do circuito lista os clientes mais afetados (`GET /quality/feeders/{id}/customers`) com "Ver ficha" para `/customers?uc=`.
+`continuityApi` chama `GET /quality/continuity` (`municipio`, `causa`, `incluir_evento`); mock e agregações no cliente removidos. Períodos A e B de 12 meses vêm da série; evento extremo com K = 3 sobre a mediana mensal da rede inteira; causas atacáveis (`VEGETACAO`, `FALHA DE EQUIPAMENTO`, `SOBRECARGA`) são suposição a validar com a Fatia 02; coordenadas do mapa são estáticas e aproximadas. A lista de 14 municípios do filtro é constante (o snapshot filtrado traz só um). Filtro de causa (2026-10-30): seletor ao lado do município, opções do bloco de causas do snapshot; cartão do evento neutro quando o mês não é extremo para a causa. A gaveta do circuito lista os clientes mais afetados (`GET /quality/feeders/{id}/customers`) com "Ver ficha" para `/customers?uc=`.
 
 ## Fora do escopo (decisão sobre perguntas B1 a B10 é do grupo)
-Bairro como filtro (próxima etapa), aba de região, retorno da manutenção preventiva, lista de causas, UCs expostas (Card 4).
+Bairro como filtro (descartado: um alimentador atende em média 3,3 bairros; ver ADR-025, item 6), aba de região, retorno da manutenção preventiva, UCs expostas (Card 4).

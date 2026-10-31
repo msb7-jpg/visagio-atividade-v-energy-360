@@ -1,7 +1,7 @@
 """Consultas SQLAlchemy Core da Continuidade sobre `fato_ocorrencias_rede` e `dim_unidade_consumidora` (Gold).
 
 As tabelas pertencem ao pipeline: declaradas com `table()`/`column()`, fora do `Base.metadata`.
-O escopo (município hoje, bairro depois) é resolvido em UM ponto, `scope_query`: devolve os alimentadores
+O escopo (município) é resolvido em UM ponto, `scope_query`: devolve os alimentadores
 do escopo e as demais consultas só filtram por `id_alimentador`, sem JOIN nas 180 mil ocorrências.
 """
 
@@ -61,14 +61,24 @@ def feeder_ucs_query() -> Select:
     )
 
 
-def monthly_feeder_query() -> Select:
-    """UC-horas (soma de duracao_horas) e ocorrências por alimentador e competência, na rede inteira."""
-    return select(
+def monthly_feeder_query(cause: str | None = None) -> Select:
+    """UC-horas (soma de duracao_horas) e ocorrências por alimentador e competência, na rede inteira.
+
+    Args:
+        cause: Causa no formato do banco; None não filtra por causa.
+    """
+    query = select(
         _occurrences.c.id_alimentador,
         _occurrences.c.competencia,
         _uc_hours().label("uc_hours"),
         func.count().label("occurrences"),
     ).group_by(_occurrences.c.id_alimentador, _occurrences.c.competencia)
+    return query if cause is None else query.where(_occurrences.c.causa == cause)
+
+
+def causes_query() -> Select:
+    """Causas distintas registradas nas ocorrências (valores do banco)."""
+    return select(_occurrences.c.causa).distinct()
 
 
 def cause_hours_query(competencias: Collection[str], feeder_ids: Collection[str]) -> Select:
@@ -80,13 +90,14 @@ def cause_hours_query(competencias: Collection[str], feeder_ids: Collection[str]
     )
 
 
-def type_count_query(competencias: Collection[str], feeder_ids: Collection[str]) -> Select:
-    """Quantidade de ocorrências por tipo nas competências e alimentadores informados."""
-    return (
+def type_count_query(competencias: Collection[str], feeder_ids: Collection[str], cause: str | None = None) -> Select:
+    """Quantidade de ocorrências por tipo nas competências e alimentadores informados (e na causa, se houver)."""
+    query = (
         select(_occurrences.c.tipo_ocorrencia, func.count().label("occurrences"))
         .where(_occurrences.c.competencia.in_(competencias), _occurrences.c.id_alimentador.in_(feeder_ids))
         .group_by(_occurrences.c.tipo_ocorrencia)
     )
+    return query if cause is None else query.where(_occurrences.c.causa == cause)
 
 
 def latest_competencias_query(meses: int) -> Select:

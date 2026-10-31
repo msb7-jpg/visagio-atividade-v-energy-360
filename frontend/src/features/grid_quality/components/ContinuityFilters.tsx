@@ -1,6 +1,7 @@
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { labelOccurrence } from '@/features/grid_quality/utils/continuityFormatters'
 import { formatCompetencia } from '@/features/grid_quality/utils/qualityFormatters'
 
 interface ContinuityFiltersProps {
@@ -9,12 +10,15 @@ interface ContinuityFiltersProps {
   municipality: string
   onMunicipalityChange: (municipality: string) => void
   municipalityNames: string[]
+  cause: string
+  onCauseChange: (cause: string) => void
+  causeOptions: string[]
   /** Mês do evento detectado pela API; sem valor, o rótulo fica genérico. */
   eventCompetencia: string | undefined
 }
 
 /**
- * Filtros da Continuidade: incluir ou excluir o mês do evento e município.
+ * Filtros da Continuidade: incluir ou excluir o mês do evento, município e causa.
  *
  * @param props - Valores atuais e callbacks de mudança.
  * @returns Barra de filtros.
@@ -25,6 +29,9 @@ export function ContinuityFilters({
   municipality,
   onMunicipalityChange,
   municipalityNames,
+  cause,
+  onCauseChange,
+  causeOptions,
   eventCompetencia
 }: ContinuityFiltersProps) {
   return (
@@ -44,6 +51,15 @@ export function ContinuityFilters({
           <option value="">Todos</option>
           {municipalityNames.map((name) => (
             <option key={name} value={name}>{name}</option>
+          ))}
+        </Select>
+      </div>
+      <div className="flex min-w-56 flex-col gap-1.5">
+        <Label htmlFor="filtro-causa">Causa</Label>
+        <Select id="filtro-causa" value={cause} onChange={(event) => onCauseChange(event.target.value)}>
+          <option value="">Todas</option>
+          {causeOptions.map((option) => (
+            <option key={option} value={option}>{labelOccurrence(option)}</option>
           ))}
         </Select>
       </div>

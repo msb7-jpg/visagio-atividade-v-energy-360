@@ -200,3 +200,53 @@ async def test_tabela_ausente_levanta_erro_de_leitura():
         with pytest.raises(DatabaseReadError):
             await ContinuityService(ContinuityRepository(session)).get_snapshot()
     await bare_engine.dispose()
+
+
+async def test_causa_filtra_kpis_evento_municipios_circuitos_e_tipos_sem_mudar_o_denominador(service):
+    snapshot = await service.get_snapshot(causa="VEGETACAO")
+
+    # VEGETACAO só existe em F1 (RECIFE, 100 UCs), 10 ocorrências de 1 h em 2001-06.
+    assert snapshot.kpis.dec.current == pytest.approx(10 / UCS_TOTAL)
+    assert snapshot.kpis.dec.previous == 0
+    assert snapshot.kpis.interruptions.current == 10
+    assert snapshot.event.event_interruptions == 10
+    assert snapshot.event.other_months_median == 0
+    assert snapshot.event.extreme_in_scope is True
+    assert snapshot.event.dec_without_event == 0
+    assert {municipality.name: municipality.dec_hours for municipality in snapshot.municipalities} == {
+        "Olinda": 0,
+        "Recife": pytest.approx(10 / 100),
+    }
+    assert [(feeder.id_alimentador, feeder.uc_hours) for feeder in snapshot.feeders[:1]] == [("F1", 10.0)]
+    assert [(entry.type, entry.share_percent) for entry in snapshot.types] == [("FALTA DE ENERGIA", 100.0)]
+
+
+async def test_bloco_de_causas_continua_com_todas_as_causas_filtrado_so_por_municipio(service):
+    causes = (await service.get_snapshot(municipio="Recife", causa="VEGETACAO")).causes
+
+    assert [cause.cause for cause in causes] == ["CLIMATICA", "VEGETACAO"]
+    assert [cause.share_percent for cause in causes] == pytest.approx([12 / 22 * 100, 10 / 22 * 100])
+
+
+async def test_sem_causa_registrada_equivale_a_nao_informada(service):
+    snapshot = await service.get_snapshot(causa="Sem causa registrada")
+
+    # NAO INFORMADA: F2 (OLINDA, 40 UCs), 1 ocorrência de 2 h por mês; B = 12 meses.
+    assert snapshot.kpis.dec.current == pytest.approx(24 / UCS_TOTAL)
+    assert snapshot.kpis.dec.previous == pytest.approx(24 / UCS_TOTAL)
+    assert snapshot.event.extreme_in_scope is False
+
+
+async def test_dec_das_causas_somado_reproduz_o_dec_total(service):
+    total = (await service.get_snapshot()).kpis.dec.current
+    by_cause = [
+        (await service.get_snapshot(causa=cause)).kpis.dec.current
+        for cause in ("CLIMATICA", "NAO INFORMADA", "VEGETACAO")
+    ]
+
+    assert sum(by_cause) == pytest.approx(total)
+
+
+async def test_causa_inexistente_levanta_bad_request(service):
+    with pytest.raises(BadRequestException):
+        await service.get_snapshot(causa="vegetacao digitada")

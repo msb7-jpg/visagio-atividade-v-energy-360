@@ -4,20 +4,28 @@ import { continuityQueryOptions } from '@/features/grid_quality/queries/continui
 import { MUNICIPALITY_NAMES } from '@/features/grid_quality/utils/continuityMunicipalities'
 
 /**
- * Controlador da visão de Continuidade: filtros (mês do evento e município) e consulta.
+ * Controlador da visão de Continuidade: filtros (mês do evento, município e causa) e consulta.
+ * As opções de causa vêm do próprio snapshot (bloco de causas, que não muda com a causa escolhida).
  *
- * @returns Estado dos filtros, lista de municípios e a consulta do snapshot.
+ * @returns Estado dos filtros, listas de municípios e causas e a consulta do snapshot.
  */
 export function useContinuityController() {
   const [includeEventMonth, setIncludeEventMonth] = useState(true)
   const [municipality, setMunicipality] = useState('')
-  const snapshot = useQuery(continuityQueryOptions({ includeEventMonth, municipality }))
+  const [cause, setCause] = useState('')
+  const snapshot = useQuery(continuityQueryOptions({ includeEventMonth, municipality, cause }))
+  const snapshotCauses = snapshot.data?.causes.map((share) => share.cause) ?? []
+  // Mantém a causa escolhida na lista mesmo se o município novo não tiver ocorrências dela.
+  const causeOptions = cause === '' || snapshotCauses.includes(cause) ? snapshotCauses : [cause, ...snapshotCauses]
 
   return {
     includeEventMonth,
     setIncludeEventMonth,
     municipality,
     setMunicipality,
+    cause,
+    setCause,
+    causeOptions,
     municipalityNames: MUNICIPALITY_NAMES,
     snapshot
   }
