@@ -12,6 +12,7 @@ from app.shared.exceptions import UnauthorizedException
 
 settings = get_settings()
 password_hash = PasswordHash.recommended()
+UNKNOWN_USER_HASH = password_hash.hash("conta-inexistente")
 
 
 class AuthService:
@@ -49,7 +50,8 @@ class AuthService:
         email = request.email.lower()
         user_info = settings.default_users.get(email)
 
-        if not user_info or user_info["senha"] != request.senha:
+        stored_hash = user_info["senha_hash"] if user_info else UNKNOWN_USER_HASH
+        if not cls.verify_password(request.senha, stored_hash) or not user_info:
             raise UnauthorizedException("Email ou senha incorretos")
 
         user_dto = UserDTO(

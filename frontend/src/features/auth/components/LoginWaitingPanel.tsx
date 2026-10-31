@@ -46,7 +46,7 @@ export function LoginWaitingPanel({ controller, reduced }: LoginWaitingPanelProp
   return (
     <div className={cn('flex flex-col gap-4', motionClass(reduced, 'login-anim-swap'))}>
       <div>
-        <h2 className="text-2xl font-bold">{controller.mode === 'sso' ? 'Entrando com SSO…' : 'Entrando…'}</h2>
+        <h2 className="text-2xl font-bold">Entrando…</h2>
         <p className="text-muted-foreground mt-1 tabular-nums">{controller.email}</p>
       </div>
 
