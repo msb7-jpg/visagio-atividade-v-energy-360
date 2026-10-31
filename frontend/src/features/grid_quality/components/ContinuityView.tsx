@@ -7,9 +7,10 @@ import { ContinuityFilters } from '@/features/grid_quality/components/Continuity
 import { ContinuityKpiCards } from '@/features/grid_quality/components/ContinuityKpiCards'
 import { ContinuityMapCard } from '@/features/grid_quality/components/ContinuityMapCard'
 import { useContinuityController } from '@/features/grid_quality/hooks/useContinuityController'
+import { buildPeriodLabels } from '@/features/grid_quality/utils/periodLabels'
 
 /**
- * Aba "Continuidade": comparação do período B contra o A com dados da API.
+ * Aba "Continuidade": últimos 12 meses (período B) contra os primeiros 12 (período A), com as datas na tela.
  *
  * @returns Filtros e blocos da tela.
  */
@@ -25,11 +26,12 @@ export function ContinuityView() {
     causeOptions,
     snapshot
   } = useContinuityController()
+  const periods = snapshot.data ? buildPeriodLabels(snapshot.data.periods) : null
 
   return (
     <div className="flex flex-col gap-6">
       <p className="text-muted-foreground text-sm">
-        DEC e FEC simplificados servem para comparar alimentadores e períodos entre si, não para medir violação regulatória. Período B: últimos 12 meses; período A: primeiros 12 meses da série.
+        DEC e FEC simplificados servem para comparar alimentadores e períodos entre si, não para medir violação regulatória.
       </p>
 
       <ContinuityFilters
@@ -50,15 +52,18 @@ export function ContinuityView() {
         errorTitle="Não foi possível carregar a Continuidade"
         onRetry={() => void snapshot.refetch()}
       >
-        {snapshot.data ? (
+        {snapshot.data && periods ? (
           <div className="flex flex-col gap-6">
-            <ContinuityKpiCards kpis={snapshot.data.kpis} />
-            {snapshot.data.event ? <ContinuityEventCard event={snapshot.data.event} cause={cause} /> : null}
-            <ContinuityMapCard municipalities={snapshot.data.municipalities} />
-            <ContinuityFeedersCard feeders={snapshot.data.feeders} />
+            <p className="text-foreground text-sm font-semibold">
+              Últimos 12 meses ({periods.current}) comparados com os primeiros 12 meses da base ({periods.previous}).
+            </p>
+            <ContinuityKpiCards kpis={snapshot.data.kpis} periods={periods} />
+            {snapshot.data.event ? <ContinuityEventCard event={snapshot.data.event} cause={cause} periods={periods} /> : null}
+            <ContinuityMapCard municipalities={snapshot.data.municipalities} periods={periods} />
+            <ContinuityFeedersCard feeders={snapshot.data.feeders} periods={periods} />
             <div className="grid gap-6 lg:grid-cols-2">
-              <CauseSharesCard causes={snapshot.data.causes} />
-              <TypeSharesCard types={snapshot.data.types} />
+              <CauseSharesCard causes={snapshot.data.causes} periods={periods} />
+              <TypeSharesCard types={snapshot.data.types} periods={periods} />
             </div>
           </div>
         ) : null}

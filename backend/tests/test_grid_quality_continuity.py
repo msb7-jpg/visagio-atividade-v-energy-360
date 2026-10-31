@@ -104,6 +104,13 @@ async def test_kpis_comparam_b_contra_a_com_ucs_contadas_uma_vez(service):
     assert kpis.average_duration_hours.previous == pytest.approx(1.5)
 
 
+async def test_devolve_as_datas_dos_dois_periodos(service):
+    periods = (await service.get_snapshot()).periods
+
+    assert (periods.previous.start, periods.previous.end) == ("2000-01", "2000-12")
+    assert (periods.current.start, periods.current.end) == ("2001-01", "2001-12")
+
+
 async def test_evento_detectado_na_rede_inteira(service):
     event = (await service.get_snapshot()).event
 

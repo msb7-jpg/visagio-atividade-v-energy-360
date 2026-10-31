@@ -3,8 +3,22 @@ import { Table, TableBody, TableCell, TableColumns, TableRow } from '@/component
 import { formatInteger, formatPercent } from '@/features/grid_quality/utils/continuityFormatters'
 import { formatDecimal } from '@/features/grid_quality/utils/qualityFormatters'
 import type { FeederUcHours } from '@/features/grid_quality/types/continuityTypes'
+import type { PeriodLabels } from '@/features/grid_quality/utils/periodLabels'
 
-const COLUMNS = ['Alimentador', 'Município', 'UCs', 'DEC B (h)', 'FEC B', 'Ocorrências', 'UC-horas', '% da rede', 'DEC A (h)', 'B contra A'] as const
+function tableColumns({ currentYears, previousYears }: PeriodLabels): string[] {
+  return [
+    'Alimentador',
+    'Município',
+    'UCs',
+    `DEC ${currentYears} (h)`,
+    `FEC ${currentYears}`,
+    'Ocorrências',
+    'UC-horas',
+    '% da rede',
+    `DEC ${previousYears} (h)`,
+    `${currentYears} ÷ ${previousYears}`
+  ]
+}
 
 /** Quantas vezes o DEC de B é maior que o de A; sem base em A, mostra travessão. */
 function TimesBadge({ current, previous }: { current: number; previous: number }) {
@@ -18,13 +32,13 @@ function TimesBadge({ current, previous }: { current: number; previous: number }
 /**
  * Alimentadores do período B ordenados por UC-horas, com DEC, FEC e comparação contra o período A.
  *
- * @param props - Alimentadores já ordenados por UC-horas.
+ * @param props - Alimentadores já ordenados por UC-horas e os textos dos períodos.
  * @returns Tabela com uma linha por alimentador.
  */
-export function FeederUcHoursTable({ feeders }: { feeders: FeederUcHours[] }) {
+export function FeederUcHoursTable({ feeders, periods }: { feeders: FeederUcHours[]; periods: PeriodLabels }) {
   return (
     <Table>
-      <TableColumns columns={COLUMNS} />
+      <TableColumns columns={tableColumns(periods)} />
       <TableBody>
         {feeders.map((feeder) => (
           <TableRow key={feeder.id_alimentador}>
