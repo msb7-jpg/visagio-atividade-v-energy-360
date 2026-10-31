@@ -7,7 +7,6 @@ INDICATORS_URL = "/api/v1/dashboard/indicators"
 LOSSES_URL = "/api/v1/dashboard/losses"
 WINDOWS = {"base_inicio": "2022-07", "base_fim": "2023-06", "atual_inicio": "2025-07", "atual_fim": "2026-06"}
 DIRECTOR_EMAIL = "diretor@venergy.com"
-SEEDED_TARIFF_RS_KWH = 0.9  # valor_total_rs / consumo_faturado_kwh das faturas semeadas
 
 
 async def login(http_client: AsyncClient, email: str) -> dict[str, str]:
@@ -160,8 +159,7 @@ async def test_losses_snapshot_uses_loss_queue_ranking(client, director_headers)
     body = response.json()
     assert body["competencia_referencia"] == "2026-06"
     assert body["competencia_fixada"] is False
-    assert body["ucs_na_fila"] == 1
-    assert body["energia_recuperavel_kwh_mes"] == pytest.approx(70.0)
-    assert body["valor_recuperavel_rs_ano"] == pytest.approx(70.0 * 12 * SEEDED_TARIFF_RS_KWH)
+    assert (body["ucs_na_fila"], body["ucs_prioritarias"]) == (1, 0)
+    assert (body["energia_prioritaria_kwh_mes"], body["retorno_esperado_rs_ano"]) == (0.0, 0.0)
     assert body["taxa_acerto_pct"] == pytest.approx(50.0)
     assert body["inspecoes_avaliadas"] == 2

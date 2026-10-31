@@ -10,7 +10,7 @@ import { LossInspectionsList } from '@/features/customer360/components/LossInspe
 import { useCustomerEventsQuery, useCustomerHistoryQuery } from '@/features/customer360/hooks/useCustomer360Queries'
 import type { SolarGeneration } from '@/features/customer360/types/customer360Types'
 
-const RETRY_HINT = 'Verifique a conexão com a API e tente buscar a unidade novamente.'
+const RETRY_HINT = 'Verifique a conexão com a API e tente novamente.'
 
 interface Customer360DetailsProps {
   idUc: string
@@ -31,6 +31,8 @@ export function Customer360Details({ idUc, solar }: Customer360DetailsProps) {
   const isHistoryLoading = !history && !historyQuery.isError
   const diagnosis = history?.diagnostico
   const openInvoicesCount = history?.faturas_em_aberto.length ?? 0
+  const retryHistory = () => void historyQuery.refetch()
+  const retryEvents = () => void eventsQuery.refetch()
 
   return (
     <div className="flex flex-col gap-4">
@@ -66,6 +68,7 @@ export function Customer360Details({ idUc, solar }: Customer360DetailsProps) {
             isEmpty={history?.meses.length === 0}
             errorTitle="Não foi possível carregar o consumo"
             errorDescription={RETRY_HINT}
+            onRetry={retryHistory}
             emptyTitle="Sem leituras"
             emptyDescription="Ainda não há leituras de consumo para esta unidade."
             emptyIcon={<FileSearch className="size-10" />}
@@ -74,7 +77,13 @@ export function Customer360Details({ idUc, solar }: Customer360DetailsProps) {
           </AsyncState>
         </TabsContent>
         <TabsContent value="invoices" className="mt-4 min-w-0">
-          <AsyncState isLoading={isHistoryLoading} isError={historyQuery.isError} errorTitle="Não foi possível carregar as faturas" errorDescription={RETRY_HINT}>
+          <AsyncState
+            isLoading={isHistoryLoading}
+            isError={historyQuery.isError}
+            errorTitle="Não foi possível carregar as faturas"
+            errorDescription={RETRY_HINT}
+            onRetry={retryHistory}
+          >
             {history ? <InvoicesTab history={history} /> : null}
           </AsyncState>
         </TabsContent>
@@ -84,12 +93,19 @@ export function Customer360Details({ idUc, solar }: Customer360DetailsProps) {
             isError={eventsQuery.isError}
             errorTitle="Não foi possível carregar interrupções e chamados"
             errorDescription={RETRY_HINT}
+            onRetry={retryEvents}
           >
             {events ? <EventsTab events={events} /> : null}
           </AsyncState>
         </TabsContent>
         <TabsContent value="inspections" className="mt-4 min-w-0">
-          <AsyncState isLoading={!events && !eventsQuery.isError} isError={eventsQuery.isError} errorTitle="Não foi possível carregar as inspeções" errorDescription={RETRY_HINT}>
+          <AsyncState
+            isLoading={!events && !eventsQuery.isError}
+            isError={eventsQuery.isError}
+            errorTitle="Não foi possível carregar as inspeções"
+            errorDescription={RETRY_HINT}
+            onRetry={retryEvents}
+          >
             {events ? <LossInspectionsList inspections={events.inspecoes} /> : null}
           </AsyncState>
         </TabsContent>

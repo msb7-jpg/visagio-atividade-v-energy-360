@@ -29,7 +29,11 @@ const indicators: QualityIndicators = {
   fec_medio_vezes: 9.25,
   total_alimentadores: 2,
   alimentadores_em_violacao: 1,
-  percentual_violacao: 50
+  percentual_violacao: 50,
+  alimentadores_em_alerta: 0,
+  percentual_alerta: 0,
+  alimentadores_conformes: 1,
+  percentual_conforme: 50
 }
 
 const violatingFeeder: FeederRanking = {
@@ -111,8 +115,11 @@ describe('GridQualityPage', () => {
 
     expect(await screen.findByText('18,5')).toBeInTheDocument()
     expect(screen.getByText('9,25')).toBeInTheDocument()
-    expect(screen.getByText('50%')).toBeInTheDocument()
-    expect(screen.getByText('1 de 2 circuitos.')).toBeInTheDocument()
+    // Cartões de situação: 1 violação (50%), 0 alertas (0%), 1 conforme (50%) de 2 circuitos.
+    expect(screen.getAllByText('50%')).toHaveLength(2)
+    expect(screen.getByText('0%')).toBeInTheDocument()
+    expect(screen.getAllByText('1 de 2 circuitos.')).toHaveLength(2)
+    expect(screen.getByText('0 de 2 circuitos.')).toBeInTheDocument()
     expect(screen.getAllByText(/Média do acumulado no ano até 03\/2000/)).toHaveLength(2)
     expect(screen.getAllByText(/comparado ao limite de referência/)).toHaveLength(2)
   })
@@ -169,6 +176,28 @@ describe('GridQualityPage', () => {
     expect(screen.getByRole('link', { name: 'Ver ficha' })).toHaveAttribute('href', '/customers?uc=UC-TESTE-01')
   })
 
+  it('pagina o ranking, abre a gaveta de qualquer página e volta à primeira ao trocar o filtro', async () => {
+    const manyFeeders = Array.from({ length: 20 }, (_, index) => ({
+      ...violatingFeeder,
+      id_alimentador: `ALIM-PAG-${String(index + 1).padStart(2, '0')}`
+    }))
+    mockedApi.listFeeders.mockResolvedValue(manyFeeders)
+    renderPage()
+
+    expect(await screen.findByText('Página 1 de 2 · 20 circuitos')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'ALIM-PAG-16' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
+    expect(await screen.findByText('Página 2 de 2 · 20 circuitos')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'ALIM-PAG-16' }))
+    expect(await screen.findByText('Alimentador ALIM-PAG-16')).toBeInTheDocument()
+    expect(mockedApi.getFeederHistory).toHaveBeenCalledWith('ALIM-PAG-16', expect.anything())
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+
+    fireEvent.change(screen.getByLabelText('Situação em relação ao limite de referência'), { target: { value: 'violacao' } })
+    expect(await screen.findByText('Página 1 de 2 · 20 circuitos')).toBeInTheDocument()
+  })
+
   it('explica quando nenhum alimentador atende ao filtro', async () => {
     mockedApi.listFeeders.mockResolvedValue([])
     renderPage()
@@ -183,5 +212,32 @@ describe('GridQualityPage', () => {
 
     expect(await screen.findByText('Não foi possível carregar os indicadores')).toBeInTheDocument()
     expect(await screen.findByText('Não foi possível carregar os alimentadores')).toBeInTheDocument()
+  })
+
+  it('refaz as chamadas ao clicar em "Tentar novamente" nos erros da visão atual', async () => {
+    mockedApi.getIndicators.mockRejectedValueOnce(new Error('falha'))
+    mockedApi.listFeeders.mockRejectedValueOnce(new Error('falha'))
+    renderPage()
+    await screen.findByText('Não foi possível carregar os alimentadores')
+
+    screen.getAllByRole('button', { name: 'Tentar novamente' }).forEach((button) => fireEvent.click(button))
+
+    expect(await screen.findByRole('row', { name: /ALIM-TESTE-01/ })).toBeInTheDocument()
+    expect(mockedApi.getIndicators).toHaveBeenCalledTimes(2)
+    expect(mockedApi.listFeeders).toHaveBeenCalledTimes(2)
+  })
+
+  it('refaz o histórico e os clientes da gaveta ao tentar novamente', async () => {
+    mockedApi.getFeederHistory.mockRejectedValueOnce(new Error('falha'))
+    mockedApi.getAffectedCustomers.mockRejectedValueOnce(new Error('falha'))
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'ALIM-TESTE-01' }))
+    await screen.findByText('Não foi possível carregar os clientes')
+
+    screen.getAllByRole('button', { name: 'Tentar novamente' }).forEach((button) => fireEvent.click(button))
+
+    expect(await screen.findByText('TITULAR TESTE')).toBeInTheDocument()
+    expect(mockedApi.getFeederHistory).toHaveBeenCalledTimes(2)
+    expect(mockedApi.getAffectedCustomers).toHaveBeenCalledTimes(2)
   })
 })

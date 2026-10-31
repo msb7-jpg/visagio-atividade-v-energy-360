@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Pagination } from '@/components/ui/pagination'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip } from '@/components/ui/tooltip-card'
 import { PrioritizedQueueRow } from '@/features/loss_management/components/PrioritizedQueueRow'
-import { QueuePagination } from '@/features/loss_management/components/QueuePagination'
 import type { useQueueSelection } from '@/features/loss_management/hooks/useQueueSelection'
 import type { SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
 import { formatInteger } from '@/features/loss_management/utils/lossFormatters'
@@ -112,7 +112,14 @@ export function PrioritizedQueueTable({
           ))}
         </TableBody>
       </Table>
-      {pageCount > 1 ? <QueuePagination page={page} pageCount={pageCount} onPageChange={setRequestedPage} /> : null}
+      {pageCount > 1 ? (
+        <Pagination
+          page={page + 1}
+          totalPages={pageCount}
+          onPageChange={(nextPage) => setRequestedPage(nextPage - 1)}
+          label="Paginação da fila"
+        />
+      ) : null}
     </div>
   )
 }

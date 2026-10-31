@@ -36,7 +36,6 @@ interface FeederRankingTableProps {
  * @returns Tabela em que o código do alimentador abre a série histórica.
  */
 export function FeederRankingTable({ feeders, onSelect }: FeederRankingTableProps) {
-  // shortcut: sem paginação, a base tem ~100 alimentadores; paginar se passar de algumas centenas.
   return (
     <Table>
       <TableColumns columns={COLUMNS} />
