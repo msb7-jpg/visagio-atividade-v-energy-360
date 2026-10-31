@@ -881,3 +881,10 @@
 - **Decisão:** é um protótipo, então os perfis ficam sempre visíveis. `VITE_DEMO_LOGIN=false` ainda desliga o bloco.
 - **Testes:** o teste "não mostra por padrão" virou "mostra por padrão", e foi somado um teste para `VITE_DEMO_LOGIN=false`.
 - **Validação de Testes:** `make lint-all` e `make test-all` 100% (73 arquivos, 654 testes).
+
+## 2026-10-31 — Atalho "Registrar achado" nas ordens de inspeção, #64 (Adrian César)
+
+- **Entrega:** a barra acima do quadro de ordens (`OrderFlowBar`) ganhou o botão "Registrar achado", ao lado de "Importar resultados de campo" (que virou secundário). Ele abre o `PickFieldOrderDialog` (novo), que lista as ordens em campo; ao escolher uma, abre o `RegisterResultDialog` que já existia. Sem ordem em campo, o diálogo explica que é preciso enviar uma ordem a campo. Visível só para quem pode editar perdas (o diretor não vê).
+- **Limite:** o servidor só conclui ordem em campo (`pendente` → `concluida`), então o caso "UC sem ordem aberta" da sugestão da CORRECOES não está coberto; exigiria endpoint novo.
+- **Testes:** `PickFieldOrderDialog.test.tsx` (novo, 2 casos) e uma checagem de que o diretor não vê o botão em `SuspiciousQueueTab.test.tsx`.
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (74 arquivos, 662 testes).
