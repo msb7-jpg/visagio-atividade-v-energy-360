@@ -65,7 +65,12 @@ class GroundedMockChatModel(SimpleChatModel):
                 '"datasets": [{"label": "Consumo kWh", "data": [12000, 13000]}]}'
             )
 
-        if "insights executivos de alto impacto" in all_text or "diagnóstico executivo em json" in all_text:
+        insight_triggers = (
+            "insights executivos de alto impacto",
+            "diagnóstico executivo em json",
+            "diagnóstico em json",
+        )
+        if any(trigger in all_text for trigger in insight_triggers):
             return (
                 "```json\n"
                 "{\n"
