@@ -5,6 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>V-Energy Grid 360 | Plataforma de Inteligência & Operações</title>
+    <script>
+      // Aplica o tema salvo antes da primeira pintura, para não piscar o tema errado. Padrão: escuro.
+      try {
+        var tema = localStorage.getItem('grid360.tema')
+        document.documentElement.classList.toggle('dark', tema !== 'claro' && tema !== 'light')
+      } catch (error) {
+        document.documentElement.classList.add('dark')
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

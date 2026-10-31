@@ -23,17 +23,19 @@ uv run pytest
 
 ## Banco já criado: atualizar a tabela `ordem_inspecao`
 
-O projeto não usa Alembic: o `create_all` cria tabelas que faltam, mas não altera as que já existem. A tabela
-`ordem_inspecao` ganhou as colunas anuláveis `data_inspecao`, `inspetor` e `motivo_cancelamento`. Quem já tem o
-`v_energy.db` aplica a mudança, sem apagar nem recriar nada, com:
+A tabela `ordem_inspecao` é a única escrita pela API (as tabelas Gold vêm do pipeline) e ganhou as colunas anuláveis
+`data_inspecao`, `inspetor` e `motivo_cancelamento`. Quem já tem o `v_energy.db` aplica a mudança, sem apagar nem
+recriar nada, com:
 
 ```bash
 make db-upgrade   # na raiz do repositório
 # ou, dentro de backend/:
-uv run python -m app.features.loss_management.schema_upgrade
+uv run alembic upgrade head
 ```
 
-O script é idempotente (só faz `ALTER TABLE ... ADD COLUMN` se a coluna ainda não existir), mantém as ordens
-existentes com as colunas novas nulas e também roda sozinho na subida da API.
+A migração do Alembic (`migrations/versions/0001_create_and_upgrade_ordem_inspecao.py`) chama o mesmo
+`schema_upgrade`: é idempotente (só faz `ALTER TABLE ... ADD COLUMN` se a coluna ainda não existir), mantém as ordens
+existentes e ignora as tabelas Gold. A subida da API também roda o `schema_upgrade`, então o comando só é necessário
+para atualizar o banco sem subir a API.
 
 Para a visão geral completa da arquitetura e do monorepo, consulte o [`README.md` raiz](../README.md) e o [`AGENTS.md`](../AGENTS.md).

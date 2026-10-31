@@ -14,6 +14,8 @@ from app.features.revenue.service import PeriodTotalsReader, RevenueService
 
 CASAS_PERCENTUAL = 1
 LOSSES_CACHE_KEY = "fila"
+CHANCE_MINIMA_PRIORITARIA = 0.3
+"""Mesmo corte da aba "Prioritárias" da Fila de Inspeção (`PRIORITY_MIN_HIT_PROBABILITY` em `queueBands.ts`)."""
 
 
 class DashboardReader(Protocol):
@@ -106,8 +108,11 @@ class ExecutiveDashboardService:
     async def get_losses_snapshot(self) -> LossesSnapshotDTO:
         """Retrato atual da Fila de Perdas, com o mesmo ranking e a mesma taxa de acerto da tela de perdas.
 
+        Energia e valor contam só as UCs prioritárias: a fila inteira inclui milhares de UCs com chance de acerto
+        baixa, que inflariam o valor recuperável (ADR-028).
+
         Returns:
-            UCs suspeitas, energia e valor recuperáveis e a taxa histórica de acerto das inspeções.
+            Tamanho da fila, UCs prioritárias com energia, valor e retorno esperado, e a taxa histórica de acerto.
 
         Raises:
             DatabaseReadError: Se as tabelas Gold de cadastro, medição ou inspeções não puderem ser lidas.
@@ -122,14 +127,19 @@ class ExecutiveDashboardService:
         ranked_units = rank_suspicious_units(
             candidates.profiles, limit=None, tariff_rs_kwh=tariff.rs_per_kwh, portfolio_ratio=candidates.portfolio_ratio
         )
+        priority_units = [unit for unit in ranked_units if unit.probabilidade_acerto >= CHANCE_MINIMA_PRIORITARIA]
         hit_rate = hit_rate_dto(await self.loss_repository.fetch_field_hit_rate())
         reference = candidates.reference_competencia or await self.repository.fetch_latest_measurement()
         snapshot = LossesSnapshotDTO(
             competencia_referencia=reference,
             competencia_fixada=candidates.reference_competencia is not None,
             ucs_na_fila=len(ranked_units),
-            energia_recuperavel_kwh_mes=round(sum(unit.kwh_mes_recuperavel for unit in ranked_units), 1),
-            valor_recuperavel_rs_ano=round(sum(unit.valor_ano_rs for unit in ranked_units), 2),
+            ucs_prioritarias=len(priority_units),
+            energia_prioritaria_kwh_mes=round(sum(unit.kwh_mes_recuperavel for unit in priority_units), 1),
+            valor_prioritario_rs_ano=round(sum(unit.valor_ano_rs for unit in priority_units), 2),
+            retorno_esperado_rs_ano=round(
+                sum(unit.valor_ano_rs * unit.probabilidade_acerto for unit in priority_units), 2
+            ),
             taxa_acerto_pct=round(hit_rate.taxa * 100, CASAS_PERCENTUAL),
             inspecoes_avaliadas=hit_rate.inspecoes_total,
         )

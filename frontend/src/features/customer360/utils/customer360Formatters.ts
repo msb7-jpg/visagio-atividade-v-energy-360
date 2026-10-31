@@ -1,3 +1,4 @@
+import type { StatusOf } from '@/components/ui/status-badge'
 import type { ConsumptionTrend } from '@/features/customer360/types/customer360Types'
 
 const MONTH_ABBREVIATIONS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
@@ -25,10 +26,11 @@ export const TREND_LABELS: Record<ConsumptionTrend, string> = {
   SEM_COMPARACAO: 'Sem comparação com o ano anterior'
 }
 
-export const PAYMENT_STATUS: Record<string, { label: string, variant: BadgeVariant }> = {
-  PAGA: { label: 'Paga', variant: 'secondary' },
-  ABERTA: { label: 'Aberta', variant: 'outline' },
-  VENCIDA: { label: 'Vencida', variant: 'destructive' }
+/** Situação da fatura na API (`status_pagamento`) para o vocabulário do selo padrão do design. */
+export const INVOICE_STATUS: Record<string, StatusOf<'fatura'>> = {
+  PAGA: 'paga',
+  ABERTA: 'em_aberto',
+  VENCIDA: 'vencida'
 }
 
 /**

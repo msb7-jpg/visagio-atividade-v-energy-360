@@ -42,6 +42,11 @@ frontend/node_modules/
 *.pdf
 data/landing/*
 !data/landing/.gitkeep
+data/lakehouse/
+data/gold_exports/
+spark-warehouse/
+metastore_db/
+derby.log
 
 # IDE & OS
 .vscode/

@@ -36,6 +36,7 @@ export function ContinuityView() {
         isLoading={snapshot.isLoading}
         isError={snapshot.isError}
         errorTitle="Não foi possível carregar a Continuidade"
+        onRetry={() => void snapshot.refetch()}
       >
         {snapshot.data ? (
           <div className="flex flex-col gap-6">

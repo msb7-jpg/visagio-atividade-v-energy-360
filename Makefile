@@ -2,7 +2,7 @@
 # V-Energy Grid 360 -- Monorepo Management Makefile
 # ==============================================================================
 
-.PHONY: help setup-all data-unzip db-upgrade run-backend run-frontend run-llm run-all test-all lint-all lint-backend lint-frontend
+.PHONY: help setup-all data-unzip pipeline-local db-upgrade run-backend run-frontend run-llm run-all test-all lint-all lint-backend lint-frontend
 
 help:
 	@echo "======================================================================"
@@ -10,7 +10,8 @@ help:
 	@echo "======================================================================"
 	@echo "  make setup-all      - Configura ambientes (uv no backend, bun no frontend)"
 	@echo "  make data-unzip     - Extrai as bases de dados para data/landing/"
-	@echo "  make db-upgrade     - Adiciona ao banco existente as colunas novas de ordem_inspecao (idempotente)"
+	@echo "  make pipeline-local - Executa os 10 notebooks localmente e gera data/gold_exports/v_energy.db (Linux/macOS/WSL)"
+	@echo "  make db-upgrade     - Aplica migrações operacionais via Alembic (ordem_inspecao)"
 	@echo "  make run-backend    - Inicia API FastAPI com Agente de IA integrado (:8000)"
 	@echo "  make run-frontend   - Inicia Portal Web React 19 com Vite (:5173)"
 	@echo "  make run-llm        - Inicia servidor llama-server local com modelo Qwen3.5-4B (:1234)"
@@ -31,8 +32,11 @@ setup-all:
 data-unzip:
 	@bash scripts/data_sync.sh
 
+pipeline-local:
+	@bash scripts/run_pipeline_local.sh
+
 db-upgrade:
-	@cd backend && uv run python -m app.features.loss_management.schema_upgrade
+	@cd backend && uv run alembic upgrade head
 
 run-backend:
 	@cd backend && uv run uvicorn app.main:app --reload --port 8000

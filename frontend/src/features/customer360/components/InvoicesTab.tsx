@@ -1,6 +1,7 @@
 import { CalendarCheck, FileSearch, Wallet } from 'lucide-react'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { Table, TableBody, TableCell, TableColumns, TableRow } from '@/components/ui/table'
 import type { CustomerHistory, Invoice, PaymentPunctuality } from '@/features/customer360/types/customer360Types'
 import {
@@ -10,14 +11,16 @@ import {
   formatFlag,
   formatKwh,
   formatMoney,
-  PAYMENT_STATUS
+  INVOICE_STATUS
 } from '@/features/customer360/utils/customer360Formatters'
 
 const COLUMNS = ['Competência', 'Situação', 'Valor', 'Vencimento', 'Consumo', 'Bandeira'] as const
 
 function PaymentStatusBadge({ status }: { status: string | null }) {
-  const statusStyle = status ? PAYMENT_STATUS[status] : undefined
-  return <Badge variant={statusStyle?.variant ?? 'outline'}>{statusStyle?.label ?? status ?? '—'}</Badge>
+  const invoiceStatus = status ? INVOICE_STATUS[status] : undefined
+  return invoiceStatus
+    ? <StatusBadge kind="fatura" status={invoiceStatus} />
+    : <Badge variant="outline">{status ?? '—'}</Badge>
 }
 
 function OpenInvoicesSummary({ openInvoices, openAmount }: { openInvoices: Invoice[], openAmount: number }) {

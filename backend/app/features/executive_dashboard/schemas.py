@@ -90,8 +90,12 @@ class LossesSnapshotDTO(BaseModel):
     competencia_fixada: bool = Field(
         default=False, description="A competência foi fixada na configuração (demonstração), e não é a mais recente"
     )
-    ucs_na_fila: int = Field(description="UCs suspeitas na fila de inspeção")
-    energia_recuperavel_kwh_mes: float
-    valor_recuperavel_rs_ano: float
+    ucs_na_fila: int = Field(description="UCs suspeitas na fila de inspeção, de qualquer chance de acerto")
+    ucs_prioritarias: int = Field(description="UCs da fila com chance de acerto na faixa prioritária")
+    energia_prioritaria_kwh_mes: float = Field(description="Energia recuperável das UCs prioritárias, em kWh/mês")
+    valor_prioritario_rs_ano: float = Field(description="Valor por ano se todas as UCs prioritárias confirmarem")
+    retorno_esperado_rs_ano: float = Field(
+        description="Valor por ano das UCs prioritárias ponderado pela chance de acerto de cada uma"
+    )
     taxa_acerto_pct: float = Field(description="Inspeções que confirmaram irregularidade, em %")
     inspecoes_avaliadas: int | None = Field(default=None, description="Inspeções usadas na taxa; vazia sem histórico")

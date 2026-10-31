@@ -139,6 +139,11 @@ def test_resumo_usa_media_simples_e_conta_so_violacao():
     assert indicators.total_alimentadores == 4
     assert indicators.alimentadores_em_violacao == 1
     assert indicators.percentual_violacao == pytest.approx(25.0)
+    # 01: 120/100 = 120% (violação); 03: 90/100 = 90% (alerta); 02: 80% e 04: FEC 40/50 = 80% (conformes).
+    assert indicators.alimentadores_em_alerta == 1
+    assert indicators.percentual_alerta == pytest.approx(25.0)
+    assert indicators.alimentadores_conformes == 2
+    assert indicators.percentual_conforme == pytest.approx(50.0)
 
 
 async def test_indicadores_sem_competencia_usam_a_mais_recente():

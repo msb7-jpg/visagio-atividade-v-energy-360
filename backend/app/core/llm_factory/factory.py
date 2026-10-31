@@ -4,6 +4,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 from app.core.config import get_settings
 from app.core.constants import LLMProvider
+from app.core.llm_factory.availability import AIProviderNotConfiguredError, resolve_configured_provider
 from app.core.llm_factory.providers import (
     GoogleGenAIProviderStrategy,
     GroqProviderStrategy,
@@ -44,13 +45,16 @@ def get_chat_model(
     Se provider não for informado:
     - Se settings.ai_provider estiver configurado, utiliza o provedor configurado.
     - Se GEMINI_API_KEY estiver configurado, usa 'google'.
-    - Caso contrário, usa fallback para 'mock'.
+    - Caso contrário, não há IA: levanta AIProviderNotConfiguredError em vez de cair no modo simulado.
+
+    Raises:
+        AIProviderNotConfiguredError: Se nenhum provedor de IA estiver configurado.
     """
     settings = get_settings()
 
-    resolved_provider = provider or settings.ai_provider
-    if not resolved_provider:
-        resolved_provider = LLMProvider.GOOGLE.value if settings.gemini_api_key else LLMProvider.MOCK.value
+    resolved_provider = resolve_configured_provider(provider)
+    if resolved_provider is None:
+        raise AIProviderNotConfiguredError
 
     resolved_base_url = base_url or settings.ai_base_url
 

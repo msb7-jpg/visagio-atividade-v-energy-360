@@ -6,6 +6,23 @@
 
 ## Registros de Execução
 
+### [2026-10-30] - Execução Local dos Notebooks do Lakehouse via Feature Flags (`IS_DATABRICKS`), Script Único e Alembic
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Feature Flag Dual-Runtime nos 10 Notebooks (`data-engineering/notebooks/*.ipynb`):**
+    - Adicionada detecção automática `IS_DATABRICKS = "DATABRICKS_RUNTIME_VERSION" in os.environ` na célula de inicialização de todos os 10 notebooks das Fatias 01 e 02 (`fatia01_bronze`, `fatia01_silver`, `fatia01_gold`, `fatia01_export_sqlite`, `fatia01_testes_qualidade`, `fatia02_bronze`, `fatia02_silver`, `fatia02_gold`, `fatia02_testes_qualidade`, `fatia02_export_sqlite`).
+    - No Databricks Serverless, o comportamento permanece 100% inalterado e sem dependências externas.
+    - Fora do Databricks (Jupyter Kernel local no VS Code ou CLI), carrega `data-engineering/notebooks/local_runtime.py`.
+  - **Runtime Local com PySpark + Delta Lake (`data-engineering/notebooks/local_runtime.py`):**
+    - Configura `SparkSession` local com `delta-spark`, catálogo Delta e alias nativo Catalyst para `try_to_date` → `to_date`.
+    - Registra automaticamente tabelas Delta existentes em `data/lakehouse/{bronze,silver,gold}.db/` a cada início de sessão, eliminando conflitos de lock de metastore Derby quando múltiplos notebooks estão abertos.
+    - Fornece shim local para `dbutils.fs` (`ls`, `cp`, `rm`) e sincroniza `aneel_limites_continuidade.csv` para `data/landing/`.
+  - **Integração Formal do Alembic (`backend/alembic.ini` & `backend/migrations/`):**
+    - Configurado Alembic em `backend/migrations/env.py` com filtro `include_object` que gerencia exclusivamente as tabelas operacionais do ORM (`ordem_inspecao`) e ignora as tabelas analíticas do Lakehouse.
+    - Criada a migração `0001_create_and_upgrade_ordem_inspecao.py` (idempotente) e adicionados testes automatizados em `backend/tests/test_loss_schema_upgrade.py`.
+  - **Orquestrador Local em Comando Único (`scripts/run_pipeline_local.sh` & `make pipeline-local`):**
+    - Criado script `.sh` que executa todos os 10 notebooks na ordem exata do DAG (`data-engineering/job.yaml`) via `nbclient` (Jupyter Kernel `python3`), publica o `backend/v_energy.db` atualizado (773 MB, 0 bairros corrompidos por mojibake, 33/33 testes críticos Fatia 01 e 26/26 testes Fatia 02 aprovados) e aplica `alembic upgrade head` ao final.
+
 ### [2026-10-29] - Fechamento de Robustez GenAI: Execution Accuracy, Suíte de Recusa, Fidelidade Numérica e Benchmark Local
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

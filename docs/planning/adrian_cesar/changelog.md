@@ -829,6 +829,52 @@
 - **Ajustes:** o item resolvido da `CORRECOES.md` e a linha do checklist deixaram de citar o roteiro. O README continua com o passo a passo de `LOSS_REFERENCE_COMPETENCIA="2025-09"` e a tabela de suposições.
 - **Validação de Testes:** só documentação; `make lint-all` e `make test-all` não se aplicam.
 
+### [2026-10-30] - Tela de login nova (protótipo) ligada ao login real
+- **Autor:** Adrian César
+- **O que foi feito:** `LoginPage` recomposta com os 4 estados da referência (formulário, aguardando, logado, sem perfil) e as 11 animações de `docs/planning/adrian_cesar/assets/login/login-animacoes.md`, só em CSS (`opacity` e `transform`), com `prefers-reduced-motion` (nenhuma classe de movimento é aplicada e o spinner vira um relógio estático). Código em `frontend/src/features/auth/` (controller `useLoginController`, painéis `Login*Panel`, `lib/loginProfile|loginValidation|loginConfig`); keyframes em `frontend/src/index.css`.
+- **Contrato real do backend, sem rota nova:** `POST /auth/login` com `{ email, senha }` devolve `{ access_token, user: { id, email, nome, role } }`. Os nomes, e-mails e cargos são os de `default_users` (`@venergy.com`); o perfil mostrado vem do `role`. Os 3 passos da espera acompanham o estado da chamada (passo 1 = resposta da API; 2 e 3 = leitura do cargo e abertura do acesso, com mínimo de 400 ms cada para não piscar).
+- **Decisões de protótipo:** o botão SSO usa o mesmo login por senha (não existe SSO nem MFA no backend), por isso o selo é "Sessão iniciada" e não "MFA verificado", e não há "grupo" de diretório. "Sem perfil" ocorre quando o `role` não libera nenhuma tela (`homeRouteFor`). O bloco "Acesso de demonstração" só aparece com `VITE_DEMO_LOGIN=true` e entra com as 5 contas de exemplo existentes. Os cartões de estatística e o "Dados de 07/2022 a 06/2026" do protótipo ficaram de fora: os números não estão em nenhuma fonte do repositório.
+- **Pendências:** SSO, MFA e grupo de diretório reais exigem backend. Login cancelado durante a espera, mas concluído depois pela API, encerra a sessão (recarrega `/login`).
+- **Validação de Testes:** `make lint-all` OK (Ruff, Pylint 10/10, import-linter 4 contratos, ESLint e Fallow); `make test-all` OK (pytest 708, vitest 570, 32 deles da tela de login). Os 6 estados foram capturados no navegador e comparados com `assets/login/telas/`.
+
+### [2026-10-30] - Menu do usuário do AppShell (avatar, tema e Sair)
+- **Autor:** Adrian César
+- **O que foi feito:** o bloco de usuário e o botão "Sair" soltos do cabeçalho viraram o `UserMenu` (`frontend/src/components/layout/`), um `DropdownMenu` do shadcn/Radix (`components/ui/dropdown-menu.tsx`, escrito à mão no padrão shadcn porque o projeto não tem `components.json` para o CLI). Itens: cabeçalho (nome; "cargo · perfil"), alternar tema e Sair. Fecha com `Esc` (foco volta ao botão) e ao clicar fora; altura e largura limitadas à tela, com rolagem interna; itens e botão com 44 px.
+- **Tema:** `frontend/src/lib/theme.ts` guarda a escolha em `grid360.tema` (padrão escuro, sem "Sistema"); um script inline em `frontend/index.html` aplica a classe `dark` antes da primeira pintura. Movimento só em CSS (`index.css`), conforme a tabela da especificação, sem movimento com `prefers-reduced-motion`.
+- **Decisões:** o cargo vem do texto entre parênteses do `nome` (o token não tem campo de cargo nem de grupo). A linha "Grupo ..." ficou de fora porque o dado não existe. Por decisão do dono da fatia, a troca de perfil de demonstração, o aviso e a etiqueta "Modo demonstração" **não entram no menu**: a troca de perfil continua só no login (`VITE_DEMO_LOGIN`, 5 contas). Foi somada a variante `touch` (`h-11`) ao `Button`, sem alterar as existentes.
+- **Pendências:** campo de grupo do diretório (`GG-PORTAL-...`) e cargo como campo próprio exigem mudança no backend (`UserDTO` e JWT).
+- **Validação de Testes:** `make lint-all` OK; `make test-all` OK (pytest 708, vitest 582, incluindo os do menu e do tema).
+
+### [2026-10-30] - Modo claro em todo o portal (tokens, provedor, componentes base e contraste)
+- **Autor:** Adrian César
+- **Achado da fase 1:** os tokens shadcn já estavam separados (`:root` claro, `.dark` escuro) e não havia cor hexadecimal, classe Tailwind de cor fixa nem `style={{ color }}` fora de `index.css`. O que quebrava o claro era só o `.glass-panel` (fundo, borda e sombra escuros fixos), usado por todo `Card` e pelo `IndicatorsTable`, e 4 bordas `border-white/*` (`card.tsx`, `AppLayout.tsx`). Os gráficos (Recharts) já liam `--color-chart-*`, `--color-border` e `--color-muted-foreground`.
+- **O que foi feito:**
+  - **Provedor** (`lib/theme.ts`, `useTheme`): valores gravados em `grid360.tema` passam a ser `claro`/`escuro` (o antigo `light` ainda é lido como claro); `localStorage` indisponível cai no escuro; script do `<head>` aceita os dois formatos; `Toaster` e o bloco SQL do chat (Shiki `vitesse-light`/`vitesse-dark`) seguem o tema.
+  - **Componentes base:** `.glass-panel` e `.glass-panel-interactive` viraram card sólido com `--border` e sombra suave no claro, e o vidro do escuro foi preservado em `.dark` (mesmos valores, agora derivados de `--card` e `--primary` por `color-mix`; conferido no navegador: fundo, borda, sombra e blur idênticos). `--shadow-xl`/`--shadow-2xl` ficam suaves só no claro. `border-white/10|15` viraram `border-foreground/10` e `border-border`.
+  - **`transition-all`** (9 usos) trocado por `transition` (propriedades explícitas) e o `glass-panel-interactive` por 4 propriedades, sem movimento com `prefers-reduced-motion`.
+  - **Testes:** `src/test/no-hardcoded-colors.test.ts` (varre `.ts`/`.tsx` à procura de hexadecimal, `rgb()/hsl()` e classe Tailwind de cor fixa; sem exceções), `src/test/color-contrast.test.ts` (62 pares) e o do script do `<head>` (recarregar no claro não deixa `dark`).
+- **Decisões:** `--warning` do claro continua `#7F5200` (já coberto por teste de contraste). Única diferença no escuro: as bordas do menu lateral e do cabeçalho passam de `white/10` para `foreground/10` (`#E7EDF4` a 10%), imperceptível.
+- **Contraste medido (razão; mínimo 4,5 texto, 3 não texto). Nenhum par falhou, nenhum token foi trocado.**
+
+| Par | Claro | Escuro |
+|---|---|---|
+| texto sobre card | 17,28 | 14,68 |
+| texto suave sobre card | 7,02 | 8,39 |
+| primário sobre fundo | 6,79 | 8,36 |
+| texto sobre botão primário | 7,43 | 8,41 |
+| selo primary (tingido 16%) | 5,77 | 5,72 |
+| selo success | 5,14 | 6,25 |
+| selo warning | 5,31 | 6,99 |
+| selo destructive | **4,63** | 5,34 |
+| borda de campo sobre card | 3,47 | 3,56 |
+| borda de campo sobre fundo | **3,17** | 3,87 |
+| anel de foco sobre card | 7,43 | 7,70 |
+| chart-5 sobre card (pior série) | 4,13 | 9,24 |
+
+- **Conferência no navegador:** Painel, Inteligência Comercial, Fila de Inspeção, Qualidade da Rede, Visão 360 da UC e Assistente IA capturados no claro e conferidos no escuro. "Estados", "Componentes", "Tokens" e "Sobre os dados" das imagens de referência são páginas do protótipo que não existem no app.
+- **Pendências:** `public/favicon.svg` e `icons.svg` são do template Vite (cores fixas, fora de uso como marca).
+- **Validação de Testes:** `make lint-all` e `make test-all` rodados ao final (ver commit).
+
 ### [2026-10-30] - Fila de Inspeção passa a usar o `Pagination` compartilhado
 - **Autor:** Adrian César
 - **O que foi feito:** o `PrioritizedQueueTable` usa `components/ui/pagination.tsx` (criado no #34) no lugar do `QueuePagination`, que foi removido. A página da fila é de base 0 e o `Pagination` é de base 1, então a conversão (`page + 1` e `nextPage - 1`) fica no ponto de uso. O nome acessível "Paginação da fila" foi mantido com `label`.
