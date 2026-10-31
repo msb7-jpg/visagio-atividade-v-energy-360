@@ -1,6 +1,8 @@
 """Runtime local para execução dos notebooks do Lakehouse em um Jupyter Kernel local.
 
 Este módulo só é importado quando `IS_DATABRICKS == False` (fora do Databricks).
+O banco local sai em `data/gold_exports/v_energy.db`, e não no `backend/`: o banco do portal só é trocado
+depois de conferido contra o banco oficial gerado no Databricks.
 Fornece:
 - `SparkSession` configurada com Delta Lake local (`data/lakehouse/`).
 - Descoberta automática de tabelas Delta entre sessões/kernels (sem lock de Derby).
@@ -23,7 +25,7 @@ LANDING_DIR = REPO_ROOT / "data" / "landing"
 REFERENCE_DIR = REPO_ROOT / "data-engineering" / "reference"
 LAKEHOUSE_DIR = REPO_ROOT / "data" / "lakehouse"
 EXPORTS_DIR = REPO_ROOT / "data" / "gold_exports"
-VOLUME_DB_PATH = REPO_ROOT / "backend" / "v_energy.db"
+VOLUME_DB_PATH = EXPORTS_DIR / "v_energy.db"
 
 SCHEMAS = ("bronze", "silver", "gold")
 
@@ -35,7 +37,7 @@ class FileInfo:
     path: str
     name: str
     size: int
-    modificationTime: int  # ruff: ignore[N815]
+    modificationTime: int  # ruff: ignore[mixed-case-variable-in-class-scope]
 
 
 class LocalDbutilsFs:
@@ -105,15 +107,15 @@ def local_display(obj: Any) -> None:
 
             ipython_display(obj.limit(50).toPandas())
             return
-        except Exception:
+        except ImportError:
             obj.show(20, truncate=False)
             return
     try:
         from IPython.display import display as ipython_display
 
         ipython_display(obj)
-    except Exception:
-        print(obj)  # ruff: ignore[T201]
+    except ImportError:
+        print(obj)  # ruff: ignore[print]
 
 
 def _sync_reference_files() -> None:
@@ -128,8 +130,8 @@ def _sync_reference_files() -> None:
 
 def _register_databricks_sql_aliases(spark: SparkSession) -> None:
     """Registra aliases de funções SQL nativas do Databricks (ex: try_to_date) no Catalyst."""
-    registry = spark._jsparkSession.sessionState().functionRegistry()  # ruff: ignore[SLF001]
-    jvm = spark._jvm  # ruff: ignore[SLF001]
+    registry = spark._jsparkSession.sessionState().functionRegistry()  # ruff: ignore[private-member-access]
+    jvm = spark._jvm  # ruff: ignore[private-member-access]
     to_date_id = jvm.org.apache.spark.sql.catalyst.FunctionIdentifier("to_date")
     info = registry.lookupFunction(to_date_id).get()
     builder = registry.lookupFunctionBuilder(to_date_id).get()

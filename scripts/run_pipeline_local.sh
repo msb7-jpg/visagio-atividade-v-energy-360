@@ -2,8 +2,10 @@
 # ==============================================================================
 # V-Energy Grid 360 -- Executor Local do Pipeline Lakehouse + Alembic
 # Executa os 10 notebooks (.ipynb) localmente via Jupyter Kernel (PySpark + Delta)
-# na ordem do DAG (data-engineering/job.yaml), gera backend/v_energy.db e aplica
-# as migrações operacionais via Alembic.
+# na ordem do DAG (data-engineering/job.yaml), gera data/gold_exports/v_energy.db e
+# aplica as migrações operacionais via Alembic. O backend/v_energy.db do portal não é
+# tocado: ele só é trocado depois de conferido contra o banco oficial do Databricks.
+# Requisitos: Linux, macOS ou WSL, Java 17 e `uv sync --extra pipeline` no backend/.
 # ==============================================================================
 
 set -euo pipefail
@@ -14,7 +16,7 @@ LANDING_DIR="$ROOT_DIR/data/landing"
 REF_DIR="$ROOT_DIR/data-engineering/reference"
 NOTEBOOKS_DIR="$ROOT_DIR/data-engineering/notebooks"
 BACKEND_DIR="$ROOT_DIR/backend"
-DB_PATH="$BACKEND_DIR/v_energy.db"
+DB_PATH="$ROOT_DIR/data/gold_exports/v_energy.db"
 
 C_RESET="\033[0m"
 C_BOLD="\033[1m"
@@ -80,6 +82,10 @@ for idx, nb_name in enumerate(DAG_NOTEBOOKS, start=1):
     with open(nb_path, encoding="utf-8") as f:
         nb = nbformat.read(f, as_version=4)
 
+    for cell in nb.cells:
+        if cell.cell_type == "code" and cell.source.lstrip().startswith("%pip"):
+            cell.source = ""
+
     def _print_cell_output(cell, cell_index, execute_reply):
         for out in cell.get("outputs", []):
             text = out.get("text") or out.get("data", {}).get("text/plain")
@@ -106,10 +112,10 @@ PYEOF
 # 3. Aplica migrações operacionais via Alembic sobre o v_energy.db gerado
 echo -e "\n${C_CYAN}==> [Passo 3/4] Aplicando migrações operacionais com Alembic (ordem_inspecao)...${C_RESET}"
 cd "$BACKEND_DIR"
-uv run alembic upgrade head
+DATABASE_URL="sqlite+aiosqlite:///$DB_PATH" uv run alembic upgrade head
 
 # 4. Resumo de verificação do banco final
-echo -e "\n${C_CYAN}==> [Passo 4/4] Verificando integridade e contagens de backend/v_energy.db...${C_RESET}"
+echo -e "\n${C_CYAN}==> [Passo 4/4] Verificando integridade e contagens de data/gold_exports/v_energy.db...${C_RESET}"
 uv run python - "$DB_PATH" << 'PYEOF'
 import sqlite3
 import sys
@@ -120,6 +126,11 @@ size_mb = db_path.stat().st_size / (1024 * 1024)
 print(f"  Arquivo: {db_path} ({size_mb:.1f} MB)")
 
 with sqlite3.connect(db_path) as conn:
+    print(f"  Integridade: {conn.execute('PRAGMA integrity_check').fetchone()[0]}")
+    broken = conn.execute(
+        "SELECT count(DISTINCT bairro) FROM dim_unidade_consumidora WHERE bairro GLOB '*[^ -~]*'"
+    ).fetchone()[0]
+    print(f"  Bairros com caractere quebrado: {broken}")
     tables = [
         row[0]
         for row in conn.execute(
@@ -131,4 +142,6 @@ with sqlite3.connect(db_path) as conn:
         print(f"  - {tbl:<30} {count:>10,} linhas")
 PYEOF
 
-echo -e "\n${C_BOLD}${C_GREEN}✅ Pipeline local + Alembic finalizado! O banco backend/v_energy.db está 100% atualizado.${C_RESET}\n"
+echo -e "\n${C_BOLD}${C_GREEN}✅ Pipeline local + Alembic finalizado: banco gerado em data/gold_exports/v_energy.db.${C_RESET}"
+echo -e "${C_YELLOW}O backend/v_energy.db do portal não foi alterado. Confira as contagens acima contra o banco oficial e, só então, publique:${C_RESET}"
+echo -e "  cp data/gold_exports/v_energy.db backend/v_energy.db && rm -f backend/v_energy.db-wal backend/v_energy.db-shm\n"

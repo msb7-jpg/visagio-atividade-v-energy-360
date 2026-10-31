@@ -10,7 +10,7 @@ help:
 	@echo "======================================================================"
 	@echo "  make setup-all      - Configura ambientes (uv no backend, bun no frontend)"
 	@echo "  make data-unzip     - Extrai as bases de dados para data/landing/"
-	@echo "  make pipeline-local - Executa os 10 notebooks localmente e atualiza backend/v_energy.db + Alembic"
+	@echo "  make pipeline-local - Executa os 10 notebooks localmente e gera data/gold_exports/v_energy.db (Linux/macOS/WSL)"
 	@echo "  make db-upgrade     - Aplica migrações operacionais via Alembic (ordem_inspecao)"
 	@echo "  make run-backend    - Inicia API FastAPI com Agente de IA integrado (:8000)"
 	@echo "  make run-frontend   - Inicia Portal Web React 19 com Vite (:5173)"
