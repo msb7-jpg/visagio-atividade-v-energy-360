@@ -49,6 +49,20 @@ powershell -ExecutionPolicy Bypass -File scripts\dev.ps1 dev -Database backend\v
 
 Demais comandos: `backend`, `frontend`, `lint`, `test` e `check` (lint, testes, TypeScript e build). `scripts\dev.ps1 help` lista todos.
 
+### Inteligência Artificial (`backend/.env`)
+
+O agente Text-to-SQL (LangGraph) fica em [`backend/app/agent/`](backend/app/agent/), dentro da API, e não numa pasta `ai-agent/` separada: ele usa a mesma autenticação, o mesmo banco somente leitura e o mesmo deploy do backend. O chat aparece no canto da tela em todas as páginas, e o insight automático fica no Painel do Diretor.
+
+Copie [`backend/.env.example`](backend/.env.example) para `backend/.env` e escolha um provedor:
+
+| Provedor | O que preencher |
+|---|---|
+| Google Gemini | `GEMINI_API_KEY="..."` e `AI_MODEL_NAME` (o case recomenda o Gemini 3.1 Flash-Lite; o `.env.example` vem com `gemini-2.5-flash-lite`) |
+| OpenRouter | `AI_PROVIDER="openrouter"`, `OPENROUTER_API_KEY="..."` e o modelo |
+| Modelo local (llama.cpp, `make run-llm`) | `AI_PROVIDER="local"` e `AI_BASE_URL="http://localhost:1234/v1"` |
+
+**Sem nenhum provedor configurado, a IA fica indisponível e avisa:** o chat responde "Assistente de IA indisponível" com o passo a passo acima, e o insight do Painel não aparece. Nada é inventado. Para uma demonstração sem internet, `AI_PROVIDER="mock"` liga respostas fixas, sempre marcadas como "Modo demonstração".
+
 ---
 
 ## 🧱 Pipeline de Dados (Databricks)
@@ -94,6 +108,8 @@ databricks fs cp dbfs:/Volumes/visagio_atividade_v_energy_360/gold/exports/v_ene
 ```
 
 As tabelas Gold também ficam em CSV (um arquivo por tabela) em `/Volumes/visagio_atividade_v_energy_360/gold/exports/`.
+
+Ao trocar o `backend/v_energy.db`, apague também o `v_energy.db-wal` e o `v_energy.db-shm` da mesma pasta e reinicie a API. O banco fica em modo WAL: um `-wal` do banco antigo faz o SQLite acusar "database disk image is malformed", e o Painel guarda os indicadores em cache.
 
 ### Estratégia de agendamento
 

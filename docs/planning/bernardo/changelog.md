@@ -240,3 +240,17 @@
 - **Validação de Testes:**
   - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest aprovados.
   - Frontend: ESLint, Fallow (sem duplicação), Vitest e build aprovados.
+
+### [2026-10-30] - Banco com bairros corrigidos, avaliação do CHECKLIST.md e chat sem IA que não inventa
+- **Autor:** Bernardo H
+- **Branch:** `docs/avaliacao-checklist-banco-corrigido` (a partir da `main` em `c3cc124`)
+- **O que foi feito:**
+  - Banco de 30/10 conferido: 0 bairros com caractere quebrado, 297 pares município + bairro (Recife com 86 bairros), integridade `ok` e os demais números idênticos ao banco de 29/10. Painel com 22 de 22 valores iguais a SQL independente; varredura do portal sem achados.
+  - Achado: um `v_energy.db-wal` do banco antigo, que sobrou na pasta `backend/`, fazia o banco novo parecer corrompido. Registrado no README (download do banco) e no `CORRECOES.md`.
+  - `CHECKLIST.md` avaliado item por item, com a prova anotada em cada `[x]` (64 marcados, 40 abertos).
+  - `CORRECOES.md`: correção de bairros movida para "Já resolvido"; registrados a consulta das 887 UCs (894 no banco novo), os números do diagnóstico que mudam com os bairros unificados, o chat que inventa resposta sem chave de IA, as lacunas do README e duas decisões de dados em aberto.
+  - Correção na fatia de IA (a pedido, com aviso ao Miguel): sem provedor de IA configurado, o chat inventava uma resposta (tabela fixa "Operacional, 25000" e texto de "conformidade" para qualquer pergunta, até para CPF). Agora a regra única `resolve_configured_provider` (`app/core/llm_factory/availability.py`) decide se há IA; sem provedor, o chat envia só o aviso "Assistente de IA indisponível" (evento `error`, código `AI_UNAVAILABLE`), a fábrica de modelos não cai mais em silêncio no modo simulado, e o modo simulado só liga com `AI_PROVIDER="mock"`, marcado como "Modo demonstração". README ganhou a seção "Inteligência Artificial" e o `.env.example` foi corrigido.
+- **Validação de Testes:**
+  - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (720, com `test_ai_availability.py`, depois de trazer a `main` com os PRs #54 e #57) aprovados.
+  - Frontend: ESLint, Fallow (sem duplicação), Vitest (545) e build aprovados.
+  - Ponta a ponta com o banco de 30/10 e sem `.env`: as perguntas do case e a de CPF recebem só o aviso de IA indisponível; `/ai/insights` responde 503.

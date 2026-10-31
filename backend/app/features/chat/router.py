@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
 from app.agent.graph import create_agent_graph
 from app.core.config import get_settings
+from app.core.constants import StreamErrorCode
+from app.core.llm_factory.availability import AI_UNAVAILABLE_MESSAGE, resolve_configured_provider
 from app.features.chat.event_dispatcher import SSEEventDispatcher
 from app.features.chat.insights_service import generate_proactive_insights_service
 from app.features.chat.schemas import (
@@ -42,17 +44,30 @@ async def chat_stream(
     """
     Processa a pergunta do usuário através da máquina de estados do LangGraph
     e transmite os eventos via SSE: session -> step_end -> thought -> sql -> data -> answer -> done.
+
+    Sem provedor de IA configurado, emite só `session` e um `error` com `AI_UNAVAILABLE`: o agente não roda
+    e nada é inventado.
     """
     del db
     raw_thread_id = request.thread_id or str(uuid.uuid4())
     session_thread_id = f"{current_user.id}:{raw_thread_id}"
+    provider = resolve_configured_provider(request.provider)
 
     async def event_generator() -> AsyncIterator[dict[str, str]]:
         yield SSEEventDispatcher.emit_session(
             thread_id=raw_thread_id,
-            provider=request.provider,
+            provider=provider,
             model=request.model,
         )
+        if provider is None:
+            yield SSEEventDispatcher.emit_error(
+                StreamErrorPayload(
+                    error="AI provider not configured",
+                    error_code=StreamErrorCode.AI_UNAVAILABLE.value,
+                    message=AI_UNAVAILABLE_MESSAGE,
+                )
+            )
+            return
 
         inputs = {
             "messages": [HumanMessage(content=request.pergunta.strip())],
@@ -69,7 +84,7 @@ async def chat_stream(
 
         runnable_config: RunnableConfig = {
             "configurable": {
-                "provider": request.provider,
+                "provider": provider,
                 "model": request.model,
                 "base_url": settings.ai_base_url,
                 "thread_id": session_thread_id,
