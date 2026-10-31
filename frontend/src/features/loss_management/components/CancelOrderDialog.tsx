@@ -18,7 +18,11 @@ import { FieldError } from '@/features/loss_management/components/FieldError'
 import { useUpdateInspectionMutation } from '@/features/loss_management/hooks/useLossMutations'
 import type { CancellationReason, InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { describeSubmitError } from '@/features/loss_management/utils/apiFieldErrors'
-import { CANCELLATION_REASONS, CANCELLATION_REASON_LABELS } from '@/features/loss_management/utils/cancellationReasons'
+import {
+  CANCELLATION_REASONS,
+  CANCELLATION_REASON_LABELS,
+  describeQueueEffect
+} from '@/features/loss_management/utils/cancellationReasons'
 import { formatOrderCode } from '@/features/loss_management/utils/orderBoard'
 
 const MAX_NOTE_LENGTH = 500
@@ -63,7 +67,7 @@ export function CancelOrderDialog({ order, onClose }: CancelOrderDialogProps) {
         <AlertDialogHeader>
           <AlertDialogTitle>Cancelar a ordem {formatOrderCode(order)}?</AlertDialogTitle>
           <AlertDialogDescription>
-            Deseja realmente cancelar esta inspeção? A UC {order.id_uc} volta para a fila e o score é recalculado no próximo processamento. Escolha o motivo do cancelamento.
+            Deseja realmente cancelar esta inspeção? O motivo escolhido define o que acontece com a UC {order.id_uc} na fila.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="flex flex-col gap-1.5">
@@ -85,6 +89,7 @@ export function CancelOrderDialog({ order, onClose }: CancelOrderDialogProps) {
             ))}
           </Select>
           <FieldError id="motivo-cancelamento-erro" message={fieldErrors.motivo_cancelamento} />
+          {reason === '' ? null : <p className="text-muted-foreground text-sm">{describeQueueEffect(reason, order.id_uc)}</p>}
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="observacao-cancelamento">Observação (opcional)</Label>

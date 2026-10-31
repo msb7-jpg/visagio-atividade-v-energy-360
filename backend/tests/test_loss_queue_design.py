@@ -1,5 +1,7 @@
 """Contrato da nova tela Fila de Inspeção: score 0-100, situação da UC, filtros, resumo e opções de filtro."""
 
+from datetime import datetime, timedelta
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import create_engine, text
@@ -7,7 +9,7 @@ from sqlalchemy import create_engine, text
 from app.features.loss_management.hit_rate import TAXA_ACERTO_GERAL
 from app.features.loss_management.models import InspectionOrder
 from app.features.loss_management.queries import SuspicionFilters, build_windows
-from app.features.loss_management.queue_query import suspicious_profiles_query
+from app.features.loss_management.queue_query import CANCELLATION_BLOCK_DAYS, suspicious_profiles_query
 from app.features.loss_management.queue_summary import FieldHitRate, build_queue_summary, hit_rate_dto
 from app.features.loss_management.schemas import (
     InspectionStatus,
@@ -273,6 +275,69 @@ def test_queue_query_keeps_units_with_an_active_order_but_not_recently_completed
         candidate_ids = sorted(row.id_uc for row in connection.execute(query))
 
     assert candidate_ids == ["UC_LIVRE", "UC_ORDEM"]
+
+
+# --- cancelamento: só alguns motivos mantêm a UC fora da fila por um tempo -------------------------------------------
+
+CANCELLATION_UNITS = (
+    ("UC_REGULARIZOU", "cliente_regularizou", 10),
+    ("UC_REGULARIZOU_ANTIGA", "cliente_regularizou", CANCELLATION_BLOCK_DAYS + 30),
+    ("UC_ENDERECO", "endereco_nao_localizado", 10),
+    ("UC_DUPLICADA", "ordem_duplicada", 10),
+    ("UC_REPRIORIZADA", "repriorizacao_equipe", 10),
+    ("UC_OUTRO", "outro", 10),
+)
+
+
+CANCELLATION_SCHEMA_STATEMENTS = (
+    "CREATE TABLE fato_medicao (id_uc TEXT, competencia TEXT, consumo_kwh REAL)",
+    (
+        "CREATE TABLE dim_unidade_consumidora "
+        "(id_uc TEXT, municipio TEXT, bairro TEXT, classe_consumo TEXT, possui_gd BOOLEAN)"
+    ),
+    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT)",
+)
+CANCELLATION_MONTHLY_KWH = (("2025-06", 300), ("2025-11", 50), ("2025-12", 50), ("2026-01", 50))
+
+
+def seed_cancelled_units(connection) -> None:
+    for ddl_statement in CANCELLATION_SCHEMA_STATEMENTS:
+        connection.execute(text(ddl_statement))
+    now = datetime.now()
+    for id_uc, reason, days_ago in CANCELLATION_UNITS:
+        cancelled_at = now - timedelta(days=days_ago)
+        connection.execute(
+            text("INSERT INTO dim_unidade_consumidora VALUES (:id_uc, 'Recife', 'Centro', 'Residencial', 0)"),
+            {"id_uc": id_uc},
+        )
+        for competencia, consumo_kwh in CANCELLATION_MONTHLY_KWH:
+            connection.execute(
+                text("INSERT INTO fato_medicao VALUES (:id_uc, :competencia, :consumo_kwh)"),
+                {"id_uc": id_uc, "competencia": competencia, "consumo_kwh": consumo_kwh},
+            )
+        connection.execute(
+            InspectionOrder.__table__.insert().values(
+                id_uc=id_uc,
+                status="cancelada",
+                motivo_cancelamento=reason,
+                kwh_estimado=0,
+                criado_por="x",
+                criado_em=cancelled_at,
+                atualizado_em=cancelled_at,
+            )
+        )
+
+
+def test_queue_query_keeps_a_unit_out_only_for_cancellations_that_make_a_new_visit_useless():
+    engine = create_engine("sqlite://")
+    InspectionOrder.__table__.create(engine)
+    with engine.begin() as connection:
+        seed_cancelled_units(connection)
+        query = suspicious_profiles_query(build_windows("2026-01"), SuspicionFilters(limiar_queda=0.5))
+
+        candidate_ids = sorted(row.id_uc for row in connection.execute(query))
+
+    assert candidate_ids == ["UC_DUPLICADA", "UC_OUTRO", "UC_REGULARIZOU_ANTIGA", "UC_REPRIORIZADA"]
 
 
 # --- endpoints (banco em memória com o seed de test_loss_router) ---------------------------------------------------
