@@ -910,3 +910,12 @@
 - **Limites:** o texto "a recuperar" usa `kwh_estimado`, que o backend define como "energia estimada a recuperar"; não confirmei a janela (mensal ou de 3 meses) e por isso o cartão mostra só kWh, sem "/mês". Valor em R$ e a chance de acerto não vêm na ordem, então ficaram de fora. Não testei a largura estreita.
 - **Testes:** `OrderBoard.test.tsx` (menu "⋯", coluna recolhida, idade e energia a recuperar), `orderBoard.test.ts` (`formatOrderAge`) e o fluxo de cancelar em `LossManagementPage.test.tsx`, que passou a abrir o menu.
 - **Validação de Testes:** `make lint-all` e `make test-all` 100% (74 arquivos, 671 testes; pytest 721).
+
+## 2026-10-31 — Cancelamento por motivo decide se a UC volta à fila (Adrian César)
+
+- **Regra:** a ordem cancelada continua devolvendo a UC à fila, exceto por `cliente_regularizou` e `endereco_nao_localizado`: nesses casos a UC fica fora da fila por 90 dias, contados de `atualizado_em` da ordem. `ordem_duplicada`, `repriorizacao_equipe` e `outro` devolvem a UC na hora.
+- **Backend:** `queue_query.py` ganhou `_blocking_cancellations_query`, `CANCELLATION_BLOCK_DAYS` e `BLOCKING_CANCELLATION_REASONS`, unidos às exclusões da fila com `union()`. A ficha da UC usa a mesma consulta, então a UC bloqueada responde 404 como qualquer UC fora da fila. Textos da API (`router_metadata.py`) e da docstring do detalhe atualizados.
+- **Frontend:** o diálogo de cancelamento deixou de afirmar que a UC volta à fila. O aviso aparece depois de escolher o motivo (`describeQueueEffect` em `cancellationReasons.ts`): "fica fora da fila por 90 dias" ou "volta para a fila".
+- **Limites:** os 90 dias contam do relógio do servidor (`datetime.now()`), não da competência de referência da fila; em demonstração com `LOSS_REFERENCE_COMPETENCIA` fixada, o prazo continua em dias reais. O valor 90 está duplicado no frontend (`QUEUE_BLOCK_DAYS`) porque a API não o expõe. Não conferi a tela no navegador.
+- **Testes:** `test_loss_queue_design.py` (seis UCs, uma por motivo, mais uma regularizada fora do prazo) e `OrderBoard.test.tsx` (aviso por motivo).
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (pytest 722; vitest 676).
