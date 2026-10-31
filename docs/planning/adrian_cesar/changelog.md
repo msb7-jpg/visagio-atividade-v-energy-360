@@ -874,3 +874,10 @@
 - **Conferência no navegador:** Painel, Inteligência Comercial, Fila de Inspeção, Qualidade da Rede, Visão 360 da UC e Assistente IA capturados no claro e conferidos no escuro. "Estados", "Componentes", "Tokens" e "Sobre os dados" das imagens de referência são páginas do protótipo que não existem no app.
 - **Pendências:** `public/favicon.svg` e `icons.svg` são do template Vite (cores fixas, fora de uso como marca).
 - **Validação de Testes:** `make lint-all` e `make test-all` rodados ao final (ver commit).
+
+## 2026-10-31 — Acesso de demonstração ligado por padrão no login (Adrian César)
+
+- **Entrega:** o bloco "Acesso de demonstração" (5 perfis) da tela de login passa a aparecer por padrão. Antes só aparecia com `VITE_DEMO_LOGIN=true`, variável que não está em nenhum arquivo versionado, então ficava escondido fora da máquina de quem desenvolve (PR e deploys).
+- **Decisão:** é um protótipo, então os perfis ficam sempre visíveis. `VITE_DEMO_LOGIN=false` ainda desliga o bloco.
+- **Testes:** o teste "não mostra por padrão" virou "mostra por padrão", e foi somado um teste para `VITE_DEMO_LOGIN=false`.
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (73 arquivos, 654 testes).

@@ -26,10 +26,11 @@ export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
 export const SSO_ACCOUNT: DemoAccount = DEMO_ACCOUNTS[0]
 
 /**
- * Indica se o bloco "Acesso de demonstração" deve aparecer (variável de ambiente `VITE_DEMO_LOGIN`).
+ * Indica se o bloco "Acesso de demonstração" deve aparecer. É um protótipo, então fica ligado por padrão;
+ * `VITE_DEMO_LOGIN=false` desliga.
  *
- * @returns `true` só quando `VITE_DEMO_LOGIN` vale `'true'`.
+ * @returns `false` só quando `VITE_DEMO_LOGIN` vale `'false'`.
  */
 export function isDemoLoginEnabled(): boolean {
-  return import.meta.env.VITE_DEMO_LOGIN === 'true'
+  return import.meta.env.VITE_DEMO_LOGIN !== 'false'
 }

@@ -66,7 +66,14 @@ describe('LoginPage', () => {
       expect(screen.getByLabelText('E-mail corporativo')).toHaveFocus()
     })
 
-    it('não mostra o acesso de demonstração por padrão', () => {
+    it('mostra o acesso de demonstração por padrão', () => {
+      renderLogin()
+
+      expect(screen.getByText('Acesso de demonstração')).toBeInTheDocument()
+    })
+
+    it('esconde o acesso de demonstração com VITE_DEMO_LOGIN=false', () => {
+      vi.stubEnv('VITE_DEMO_LOGIN', 'false')
       renderLogin()
 
       expect(screen.queryByText('Acesso de demonstração')).not.toBeInTheDocument()
