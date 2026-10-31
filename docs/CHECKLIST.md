@@ -108,7 +108,7 @@
   - [ ] passo a passo para configurar e rodar **cada módulo** do zero: pipeline, como obter o `v_energy.db`, `.env` (chaves de IA e `LOSS_REFERENCE_COMPETENCIA`), backend e frontend;
   - [x] print do Workflow executado com sucesso; (`docs/img/workflow_databricks.png`)
   - [ ] links para o dicionário de dados e o diagnóstico; (30/10: o dicionário tem link; o diagnóstico não)
-  - [ ] suposições de cada fatia. (30/10: Fatias 03, 05 e 06 escritas (Fatia 06 neste PR); faltam 01, 02, 04 e 07)
+  - [ ] suposições de cada fatia. (30/10: Fatias 03, 05 e 06 escritas (Fatia 06 no PR #60); faltam 01, 02, 04 e 07)
 - [ ] ⚠️ **Falsos negativos do README:**
   - [ ] lista dos 5 logins e o que cada perfil vê (sem isso, o avaliador não acha as telas);
   - [ ] diferenciais citados explicitamente (testes, RBAC, exportar e subir planilha, follow-up, avaliação, testes do pipeline); (30/10: o README não tem seção de diferenciais)
