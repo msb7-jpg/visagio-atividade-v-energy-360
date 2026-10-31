@@ -15,7 +15,8 @@ list_suspicious_units_doc = EndpointDoc(
         "de 20% a 50% é 'queda_moderada', com 'probabilidade_acerto' calibrada por faixa (42% de 30% a 50%; "
         "7% de 20% a 30%), então o topo da fila continua sendo a queda súbita. Exclui UCs com geração "
         "distribuída e as já inspecionadas dentro da janela de análise (ordem concluída ou histórico de "
-        "campo); ordem cancelada devolve a UC à fila. UCs com ordem "
+        "campo) e as com ordem cancelada por 'cliente_regularizou' ou 'endereco_nao_localizado' nos últimos 90 "
+        "dias; os demais motivos de cancelamento devolvem a UC à fila. UCs com ordem "
         "ativa seguem na lista, com `situacao` ordem_gerada ou em_campo. Cada UC traz `score` de 0 a 100 (kWh "
         "esperado relativo ao topo da fila). Filtros por município, bairro, classe e motivo; "
         "limite padrão de 200 (capacidade mensal da equipe de campo). "
@@ -49,7 +50,8 @@ unit_detail_doc = EndpointDoc(
         "da fila x 100); o consumo mensal das 12 últimas competências (mês sem leitura válida vem com "
         "`consumo_kwh` nulo, nunca zero) e as inspeções anteriores (histórico de campo e ordens concluídas no "
         "portal; lista vazia se a UC nunca foi inspecionada). UC com ordem concluída ou inspecionada na janela "
-        "de análise sai da fila e responde 404; ordem cancelada devolve a UC à fila. O score usa a mesma fila "
+        "de análise sai da fila e responde 404, assim como a UC cancelada por cliente regularizado ou endereço "
+        "não localizado nos últimos 90 dias; os demais cancelamentos devolvem a UC à fila. O score usa a mesma fila "
         "completa da lista, então os números batem com ela."
     ),
     response_description="Detalhe da UC com a decomposição do score, o consumo de 12 meses e o histórico.",

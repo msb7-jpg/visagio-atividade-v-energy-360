@@ -74,15 +74,27 @@ describe('OrderBoard', () => {
     expect(screen.getByRole('region', { name: 'Cancelada (0)' })).toBeInTheDocument()
   })
 
-  it('oferece enviar a campo e cancelar em ordem pendente, e só registrar resultado e cancelar em campo', () => {
+  it('oferece enviar a campo em ordem pendente e registrar resultado em campo, com o cancelamento no menu "⋯"', async () => {
     renderBoard([buildOrder({ id_inspecao: 1 }), buildOrder({ id_inspecao: 2, status: 'pendente' })])
 
     const pendingColumn = screen.getByRole('region', { name: 'Pendente (1)' })
     expect(within(pendingColumn).getByRole('button', { name: /^Enviar a campo/ })).toBeInTheDocument()
-    expect(within(pendingColumn).getByRole('button', { name: /^Cancelar/ })).toBeInTheDocument()
+    expect(within(pendingColumn).queryByRole('button', { name: /^Cancelar/ })).not.toBeInTheDocument()
+    fireEvent.keyDown(within(pendingColumn).getByRole('button', { name: /^Mais ações/ }), { key: 'Enter' })
+    expect(await screen.findByRole('menuitem', { name: /^Cancelar OI-/ })).toBeInTheDocument()
     const fieldColumn = screen.getByRole('region', { name: 'Em campo (1)' })
     expect(within(fieldColumn).getByRole('button', { name: /^Registrar resultado/ })).toBeInTheDocument()
     expect(within(fieldColumn).queryByRole('button', { name: /^Enviar a campo/ })).not.toBeInTheDocument()
+  })
+
+  it('dispara o cancelamento com a ordem do cartão ao escolher "Cancelar ordem" no menu', async () => {
+    const order = buildOrder({ id_inspecao: 5 })
+    const { onAction } = renderBoard([order])
+
+    fireEvent.keyDown(screen.getByRole('button', { name: /^Mais ações/ }), { key: 'Enter' })
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^Cancelar OI-/ }))
+
+    expect(onAction).toHaveBeenCalledWith('cancel', order)
   })
 
   it('não oferece ações em ordens concluídas e canceladas, e mostra resultado e motivo', () => {
@@ -90,10 +102,40 @@ describe('OrderBoard', () => {
       buildOrder({ id_inspecao: 3, status: 'concluida', irregularidade_constatada: true, tipo_irregularidade: 'BY-PASS', kwh_recuperado: 860 }),
       buildOrder({ id_inspecao: 4, status: 'cancelada', justificativa_cancelamento: 'UC regularizada pelo cliente' })
     ])
+    fireEvent.click(screen.getByRole('button', { name: /^Cancelada \(1\)/ }))
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.queryByRole('button', { name: /^(Enviar a campo|Registrar resultado|Mais ações)/ })).not.toBeInTheDocument()
     expect(screen.getByText('Irregularidade confirmada · BY-PASS · 860 kWh')).toBeInTheDocument()
     expect(screen.getByText('Cancelada: UC regularizada pelo cliente')).toBeInTheDocument()
+  })
+
+  it('começa com a coluna de canceladas recolhida e a abre e fecha pelo cabeçalho', () => {
+    renderBoard([buildOrder({ id_inspecao: 4, status: 'cancelada', justificativa_cancelamento: 'UC regularizada pelo cliente' })])
+
+    const toggle = screen.getByRole('button', { name: 'Cancelada (1): expandir' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText(/^Cancelada: UC regularizada/)).not.toBeInTheDocument()
+
+    fireEvent.click(toggle)
+
+    expect(screen.getByRole('button', { name: 'Cancelada (1): recolher' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Cancelada: UC regularizada pelo cliente')).toBeInTheDocument()
+  })
+
+  it('mostra há quantos dias a ordem aberta existe e a energia a recuperar, e esconde "sem inspetor"', () => {
+    const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString()
+    renderBoard([buildOrder({ criado_em: twoDaysAgo, kwh_estimado: 189 })])
+
+    expect(screen.getByText('há 2 dias')).toBeInTheDocument()
+    expect(screen.getByText('189 kWh a recuperar')).toBeInTheDocument()
+    expect(screen.queryByText('sem inspetor')).not.toBeInTheDocument()
+  })
+
+  it('mostra o inspetor quando já há um e não mostra energia a recuperar sem estimativa', () => {
+    renderBoard([buildOrder({ status: 'pendente', inspetor: 'INSP-014', kwh_estimado: 0 })])
+
+    expect(screen.getByText('INSP-014')).toBeInTheDocument()
+    expect(screen.queryByText(/a recuperar/)).not.toBeInTheDocument()
   })
 
   it('mostra inspetor e data da inspeção nas ordens concluídas', () => {
@@ -108,6 +150,7 @@ describe('OrderBoard', () => {
       buildOrder({ id_inspecao: 1, status: 'cancelada', motivo_cancelamento: 'ordem_duplicada' }),
       buildOrder({ id_inspecao: 2, status: 'cancelada', motivo_cancelamento: 'outro', justificativa_cancelamento: 'Cliente mudou' })
     ])
+    fireEvent.click(screen.getByRole('button', { name: /^Cancelada \(2\)/ }))
 
     expect(screen.getByText('Cancelada: Ordem duplicada')).toBeInTheDocument()
     expect(screen.getByText('Cancelada: Outro · Cliente mudou')).toBeInTheDocument()
@@ -209,9 +252,30 @@ describe('RegisterResultDialog', () => {
 })
 
 describe('CancelOrderDialog', () => {
-  it('avisa que a UC volta para a fila e que o score é recalculado', () => {
+  const renderCancelDialog = () =>
     render(<QueryClientProvider client={new QueryClient()}><CancelOrderDialog order={buildOrder({})} onClose={vi.fn()} /></QueryClientProvider>)
 
+  it('só diz o que acontece com a UC depois de escolher o motivo', () => {
+    renderCancelDialog()
+
+    expect(screen.queryByText(/volta para a fila/)).toBeNull()
+    expect(screen.queryByText(/fica fora da fila/)).toBeNull()
+  })
+
+  it.each(['repriorizacao_equipe', 'ordem_duplicada', 'outro'])('avisa que a UC volta para a fila quando o motivo é %s', (reason) => {
+    renderCancelDialog()
+
+    fireEvent.change(screen.getByLabelText(/Motivo do cancelamento/), { target: { value: reason } })
+
     expect(screen.getByText(/A UC UC131844 volta para a fila e o score é recalculado no próximo processamento\./)).toBeInTheDocument()
+  })
+
+  it.each(['cliente_regularizou', 'endereco_nao_localizado'])('avisa que a UC fica fora da fila por 90 dias quando o motivo é %s', (reason) => {
+    renderCancelDialog()
+
+    fireEvent.change(screen.getByLabelText(/Motivo do cancelamento/), { target: { value: reason } })
+
+    expect(screen.getByText(/A UC UC131844 fica fora da fila por 90 dias\./)).toBeInTheDocument()
+    expect(screen.queryByText(/volta para a fila/)).toBeNull()
   })
 })

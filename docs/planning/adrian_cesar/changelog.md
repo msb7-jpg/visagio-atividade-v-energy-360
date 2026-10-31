@@ -881,3 +881,51 @@
 - **Decisão:** é um protótipo, então os perfis ficam sempre visíveis. `VITE_DEMO_LOGIN=false` ainda desliga o bloco.
 - **Testes:** o teste "não mostra por padrão" virou "mostra por padrão", e foi somado um teste para `VITE_DEMO_LOGIN=false`.
 - **Validação de Testes:** `make lint-all` e `make test-all` 100% (73 arquivos, 654 testes).
+
+## 2026-10-31 — Atalho "Registrar achado" nas ordens de inspeção, #64 (Adrian César)
+
+- **Entrega:** a barra acima do quadro de ordens (`OrderFlowBar`) ganhou o botão "Registrar achado", ao lado de "Importar resultados de campo" (que virou secundário). Ele abre o `PickFieldOrderDialog` (novo), que lista as ordens em campo; ao escolher uma, abre o `RegisterResultDialog` que já existia. Sem ordem em campo, o diálogo explica que é preciso enviar uma ordem a campo. Visível só para quem pode editar perdas (o diretor não vê).
+- **Limite:** o servidor só conclui ordem em campo (`pendente` → `concluida`), então o caso "UC sem ordem aberta" da sugestão da CORRECOES não está coberto; exigiria endpoint novo.
+- **Testes:** `PickFieldOrderDialog.test.tsx` (novo, 2 casos) e uma checagem de que o diretor não vê o botão em `SuspiciousQueueTab.test.tsx`.
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (74 arquivos, 662 testes).
+
+## 2026-10-31 — Fila de Inspeção mais compacta: filtros recolhidos, barra única e dois cartões (Adrian César)
+
+- **Contexto:** devolutiva de design (#68, filtros ocupam espaço fixo) e pedido de reduzir a área ocupada no topo da Fila.
+- **Filtros recolhidos (#68):** novo `components/ui/popover.tsx` (Radix, no padrão do `dropdown-menu`) e `components/filters/FilterPopover.tsx`, compartilhado: botão "Filtros" com contador, painel com os campos, um chip por filtro ativo (remove só o seu), "Limpar filtros" e "Concluir". O `QueueFilters` passou a usá-lo; a regra de aplicar o filtro na hora não mudou. Adoção no `RevenueFiltersBar` (Célio) e no `ContinuityFilters` (João Henrique) segue pendente (CORRECOES §8).
+- **Barra única:** o Card com filtros, ações e nota virou uma linha (`QueueFilters` à esquerda, `QueueActionsBar` à direita). Novo `SelectionSummary` ("7 selecionadas · cerca de 5 devem achar irregularidade" e selo de baixa chance). "Selecionar top 10 prioritárias" ficou "Top 10" (nome acessível igual). O texto longo (`SelectionOutlookNote`) segue no diálogo de gerar ordens.
+- **Cartões do topo:** saíram "Capacidade do mês" e "Taxa de acerto histórica" (`CapacityCard` e `HitRateCard` removidos). Ficaram "Energia recuperável das selecionadas" (com a tarifa visível) e "Retorno esperado", em `p-3`, número `text-xl` e valor anual na mesma linha; as notas de cálculo foram para o tooltip "como calculamos". A API segue devolvendo capacidade e taxa (o diálogo de gerar ordens usa a capacidade).
+- **Limites:** não conferi a aparência no navegador (nem nos dois temas e no celular); a redução de altura (de cerca de 150 px para cerca de 105 px nos cartões) é estimada pelo CSS.
+- **Testes:** `FilterPopover.test.tsx` (novo, 5 casos), `SelectionSummary` (3 casos em `QueueExpectationNotes.test.tsx`), `QueueSummaryCards.test.tsx` reescrito, e `SuspiciousQueueTab.test.tsx` abre o painel de filtros antes de usar os selects.
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (74 arquivos, 664 testes; pytest 721).
+- **Conferência no navegador (31/10):** painel de filtros, chips, resumo da seleção, cartões e tooltips conferidos nos temas escuro e claro. Achado e corrigido: com dois filtros e UCs marcadas, as ações quebravam para a segunda linha alinhadas à esquerda; `ml-auto` no `QueueActionsBar` as mantém à direita. Não consegui testar a largura estreita (a janela não redimensionou).
+
+## 2026-10-31 — Aba Ordens de inspeção mais enxuta (Adrian César)
+
+- **Contexto:** pedido de melhorar a leitura visual da aba para quem opera as ordens (opção A + parte enxuta da C).
+- **Barra de ações:** o Card com os selos do fluxo (Pendente → Em campo → Concluída ou Cancelada) saiu, porque as colunas já mostram as etapas. Ficou uma linha à direita com "Exportar planilha de campo", "Registrar achado" e "Importar resultados de campo".
+- **Colunas proporcionais:** o quadro passou de grade de 4 colunas iguais para linha flexível. Etapa vazia fica estreita (`lg:w-44`) e a de canceladas começa recolhida (cabeçalho com contador e seta, `aria-expanded`); as demais dividem o espaço. No celular o quadro continua em pilha.
+- **Cartão enxuto:** código e idade da ordem ("hoje", "há N dias" nas abertas; data nas concluídas e canceladas, com a data completa no `title`), UC com a energia a recuperar (`kwh_estimado`, só nas abertas e quando maior que zero), território com o inspetor na mesma linha (some "sem inspetor"). Novo `formatOrderAge` em `utils/orderBoard.ts`.
+- **Cancelar no menu "⋯":** o botão "Cancelar" saiu do cartão e virou o item "Cancelar ordem" do menu (`OrderCardActions`, novo); a ação da etapa (Enviar a campo ou Registrar resultado) continua em botão. `DropdownMenu` sem `modal`, para o diálogo de cancelamento abrir sem herdar o bloqueio do menu (conferido no navegador).
+- **Limites:** o texto "a recuperar" usa `kwh_estimado`, que o backend define como "energia estimada a recuperar"; não confirmei a janela (mensal ou de 3 meses) e por isso o cartão mostra só kWh, sem "/mês". Valor em R$ e a chance de acerto não vêm na ordem, então ficaram de fora. Não testei a largura estreita.
+- **Testes:** `OrderBoard.test.tsx` (menu "⋯", coluna recolhida, idade e energia a recuperar), `orderBoard.test.ts` (`formatOrderAge`) e o fluxo de cancelar em `LossManagementPage.test.tsx`, que passou a abrir o menu.
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (74 arquivos, 671 testes; pytest 721).
+
+## 2026-10-31 — Cancelamento por motivo decide se a UC volta à fila (Adrian César)
+
+- **Regra:** a ordem cancelada continua devolvendo a UC à fila, exceto por `cliente_regularizou` e `endereco_nao_localizado`: nesses casos a UC fica fora da fila por 90 dias, contados de `atualizado_em` da ordem. `ordem_duplicada`, `repriorizacao_equipe` e `outro` devolvem a UC na hora.
+- **Backend:** `queue_query.py` ganhou `_blocking_cancellations_query`, `CANCELLATION_BLOCK_DAYS` e `BLOCKING_CANCELLATION_REASONS`, unidos às exclusões da fila com `union()`. A ficha da UC usa a mesma consulta, então a UC bloqueada responde 404 como qualquer UC fora da fila. Textos da API (`router_metadata.py`) e da docstring do detalhe atualizados.
+- **Frontend:** o diálogo de cancelamento deixou de afirmar que a UC volta à fila. O aviso aparece depois de escolher o motivo (`describeQueueEffect` em `cancellationReasons.ts`): "fica fora da fila por 90 dias" ou "volta para a fila".
+- **Limites:** os 90 dias contam do relógio do servidor (`datetime.now()`), não da competência de referência da fila; em demonstração com `LOSS_REFERENCE_COMPETENCIA` fixada, o prazo continua em dias reais. O valor 90 está duplicado no frontend (`QUEUE_BLOCK_DAYS`) porque a API não o expõe. Não conferi a tela no navegador.
+- **Testes:** `test_loss_queue_design.py` (seis UCs, uma por motivo, mais uma regularizada fora do prazo), `test_loss_unit_detail.py` (a ficha da UC responde 404 para `cliente_regularizou` e `endereco_nao_localizado`, e abre com situação `na_fila` para `ordem_duplicada` e `repriorizacao_equipe`) e `OrderBoard.test.tsx` (aviso por motivo).
+- **Documentação:** como a regra funciona está em `fila-inspecao-decisoes.md` (P14, novo) e em `DECISOES_PERDAS.md` (D4). O texto do diálogo no `fila-inspecao-prototipo.md` (3.10) e o checklist (`gestao_perdas_campo.md`, 16.1 e 16.2) foram atualizados. O `fila-inspecao-raio-x.md` é um retrato de 28/10 e não foi alterado.
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (pytest 726; vitest 676).
+
+## 2026-10-31 — Coluna do quadro com altura máxima e conferência da regra de cancelamento (Adrian César)
+
+- **Quadro de ordens:** `OrderBoardColumn.tsx` limita a lista de cada coluna a cerca de 4 a 5 cartões (`max-h-144`) e rola por dentro, para o quadro manter o tamanho com muitas ordens (visto no navegador, coluna Pendente com 11 ordens).
+- **Conferência no navegador:** o aviso do diálogo de cancelar foi conferido para os cinco motivos. Sem motivo, nenhuma frase sobre a fila; `cliente_regularizou` e `endereco_nao_localizado` mostram "fica fora da fila por 90 dias"; `ordem_duplicada`, `repriorizacao_equipe` e `outro` mostram "volta para a fila".
+- **Conferência pela API** (backend com o código novo, cópia consistente do banco e porta separada): fila com 163 UCs e ficha da UC136858 (cancelada por `cliente_regularizou`) respondendo 404. Cancelar a OI-13 por `cliente_regularizou` levou a fila a 162 e a ficha da UC a 404. Cancelar a OI-12 por `repriorizacao_equipe` manteve a fila em 162 e a ficha em 200. Isso fecha o item do test plan do PR #70 que dependia de cancelar de verdade.
+- **Limites:** o efeito na fila **não foi visto no navegador**. A tela continuou em 164 porque o servidor local rodava com `--reload` desde antes das alterações e mantinha o código antigo (a descrição da API dele não tinha o texto novo). Depois de atualizar a branch, reinicie `make run-backend`.
+- **Dica para testar com cópia do banco:** o `v_energy.db` usa WAL. Copiar só o arquivo principal perde as ordens recentes; use a API de backup do SQLite (`sqlite3.Connection.backup`). Antes de qualquer passo que grave, confirme quem escuta a porta 8000, porque um servidor já aberto ignora o `DATABASE_URL` do processo novo.
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (pytest 726; vitest 676).

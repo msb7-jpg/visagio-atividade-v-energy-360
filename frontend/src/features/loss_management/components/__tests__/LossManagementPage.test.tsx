@@ -184,7 +184,8 @@ async function openCancelDialog() {
   mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'pendente' })])
   renderPage()
   const board = await openOrdersTab()
-  fireEvent.click(within(board).getByRole('button', { name: /^Cancelar OI-/ }))
+  fireEvent.keyDown(within(board).getByRole('button', { name: /^Mais ações OI-/ }), { key: 'Enter' })
+  fireEvent.click(await screen.findByRole('menuitem', { name: /^Cancelar OI-/ }))
   fireEvent.change(await screen.findByLabelText(/^Motivo do cancelamento/), { target: { value: 'cliente_regularizou' } })
   return screen.getByRole('button', { name: 'Confirmar cancelamento' })
 }

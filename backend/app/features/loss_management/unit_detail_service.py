@@ -42,7 +42,8 @@ class UnitDetailService:
         """Devolve o detalhe de uma UC que está na fila (inclusive com ordem gerada ou em campo).
 
         A UC precisa estar na fila agora: UC com ordem concluída ou inspecionada na janela de análise sai da fila
-        (D4) e não abre o detalhe. Ordem cancelada devolve a UC à fila, e ela abre normalmente.
+        (D4) e não abre o detalhe; o mesmo vale para ordem cancelada por cliente regularizado ou endereço não
+        localizado nos últimos 90 dias. Os demais cancelamentos devolvem a UC à fila, e ela abre normalmente.
 
         Args:
             id_uc: Unidade consumidora.

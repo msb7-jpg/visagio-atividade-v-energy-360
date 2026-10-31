@@ -59,8 +59,11 @@ fora (1.385 de 1.389 entram).
 ### D4. UC já inspecionada não volta à fila
 - **Decisão:** sai da fila a UC com ordem concluída ou inspeção no histórico de campo dentro da janela de análise
   (15 meses). **Atualizado:** a UC com ordem ativa (gerada ou pendente) **continua na lista**, marcada na coluna
-  Situação como "Ordem gerada" ou "Em campo"; a seleção e o resumo de capacidade ignoram essas UCs. Ordem cancelada
-  devolve a UC à fila.
+  Situação como "Ordem gerada" ou "Em campo"; a seleção e o resumo de capacidade ignoram essas UCs. **Atualizado
+  (31/10/2026):** a ordem cancelada devolve a UC à fila, exceto quando o motivo é `cliente_regularizou` ou
+  `endereco_nao_localizado`: nesses dois casos uma nova visita seria inútil agora, e a UC fica fora da fila por 90 dias
+  contados do cancelamento (`CANCELLATION_BLOCK_DAYS`). `ordem_duplicada`, `repriorizacao_equipe` e `outro` devolvem a
+  UC na hora.
 - **Impacto:** evita repetir inspeção cujo sinal já foi verificado.
 
 ### D5. Leituras com consumo negativo são descartadas

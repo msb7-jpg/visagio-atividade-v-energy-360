@@ -216,6 +216,28 @@ async def test_unit_with_cancelled_order_returns_to_the_queue_and_opens(client):
     assert response.json()["situacao"] == "na_fila"
 
 
+@pytest.mark.parametrize("reason", ["cliente_regularizou", "endereco_nao_localizado"])
+async def test_unit_cancelled_for_a_reason_that_makes_a_new_visit_useless_is_404(client, reason):
+    id_inspecao = await open_order(client, "UC_FRAUDE")
+    await move_order(client, id_inspecao, {"status": "cancelada", "motivo_cancelamento": reason})
+
+    response = await get_detail(client, "UC_FRAUDE")
+
+    assert response.status_code == 404
+    assert "não está na fila de inspeção" in response.json()["detail"]
+
+
+@pytest.mark.parametrize("reason", ["ordem_duplicada", "repriorizacao_equipe"])
+async def test_unit_cancelled_for_a_reason_that_keeps_the_suspicion_returns_to_the_queue(client, reason):
+    id_inspecao = await open_order(client, "UC_FRAUDE")
+    await move_order(client, id_inspecao, {"status": "cancelada", "motivo_cancelamento": reason})
+
+    response = await get_detail(client, "UC_FRAUDE")
+
+    assert response.status_code == 200
+    assert response.json()["situacao"] == "na_fila"
+
+
 async def test_completed_portal_order_is_listed_as_a_previous_inspection(client):
     inspection_day = date.today() - timedelta(days=1)
     id_inspecao = await open_order(client, "UC_FRAUDE")
