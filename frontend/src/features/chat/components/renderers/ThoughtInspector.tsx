@@ -27,7 +27,7 @@ export function ThoughtInspector({ thought, className }: ThoughtInspectorProps) 
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-xl border border-border bg-card/60 shadow-md backdrop-blur-sm transition-all',
+        'group relative overflow-hidden rounded-xl border border-border bg-card/60 shadow-md backdrop-blur-sm transition',
         className
       )}
     >
