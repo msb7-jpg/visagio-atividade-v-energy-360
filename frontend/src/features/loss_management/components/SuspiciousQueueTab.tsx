@@ -1,13 +1,11 @@
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { GenerateOrdersDialog } from '@/features/loss_management/components/GenerateOrdersDialog'
 import { QueueActionsBar, TOP_SELECTION_COUNT } from '@/features/loss_management/components/QueueActionsBar'
 import { QueueCapacityNotice } from '@/features/loss_management/components/QueueCapacityNotice'
 import { QueueBandTabs } from '@/features/loss_management/components/QueueBandTabs'
 import { QueueFilters } from '@/features/loss_management/components/QueueFilters'
-import { SelectionOutlookNote } from '@/features/loss_management/components/SelectionOutlookNote'
 import { QueueSummaryCards } from '@/features/loss_management/components/QueueSummaryCards'
 import { QueueWarnings } from '@/features/loss_management/components/QueueWarnings'
 import { UnitDetailSheet } from '@/features/loss_management/components/UnitDetailSheet'
@@ -36,7 +34,7 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
         isError={queue.isSummaryError}
         onRetry={queue.retrySummary}
       />
-      <Card className="flex flex-col gap-3 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <QueueFilters
           filters={queue.filters}
           options={queue.filterOptions}
@@ -44,12 +42,11 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
           onClear={queue.clearFilters}
         />
         <QueueActionsBar
-          selectedCount={selection.selectedIds.length}
+          selectedUnits={queue.selectedUnits}
           onSelectTop={() => selection.selectTop(TOP_SELECTION_COUNT, isPriorityUnit)}
           onGenerate={queue.openDialog}
         />
-        <SelectionOutlookNote units={queue.selectedUnits} />
-      </Card>
+      </div>
       <QueueWarnings warnings={queue.warnings} />
       {summary ? <QueueCapacityNotice units={units} capacity={summary.capacidade_total} /> : null}
       {isFilteredEmpty ? (

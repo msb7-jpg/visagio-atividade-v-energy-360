@@ -120,6 +120,9 @@ function renderPage() {
 
 const rowOf = (idUc: string) => screen.findByRole('row', { name: new RegExp(idUc) })
 
+/** Abre o painel "Filtros", que começa recolhido; os selects só existem com ele aberto. */
+const openFilters = () => fireEvent.click(screen.getByRole('button', { name: /^Filtros/ }))
+
 describe('Fila de Inspeção', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -144,13 +147,14 @@ describe('Fila de Inspeção', () => {
     expect(await screen.findByRole('tab', { name: /Ordens de inspeção \(2\)/ })).toBeInTheDocument()
   })
 
-  it('mostra os cartões de capacidade e de taxa de acerto histórica', async () => {
+  it('mostra só os cartões de energia recuperável e de retorno esperado, com a tarifa visível', async () => {
     renderPage()
 
-    expect(await screen.findByText('58')).toBeInTheDocument()
-    expect(screen.getByText(/^de 200 inspeções$/)).toBeInTheDocument()
-    expect(screen.getByText('62,7%')).toBeInTheDocument()
-    expect(screen.getByText(/871 de 1\.389 inspeções/)).toBeInTheDocument()
+    expect(await screen.findByText('Energia recuperável das selecionadas')).toBeInTheDocument()
+    expect(screen.getByText('Retorno esperado')).toBeInTheDocument()
+    expect(screen.getByText(/Tarifa média de 12 meses/)).toBeInTheDocument()
+    expect(screen.queryByText('Capacidade do mês')).not.toBeInTheDocument()
+    expect(screen.queryByText('Taxa de acerto histórica')).not.toBeInTheDocument()
   })
 
   it('lista a UC com score, queda, chance de acerto, kWh por mês, valor por ano e link para a Visão 360', async () => {
@@ -188,7 +192,8 @@ describe('Fila de Inspeção', () => {
 
     expect(await screen.findByRole('button', { name: 'Gerar 2 ordens' })).toBeEnabled()
     await waitFor(() => expect(mockedApi.getQueueSummary).toHaveBeenLastCalledWith(['UC100002', 'UC100003'], expect.anything()))
-    expect(await screen.findByText('60')).toBeInTheDocument()
+    expect(await screen.findByText('2.000')).toBeInTheDocument()
+    expect(screen.getByText('1.254')).toBeInTheDocument()
   })
 
   it('seleciona o topo da fila pulando as UCs que já têm ordem', async () => {
@@ -255,6 +260,7 @@ describe('Fila de Inspeção', () => {
     renderPage()
     await rowOf('UC100002')
 
+    openFilters()
     fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'queda_subita' } })
     fireEvent.change(await screen.findByLabelText('Município'), { target: { value: 'Recife' } })
     fireEvent.change(screen.getByLabelText('Classe'), { target: { value: 'Comercial' } })
@@ -297,6 +303,7 @@ describe('Fila de Inspeção', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
     expect(screen.getByText('Página 2 de 2')).toBeInTheDocument()
 
+    openFilters()
     fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'queda_subita' } })
 
     expect(await screen.findByText('Página 1 de 2')).toBeInTheDocument()
@@ -309,6 +316,7 @@ describe('Fila de Inspeção', () => {
     renderPage()
     await rowOf('UC100003')
 
+    openFilters()
     fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'queda_subita' } })
     await waitFor(() => expect(screen.queryByRole('row', { name: /UC100003/ })).not.toBeInTheDocument())
 
@@ -426,6 +434,7 @@ describe('Fila de Inspeção', () => {
     expect(within(row).getByText('São Lourenço da Mata')).toBeInTheDocument()
     expect(within(row).getByText('Poder Público')).toBeInTheDocument()
 
+    openFilters()
     fireEvent.change(await screen.findByLabelText('Município'), { target: { value: 'SAO LOURENCO DA MATA' } })
 
     await waitFor(() => expect(mockedApi.listSuspiciousUnits).toHaveBeenLastCalledWith(
@@ -440,6 +449,7 @@ describe('Fila de Inspeção', () => {
     await rowOf('UC100002')
     expect(screen.queryByRole('button', { name: 'Limpar filtros' })).not.toBeInTheDocument()
 
+    openFilters()
     fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'queda_subita' } })
     fireEvent.click(await screen.findByRole('button', { name: 'Limpar filtros' }))
 
@@ -455,6 +465,7 @@ describe('Fila de Inspeção', () => {
     renderPage()
     await rowOf('UC100002')
 
+    openFilters()
     fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'leitura_zerada' } })
 
     expect(await screen.findByText('Nenhuma UC com esses filtros.')).toBeInTheDocument()
