@@ -875,7 +875,9 @@
 - **Pendências:** `public/favicon.svg` e `icons.svg` são do template Vite (cores fixas, fora de uso como marca).
 - **Validação de Testes:** `make lint-all` e `make test-all` rodados ao final (ver commit).
 
-### [2026-10-30] - Fila de Inspeção passa a usar o `Pagination` compartilhado
-- **Autor:** Adrian César
-- **O que foi feito:** o `PrioritizedQueueTable` usa `components/ui/pagination.tsx` (criado no #34) no lugar do `QueuePagination`, que foi removido. A página da fila é de base 0 e o `Pagination` é de base 1, então a conversão (`page + 1` e `nextPage - 1`) fica no ponto de uso. O nome acessível "Paginação da fila" foi mantido com `label`.
-- **Validação de Testes:** `bun run test -- loss_management` (27 arquivos, 280 testes) e `make lint-frontend` passaram, sem mudar nenhum teste. `make lint-all` e `make test-all` completos ainda não foram rodados.
+## 2026-10-31 — Acesso de demonstração ligado por padrão no login (Adrian César)
+
+- **Entrega:** o bloco "Acesso de demonstração" (5 perfis) da tela de login passa a aparecer por padrão. Antes só aparecia com `VITE_DEMO_LOGIN=true`, variável que não está em nenhum arquivo versionado, então ficava escondido fora da máquina de quem desenvolve (PR e deploys).
+- **Decisão:** é um protótipo, então os perfis ficam sempre visíveis. `VITE_DEMO_LOGIN=false` ainda desliga o bloco.
+- **Testes:** o teste "não mostra por padrão" virou "mostra por padrão", e foi somado um teste para `VITE_DEMO_LOGIN=false`.
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (73 arquivos, 654 testes).

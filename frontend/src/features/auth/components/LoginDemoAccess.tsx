@@ -4,7 +4,7 @@ import { DEMO_ACCOUNTS, isDemoLoginEnabled, type DemoAccount } from '@/features/
 import { initialsOf, roleLabel } from '@/features/auth/lib/loginProfile'
 
 /**
- * Bloco "Acesso de demonstração": só aparece com `VITE_DEMO_LOGIN=true`. Entra com as contas de exemplo do backend.
+ * Bloco "Acesso de demonstração": aparece por padrão (some com `VITE_DEMO_LOGIN=false`). Entra com as contas de exemplo do backend.
  *
  * @param props - Ação que autentica a conta escolhida.
  * @returns Bloco de demonstração, ou nada se o modo demo estiver desligado.
