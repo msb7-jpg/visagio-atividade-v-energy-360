@@ -30,10 +30,7 @@ export function AppLayout() {
           <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-lg shadow-sm">
             <Zap className="size-5" />
           </div>
-          <div className="flex flex-col">
-            <span className="text-foreground text-sm font-bold tracking-tight">V-Energy Grid 360</span>
-            <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium">Plataforma Smart Grid</span>
-          </div>
+          <span className="text-foreground text-base font-bold tracking-tight">V-Energy 360</span>
         </div>
         <Separator />
         <SidebarNav />
