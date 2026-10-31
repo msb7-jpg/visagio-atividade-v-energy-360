@@ -213,6 +213,7 @@
 
 ### Fase 16 — Regras da fila após a revisão de 2026-10-31
 - [x] **16.1 — Cancelamento por motivo (2026-10-31):** ordem cancelada por `cliente_regularizou` ou `endereco_nao_localizado` mantém a UC fora da fila por 90 dias; `ordem_duplicada`, `repriorizacao_equipe` e `outro` devolvem a UC na hora. Backend: `queue_query.py` (`_blocking_cancellations_query`, `CANCELLATION_BLOCK_DAYS`). Frontend: o diálogo de cancelar avisa o efeito conforme o motivo (`describeQueueEffect`). `DECISOES_PERDAS.md` D4 e `fila-inspecao-decisoes.md` P14 atualizados; a ficha da UC bloqueada responde 404 (teste em `test_loss_unit_detail.py`). (Adrian César, 2026-10-31)
+- [x] **16.1b — Conferência (2026-10-31):** aviso do diálogo conferido no navegador para os 5 motivos; efeito na fila e na ficha conferido pela API numa cópia do banco (163 → 162 ao cancelar por `cliente_regularizou`; 162 e ficha 200 por `repriorizacao_equipe`). O efeito na fila não foi visto na tela. Coluna do quadro de ordens com altura máxima e rolagem interna (`OrderBoardColumn.tsx`). (Adrian César, 2026-10-31)
 - [ ] **16.2 — Pendências levantadas na revisão, não iniciadas:** contagem por motivo no filtro (a base só tem `queda_moderada`), cache do ranking (medir o tempo de `GET /suspicious-units` antes), endpoint de geração de ordens em lote atômico, seleção por território, autor da alteração em `PATCH`/upload e prévia da importação (`dry_run`).
 
 ---

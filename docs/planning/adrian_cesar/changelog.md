@@ -920,3 +920,12 @@
 - **Testes:** `test_loss_queue_design.py` (seis UCs, uma por motivo, mais uma regularizada fora do prazo), `test_loss_unit_detail.py` (a ficha da UC responde 404 para `cliente_regularizou` e `endereco_nao_localizado`, e abre com situação `na_fila` para `ordem_duplicada` e `repriorizacao_equipe`) e `OrderBoard.test.tsx` (aviso por motivo).
 - **Documentação:** como a regra funciona está em `fila-inspecao-decisoes.md` (P14, novo) e em `DECISOES_PERDAS.md` (D4). O texto do diálogo no `fila-inspecao-prototipo.md` (3.10) e o checklist (`gestao_perdas_campo.md`, 16.1 e 16.2) foram atualizados. O `fila-inspecao-raio-x.md` é um retrato de 28/10 e não foi alterado.
 - **Validação de Testes:** `make lint-all` e `make test-all` 100% (pytest 726; vitest 676).
+
+## 2026-10-31 — Coluna do quadro com altura máxima e conferência da regra de cancelamento (Adrian César)
+
+- **Quadro de ordens:** `OrderBoardColumn.tsx` limita a lista de cada coluna a cerca de 4 a 5 cartões (`max-h-144`) e rola por dentro, para o quadro manter o tamanho com muitas ordens (visto no navegador, coluna Pendente com 11 ordens).
+- **Conferência no navegador:** o aviso do diálogo de cancelar foi conferido para os cinco motivos. Sem motivo, nenhuma frase sobre a fila; `cliente_regularizou` e `endereco_nao_localizado` mostram "fica fora da fila por 90 dias"; `ordem_duplicada`, `repriorizacao_equipe` e `outro` mostram "volta para a fila".
+- **Conferência pela API** (backend com o código novo, cópia consistente do banco e porta separada): fila com 163 UCs e ficha da UC136858 (cancelada por `cliente_regularizou`) respondendo 404. Cancelar a OI-13 por `cliente_regularizou` levou a fila a 162 e a ficha da UC a 404. Cancelar a OI-12 por `repriorizacao_equipe` manteve a fila em 162 e a ficha em 200. Isso fecha o item do test plan do PR #70 que dependia de cancelar de verdade.
+- **Limites:** o efeito na fila **não foi visto no navegador**. A tela continuou em 164 porque o servidor local rodava com `--reload` desde antes das alterações e mantinha o código antigo (a descrição da API dele não tinha o texto novo). Depois de atualizar a branch, reinicie `make run-backend`.
+- **Dica para testar com cópia do banco:** o `v_energy.db` usa WAL. Copiar só o arquivo principal perde as ordens recentes; use a API de backup do SQLite (`sqlite3.Connection.backup`). Antes de qualquer passo que grave, confirme quem escuta a porta 8000, porque um servidor já aberto ignora o `DATABASE_URL` do processo novo.
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (pytest 726; vitest 676).
