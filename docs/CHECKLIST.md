@@ -92,12 +92,12 @@
 - [x] **Explica a variação:** decomposição preço/volume/mix/cruzado, igual à tela. (+22,6 / −8,0 / −0,46 / −1,5 mi, iguais a `/revenue/decomposition`)
 - [x] **Causas sustentadas com dados**, cada uma com a sua consulta:
   - [x] painel solar: cerca de 97% da queda líquida de volume; (97,4%)
-  - [x] ⚠️ **fraude nos 4 bairros:** corrigido em 30/10 (seções 6.2 e 6.5); os números mudam um pouco com o banco corrigido (ver o último item desta seção);
+  - [x] ⚠️ **fraude nos 4 bairros:** corrigido em 30/10 (seções 6.2 e 6.5) e atualizado em 31/10 com o banco corrigido (835 de 871 irregularidades; consulta C2d);
   - [x] inadimplência, leituras estimadas e UCs novas.
 - [x] **Diferenças com a fala do diretor explicadas:** volume −5,1% contra "quase 4%"; tarifa +13,8% contra o reajuste de 10,5% (as bandeiras explicam: só com bandeira verde a alta foi de +9,1%). (seção 4, "Conferência com o diretor". Nenhum recorte testado em 30/10 reproduz −4%: medido −5,1%, só residencial −6,7%, UCs dos dois períodos −5,5%)
 - [x] **Recomendações acionáveis com ordem de grandeza em R$** para cada causa. (seção 8)
-- [ ] **Resposta em uma frase** fechada (é o slide principal da apresentação). (30/10: o resumo do topo é um parágrafo de cinco frases; falta a frase única)
-- [ ] Números do diagnóstico batendo com as telas (ver seção 2). (30/10, banco corrigido: Jardim Jordão −0,80 mi e Brasília Teimosa −0,34 mi no ranking, contra −0,79 e −0,33 no texto; 4 bairros −1,41 mi contra −1,40; 835 de 871 irregularidades contra 828; 894 UCs com queda de 40% contra 887. `CORRECOES.md`, seção 2)
+- [x] **Resposta em uma frase** fechada (é o slide principal da apresentação). (31/10: "Em uma frase", no topo do diagnóstico)
+- [x] Números do diagnóstico batendo com as telas (ver seção 2). (31/10, banco corrigido: ranking com Jardim Jordão −0,80 mi e Brasília Teimosa −0,34 mi, 4 bairros −1,41 mi, 835 de 871 irregularidades e 894 UCs com queda de 40%, iguais às consultas e à tela)
 
 ## 5. Repositório e README (seção 6)
 - [x] O repositório é **público** e **não tem dado confidencial** (`*.db` e `data/landing/*` ignorados pelo Git). (30/10: nenhum `.db`, `.csv` ou `.xlsx` de dados versionado)

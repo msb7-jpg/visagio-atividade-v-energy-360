@@ -138,7 +138,7 @@
 - [x] Ciente: `status_pagamento = VENCIDA` é calculado na exportação da Fatia 02; pode ficar defasado até a próxima carga.
 - [x] Registrar as decisões da Fatia 03 em `docs/DECISOES.md` (formato ADR). (ADR-017 a ADR-023, em 2026-10-27)
 - [x] Levar as suposições da Fatia 03 para a seção de suposições do `README.md` (obrigatório no case), junto com as das outras fatias. (30/10)
-- [ ] Após o merge da Fatia 05, adotar o `EndpointDoc` (`app/shared/docs.py`) com um `router_metadata.py`, no mesmo padrão do Adrian.
+- [x] Após o merge da Fatia 05, adotar o `EndpointDoc` (`app/shared/docs.py`) com um `router_metadata.py`, no mesmo padrão do Adrian. (31/10)
 - [x] No merge com `main`, resolver os conflitos esperados em `api/v1/router.py` e `pyproject.toml` mantendo as linhas de todas as fatias (simulado em 2026-10-21: 165 testes verdes).
 - [x] Ajustar `tests/customer360_seed.py` ao esquema exportado pela Gold (todas as colunas e as tabelas `fato_ocorrencias_rede` e `fato_inspecoes_perdas`). (feito em 2026-10-27)
 - [x] Conferir a tela com o `v_energy.db` real quando a equipe de dados compartilhar o arquivo. (29/10, banco regerado)
@@ -158,7 +158,7 @@
 - [ ] Propor ao João um `PageHeader` compartilhado junto do `AppLayout`: o cabeçalho com "Voltar ao painel" é igual ao da Fatia 05 (Fallow: 20 linhas duplicadas, dentro do limite de 5%).
 - [x] Adicionar acesso à `/customers` no menu (`SidebarNav` do João) ou no `DashboardPage`; hoje a rota só é acessada digitando a URL.
 - [x] Integrar `<AppLayout>` (João Henrique).
-- [ ] Integrar `<SmartInsightCard context="customer360" ucId={id_uc} />` (Miguel) quando o #35 for mergeado.
+- [x] Integrar `<SmartInsightCard context="customer360" ucId={id_uc} />` (Miguel) quando o #35 for mergeado. (31/10, com as métricas da UC)
 - [x] Rodar `make lint-all` e `make test-all`, abrir PR da branch `feat/fatia-03-visao360`. (#43 mesclado em 28/10)
 
 ---
