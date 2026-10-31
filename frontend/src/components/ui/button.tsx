@@ -23,7 +23,8 @@ const buttonVariants = cva(
         default: 'h-9 px-4 py-2',
         sm: 'h-8 rounded-md px-3 text-sm',
         lg: 'h-10 rounded-md px-8 text-lg',
-        icon: 'size-9'
+        icon: 'size-9',
+        touch: 'h-11 px-3'
       },
       fullWidth: {
         true: 'w-full',
