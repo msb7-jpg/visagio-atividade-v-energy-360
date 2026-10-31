@@ -4,7 +4,7 @@ import { formatInteger } from '@/features/grid_quality/utils/continuityFormatter
 import { formatDecimal } from '@/features/grid_quality/utils/qualityFormatters'
 import type { AffectedCustomer } from '@/features/grid_quality/types/qualityTypes'
 
-const COLUMNS = ['UC', 'Bairro', 'Horas sem energia', 'Ocorrências', 'Ficha'] as const
+const COLUMNS = ['UC', 'Bairro', 'Horas s/ energia', 'Ocorrências', 'Ficha'] as const
 
 /**
  * Clientes de um alimentador ordenados pelas horas sem energia, com link para a Visão 360 da UC.
@@ -22,7 +22,7 @@ export function FeederCustomersTable({ customers }: { customers: AffectedCustome
             <TableCell>
               <div className="flex flex-col">
                 <span className="font-mono">{customer.id_uc}</span>
-                <span className="text-muted-foreground text-xs">{customer.nome_titular ?? '—'}</span>
+                <span className="text-muted-foreground line-clamp-2 text-xs">{customer.nome_titular ?? '—'}</span>
               </div>
             </TableCell>
             <TableCell>
