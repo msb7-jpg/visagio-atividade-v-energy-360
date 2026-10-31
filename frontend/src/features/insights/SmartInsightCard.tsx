@@ -49,11 +49,9 @@ export function SmartInsightCard({ context, filters, metrics }: SmartInsightCard
   })
 
   const toggleCollapsed = () => {
-    setIsCollapsed(prev => {
-      const next = !prev
-      setStoredCollapsed(storageKey, next)
-      return next
-    })
+    const nextState = !isCollapsed
+    setIsCollapsed(nextState)
+    setStoredCollapsed(storageKey, nextState)
   }
 
   if (isError) return null
@@ -87,7 +85,7 @@ export function SmartInsightCard({ context, filters, metrics }: SmartInsightCard
             </div>
             <span className="shrink-0 text-xs font-semibold text-foreground">Smart Insights IA</span>
             <Badge variant="secondary" className="shrink-0">{context.toUpperCase()}</Badge>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="truncate text-xs text-foreground/90">
               {data.resumo_executivo}
             </p>
           </div>

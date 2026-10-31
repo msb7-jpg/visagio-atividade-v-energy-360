@@ -9,6 +9,7 @@ describe('ChatMessage', () => {
       id: 'msg-1',
       role: MESSAGE_ROLE.ASSISTANT,
       content: 'O faturamento total no período foi de **R$ 42.500.000,00**.',
+      timestamp: '2026-10-31T17:00:00.000Z',
       steps: [
         {
           step: 'sql_executor',
@@ -41,11 +42,12 @@ describe('ChatMessage', () => {
     expect(screen.getByText('Consulta SQL')).toBeInTheDocument()
   })
 
-  it('deve exibir indicador executivo amigável durante o streaming inicial sem texto', () => {
+  it('deve exibir indicador executivo com o rótulo dinâmico da etapa ativa durante o streaming inicial sem texto', () => {
     const streamingMessage: ChatMessageType = {
       id: 'msg-2',
       role: MESSAGE_ROLE.ASSISTANT,
       content: '',
+      timestamp: '2026-10-31T17:01:00.000Z',
       isStreaming: true,
       steps: [
         {
@@ -58,7 +60,7 @@ describe('ChatMessage', () => {
 
     render(<ChatMessage message={streamingMessage} isStreaming />)
 
-    expect(screen.getByText('Consultando registros da distribuidora...')).toBeInTheDocument()
+    expect(screen.getAllByText('Localizando indicadores no sistema').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Ver raciocínio da IA (Auditoria)')).toBeInTheDocument()
   })
 
@@ -66,7 +68,8 @@ describe('ChatMessage', () => {
     const userMessage: ChatMessageType = {
       id: 'msg-3',
       role: MESSAGE_ROLE.USER,
-      content: '/sql Qual o consumo residencial?'
+      content: '/sql Qual o consumo residencial?',
+      timestamp: '2026-10-31T17:02:00.000Z'
     }
 
     render(<ChatMessage message={userMessage} />)

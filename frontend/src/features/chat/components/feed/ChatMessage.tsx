@@ -6,7 +6,12 @@ import { ChatErrorCard } from '@/features/chat/components/feed/ChatErrorCard'
 import { ChatMessageActions } from '@/features/chat/components/feed/ChatMessageActions'
 import { CommandBadge } from '@/features/chat/components/feed/CommandBadge'
 import { MarkdownRenderer } from '@/features/chat/components/renderers/MarkdownRenderer'
-import { MESSAGE_ROLE, type ChatMessage as ChatMessageType } from '@/features/chat/types/chat.types'
+import {
+  MESSAGE_ROLE,
+  STEP_STATUS,
+  type AgentStepItem,
+  type ChatMessage as ChatMessageType
+} from '@/features/chat/types/chat.types'
 import { cn } from '@/lib/utils'
 
 export interface ChatMessageProps {
@@ -28,6 +33,17 @@ function parseUserContent(rawContent: string): { command: string | null; args: s
     command: rawContent.slice(0, spaceIdx),
     args: rawContent.slice(spaceIdx + 1)
   }
+}
+
+function getActiveStreamingLabel(steps?: AgentStepItem[]): string {
+  if (!steps || steps.length === 0) {
+    return 'Consultando registros da distribuidora...'
+  }
+  const activeStep = steps.find(step => step.status === STEP_STATUS.ACTIVE)
+  if (activeStep) {
+    return activeStep.label
+  }
+  return steps[steps.length - 1].label
 }
 
 function UserChatMessage({ message, className }: { message: ChatMessageType; className?: string }) {
@@ -65,15 +81,16 @@ function AssistantMessageBody({
   isStreaming = false
 }: AssistantMessageBodyProps): JSX.Element {
   const showActions = !message.isStreaming && Boolean(message.content || message.error)
+  const streamingLabel = getActiveStreamingLabel(message.steps)
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-3">
       {message.error ? <ChatErrorCard message={message.error} onRetry={onRetry} /> : null}
 
       {message.isStreaming && !message.content ? (
-        <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-primary">
-          <Loader2 className="size-3.5 animate-spin" />
-          <span>Consultando registros da distribuidora...</span>
+        <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-foreground shadow-xs">
+          <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
+          <span className="font-medium">{streamingLabel}</span>
         </div>
       ) : null}
 
