@@ -3,12 +3,12 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const cardVariants = cva(
-  'rounded-lg glass-panel text-card-foreground transition-all duration-200',
+  'rounded-lg glass-panel text-card-foreground transition duration-200',
   {
     variants: {
       variant: {
         default: '',
-        glass: 'bg-card/40 backdrop-blur-2xl border-white/15 shadow-2xl',
+        glass: 'bg-card/40 backdrop-blur-2xl border-border shadow-2xl',
         interactive: 'glass-panel-interactive'
       }
     },
