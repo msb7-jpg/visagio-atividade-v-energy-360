@@ -2,21 +2,30 @@ import { Cell, LabelList, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from 'r
 import type { TooltipProps } from 'recharts'
 import { ChartContainer, ChartTooltipFrame } from '@/components/ui/chart'
 import { DEC_BANDS, bandOf } from '@/features/grid_quality/utils/continuityBands'
+import { labelPlacement } from '@/features/grid_quality/utils/labelPlacement'
 import { formatDecimal } from '@/features/grid_quality/utils/qualityFormatters'
 import type { MunicipalityDec } from '@/features/grid_quality/types/continuityTypes'
 
 const AXIS_TICK = { fill: 'var(--color-muted-foreground)' }
 
-type LabelPosition = 'top' | 'left' | 'right' | 'bottom'
-
-/** Posição do rótulo dos municípios vizinhos que colidiriam no topo (as coordenadas são aproximadas, ADR-025). */
-const LABEL_POSITIONS: Record<string, LabelPosition> = {
-  'Abreu e Lima': 'left',
-  Igarassu: 'right',
-  'São Lourenço da Mata': 'left',
-  'Jaboatão dos Guararapes': 'bottom'
+interface PointLabelProps {
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+  value?: string
 }
-const LABEL_SIDES: LabelPosition[] = ['top', 'left', 'right', 'bottom']
+
+/** Rótulo de uma linha só, ao lado do ponto (o `LabelList` entrega o canto do ponto, não o centro). */
+function PointLabel({ x: left = 0, y: top = 0, width = 0, height = 0, value = '' }: PointLabelProps) {
+  const radius = width / 2
+  const { dx, dy, anchor } = labelPlacement(value, radius)
+  return (
+    <text x={left + radius + dx} y={top + height / 2 + dy} textAnchor={anchor} fill="var(--color-foreground)" fontSize={10}>
+      {value}
+    </text>
+  )
+}
 
 function MapTooltip({ active, payload }: TooltipProps<number, string>) {
   const point = payload?.[0]?.payload as MunicipalityDec | undefined
@@ -56,16 +65,7 @@ export function MunicipalityMap({ municipalities }: { municipalities: Municipali
             {municipalities.map((municipality) => (
               <Cell key={municipality.name} fill={bandOf(municipality.decHours).fill} />
             ))}
-            {LABEL_SIDES.map((side) => (
-              <LabelList
-                key={side}
-                dataKey="name"
-                position={side}
-                fill="var(--color-foreground)"
-                fontSize={11}
-                valueAccessor={(point: MunicipalityDec) => ((LABEL_POSITIONS[point.name] ?? 'top') === side ? point.name : undefined)}
-              />
-            ))}
+            <LabelList dataKey="name" content={<PointLabel />} />
           </Scatter>
         </ScatterChart>
       </ChartContainer>
