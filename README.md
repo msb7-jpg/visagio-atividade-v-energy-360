@@ -1,6 +1,8 @@
 # ⚡ V-Energy Grid 360
 
-Plataforma inteligente de análise de dados e indicadores regulatórios do setor elétrico brasileiro (DEC, FEC, consumo, tarifas e mercado). A solução integra um **Portal Web moderno em React 19** com um **Agente Analítico de Inteligência Artificial Text-to-SQL (FastAPI + LangGraph)** capaz de responder dúvidas de negócio e gerar gráficos automaticamente em tempo real.
+Plataforma inteligente de análise de dados e indicadores regulatórios do setor elétrico brasileiro (DEC, FEC, consumo, tarifas e mercado). A solução integra um **Portal Web moderno em React 19** com um **Agente Analítico de Inteligência Artificial Text-to-SQL (FastAPI + LangGraph)** que responde em português perguntas de negócio sobre os dados, mostrando o SQL e a tabela usados em cada resposta.
+
+Diagnóstico da queda de receita (a pergunta central do case): [`docs/DIAGNOSTICO_RECEITA.md`](docs/DIAGNOSTICO_RECEITA.md).
 
 ---
 
@@ -48,6 +50,22 @@ powershell -ExecutionPolicy Bypass -File scripts\dev.ps1 dev -Database backend\v
 ```
 
 Demais comandos: `backend`, `frontend`, `lint`, `test` e `check` (lint, testes, TypeScript e build). `scripts\dev.ps1 help` lista todos.
+
+**O banco `backend/v_energy.db` não vai para o Git** (os dados do case são confidenciais). Ele é gerado pelo pipeline: no Databricks ou localmente (ver [Pipeline de Dados](#-pipeline-de-dados-databricks)). Sem ele, a API sobe, mas as telas mostram erro de tabela ausente.
+
+### Logins de demonstração
+
+Todos com a senha `venergy123`. A tela de login também lista as contas no bloco "Acesso de demonstração" (`VITE_DEMO_LOGIN=false` esconde o bloco).
+
+| E-mail | Perfil | O que vê |
+|---|---|---|
+| `diretor@venergy.com` | Diretor comercial | todas as telas: Painel, Inteligência Comercial, Fila de Inspeção, Qualidade da Rede e Visão 360 |
+| `perdas@venergy.com` | Gerente de perdas | Fila de Inspeção e Visão 360 |
+| `operacao@venergy.com` | Gerente de operação | Qualidade da Rede e Visão 360 |
+| `gerente.atendimento@venergy.com` | Gerente de atendimento | Visão 360 |
+| `atendimento@venergy.com` | Atendente | Visão 360 |
+
+O assistente de IA aparece para todos os perfis. O backend recusa (403) qualquer chamada de API fora do perfil, não só o menu. As contas são de demonstração e ficam em [`backend/app/core/config.py`](backend/app/core/config.py), com a senha guardada só como hash Argon2. Não há cadastro de usuários nem SSO: em produção, o login viria do provedor de identidade da empresa e a chave do JWT (`JWT_SECRET_KEY`) de uma variável de ambiente, nunca do valor de exemplo.
 
 ### Inteligência Artificial (`backend/.env`)
 
@@ -146,7 +164,7 @@ Cada fatia descreve aqui o que assumiu e como demonstrar o que entregou. As deci
 
 **Visão 360 da UC** (`/customers`, perfis `atendente`, `gerente_atendimento`, `gerente_perdas`, `gerente_operacao` e `diretor`). Responde ao atendente: **por que a conta deste cliente veio alta, e a rua dele ficou sem luz?** O atendente busca pelo número da UC, do medidor ou pelo nome do titular e vê cadastro, consumo de 12 meses contra o ano anterior, faturas, interrupções, chamados e inspeções de perdas, com o diagnóstico da conta alta em frases prontas.
 
-Os usuários de teste estão em [`backend/app/core/config.py`](backend/app/core/config.py) (senha `venergy123`).
+Os usuários de teste estão em [Logins de demonstração](#logins-de-demonstração).
 
 **Como demonstrar**
 
@@ -227,7 +245,7 @@ Responde ao gerente de operação: **onde e por quê a rede ficou sem luz, e o q
 | Causas atacáveis | vegetação, falha de equipamento e sobrecarga (`CAUSAS_ATACAVEIS`) | ADR-025 |
 | Causa não informada | aparece como "Sem causa registrada" | ADR-025 |
 | Filtros da Continuidade | município e causa, além do mês do evento | ADR-025 |
-| Coordenadas do mapa | aproximadas e estáticas, 14 municípios | `municipalities.py` e ADR-025 |
+| Mapa por município | contorno real dos 14 municípios (malha municipal do IBGE), com os nomes em colunas fora do mapa | `municipalityShapes.ts` e ADR-025 |
 | Circuitos no ranking | 20 maiores por UC-horas | `continuity_rules.py` |
 | Acesso à Visão 360 | inclui o gerente de operação | ADR-022 e ADR-024 |
 
@@ -270,11 +288,27 @@ Um PR com qualquer etapa vermelha não deve ser mergeado.
 
 ### 1. Backend (Python 3.12, FastAPI, LangGraph, uv)
 O backend é estruturado em **Fatias Verticais (*Vertical Slices*)** e adota os princípios de **Clean Architecture**:
+- **Uma pasta por fatia** em `app/features/` (`revenue`, `loss_management`, `grid_quality`, `customer360`, `executive_dashboard`, `chat`, `auth`), cada uma com `router.py` (HTTP), `service.py` (regra de negócio em Python puro), `repository.py` (SQL) e `schemas.py` (contratos Pydantic).
+- **Fronteiras verificadas no CI** pelo import-linter: serviço não importa FastAPI, o banco (`app/db`) não conhece regra de negócio e o agente (`app/agent`) não depende da API.
+- **Agente Text-to-SQL** em `app/agent/` (LangGraph): classifica a pergunta, gera o SQL, valida (só `SELECT`, sem tabelas de sistema), executa em conexão somente leitura, corrige o SQL sozinho quando dá erro e resume a resposta. Quando não há dado para responder, diz que não sabe.
+- **Erros de domínio** em `app/shared/exceptions.py`, convertidos em respostas HTTP num único lugar.
 
 ### 2. Frontend (React 19, TypeScript, Vite, Bun)
 - **Design System Shadcn & Radix UI:** Componentes modulares padronizados em `src/components/ui/`.
 - **Governança de Estado Assíncrono com TanStack Query v5:** Consultas otimizadas com cancelamento automático de requisições obsoletas (`signal`).
 - **Streaming em Tempo Real:** Renderização progressiva dos passos de raciocínio do agente, código SQL e respostas executivas estruturadas.
+
+---
+
+## ⭐ Além do mínimo pedido
+
+- **Testes automatizados** no backend (pytest) e no frontend (Vitest), rodando no CI a cada PR, e **testes de qualidade de dados** no próprio Workflow, que para a exportação se algum falhar.
+- **Avaliação do agente de IA** com um conjunto de perguntas e respostas esperadas ([`backend/tests/golden_dataset.json`](backend/tests/golden_dataset.json)), executado por [`backend/scripts/evaluate_agent.py`](backend/scripts/evaluate_agent.py).
+- **Conversa com contexto:** o chat lembra as perguntas anteriores da mesma conversa ("e no ano anterior?").
+- **Insight de IA verificado:** o Painel e a Visão 360 mostram um resumo gerado pela IA, e o servidor descarta qualquer frase com número que não esteja nos indicadores da tela.
+- **Controle de acesso por perfil (RBAC)** no backend e no menu.
+- **Ciclo de campo da Fila de Inspeção:** gerar ordens, exportar a planilha para a equipe e importar os resultados de volta.
+- **Pipeline local** opcional, sem Databricks, com os mesmos notebooks.
 
 ---
 
