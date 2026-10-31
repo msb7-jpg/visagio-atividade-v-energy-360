@@ -11,7 +11,7 @@ export const LABEL_SIDES: Record<string, Side> = {
   'Abreu e Lima': 'left',
   Araçoiaba: 'top',
   'Cabo de Santo Agostinho': 'top',
-  Camaragibe: 'right',
+  Camaragibe: 'top',
   Igarassu: 'right',
   'Ilha de Itamaracá': 'right',
   Ipojuca: 'top',
