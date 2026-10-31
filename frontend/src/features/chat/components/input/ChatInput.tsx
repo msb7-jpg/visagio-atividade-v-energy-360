@@ -65,7 +65,7 @@ export function ChatInput({
     <div
       ref={containerRef}
       className={cn(
-        'relative rounded-2xl border border-border bg-card/90 p-2 shadow-xl backdrop-blur-xl transition-all focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50',
+        'relative rounded-2xl border border-border bg-card/90 p-2 shadow-xl backdrop-blur-xl transition focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50',
         className
       )}
     >

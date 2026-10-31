@@ -25,7 +25,7 @@ function PageLoading() {
 export function AppLayout() {
   return (
     <div className="bg-background flex min-h-dvh">
-      <aside className="border-white/10 bg-card/50 backdrop-blur-2xl sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-4 self-start overflow-y-auto border-r p-4 md:flex shadow-2xl">
+      <aside className="border-foreground/10 bg-card/50 backdrop-blur-2xl sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-4 self-start overflow-y-auto border-r p-4 md:flex shadow-2xl">
         <div className="flex items-center gap-2.5 px-2 py-1">
           <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-lg shadow-sm">
             <Zap className="size-5" />
@@ -40,10 +40,10 @@ export function AppLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-white/10 bg-card/50 backdrop-blur-2xl sticky top-0 z-40 flex items-center justify-end gap-3 border-b px-6 py-2.5 shadow-sm">
+        <header className="border-foreground/10 bg-card/50 backdrop-blur-2xl sticky top-0 z-40 flex items-center justify-end gap-3 border-b px-6 py-2.5 shadow-sm">
           <div className="flex items-center gap-3">
             <ChatDrawer />
-            <div className="pl-3 border-l border-white/10">
+            <div className="pl-3 border-l border-foreground/10">
               <UserMenu />
             </div>
           </div>

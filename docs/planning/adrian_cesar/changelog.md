@@ -844,3 +844,33 @@
 - **Decisões:** o cargo vem do texto entre parênteses do `nome` (o token não tem campo de cargo nem de grupo). A linha "Grupo ..." ficou de fora porque o dado não existe. Por decisão do dono da fatia, a troca de perfil de demonstração, o aviso e a etiqueta "Modo demonstração" **não entram no menu**: a troca de perfil continua só no login (`VITE_DEMO_LOGIN`, 5 contas). Foi somada a variante `touch` (`h-11`) ao `Button`, sem alterar as existentes.
 - **Pendências:** campo de grupo do diretório (`GG-PORTAL-...`) e cargo como campo próprio exigem mudança no backend (`UserDTO` e JWT).
 - **Validação de Testes:** `make lint-all` OK; `make test-all` OK (pytest 708, vitest 582, incluindo os do menu e do tema).
+
+### [2026-10-30] - Modo claro em todo o portal (tokens, provedor, componentes base e contraste)
+- **Autor:** Adrian César
+- **Achado da fase 1:** os tokens shadcn já estavam separados (`:root` claro, `.dark` escuro) e não havia cor hexadecimal, classe Tailwind de cor fixa nem `style={{ color }}` fora de `index.css`. O que quebrava o claro era só o `.glass-panel` (fundo, borda e sombra escuros fixos), usado por todo `Card` e pelo `IndicatorsTable`, e 4 bordas `border-white/*` (`card.tsx`, `AppLayout.tsx`). Os gráficos (Recharts) já liam `--color-chart-*`, `--color-border` e `--color-muted-foreground`.
+- **O que foi feito:**
+  - **Provedor** (`lib/theme.ts`, `useTheme`): valores gravados em `grid360.tema` passam a ser `claro`/`escuro` (o antigo `light` ainda é lido como claro); `localStorage` indisponível cai no escuro; script do `<head>` aceita os dois formatos; `Toaster` e o bloco SQL do chat (Shiki `vitesse-light`/`vitesse-dark`) seguem o tema.
+  - **Componentes base:** `.glass-panel` e `.glass-panel-interactive` viraram card sólido com `--border` e sombra suave no claro, e o vidro do escuro foi preservado em `.dark` (mesmos valores, agora derivados de `--card` e `--primary` por `color-mix`; conferido no navegador: fundo, borda, sombra e blur idênticos). `--shadow-xl`/`--shadow-2xl` ficam suaves só no claro. `border-white/10|15` viraram `border-foreground/10` e `border-border`.
+  - **`transition-all`** (9 usos) trocado por `transition` (propriedades explícitas) e o `glass-panel-interactive` por 4 propriedades, sem movimento com `prefers-reduced-motion`.
+  - **Testes:** `src/test/no-hardcoded-colors.test.ts` (varre `.ts`/`.tsx` à procura de hexadecimal, `rgb()/hsl()` e classe Tailwind de cor fixa; sem exceções), `src/test/color-contrast.test.ts` (62 pares) e o do script do `<head>` (recarregar no claro não deixa `dark`).
+- **Decisões:** `--warning` do claro continua `#7F5200` (já coberto por teste de contraste). Única diferença no escuro: as bordas do menu lateral e do cabeçalho passam de `white/10` para `foreground/10` (`#E7EDF4` a 10%), imperceptível.
+- **Contraste medido (razão; mínimo 4,5 texto, 3 não texto). Nenhum par falhou, nenhum token foi trocado.**
+
+| Par | Claro | Escuro |
+|---|---|---|
+| texto sobre card | 17,28 | 14,68 |
+| texto suave sobre card | 7,02 | 8,39 |
+| primário sobre fundo | 6,79 | 8,36 |
+| texto sobre botão primário | 7,43 | 8,41 |
+| selo primary (tingido 16%) | 5,77 | 5,72 |
+| selo success | 5,14 | 6,25 |
+| selo warning | 5,31 | 6,99 |
+| selo destructive | **4,63** | 5,34 |
+| borda de campo sobre card | 3,47 | 3,56 |
+| borda de campo sobre fundo | **3,17** | 3,87 |
+| anel de foco sobre card | 7,43 | 7,70 |
+| chart-5 sobre card (pior série) | 4,13 | 9,24 |
+
+- **Conferência no navegador:** Painel, Inteligência Comercial, Fila de Inspeção, Qualidade da Rede, Visão 360 da UC e Assistente IA capturados no claro e conferidos no escuro. "Estados", "Componentes", "Tokens" e "Sobre os dados" das imagens de referência são páginas do protótipo que não existem no app.
+- **Pendências:** `public/favicon.svg` e `icons.svg` são do template Vite (cores fixas, fora de uso como marca).
+- **Validação de Testes:** `make lint-all` e `make test-all` rodados ao final (ver commit).

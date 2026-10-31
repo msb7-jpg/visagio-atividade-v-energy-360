@@ -87,10 +87,15 @@
   --chart-4: #8A5A00;
   --chart-5: #0E8C80;
   --radius: 8px;
+  /* Menus, painéis e diálogos: no claro, sombra suave (o escuro mantém as sombras padrão do Tailwind). */
+  --shadow-xl: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .dark {
   color-scheme: dark;
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
   --background: #0A121E;
   --foreground: #E7EDF4;
   --card: #111B2A;
@@ -289,9 +294,15 @@ html.theme-transition * {
   background-color: var(--muted-foreground);
 }
 
-/* Micro-elevação para superfícies escuras e Painel Glassmorphic Autêntico */
+/* Painel de superfície. No claro: card sólido, borda `border` e sombra suave. No escuro (.dark): vidro translúcido. */
 .glass-panel {
-  background: rgba(17, 27, 42, 0.65);
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.dark .glass-panel {
+  background: color-mix(in srgb, var(--card) 65%, transparent);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -299,14 +310,28 @@ html.theme-transition * {
 }
 
 .glass-panel-interactive {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), transform 250ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-panel-interactive:hover {
-  background: rgba(17, 27, 42, 0.82);
-  border-color: rgba(91, 184, 221, 0.45);
-  box-shadow: 0 14px 44px 0 rgba(0, 0, 0, 0.45), 0 0 20px 0 rgba(91, 184, 221, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.20);
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   transform: translateY(-2px);
+}
+
+.dark .glass-panel-interactive:hover {
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  box-shadow: 0 14px 44px 0 rgba(0, 0, 0, 0.45), 0 0 20px 0 color-mix(in srgb, var(--primary) 15%, transparent), inset 0 1px 0 0 rgba(255, 255, 255, 0.20);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-panel-interactive,
+  .glass-panel-interactive:hover {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* Scrollbar sutil e consistente para toda a aplicação */
