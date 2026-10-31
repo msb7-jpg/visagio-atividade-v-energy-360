@@ -1,10 +1,13 @@
 import { describe, expect, test } from 'vitest'
 import { DEC_BANDS } from '@/features/grid_quality/utils/continuityBands'
-import { contrastRatio, hexToRgb, readTokens } from '@/test/contrastTokens'
+import { blend, contrastRatio, hexToRgb, readTokens } from '@/test/contrastTokens'
 
 const MIN_TEXT_CONTRAST = 4.5
 const MIN_GRAPHIC_CONTRAST = 3
 const NOTE_SURFACES = ['background', 'card', 'muted'] as const
+/** O Badge `destructive` usa `bg-destructive/10` com o texto na própria cor. */
+const DESTRUCTIVE_TINT = 0.1
+const BADGE_SURFACES = NOTE_SURFACES
 
 describe.each([
   ['claro', ':root'],
@@ -18,6 +21,13 @@ describe.each([
 
   test.each(NOTE_SURFACES)('notas e cabeçalhos de tabela (muted-foreground) passam no AA sobre %s', (surface) => {
     expect(contrastRatio(hexToRgb(tokens['muted-foreground']), hexToRgb(tokens[surface]))).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST)
+  })
+
+  test.each(BADGE_SURFACES)('o texto do selo de perigo passa no AA sobre a superfície %s', (surface) => {
+    const destructive = hexToRgb(tokens.destructive)
+    const tintedBackground = blend(destructive, hexToRgb(tokens[surface]), DESTRUCTIVE_TINT)
+
+    expect(contrastRatio(destructive, tintedBackground)).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST)
   })
 
   test.each(DEC_BANDS)('a faixa "$label" do mapa tem 3:1 contra o fundo e o card', (band) => {
