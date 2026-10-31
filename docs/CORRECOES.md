@@ -25,16 +25,7 @@
 
 ## 2. Diagnóstico da receita (Renan e Célio)
 
-- [x] 🔴 **Conclusão sobre fraude nos quatro bairros corrigida.** O diagnóstico agora usa a evidência reproduzível de 828 das 871 irregularidades confirmadas (95,1%) nos quatro bairros e a queda simultânea observada, sem afirmar que cada UC ou kWh seja recuperável. Consultas e limites registrados em `docs/DIAGNOSTICO_RECEITA.md`, seções 6.2, 6.5 e C2c.
-- [ ] 🟡 **Reconciliar as 887 UCs com queda ≥40%.** A contagem divulgada não tem consulta ou regra de janela versionada. Reconstrução independente dos CSVs brutos, com uma aproximação local das regras atuais da Silver para UCs sem GD atual nos quatro bairros e comparando maio/2024–abril/2025 com maio/2025–abril/2026, resultou em 888 pela soma de kWh, 890 pela média dos meses disponíveis e 880 exigindo 12 meses completos em ambas as janelas. Nenhuma confirma 887; obter a consulta e os critérios originais e validar o resultado na Gold antes de usar a população para priorizar inspeções.
-  - **Consulta original encontrada (Bernardo, 30/10):** soma de `consumo_faturado_kwh` em `fato_faturamento` de mai/2024 a abr/2025 (antes) contra jul/2025 a jun/2026 (depois); UCs com `possui_gd = 0`, com fatura em jul/2022–jun/2023 e com `bairro IN ('IPUTINGA','MACAXEIRA','JARDIM JORDAO','PRAZERES')`; queda = `depois < 0.6 * antes`. No banco de 29/10 dava **887 de 3.247** (o nome exato deixava de fora as 30 UCs com `JARDIM JORDA£O` quebrado); **no banco corrigido de 30/10, dá 894 de 3.276**. As diferenças para 880–900 vêm dos meses escolhidos (mai–jun/2025 ficam de fora) e da exigência de fatura no primeiro ano. Correção sugerida: citar essa definição no diagnóstico (C2c) com o número novo.
-- [x] 🔴 **Placeholders do diagnóstico preenchidos.** Não há ocorrências de `[a preencher]` ou `[a confirmar]` em `docs/DIAGNOSTICO_RECEITA.md`; validação por busca textual em 2026-10-30.
-- [ ] 🟡 **Seção 6.2 do diagnóstico (fraude e furto) cita números da fila de perdas que mudaram** (Adrian, 2026-10-28). Para usar "o mesmo cálculo da fila", atualizar: tarifa de **R$ 0,7876/kWh** (média ponderada de 12 meses de `fato_faturamento`, e não os 0,714 da constante antiga); chance de acerto da queda moderada **91,5%** com queda além da carteira de 20% ou mais e **7,6%** abaixo (a queda súbita segue 93% e a taxa geral 62,7%); fila de 2026-06 com 165 UCs (**7 fortes e 158 fracas**, 35 delas ligações recentes sem taxa medida, D14), cerca de 7.265 kWh/mês recuperáveis e cerca de 788 kWh/mês de retorno esperado. Fonte: `docs/DECISOES_PERDAS.md` D8, D11, D12 e D14.
-- [ ] 🟡 **Atualizar os números por bairro com o banco corrigido de 30/10.** Com os bairros unificados, mudam no `DIAGNOSTICO_RECEITA.md`:
-  - irregularidades nos 4 bairros: **835 de 871 (95,9%)**, e não 828 (95,1%), nas seções 1, 6.2, 6.5, C2b e 7;
-  - UCs com queda de 40% ou mais: **894 de 3.276**, e não 887, com a consulta do item acima;
-  - ranking da tela (efeito-volume): Jardim Jordão **−R$ 0,80 mi** (texto: −0,79) e Brasília Teimosa **−R$ 0,34 mi** (texto: −0,33); a receita dos 4 bairros cai **R$ 1,41 mi** (texto: 1,40). Iputinga, Prazeres e Macaxeira não mudam.
-- **Andamento (2026-10-30, Renan):** conclusão sobre fraude atualizada com a concentração reproduzível de 828/871 irregularidades nos quatro bairros; placeholders resolvidos; diagnóstico também contém os números D8/D14 da fila, explicação do volume/tarifa e recomendações em R$. A contagem individual divulgada como 887 não foi reproduzida (testes independentes, com aproximação das regras Silver, deram 880–890 conforme a definição); falta obter a consulta original, validar na Gold e conferir os sete valores de bairro contra a tela. Não marcar o entregável como concluído até fechar essas verificações.
+Nada pendente.
 
 ## 3. IA (Miguel)
 
@@ -49,7 +40,7 @@
 
 ## 5. Visão 360 (Bernardo)
 
-- [ ] ⚪ Plugar o `SmartInsightCard context="customer360"` (opcional: o case pede IA embutida em pelo menos uma tela, e ela já está no Painel).
+Nada pendente.
 
 ## 6. Gestão de Perdas (Adrian)
 
@@ -96,6 +87,7 @@
   - sem seção de diferenciais (testes, RBAC, exportar e subir planilha, follow-up, avaliação do agente, testes do pipeline);
   - sem a lista dos 5 logins com o que cada perfil vê;
   - "como obter o `v_energy.db`" só ensina a baixar do Databricks, que o avaliador não acessa.
+- [ ] ⚪ **Depois do PR #55, rodar o setup de novo** (`scripts\dev.ps1 setup` ou `make setup-all`). O backend ganhou o Alembic; sem o `uv sync`, o teste de migração falha e o `make db-upgrade` não roda. O setup usa `uv sync --all-extras`, que agora também instala o grupo `pipeline` (PySpark e Delta, algumas centenas de MB).
 - [ ] 🟡 Rodar `make lint-all`, `make test-all` e `bun run build` na `main` depois de cada merge (o `make` não roda o `tsc`).
 - [ ] ⚪ **Ao trocar o `v_energy.db`, apagar também `v_energy.db-wal` e `v_energy.db-shm`** da mesma pasta. O banco fica em modo WAL; se sobrar o `-wal` do banco antigo, o SQLite aplica as páginas antigas sobre o arquivo novo e acusa "database disk image is malformed" (aconteceu em 30/10 com um `-wal` de 78 KB). Depois, reiniciar a API para limpar o cache do Painel.
 - [ ] ⚪ **Componentes do design novo sem dono: `KpiCard`, `DeltaBadge`, `DataTable` e `FilterBar`** (apontado pelo Adrian, 2026-10-29, fase 10.5 do design). Os `componentes-*.png` os preveem, mas nenhum existe em `frontend/src/components/ui/`: cada fatia tem a sua versão.
@@ -106,6 +98,10 @@
 
 ## Já resolvido
 
+- [x] 🔴 **Conclusão sobre fraude nos quatro bairros corrigida.** O diagnóstico agora usa a evidência reproduzível de 828 das 871 irregularidades confirmadas (95,1%) nos quatro bairros e a queda simultânea observada, sem afirmar que cada UC ou kWh seja recuperável. Consultas e limites registrados em `docs/DIAGNOSTICO_RECEITA.md`, seções 6.2, 6.5 e C2c.
+- [x] 🔴 **Placeholders do diagnóstico preenchidos.** Não há ocorrências de `[a preencher]` ou `[a confirmar]` em `docs/DIAGNOSTICO_RECEITA.md`; validação por busca textual em 2026-10-30.
+- [x] Diagnóstico atualizado com o banco de bairros corrigidos (Bernardo, 2026-10-31): 835 de 871 irregularidades nos quatro bairros (95,9%), queda de 2.735 MWh (1.786 comercial e 949 residencial) e até R$ 2,02 mi em jogo; ranking com Jardim Jordão −R$ 0,80 mi e Brasília Teimosa −R$ 0,34 mi; tabelas C5, C8 e C9 refeitas. A contagem de UCs com queda de 40% ou mais foi reproduzida (consulta C2d, 894 de 3.276; eram 887 no banco de 29/10) e a resposta em uma frase foi escrita. Os números da fila na seção 6.2 (tarifa de R$ 0,7876, 165 UCs, 7 prioritárias, 788 kWh/mês) já tinham sido atualizados pelo Renan.
+- [x] Visão 360 com insight de IA (`SmartInsightCard context="customer360"`), com as métricas da própria UC e a mesma verificação de fidelidade do Painel; documentação OpenAPI dos 4 endpoints no padrão `EndpointDoc` (`customer360/router_metadata.py`). Bernardo, 2026-10-31.
 - [x] **Sem "Tentar novamente" nos erros da Qualidade da Rede** (Joao Henrique, apontado pelo Adrian em 2026-10-29). `onRetry={() => void query.refetch()}` nos quatro pontos (e também no erro dos indicadores, que agora usa `ErrorState`), como em `loss_management/components/UnitDetailSheet.tsx`. Testes em `ContinuityView.test.tsx` e `GridQualityPage.test.tsx` conferem que o botão aparece no erro e refaz a chamada. Na mesma branch: cartões de % acima do limite, em alerta e conforme (`becfe32`, `e9df772`), paginação da tabela de circuitos (`3d9b296`) e `whitespace-nowrap` em "Ver ficha" e no bairro da gaveta. Branch `feat/fatia-06-acabamento-qualidade` (commit `02cac07`), 2026-10-30.
 - [x] PR #34: lista de bairros limitada a 100 (Recife tem 106). Corrigido em `07a69c0` e mesclado na `main` em 2026-10-28.
 - [x] Numeração das ADRs: as da Visão 360 passaram para ADR-017 a ADR-023 (a `main` usa 006–009 da Fatia 01, e o Painel, 010–016). Resolvido na branch `feat/fatia-03-visao360-gold` em 2026-10-28, junto com o merge da `main`.

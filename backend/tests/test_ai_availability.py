@@ -9,6 +9,8 @@ from app.core.llm_factory import availability
 from app.core.llm_factory.availability import AIProviderNotConfiguredError, resolve_configured_provider
 from app.core.llm_factory.factory import get_chat_model
 from app.features.chat import router as chat_router
+from app.features.chat.insights_service import generate_proactive_insights_service
+from app.features.chat.schemas import ProactiveInsightsRequest
 from app.main import app
 
 CHAT_URL = "/api/v1/chat/stream"
@@ -74,3 +76,12 @@ async def test_chosen_simulated_mode_says_it_is_a_demonstration():
 
     assert "Modo demonstração" in body
     assert "conformidade" not in body
+
+
+async def test_chosen_simulated_mode_also_returns_a_demonstration_insight(monkeypatch):
+    use_settings(monkeypatch, ai_provider="mock")
+    request = ProactiveInsightsRequest(context="customer360", metricas={"faturas_em_aberto": 2})
+
+    response = await generate_proactive_insights_service(request)
+
+    assert response.resumo_executivo.startswith("Modo demonstração")
