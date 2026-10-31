@@ -147,7 +147,7 @@ Dialog cancelar ordem · Dialog importar resultados · Toast · ChatDrawer (Assi
 - "UC · bairro".
 - Motivo do cancelamento (obrigatório): UC regularizada pelo cliente · Ordem duplicada · Endereço não localizado ou acesso negado · Repriorização da equipe · Outro. Sem motivo → erro "Escolha um motivo para cancelar."
 - Observação (opcional).
-- Texto: "A UC volta para a fila e o score é recalculado no próximo processamento."
+- Texto (atualizado em 31/10/2026, ver P14 em `fila-inspecao-decisoes.md`): depois de escolher o motivo, o diálogo diz "A UC … volta para a fila e o score é recalculado no próximo processamento." ou, para UC regularizada e endereço não localizado, "A UC … fica fora da fila por 90 dias."
 - Botões: "Manter ordem" · "Cancelar ordem" (destrutivo) → coluna Cancelada com "Cancelada: motivo"; toast "OI-… cancelada."
 
 ### 3.11 Dialog "Importar resultados de campo" (largura até 1.120 px)
