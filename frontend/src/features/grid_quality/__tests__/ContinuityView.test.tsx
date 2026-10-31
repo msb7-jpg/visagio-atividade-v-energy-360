@@ -61,6 +61,10 @@ beforeEach(() => {
   mockedGet.mockResolvedValue({ data: snapshot })
 })
 
+async function openFilters() {
+  fireEvent.click(await screen.findByRole('button', { name: 'Filtros' }))
+}
+
 function renderView() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -93,6 +97,7 @@ describe('ContinuityView', () => {
     renderView()
     expect(await screen.findByText('Nº de interrupções')).toBeInTheDocument()
     expect(screen.getByText('Evento fora do padrão')).toBeInTheDocument()
+    await openFilters()
     expect(screen.getByText('Mês do evento (06/2001)')).toBeInTheDocument()
   })
 
@@ -121,9 +126,8 @@ describe('ContinuityView', () => {
   it('mostra causas com "Sem causa registrada" e tipos de ocorrência', async () => {
     renderView()
     expect(await screen.findByText('Interrupções por causa')).toBeInTheDocument()
-    // Cada causa aparece no seletor "Causa" e no bloco de causas.
-    expect(screen.getAllByText('Sem causa registrada')).toHaveLength(2)
-    expect(screen.getAllByText('Climática')).toHaveLength(2)
+    expect(screen.getAllByText('Sem causa registrada')).toHaveLength(1)
+    expect(screen.getAllByText('Climática')).toHaveLength(1)
     expect(screen.getByText('Oscilação')).toBeInTheDocument()
     expect(screen.getByText('Por tipo de ocorrência')).toBeInTheDocument()
   })
@@ -131,6 +135,7 @@ describe('ContinuityView', () => {
   it('refaz a consulta ao excluir o mês do evento e ao escolher um município', async () => {
     renderView()
     await screen.findByText('Evento fora do padrão')
+    await openFilters()
     fireEvent.click(screen.getByRole('tab', { name: 'Excluir' }))
     await waitFor(() =>
       expect(mockedGet).toHaveBeenLastCalledWith('/quality/continuity', {
@@ -150,12 +155,14 @@ describe('ContinuityView', () => {
   it('lista os 14 municípios no filtro, sem depender do snapshot filtrado', async () => {
     renderView()
     await screen.findByText('Evento fora do padrão')
+    await openFilters()
     expect(within(screen.getByLabelText('Município')).getAllByRole('option')).toHaveLength(15)
   })
 
   it('lista "Todas" e as causas do snapshot, filtra por causa e volta para "Todas"', async () => {
     renderView()
     await screen.findByText('Evento fora do padrão')
+    await openFilters()
     const select = screen.getByLabelText('Causa')
     expect(within(select).getAllByRole('option').map((option) => option.textContent)).toEqual([
       'Todas',
@@ -179,12 +186,33 @@ describe('ContinuityView', () => {
     )
   })
 
+  it('mostra chips dos filtros ativos e "Limpar filtros" volta ao padrão', async () => {
+    renderView()
+    await screen.findByText('Evento fora do padrão')
+    await openFilters()
+    fireEvent.click(screen.getByRole('tab', { name: 'Excluir' }))
+    fireEvent.change(screen.getByLabelText('Município'), { target: { value: 'Olinda' } })
+    fireEvent.change(screen.getByLabelText('Causa'), { target: { value: 'VEGETACAO' } })
+    expect(await screen.findByText('Município: Olinda')).toBeInTheDocument()
+    expect(screen.getByText('Causa: Vegetação')).toBeInTheDocument()
+    expect(screen.getByText('Sem o mês do evento (06/2001)')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+    await waitFor(() =>
+      expect(mockedGet).toHaveBeenLastCalledWith('/quality/continuity', {
+        params: { municipio: undefined, causa: undefined, incluir_evento: true },
+        signal: expect.anything()
+      })
+    )
+    expect(screen.queryByText('Município: Olinda')).not.toBeInTheDocument()
+  })
+
   it('usa texto neutro no cartão quando o mês não é extremo para a causa e evita divisão por mediana zero', async () => {
     mockedGet.mockResolvedValue({
       data: { ...snapshot, event: { ...snapshot.event!, extremeInScope: false, otherMonthsMedian: 0 } }
     })
     renderView()
     await screen.findByText('Evento fora do padrão')
+    await openFilters()
     fireEvent.change(screen.getByLabelText('Causa'), { target: { value: 'VEGETACAO' } })
     expect(await screen.findByText('Mês do evento na rede')).toBeInTheDocument()
     expect(screen.getByText(/os outros meses não tiveram ocorrências/)).toBeInTheDocument()

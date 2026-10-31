@@ -54,7 +54,7 @@
 - [x] **Capacidade do Rafael:** "mais de 200 inspeções por mês" e "pouco mais da metade encontra algo" aparecem coerentes na tela (capacidade mensal, taxa de 62,7%). (`/losses/queue-summary`: capacidade 200 e taxa de 62,7% em 1.389 inspeções)
 - [ ] **Ordens de inspeção:** gerar a partir da fila, mudar status, registrar o resultado de campo e cancelar. Testar o ciclo inteiro na tela.
 - [x] **Operação: DEC e FEC por alimentador ao longo do tempo** e os piores, mais regiões e onde a manutenção dá retorno. Textos sem falar em "multa" ou "violação" (glossário: o limite é só referência). (tela `/quality`; os textos dizem "Acima do limite de referência" e explicam que o DEC/FEC não mede violação)
-- [ ] **Filtrar e recortar:** cada tela tem filtros que funcionam (período, município, bairro, classe, status). Listar quais são. (Qualidade da Rede — Visão atual filtra por situação em relação ao limite de referência; Continuidade filtra por município, mês do evento e causa (`ContinuityFilters`, `GET /quality/continuity`); as demais telas ainda precisam listar os seus filtros)
+- [ ] **Filtrar e recortar:** cada tela tem filtros que funcionam (período, município, bairro, classe, status). Listar quais são. (Qualidade da Rede — Visão atual filtra por situação em relação ao limite de referência; Continuidade filtra por município, mês do evento e causa, num `FilterPopover` com chips e "Limpar filtros" (`ContinuityFilters`, `GET /quality/continuity`); as demais telas ainda precisam listar os seus filtros)
 - [x] **Mesmos números entre telas:** (conferido em 30/10 com o banco regerado)
   - [x] Receita = Painel = diagnóstico (+8,0%, −5,1%, +13,8%);
   - [x] inadimplência do Painel = diagnóstico (5,52% → 5,42%);

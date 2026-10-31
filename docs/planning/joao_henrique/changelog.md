@@ -268,3 +268,13 @@
 - **Validação de Testes:**
   - Banco real (`v_energy.db`, B = 12 últimos meses): DEC de B da rota igual ao SQL independente em todas as 7 causas (VEGETACAO 0,24127; CLIMATICA 2,14186); soma por causa 3,4493594 = DEC total 3,4493594.
   - `make lint-all` aprovado; `make test-all`: 731 pytest e 578 vitest.
+
+### [2026-10-31] - Filtros da Continuidade em popover (issue #68)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `ContinuityFilters` passou a usar o `FilterPopover` compartilhado: mês do evento (incluir/excluir), município e causa dentro do painel "Filtros".
+  - Chips "Município: X", "Causa: Y" e "Sem o mês do evento (MM/AAAA)" (rótulo de `formatCompetencia`); cada chip remove só o seu filtro e "Limpar filtros" volta município e causa para vazio e inclui o mês do evento.
+  - API do controller e parâmetros enviados a `GET /quality/continuity` inalterados; Visão atual sem mudança.
+  - `ContinuityView.test.tsx` abre "Filtros" antes de escolher e ganhou teste dos chips e de "Limpar filtros".
+- **Validação de Testes:**
+  - `make lint-all` aprovado; `make test-all` aprovado (723 vitest no frontend).

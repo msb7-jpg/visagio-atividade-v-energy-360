@@ -1,3 +1,4 @@
+import { FilterPopover, type ActiveFilterChip } from '@/components/filters/FilterPopover'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -18,10 +19,12 @@ interface ContinuityFiltersProps {
 }
 
 /**
- * Filtros da Continuidade: incluir ou excluir o mês do evento, município e causa.
+ * Filtros da Continuidade num painel recolhido (`FilterPopover`): mês do evento, município e causa.
+ * Chips: "Município: X", "Causa: Y" e "Sem o mês do evento (MM/AAAA)"; "Limpar filtros" volta ao padrão
+ * (município e causa vazios, mês do evento incluído).
  *
  * @param props - Valores atuais e callbacks de mudança.
- * @returns Barra de filtros.
+ * @returns Botão "Filtros" com os chips dos filtros ativos.
  */
 export function ContinuityFilters({
   includeEventMonth,
@@ -34,8 +37,25 @@ export function ContinuityFilters({
   causeOptions,
   eventCompetencia
 }: ContinuityFiltersProps) {
+  const chips: ActiveFilterChip[] = []
+  if (municipality) {
+    chips.push({ key: 'municipio', label: `Município: ${municipality}`, onRemove: () => onMunicipalityChange('') })
+  }
+  if (cause) {
+    chips.push({ key: 'causa', label: `Causa: ${labelOccurrence(cause)}`, onRemove: () => onCauseChange('') })
+  }
+  if (!includeEventMonth) {
+    const eventMonth = eventCompetencia ? ` (${formatCompetencia(eventCompetencia)})` : ''
+    chips.push({ key: 'evento', label: `Sem o mês do evento${eventMonth}`, onRemove: () => onIncludeEventMonthChange(true) })
+  }
+  const clearAll = () => {
+    onMunicipalityChange('')
+    onCauseChange('')
+    onIncludeEventMonthChange(true)
+  }
+
   return (
-    <div className="flex flex-wrap items-end gap-4">
+    <FilterPopover activeFilters={chips} onClear={clearAll}>
       <div className="flex flex-col gap-1.5">
         <Label>{eventCompetencia ? `Mês do evento (${formatCompetencia(eventCompetencia)})` : 'Mês do evento'}</Label>
         <Tabs value={includeEventMonth ? 'incluir' : 'excluir'} onValueChange={(value) => onIncludeEventMonthChange(value === 'incluir')}>
@@ -45,7 +65,7 @@ export function ContinuityFilters({
           </TabsList>
         </Tabs>
       </div>
-      <div className="flex min-w-56 flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="filtro-municipio">Município</Label>
         <Select id="filtro-municipio" value={municipality} onChange={(event) => onMunicipalityChange(event.target.value)}>
           <option value="">Todos</option>
@@ -54,7 +74,7 @@ export function ContinuityFilters({
           ))}
         </Select>
       </div>
-      <div className="flex min-w-56 flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="filtro-causa">Causa</Label>
         <Select id="filtro-causa" value={cause} onChange={(event) => onCauseChange(event.target.value)}>
           <option value="">Todas</option>
@@ -63,6 +83,6 @@ export function ContinuityFilters({
           ))}
         </Select>
       </div>
-    </div>
+    </FilterPopover>
   )
 }
