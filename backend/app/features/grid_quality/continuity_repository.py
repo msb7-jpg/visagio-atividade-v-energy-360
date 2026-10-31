@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.features.grid_quality.continuity_queries import (
     affected_customers_query,
     cause_hours_query,
+    causes_query,
     feeder_ucs_query,
     latest_competencias_query,
     monthly_feeder_query,
@@ -41,9 +42,9 @@ class ContinuityRepository:
             logger.exception(GOLD_ERROR_MESSAGE)
             raise DatabaseReadError(GOLD_ERROR_MESSAGE) from e
 
-    async def fetch_monthly(self) -> list[MonthlyFeederRow]:
+    async def fetch_monthly(self, cause: str | None = None) -> list[MonthlyFeederRow]:
         """UC-horas e ocorrências por alimentador e competência, na rede inteira (soma feita no SQL)."""
-        result = await self._execute(monthly_feeder_query())
+        result = await self._execute(monthly_feeder_query(cause))
         return [MonthlyFeederRow(**record) for record in result.mappings()]
 
     async def fetch_feeder_ucs(self) -> dict[str, int]:
@@ -61,9 +62,16 @@ class ContinuityRepository:
         result = await self._execute(cause_hours_query(competencias, feeder_ids))
         return {record["causa"]: record["uc_hours"] for record in result.mappings()}
 
-    async def fetch_type_counts(self, competencias: Collection[str], feeder_ids: Collection[str]) -> dict[str, int]:
-        """Ocorrências por tipo nas competências e alimentadores informados."""
-        result = await self._execute(type_count_query(competencias, feeder_ids))
+    async def fetch_causes(self) -> set[str]:
+        """Causas distintas registradas (valores do banco)."""
+        result = await self._execute(causes_query())
+        return set(result.scalars())
+
+    async def fetch_type_counts(
+        self, competencias: Collection[str], feeder_ids: Collection[str], cause: str | None = None
+    ) -> dict[str, int]:
+        """Ocorrências por tipo nas competências e alimentadores informados (e na causa, se houver)."""
+        result = await self._execute(type_count_query(competencias, feeder_ids, cause))
         return {record["tipo_ocorrencia"]: record["occurrences"] for record in result.mappings()}
 
     async def fetch_latest_competencias(self, meses: int) -> list[str]:

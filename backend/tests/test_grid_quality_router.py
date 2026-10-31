@@ -117,9 +117,9 @@ class StubQualityService:
         self.calls.append(("feeders", competencia, status))
         return [RANKING_ENTRY]
 
-    async def get_snapshot(self, municipio=None, incluir_evento=True):
+    async def get_snapshot(self, municipio=None, incluir_evento=True, causa=None):
         """Registra o pedido e devolve uma Continuidade fixa."""
-        self.calls.append(("continuity", municipio, incluir_evento))
+        self.calls.append(("continuity", municipio, incluir_evento, causa))
         return CONTINUITY
 
     async def get_affected_customers(self, id_alimentador, meses=12, limite=10):
@@ -193,13 +193,30 @@ async def test_continuidade_repassa_filtros_e_responde_em_camel_case(client, stu
     assert response.status_code == 200
     assert response.json()["kpis"]["averageDurationHours"]["changePercent"] == pytest.approx(100.0)
     assert response.json()["event"] is None
-    assert stub_service.calls == [("continuity", "Recife", False)]
+    assert stub_service.calls == [("continuity", "Recife", False, None)]
 
 
 async def test_continuidade_inclui_o_evento_por_padrao(client, stub_service):
     await client.get("/quality/continuity", headers=bearer_for_role(UserRole.DIRETOR))
 
-    assert stub_service.calls == [("continuity", None, True)]
+    assert stub_service.calls == [("continuity", None, True, None)]
+
+
+@pytest.mark.parametrize(
+    ("role", "expected_status"),
+    [
+        (UserRole.DIRETOR, 200),
+        (UserRole.GERENTE_OPERACAO, 200),
+        (UserRole.GERENTE_PERDAS, 403),
+        (UserRole.GERENTE_ATENDIMENTO, 403),
+        (UserRole.ATENDENTE, 403),
+    ],
+)
+async def test_continuidade_com_causa_respeita_os_cinco_papeis(client, stub_service, role, expected_status):
+    response = await client.get("/quality/continuity", params={"causa": "VEGETACAO"}, headers=bearer_for_role(role))
+
+    assert response.status_code == expected_status
+    assert stub_service.calls == ([("continuity", None, True, "VEGETACAO")] if expected_status == 200 else [])
 
 
 async def test_clientes_usam_12_meses_e_10_clientes_por_padrao(client, stub_service):
