@@ -7,6 +7,17 @@ import type { MunicipalityDec } from '@/features/grid_quality/types/continuityTy
 
 const AXIS_TICK = { fill: 'var(--color-muted-foreground)' }
 
+type LabelPosition = 'top' | 'left' | 'right' | 'bottom'
+
+/** Posição do rótulo dos municípios vizinhos que colidiriam no topo (as coordenadas são aproximadas, ADR-025). */
+const LABEL_POSITIONS: Record<string, LabelPosition> = {
+  'Abreu e Lima': 'left',
+  Igarassu: 'right',
+  'São Lourenço da Mata': 'left',
+  'Jaboatão dos Guararapes': 'bottom'
+}
+const LABEL_SIDES: LabelPosition[] = ['top', 'left', 'right', 'bottom']
+
 function MapTooltip({ active, payload }: TooltipProps<number, string>) {
   const point = payload?.[0]?.payload as MunicipalityDec | undefined
   if (!active || !point) {
@@ -45,7 +56,16 @@ export function MunicipalityMap({ municipalities }: { municipalities: Municipali
             {municipalities.map((municipality) => (
               <Cell key={municipality.name} fill={bandOf(municipality.decHours).fill} />
             ))}
-            <LabelList dataKey="name" position="top" fill="var(--color-foreground)" fontSize={11} />
+            {LABEL_SIDES.map((side) => (
+              <LabelList
+                key={side}
+                dataKey="name"
+                position={side}
+                fill="var(--color-foreground)"
+                fontSize={11}
+                valueAccessor={(point: MunicipalityDec) => ((LABEL_POSITIONS[point.name] ?? 'top') === side ? point.name : undefined)}
+              />
+            ))}
           </Scatter>
         </ScatterChart>
       </ChartContainer>
