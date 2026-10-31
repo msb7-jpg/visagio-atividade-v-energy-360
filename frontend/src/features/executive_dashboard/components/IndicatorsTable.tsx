@@ -106,7 +106,7 @@ export function IndicatorsTable({ groups }: IndicatorsTableProps) {
                         </span>
                       ) : null}
                       {!indicator.aviso && !indicator.detalhe ? (
-                        <span className="text-xs text-muted-foreground/40">—</span>
+                        <span className="text-xs text-muted-foreground">—</span>
                       ) : null}
                     </div>
                   </TableCell>

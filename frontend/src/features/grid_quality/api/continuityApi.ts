@@ -7,6 +7,7 @@ export const continuityApi = {
     const { data } = await apiClient.get<ContinuitySnapshot>('/quality/continuity', {
       params: {
         municipio: filters.municipality === '' ? undefined : filters.municipality,
+        causa: filters.cause === '' ? undefined : filters.cause,
         incluir_evento: filters.includeEventMonth
       },
       signal

@@ -236,11 +236,11 @@
   - Regras (constantes nomeadas em `continuity_rules.py`): período A = primeiros 12 meses e B = últimos 12 (`MESES_POR_PERIODO`), derivados da série; evento extremo = mês de UC-horas acima de 3 vezes a mediana mensal da rede inteira (`LIMIAR_EVENTO_EXTREMO`), igual para qualquer município; `incluir_evento=false` tira o mês de A e de B; sem mês acima do limiar, `event` vem nulo. UC-horas = soma de `duracao_horas`. DEC = UC-horas / soma de `ucs_atendidas` contada uma vez por alimentador no escopo; FEC = ocorrências / a mesma soma. Causa `NAO INFORMADA` vira "Sem causa registrada". Circuitos: os 20 maiores por UC-horas (`LIMITE_CIRCUITOS_RANKING`); amostra pequena = menos de 50 UCs.
   - Causas atacáveis (suposição de negócio, a validar com a Fatia 02): `VEGETACAO`, `FALHA DE EQUIPAMENTO` e `SOBRECARGA`. As demais, inclusive "Sem causa registrada", não contam.
   - Coordenadas dos 14 municípios: aproximação estática em `municipalities.py`, não vêm do banco.
-  - O filtro de escopo (município) está isolado em `scope_query` (`continuity_queries.py`): devolve os alimentadores do escopo e o resto só filtra por `id_alimentador`. O filtro de bairro entra ali, como parâmetro opcional sobre `dim_unidade_consumidora`, sem reescrever as agregações.
+  - O filtro de escopo (município) está isolado em `scope_query` (`continuity_queries.py`): devolve os alimentadores do escopo e o resto só filtra por `id_alimentador`. Bairro não entra ali (ver ADR-025, item 6).
   - Backend: `GET /quality/feeders/{id}/customers?meses=12&limite=10` (1 a 48 meses, 1 a 50 clientes) com as UCs de um circuito por horas sem energia.
   - Frontend: `continuityApi` chama a API; removidos `continuityMock.ts`, `continuityAggregations.ts`, o banner de dados de exemplo e os tipos órfãos. Gaveta do circuito ganhou a tabela de clientes com "Ver ficha" para `/customers?uc=`. `QualityStatusBadge`: acima do limite = destructive, alerta = warning, conforme = success. Textos: "limite de referência" e "Situação em relação ao limite de referência".
   - A lista de 14 municípios do filtro é constante no frontend (`continuityMunicipalities.ts`), porque o snapshot filtrado traz só o município escolhido.
-- **Fora desta entrega:** filtro de bairro (próxima etapa), bloco "Gerado por IA" e "causa principal por circuito".
+- **Fora desta entrega:** filtro de bairro (fora de escopo: um alimentador atende em média 3,3 bairros, então exigiria filtrar por UC; a causa atende melhor o gerente de operação), bloco "Gerado por IA" e "causa principal por circuito".
 - **Pendências:** validar a lista de causas atacáveis com a Fatia 02. Nome de bairro sujo na Gold registrado em `docs/CORRECOES.md`.
 - **Validação de Testes:**
   - `make lint-all` aprovado; `make test-all`: 644 pytest e 360 vitest. Testes novos: `test_grid_quality_continuity.py` e `test_grid_quality_customers.py` (seed pequeno, valores à mão) e rotas novas em `test_grid_quality_router.py`.
@@ -257,3 +257,14 @@
 - **Fora desta entrega:** conferência visual no navegador (só testes automatizados).
 - **Validação de Testes:**
   - `make lint-all` aprovado; `make test-all`: 708 pytest e 543 vitest.
+
+### [2026-10-30] - Filtro de causa na Continuidade
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Backend: `GET /quality/continuity` ganhou `causa` (valor do banco; "Sem causa registrada" vale `NAO INFORMADA`; inexistente = 400). Filtra a ocorrência e vale para KPIs de A e B, cartão do evento, municípios, circuitos e tipos. Denominador do DEC/FEC inalterado; bloco de causas continua com todas, filtrado só por município; evento detectado na rede inteira. `ContinuityEvent` ganhou `extremeInScope`; mês sem ocorrência no escopo conta como zero na mediana.
+  - Frontend: seletor "Causa" ao lado do município ("Todas" e as causas do snapshot, sem rota nova). O cartão do evento fica neutro quando o mês não é extremo para a causa e não calcula "N vezes" com mediana zero.
+  - ADR-025: item 7 (causa) e correção do item 6 (bairro não é filtro).
+- **Fora desta entrega:** filtro de bairro (motivo no ADR-025, item 6), bloco "Gerado por IA" e "causa principal por circuito".
+- **Validação de Testes:**
+  - Banco real (`v_energy.db`, B = 12 últimos meses): DEC de B da rota igual ao SQL independente em todas as 7 causas (VEGETACAO 0,24127; CLIMATICA 2,14186); soma por causa 3,4493594 = DEC total 3,4493594.
+  - `make lint-all` aprovado; `make test-all`: 731 pytest e 578 vitest.

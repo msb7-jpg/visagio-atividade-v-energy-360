@@ -11,7 +11,7 @@ describe('StatusBadge', () => {
 
   test.each([
     ['fatura', 'paga', 'bg-success/15'],
-    ['fatura', 'vencida', 'bg-destructive/15'],
+    ['fatura', 'vencida', 'bg-destructive/10'],
     ['ordem', 'ordem_gerada', 'bg-warning/15'],
     ['ordem', 'em_campo', 'bg-accent'],
     ['ordem', 'cancelada', 'bg-muted'],

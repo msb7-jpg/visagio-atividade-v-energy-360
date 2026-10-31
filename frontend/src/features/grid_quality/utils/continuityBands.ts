@@ -8,10 +8,10 @@ export interface DecBand {
   fill: string
 }
 
-/** Faixas de DEC do mapa, da menor para a maior. */
+/** Faixas de DEC do mapa, da menor para a maior: verde, azul, âmbar e vermelho (matizes distintos nos dois temas). */
 export const DEC_BANDS: DecBand[] = [
-  { label: 'até 2,5 h', upTo: 2.5, swatch: 'bg-chart-4', fill: 'var(--color-chart-4)' },
-  { label: '2,5 a 5 h', upTo: 5, swatch: 'bg-chart-2', fill: 'var(--color-chart-2)' },
+  { label: 'até 2,5 h', upTo: 2.5, swatch: 'bg-success', fill: 'var(--color-success)' },
+  { label: '2,5 a 5 h', upTo: 5, swatch: 'bg-chart-1', fill: 'var(--color-chart-1)' },
   { label: '5 a 10 h', upTo: 10, swatch: 'bg-warning', fill: 'var(--color-warning)' },
   { label: '10 h ou mais', upTo: Number.POSITIVE_INFINITY, swatch: 'bg-destructive', fill: 'var(--color-destructive)' }
 ]

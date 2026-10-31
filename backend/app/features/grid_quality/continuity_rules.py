@@ -122,6 +122,7 @@ def build_kpis(current: Totals, previous: Totals, scope_ucs: int) -> ContinuityK
 
 def build_event(
     event_competencia: str,
+    series_months: Collection[str],
     scope_rows: Collection[MonthlyFeederRow],
     period_b_without_event: Totals,
     scope_ucs: int,
@@ -130,21 +131,29 @@ def build_event(
 
     Args:
         event_competencia: Mês do evento detectado.
-        scope_rows: Linhas mensais dos alimentadores do escopo, série inteira.
+        series_months: Todas as competências da série; mês sem ocorrência no escopo conta como zero.
+        scope_rows: Linhas mensais dos alimentadores do escopo (e da causa, se houver), série inteira.
         period_b_without_event: Totais do período B sem o mês do evento, no escopo.
         scope_ucs: UCs atendidas do escopo (uma vez por alimentador).
 
     Returns:
-        Ocorrências do mês, mediana mensal dos demais meses e DEC/FEC de B sem o evento.
+        Ocorrências do mês, mediana mensal dos demais meses, DEC/FEC de B sem o evento e se o mês passa
+        do limiar de UC-horas dentro do escopo.
     """
     occurrences_by_month: dict[str, int] = defaultdict(int)
+    hours_by_month: dict[str, float] = defaultdict(float)
     for row in scope_rows:
         occurrences_by_month[row.competencia] += row.occurrences
-    other_months = [count for month, count in occurrences_by_month.items() if month != event_competencia]
+        hours_by_month[row.competencia] += row.uc_hours
+    other_months = [month for month in series_months if month != event_competencia]
+    median_hours = median(hours_by_month[month] for month in other_months) if other_months else 0.0
+    median_occurrences = median(occurrences_by_month[month] for month in other_months) if other_months else 0.0
+    # Mediana zero (causa rara): o limiar é 0 e qualquer hora no mês passa, sem divisão.
     return ContinuityEventDTO(
         competencia=event_competencia,
         event_interruptions=occurrences_by_month[event_competencia],
-        other_months_median=float(median(other_months)) if other_months else 0.0,
+        other_months_median=float(median_occurrences),
+        extreme_in_scope=hours_by_month[event_competencia] > LIMIAR_EVENTO_EXTREMO * median_hours,
         dec_without_event=_ratio(period_b_without_event.uc_hours, scope_ucs),
         fec_without_event=_ratio(period_b_without_event.occurrences, scope_ucs),
     )

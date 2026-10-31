@@ -35,6 +35,7 @@ class ContinuityEventDTO(ContinuityModel):
     other_months_median: float
     dec_without_event: float
     fec_without_event: float
+    extreme_in_scope: bool
 
 
 class MunicipalityDecDTO(ContinuityModel):

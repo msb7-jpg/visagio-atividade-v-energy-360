@@ -28,7 +28,7 @@
 - [x] **`subestacao` vazia** em todo o cadastro: documentar que veio assim. (0 preenchidas; `DATA_DICTIONARY.md`)
 - [x] **Integridade referencial:** 0 leituras e 0 faturas sem UC no cadastro. Faturas de UCs fora do cadastro (`FTX*`, `UC9xxxxxx`) com o tratamento documentado. (consulta em 30/10: 0 faturas e 0 leituras sem UC; as 32.285 faturas `FTX*` ficam na Silver, `DATA_DICTIONARY.md`)
 - [ ] **Gold modelada pelas perguntas das lideranças:** uma linha por liderança (Henrique, Camila, Rafael, Beatriz e Patrícia) dizendo qual tabela Gold responde a ela. (README ou dicionário)
-- [ ] **DEC e FEC por alimentador conforme a ANEEL:** DEC = Σ(duração × UCs interrompidas) ÷ UCs atendidas; FEC = Σ UCs interrompidas ÷ UCs atendidas. Conferir a fórmula no notebook com 1 alimentador calculado à mão. (consulta)
+- [x] **DEC e FEC por alimentador conforme a ANEEL:** DEC = Σ(duração × UCs interrompidas) ÷ UCs atendidas; FEC = Σ UCs interrompidas ÷ UCs atendidas. Conferir a fórmula no notebook com 1 alimentador calculado à mão. (consulta; conferido em 31/10 no `v_energy.db`, só leitura, com o alimentador `ALM-SAO-004` em 2022-07. **(a)** Das 24 linhas de `fato_ocorrencias_rede` (uma por UC atingida): Σ duração = 24,3501 h e Σ UCs interrompidas = 24; com 1.091 UCs atendidas, DEC = 24,3501 ÷ 1.091 = 0,022319 h e FEC = 24 ÷ 1.091 = 0,021998. **(b)** `fato_qualidade_alimentador` grava `ucs_atendidas` 1.091, `ucs_interrompidas` 24, DEC 0,0223 e FEC 0,0220: igual a (a) no arredondamento de 4 casas, e as 5.856 linhas alimentador-mês batem do mesmo jeito. A base é `ucs_atendidas` (contagem de `silver_uc_alimentador` no notebook `fatia02_gold.ipynb`), uma vez por alimentador (ADR-003, ADR-012, ADR-025). A fórmula é a da ANEEL, mas conta todas as ocorrências, sem as exclusões do PRODIST, e o limite é só referência.)
 - [x] ⚠️ **Exportação "em formato CSV"** para popular o banco local, como o case pede. Conferir se o pipeline gera os CSV ou se vai direto do Delta para o SQLite. Se não gerar, adicionar o passo ou justificar no README. (README: as tabelas Gold também saem em CSV em `gold/exports/`)
 - [x] **Workflow do Databricks** (`job.yaml`) que roda as 3 camadas de ponta a ponta e pode ser reexecutado. (print da execução com sucesso + `docs/img/workflow_databricks.png`)
 - [x] **Estratégia de agendamento justificada** (ex.: mensal, depois do fechamento da competência). (README: todo dia 1º, às 04h, depois do fechamento da competência)
@@ -54,7 +54,7 @@
 - [x] **Capacidade do Rafael:** "mais de 200 inspeções por mês" e "pouco mais da metade encontra algo" aparecem coerentes na tela (capacidade mensal, taxa de 62,7%). (`/losses/queue-summary`: capacidade 200 e taxa de 62,7% em 1.389 inspeções)
 - [ ] **Ordens de inspeção:** gerar a partir da fila, mudar status, registrar o resultado de campo e cancelar. Testar o ciclo inteiro na tela.
 - [x] **Operação: DEC e FEC por alimentador ao longo do tempo** e os piores, mais regiões e onde a manutenção dá retorno. Textos sem falar em "multa" ou "violação" (glossário: o limite é só referência). (tela `/quality`; os textos dizem "Acima do limite de referência" e explicam que o DEC/FEC não mede violação)
-- [ ] **Filtrar e recortar:** cada tela tem filtros que funcionam (período, município, bairro, classe, status). Listar quais são.
+- [ ] **Filtrar e recortar:** cada tela tem filtros que funcionam (período, município, bairro, classe, status). Listar quais são. (Qualidade da Rede — Visão atual filtra por situação em relação ao limite de referência; Continuidade filtra por município, mês do evento e causa (`ContinuityFilters`, `GET /quality/continuity`); as demais telas ainda precisam listar os seus filtros)
 - [x] **Mesmos números entre telas:** (conferido em 30/10 com o banco regerado)
   - [x] Receita = Painel = diagnóstico (+8,0%, −5,1%, +13,8%);
   - [x] inadimplência do Painel = diagnóstico (5,52% → 5,42%);
@@ -63,7 +63,7 @@
 - [x] *(Diferencial)* **Exportar a fila** para a equipe de campo. (`/losses/inspections/export` responde; testes em `test_loss_export.py`)
 - [x] *(Diferencial)* **Subir a planilha de campo** pelo portal. (`test_loss_upload_router.py`)
 - [x] *(Diferencial)* **Login por perfil** com as telas do cargo. Cada um dos 5 logins abre na tela certa e recebe 403 fora dela. (conferido em 30/10: 5 perfis × 5 rotas na API; `RbacMatrix.test.tsx` no frontend)
-- [x] *(Diferencial)* **Testes automatizados no backend.** (720 testes no pytest em 30/10, depois dos PRs #54, #56 e #57)
+- [x] *(Diferencial)* **Testes automatizados no backend.** (736 testes no pytest em 31/10, depois dos PRs #54, #56, #57 e #70, incluindo o filtro por causa da Continuidade)
 - [x] **Telas sem dado sujo** (Orientações Gerais: "um portal que exibe dados sujos é pior"). Conferir bairros, datas e valores, sem "9999" e sem caractere quebrado. (varredura das respostas da API em 30/10 com o banco corrigido: 0 ocorrências)
 - [ ] **Desempenho:** nenhuma tela leva mais de cerca de 2 s com o banco real. (medição do Célio. ⚠️ Em 30/10, a decomposição e o ranking da Receita ainda levam cerca de 4,6 s)
 
@@ -108,7 +108,7 @@
   - [ ] passo a passo para configurar e rodar **cada módulo** do zero: pipeline, como obter o `v_energy.db`, `.env` (chaves de IA e `LOSS_REFERENCE_COMPETENCIA`), backend e frontend;
   - [x] print do Workflow executado com sucesso; (`docs/img/workflow_databricks.png`)
   - [ ] links para o dicionário de dados e o diagnóstico; (30/10: o dicionário tem link; o diagnóstico não)
-  - [ ] suposições de cada fatia. (30/10: Fatias 03 e 05 escritas; faltam 01, 02, 04, 06 e 07)
+  - [ ] suposições de cada fatia. (30/10: Fatias 03, 05 e 06 escritas (Fatia 06 no PR #60); faltam 01, 02, 04 e 07)
 - [ ] ⚠️ **Falsos negativos do README:**
   - [ ] lista dos 5 logins e o que cada perfil vê (sem isso, o avaliador não acha as telas);
   - [ ] diferenciais citados explicitamente (testes, RBAC, exportar e subir planilha, follow-up, avaliação, testes do pipeline); (30/10: o README não tem seção de diferenciais)

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 
 /**
  * Variantes de estilo para o componente Badge do Design System.
- * success, warning e destructive usam o tint de 15% com o texto na própria cor (contraste AA medido em tokens-*.png).
+ * success e warning usam o tint de 15% e destructive o de 10% (o vermelho claro não passa de 4,5:1 a 15%), com o texto na própria cor (contraste AA medido em tokens-*.png).
  */
 const badgeVariants = cva(
   'inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
@@ -15,7 +15,7 @@ const badgeVariants = cva(
           'border-transparent bg-primary text-primary-foreground shadow-sm hover:bg-primary/80',
         secondary:
           'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        destructive: 'border-destructive/20 bg-destructive/15 text-destructive',
+        destructive: 'border-destructive/20 bg-destructive/10 text-destructive',
         warning: 'border-warning/20 bg-warning/15 text-warning',
         success: 'border-success/20 bg-success/15 text-success',
         accent: 'border-transparent bg-accent text-accent-foreground',

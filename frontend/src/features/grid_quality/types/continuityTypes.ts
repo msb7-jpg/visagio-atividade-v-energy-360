@@ -3,6 +3,8 @@ export interface ContinuityFilters {
   includeEventMonth: boolean
   /** Nome do município; vazio traz todos. */
   municipality: string
+  /** Causa como a API devolve em `causes` ("Sem causa registrada" inclusive); vazio traz todas. */
+  cause: string
 }
 
 /** Valor do período B, do período A e a variação percentual de B sobre A. */
@@ -27,6 +29,8 @@ export interface ContinuityEvent {
   otherMonthsMedian: number
   decWithoutEvent: number
   fecWithoutEvent: number
+  /** Falso quando o mês não passa do limiar de UC-horas dentro do escopo (município e causa). */
+  extremeInScope: boolean
 }
 
 /** DEC do período B de um município e a posição de referência no mapa. */

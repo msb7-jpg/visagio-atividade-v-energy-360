@@ -92,7 +92,7 @@ export function LoginFormPanel({ controller, reduced }: LoginFormPanelProps) {
           </p>
         ) : null}
 
-        <Button type="submit" variant="outline" size="lg" fullWidth>Entrar</Button>
+        <Button type="submit" size="lg" fullWidth>Entrar</Button>
       </form>
 
       <LoginDemoAccess onSelect={(account) => void controller.enterAsDemo(account)} />

@@ -127,6 +127,10 @@ async def get_continuity(
     _user: RequireOperacao,
     municipio: Annotated[str | None, Query(description="Nome do município; vazio traz a rede inteira.")] = None,
     incluir_evento: Annotated[bool, Query(description="Inclui o mês do evento extremo nos agregados.")] = True,
+    causa: Annotated[
+        str | None,
+        Query(description="Causa como no banco ('Sem causa registrada' vale NAO INFORMADA); vazio não filtra."),
+    ] = None,
 ) -> ContinuitySnapshotDTO:
     """Devolve o snapshot de Continuidade do escopo informado.
 
@@ -135,11 +139,12 @@ async def get_continuity(
         _user: Usuário autorizado (perfis de operação); só valida o acesso.
         municipio: Município do escopo; sem valor usa a rede inteira.
         incluir_evento: Se falso, remove o mês do evento dos períodos A e B.
+        causa: Causa que filtra as ocorrências; o bloco de causas segue mostrando todas.
 
     Returns:
         KPIs, evento, municípios, alimentadores, causas e tipos.
     """
-    return await service.get_snapshot(municipio, incluir_evento)
+    return await service.get_snapshot(municipio, incluir_evento, causa)
 
 
 @router.get(
