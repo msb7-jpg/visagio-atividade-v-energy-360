@@ -3,6 +3,7 @@ import type { InspectionOrder } from '@/features/loss_management/types/lossTypes
 import {
   ACTIONS_BY_STATUS,
   BOARD_COLUMNS,
+  formatOrderAge,
   formatOrderCode,
   groupOrdersByStatus,
   summarizeFieldResult
@@ -27,6 +28,23 @@ function buildOrder(overrides: Partial<InspectionOrder>): InspectionOrder {
     ...overrides
   }
 }
+
+describe('formatOrderAge', () => {
+  const now = new Date('2026-10-31T12:00:00').getTime()
+
+  it('diz "hoje" para a ordem criada no mesmo dia', () => {
+    expect(formatOrderAge('2026-10-31T08:00:00', now)).toBe('hoje')
+  })
+
+  it('usa o singular com um dia e o plural a partir de dois', () => {
+    expect(formatOrderAge('2026-10-30T10:00:00', now)).toBe('há 1 dia')
+    expect(formatOrderAge('2026-10-26T10:00:00', now)).toBe('há 5 dias')
+  })
+
+  it('trata data futura como hoje, sem dias negativos', () => {
+    expect(formatOrderAge('2026-11-05T10:00:00', now)).toBe('hoje')
+  })
+})
 
 describe('quadro de ordens', () => {
   it('mostra as colunas na ordem do fluxo com os rótulos de negócio', () => {

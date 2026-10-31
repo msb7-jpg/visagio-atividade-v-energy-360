@@ -1,15 +1,15 @@
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { OrderCardActions } from '@/features/loss_management/components/OrderCardActions'
 import { useCanWriteLosses } from '@/features/loss_management/hooks/useCanWriteLosses'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { describeCancellationReason } from '@/features/loss_management/utils/cancellationReasons'
-import { formatDate } from '@/features/loss_management/utils/lossFormatters'
+import { formatDate, formatKwh } from '@/features/loss_management/utils/lossFormatters'
 import { formatPlaceName } from '@/features/loss_management/utils/textFormat'
 import { formatIsoDate } from '@/features/loss_management/utils/unitDetailFormat'
 import {
-  ACTION_LABELS,
   ACTIONS_BY_STATUS,
+  formatOrderAge,
   formatOrderCode,
   summarizeFieldResult,
   type OrderActionKind
@@ -18,16 +18,6 @@ import {
 interface OrderCardProps {
   order: InspectionOrder
   onAction: (kind: OrderActionKind, order: InspectionOrder) => void
-}
-
-/**
- * Linha cinza do cartão: inspetor responsável ou aviso de que ainda não há.
- *
- * @param order - Ordem de inspeção.
- * @returns Texto de apoio do cartão.
- */
-function describeInspector(order: InspectionOrder): string {
-  return order.inspetor ?? order.fiscal_responsavel ?? 'sem inspetor'
 }
 
 /**
@@ -56,7 +46,8 @@ function describeLocation(order: InspectionOrder): string {
 }
 
 /**
- * Cartão de uma ordem de inspeção no quadro, com código, UC, inspetor, resultado e ações da etapa.
+ * Cartão enxuto de uma ordem: código com a idade, UC com a energia a recuperar, território com o inspetor
+ * (só quando já há um), resultado de campo e as ações da etapa.
  *
  * @param props - Ordem e callback das ações (enviar a campo, registrar resultado, cancelar).
  * @returns Item de lista com o cartão da ordem.
@@ -66,17 +57,28 @@ export function OrderCard({ order, onAction }: OrderCardProps) {
   const cancellationText = describeCancellation(order)
   const canWrite = useCanWriteLosses()
   const actions = canWrite ? ACTIONS_BY_STATUS[order.status] : []
+  const isOpen = order.status === 'gerada' || order.status === 'pendente'
+  const inspector = order.inspetor ?? order.fiscal_responsavel
 
   return (
     <li>
-      <Card className="flex flex-col gap-1.5 p-3">
+      <Card className="flex flex-col gap-1 p-3">
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-foreground text-sm font-bold tabular-nums">{formatOrderCode(order)}</span>
-          <span className="text-muted-foreground text-xs tabular-nums">{formatDate(order.criado_em)}</span>
+          <time dateTime={order.criado_em} title={formatDate(order.criado_em)} className="text-muted-foreground text-xs tabular-nums">
+            {isOpen ? formatOrderAge(order.criado_em) : formatDate(order.criado_em)}
+          </time>
         </div>
-        <p className="text-foreground text-sm tabular-nums">{order.id_uc}</p>
-        <p className="text-muted-foreground text-xs">{describeLocation(order)}</p>
-        <p className="text-muted-foreground text-xs">{describeInspector(order)}</p>
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="text-foreground text-sm tabular-nums">{order.id_uc}</p>
+          {isOpen && order.kwh_estimado > 0 ? (
+            <p className="text-muted-foreground text-xs tabular-nums">{formatKwh(order.kwh_estimado)} a recuperar</p>
+          ) : null}
+        </div>
+        <div className="text-muted-foreground flex flex-wrap items-baseline justify-between gap-x-2 text-xs">
+          <p>{describeLocation(order)}</p>
+          {inspector ? <p>{inspector}</p> : null}
+        </div>
         {resultSummary ? (
           <Badge variant={resultSummary.tone} className="h-auto self-start whitespace-normal">{resultSummary.text}</Badge>
         ) : null}
@@ -88,22 +90,7 @@ export function OrderCard({ order, onAction }: OrderCardProps) {
             Cancelada: {cancellationText}
           </p>
         ) : null}
-        {actions.length > 0 ? (
-          <div className="flex flex-wrap gap-2 pt-1">
-            {actions.map((kind) => (
-              <Button
-                key={kind}
-                type="button"
-                size="sm"
-                variant={kind === 'cancel' ? 'ghost' : 'default'}
-                aria-label={`${ACTION_LABELS[kind]} ${formatOrderCode(order)}`}
-                onClick={() => onAction(kind, order)}
-              >
-                {ACTION_LABELS[kind]}
-              </Button>
-            ))}
-          </div>
-        ) : null}
+        <OrderCardActions order={order} actions={actions} onAction={onAction} />
       </Card>
     </li>
   )

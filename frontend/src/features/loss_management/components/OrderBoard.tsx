@@ -6,7 +6,8 @@ import { OrderBoardColumn } from '@/features/loss_management/components/OrderBoa
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { BOARD_COLUMNS, groupOrdersByStatus, type OrderActionKind } from '@/features/loss_management/utils/orderBoard'
 
-const BOARD_GRID_CLASSES = 'grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4'
+// Pilha no celular e linha no computador; cada coluna define a própria largura (vazia e canceladas ficam estreitas).
+const BOARD_LAYOUT_CLASSES = 'flex flex-col gap-2.5 lg:flex-row lg:items-start'
 
 /**
  * Esqueleto com a mesma grade do quadro (uma coluna por etapa), para o carregamento não deslocar o layout.
@@ -15,9 +16,9 @@ const BOARD_GRID_CLASSES = 'grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols
  */
 function OrderBoardSkeleton() {
   return (
-    <div className={BOARD_GRID_CLASSES} aria-busy="true" aria-label="Carregando ordens de inspeção">
+    <div className={BOARD_LAYOUT_CLASSES} aria-busy="true" aria-label="Carregando ordens de inspeção">
       {BOARD_COLUMNS.map((column) => (
-        <div key={column.status} className="bg-muted/40 rounded-lg p-3">
+        <div key={column.status} className="bg-muted/40 rounded-lg p-3 lg:flex-1">
           <LoadingSkeleton count={3} className="h-20" />
         </div>
       ))}
@@ -55,7 +56,7 @@ export function OrderBoard({ orders, isLoading, isError, onRetry, onAction }: Or
   }
   const ordersByStatus = groupOrdersByStatus(orders)
   return (
-    <section aria-label="Ordens de inspeção" className={BOARD_GRID_CLASSES}>
+    <section aria-label="Ordens de inspeção" className={BOARD_LAYOUT_CLASSES}>
       {BOARD_COLUMNS.map((column) => (
         <OrderBoardColumn key={column.status} column={column} orders={ordersByStatus[column.status]} onAction={onAction} />
       ))}
