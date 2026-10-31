@@ -898,3 +898,15 @@
 - **Limites:** não conferi a aparência no navegador (nem nos dois temas e no celular); a redução de altura (de cerca de 150 px para cerca de 105 px nos cartões) é estimada pelo CSS.
 - **Testes:** `FilterPopover.test.tsx` (novo, 5 casos), `SelectionSummary` (3 casos em `QueueExpectationNotes.test.tsx`), `QueueSummaryCards.test.tsx` reescrito, e `SuspiciousQueueTab.test.tsx` abre o painel de filtros antes de usar os selects.
 - **Validação de Testes:** `make lint-all` e `make test-all` 100% (74 arquivos, 664 testes; pytest 721).
+- **Conferência no navegador (31/10):** painel de filtros, chips, resumo da seleção, cartões e tooltips conferidos nos temas escuro e claro. Achado e corrigido: com dois filtros e UCs marcadas, as ações quebravam para a segunda linha alinhadas à esquerda; `ml-auto` no `QueueActionsBar` as mantém à direita. Não consegui testar a largura estreita (a janela não redimensionou).
+
+## 2026-10-31 — Aba Ordens de inspeção mais enxuta (Adrian César)
+
+- **Contexto:** pedido de melhorar a leitura visual da aba para quem opera as ordens (opção A + parte enxuta da C).
+- **Barra de ações:** o Card com os selos do fluxo (Pendente → Em campo → Concluída ou Cancelada) saiu, porque as colunas já mostram as etapas. Ficou uma linha à direita com "Exportar planilha de campo", "Registrar achado" e "Importar resultados de campo".
+- **Colunas proporcionais:** o quadro passou de grade de 4 colunas iguais para linha flexível. Etapa vazia fica estreita (`lg:w-44`) e a de canceladas começa recolhida (cabeçalho com contador e seta, `aria-expanded`); as demais dividem o espaço. No celular o quadro continua em pilha.
+- **Cartão enxuto:** código e idade da ordem ("hoje", "há N dias" nas abertas; data nas concluídas e canceladas, com a data completa no `title`), UC com a energia a recuperar (`kwh_estimado`, só nas abertas e quando maior que zero), território com o inspetor na mesma linha (some "sem inspetor"). Novo `formatOrderAge` em `utils/orderBoard.ts`.
+- **Cancelar no menu "⋯":** o botão "Cancelar" saiu do cartão e virou o item "Cancelar ordem" do menu (`OrderCardActions`, novo); a ação da etapa (Enviar a campo ou Registrar resultado) continua em botão. `DropdownMenu` sem `modal`, para o diálogo de cancelamento abrir sem herdar o bloqueio do menu (conferido no navegador).
+- **Limites:** o texto "a recuperar" usa `kwh_estimado`, que o backend define como "energia estimada a recuperar"; não confirmei a janela (mensal ou de 3 meses) e por isso o cartão mostra só kWh, sem "/mês". Valor em R$ e a chance de acerto não vêm na ordem, então ficaram de fora. Não testei a largura estreita.
+- **Testes:** `OrderBoard.test.tsx` (menu "⋯", coluna recolhida, idade e energia a recuperar), `orderBoard.test.ts` (`formatOrderAge`) e o fluxo de cancelar em `LossManagementPage.test.tsx`, que passou a abrir o menu.
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (74 arquivos, 671 testes; pytest 721).
