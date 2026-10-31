@@ -16,6 +16,7 @@ interface OrderBoardColumnProps {
 /**
  * Coluna do quadro: selo da etapa, contagem e os cartões das ordens. Etapa vazia fica estreita e a de canceladas
  * começa recolhida (o histórico não disputa espaço com o que está em andamento), para as demais crescerem.
+ * A lista tem altura máxima (~4 a 5 cartões) e rola por dentro, para o quadro manter tamanho padrão com muitas ordens.
  *
  * @param props - Etapa, ordens dela e callback das ações.
  * @returns Região nomeada com a lista de ordens da etapa.
@@ -63,7 +64,7 @@ export function OrderBoardColumn({ column, orders, onAction }: OrderBoardColumnP
         <p className="text-muted-foreground text-xs">Nenhuma ordem nesta etapa.</p>
       ) : null}
       {orders.length > 0 && !isCollapsed ? (
-        <ul id={contentId} className="flex flex-col gap-2.5">
+        <ul id={contentId} className="flex max-h-144 flex-col gap-2.5 overflow-y-auto pr-1">
           {orders.map((order) => (
             <OrderCard key={order.id_inspecao} order={order} onAction={onAction} />
           ))}
