@@ -399,6 +399,7 @@ describe('Fila de Inspeção', () => {
 
     expect(await screen.findByRole('button', { name: 'Exportar planilha de campo' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Importar resultados de campo' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Registrar achado' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Enviar a campo/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Cancelar/ })).not.toBeInTheDocument()
   })

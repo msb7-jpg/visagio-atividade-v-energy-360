@@ -1,4 +1,4 @@
-import { ArrowRight, Upload } from 'lucide-react'
+import { ArrowRight, ClipboardCheck, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/status-badge'
@@ -9,15 +9,17 @@ import { BOARD_COLUMNS } from '@/features/loss_management/utils/orderBoard'
 interface OrderFlowBarProps {
   canExport: boolean
   onImport: () => void
+  onRegister: () => void
 }
 
 /**
  * Barra acima do quadro: mostra o fluxo das etapas e oferece exportar/importar a planilha de campo.
  *
- * @param props - `canExport` liga o botão de exportar; `onImport` abre o envio da planilha preenchida.
- * @returns Cartão com o fluxo e as duas ações.
+ * @param props - `canExport` liga o botão de exportar; `onImport` abre o envio da planilha preenchida;
+ * `onRegister` abre o registro manual de um achado.
+ * @returns Cartão com o fluxo e as ações.
  */
-export function OrderFlowBar({ canExport, onImport }: OrderFlowBarProps) {
+export function OrderFlowBar({ canExport, onImport, onRegister }: OrderFlowBarProps) {
   const [pending, inField, done, canceled] = BOARD_COLUMNS
   const canWrite = useCanWriteLosses()
   return (
@@ -35,10 +37,16 @@ export function OrderFlowBar({ canExport, onImport }: OrderFlowBarProps) {
       <div className="flex flex-wrap items-start gap-3">
         <ExportOrdersButton disabled={!canExport} label="Exportar planilha de campo" />
         {canWrite ? (
-          <Button type="button" onClick={onImport}>
-            <Upload aria-hidden="true" />
-            Importar resultados de campo
-          </Button>
+          <>
+            <Button type="button" onClick={onRegister}>
+              <ClipboardCheck aria-hidden="true" />
+              Registrar achado
+            </Button>
+            <Button type="button" variant="outline" onClick={onImport}>
+              <Upload aria-hidden="true" />
+              Importar resultados de campo
+            </Button>
+          </>
         ) : null}
       </div>
     </Card>
