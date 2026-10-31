@@ -252,9 +252,30 @@ describe('RegisterResultDialog', () => {
 })
 
 describe('CancelOrderDialog', () => {
-  it('avisa que a UC volta para a fila e que o score é recalculado', () => {
+  const renderCancelDialog = () =>
     render(<QueryClientProvider client={new QueryClient()}><CancelOrderDialog order={buildOrder({})} onClose={vi.fn()} /></QueryClientProvider>)
 
+  it('só diz o que acontece com a UC depois de escolher o motivo', () => {
+    renderCancelDialog()
+
+    expect(screen.queryByText(/volta para a fila/)).toBeNull()
+    expect(screen.queryByText(/fica fora da fila/)).toBeNull()
+  })
+
+  it.each(['repriorizacao_equipe', 'ordem_duplicada', 'outro'])('avisa que a UC volta para a fila quando o motivo é %s', (reason) => {
+    renderCancelDialog()
+
+    fireEvent.change(screen.getByLabelText(/Motivo do cancelamento/), { target: { value: reason } })
+
     expect(screen.getByText(/A UC UC131844 volta para a fila e o score é recalculado no próximo processamento\./)).toBeInTheDocument()
+  })
+
+  it.each(['cliente_regularizou', 'endereco_nao_localizado'])('avisa que a UC fica fora da fila por 90 dias quando o motivo é %s', (reason) => {
+    renderCancelDialog()
+
+    fireEvent.change(screen.getByLabelText(/Motivo do cancelamento/), { target: { value: reason } })
+
+    expect(screen.getByText(/A UC UC131844 fica fora da fila por 90 dias\./)).toBeInTheDocument()
+    expect(screen.queryByText(/volta para a fila/)).toBeNull()
   })
 })

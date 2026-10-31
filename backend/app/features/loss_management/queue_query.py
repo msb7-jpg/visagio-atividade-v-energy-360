@@ -1,8 +1,8 @@
 """Consulta da fila de suspeitas: UCs candidatas por queda de consumo, descontadas as já inspecionadas."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
-from sqlalchemy import CompoundSelect, Select, Subquery, select, true
+from sqlalchemy import CompoundSelect, Select, Subquery, select, true, union
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.features.loss_management.models import InspectionOrder
@@ -15,6 +15,10 @@ from app.features.loss_management.queries import (
     fato_inspecoes_perdas,
     inspection_cutoff_date,
 )
+from app.features.loss_management.schemas import CancellationReason, InspectionStatus
+
+CANCELLATION_BLOCK_DAYS = 90
+BLOCKING_CANCELLATION_REASONS = (CancellationReason.CLIENTE_REGULARIZOU, CancellationReason.ENDERECO_NAO_LOCALIZADO)
 
 
 def _optional_filters(filters: SuspicionFilters) -> list[ColumnElement[bool]]:
@@ -31,12 +35,26 @@ def _optional_filters(filters: SuspicionFilters) -> list[ColumnElement[bool]]:
 def _system_orders_query(cutoff: date) -> Select:
     """UCs com ordem concluída desde `cutoff` no sistema.
 
-    Ordens ativas não excluem: a UC segue na fila, marcada com a situação da ordem. Canceladas não excluem.
+    Ordens ativas não excluem: a UC segue na fila, marcada com a situação da ordem.
     """
     cutoff_datetime = datetime.combine(cutoff, datetime.min.time())
     return select(InspectionOrder.id_uc).where(
         InspectionOrder.status == COMPLETED_STATUS,
         InspectionOrder.atualizado_em >= cutoff_datetime,
+    )
+
+
+def _blocking_cancellations_query() -> Select:
+    """UCs cuja ordem foi cancelada por um motivo que torna inútil uma nova visita agora.
+
+    O cliente já regularizou, ou o endereço não foi localizado e outra ordem falharia do mesmo jeito. A UC fica
+    fora da fila por `CANCELLATION_BLOCK_DAYS`; os demais motivos devolvem a UC à fila na hora.
+    """
+    blocked_since = datetime.now() - timedelta(days=CANCELLATION_BLOCK_DAYS)
+    return select(InspectionOrder.id_uc).where(
+        InspectionOrder.status == InspectionStatus.CANCELADA.value,
+        InspectionOrder.motivo_cancelamento.in_([reason.value for reason in BLOCKING_CANCELLATION_REASONS]),
+        InspectionOrder.atualizado_em >= blocked_since,
     )
 
 
@@ -57,7 +75,8 @@ def excluded_units_query(
     """Lista as UCs que não podem entrar na fila.
 
     Saem da fila: UCs inspecionadas dentro da janela de análise, seja por ordem concluída no
-    sistema, seja pelo histórico de campo. Ordens ativas e canceladas não excluem.
+    sistema, seja pelo histórico de campo. Também saem as UCs com ordem cancelada por cliente regularizado ou
+    endereço não localizado nos últimos `CANCELLATION_BLOCK_DAYS` dias. Ordens ativas não excluem.
 
     Args:
         windows: Janelas de análise da fila.
@@ -69,10 +88,10 @@ def excluded_units_query(
         `id_uc` excluídos; UNION com o histórico de campo quando ele é aplicado.
     """
     cutoff = inspection_cutoff_date(windows)
-    system_orders = _system_orders_query(cutoff)
+    system_exclusions = [_system_orders_query(cutoff), _blocking_cancellations_query()]
     if not include_field_history:
-        return system_orders
-    return system_orders.union(_field_history_query(cutoff, history_until))
+        return union(*system_exclusions)
+    return union(*system_exclusions, _field_history_query(cutoff, history_until))
 
 
 def _candidate_select(consumo: Subquery) -> Select:
