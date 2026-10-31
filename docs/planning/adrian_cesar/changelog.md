@@ -888,3 +888,13 @@
 - **Limite:** o servidor só conclui ordem em campo (`pendente` → `concluida`), então o caso "UC sem ordem aberta" da sugestão da CORRECOES não está coberto; exigiria endpoint novo.
 - **Testes:** `PickFieldOrderDialog.test.tsx` (novo, 2 casos) e uma checagem de que o diretor não vê o botão em `SuspiciousQueueTab.test.tsx`.
 - **Validação de Testes:** `make lint-all` e `make test-all` 100% (74 arquivos, 662 testes).
+
+## 2026-10-31 — Fila de Inspeção mais compacta: filtros recolhidos, barra única e dois cartões (Adrian César)
+
+- **Contexto:** devolutiva de design (#68, filtros ocupam espaço fixo) e pedido de reduzir a área ocupada no topo da Fila.
+- **Filtros recolhidos (#68):** novo `components/ui/popover.tsx` (Radix, no padrão do `dropdown-menu`) e `components/filters/FilterPopover.tsx`, compartilhado: botão "Filtros" com contador, painel com os campos, um chip por filtro ativo (remove só o seu), "Limpar filtros" e "Concluir". O `QueueFilters` passou a usá-lo; a regra de aplicar o filtro na hora não mudou. Adoção no `RevenueFiltersBar` (Célio) e no `ContinuityFilters` (João Henrique) segue pendente (CORRECOES §8).
+- **Barra única:** o Card com filtros, ações e nota virou uma linha (`QueueFilters` à esquerda, `QueueActionsBar` à direita). Novo `SelectionSummary` ("7 selecionadas · cerca de 5 devem achar irregularidade" e selo de baixa chance). "Selecionar top 10 prioritárias" ficou "Top 10" (nome acessível igual). O texto longo (`SelectionOutlookNote`) segue no diálogo de gerar ordens.
+- **Cartões do topo:** saíram "Capacidade do mês" e "Taxa de acerto histórica" (`CapacityCard` e `HitRateCard` removidos). Ficaram "Energia recuperável das selecionadas" (com a tarifa visível) e "Retorno esperado", em `p-3`, número `text-xl` e valor anual na mesma linha; as notas de cálculo foram para o tooltip "como calculamos". A API segue devolvendo capacidade e taxa (o diálogo de gerar ordens usa a capacidade).
+- **Limites:** não conferi a aparência no navegador (nem nos dois temas e no celular); a redução de altura (de cerca de 150 px para cerca de 105 px nos cartões) é estimada pelo CSS.
+- **Testes:** `FilterPopover.test.tsx` (novo, 5 casos), `SelectionSummary` (3 casos em `QueueExpectationNotes.test.tsx`), `QueueSummaryCards.test.tsx` reescrito, e `SuspiciousQueueTab.test.tsx` abre o painel de filtros antes de usar os selects.
+- **Validação de Testes:** `make lint-all` e `make test-all` 100% (74 arquivos, 664 testes; pytest 721).
