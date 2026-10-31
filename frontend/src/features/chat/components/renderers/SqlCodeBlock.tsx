@@ -1,6 +1,7 @@
 import { Check, ChevronRight, Copy, Database } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { CollapsibleMotion } from '@/components/animations/CollapsibleMotion'
+import { useTheme } from '@/components/layout/useTheme'
 import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '@/lib/clipboard'
 import { cn, handleKeyboardClick } from '@/lib/utils'
@@ -22,6 +23,7 @@ export interface SqlCodeBlockProps {
  * @returns Elemento JSX do card de código SQL interativo.
  */
 export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
+  const { theme: appTheme } = useTheme()
   const [isCopied, copy] = useCopyToClipboard()
   const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -33,7 +35,7 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
         const { codeToHtml } = await import('shiki')
         const html = await codeToHtml(query, {
           lang: 'sql',
-          theme: 'vitesse-dark'
+          theme: appTheme === 'escuro' ? 'vitesse-dark' : 'vitesse-light'
         })
         if (isMounted) {
           setHighlightedHtml(html)
@@ -48,7 +50,7 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
     return () => {
       isMounted = false
     }
-  }, [query])
+  }, [query, appTheme])
 
   const handleCopy = (event: React.MouseEvent) => {
     event.stopPropagation()
@@ -58,7 +60,7 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-xl border border-border bg-card/60 shadow-md backdrop-blur-sm transition-all',
+        'group relative overflow-hidden rounded-xl border border-border bg-card/60 shadow-md backdrop-blur-sm transition',
         className
       )}
     >

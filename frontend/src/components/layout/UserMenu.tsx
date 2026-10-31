@@ -29,7 +29,7 @@ export function UserMenu() {
 
   const name = personName(user.nome)
   const profileLine = describeProfile(user)
-  const isDark = theme === 'dark'
+  const isDark = theme === 'escuro'
   const ThemeIcon = isDark ? Sun : Moon
 
   const handleToggleTheme = () => {

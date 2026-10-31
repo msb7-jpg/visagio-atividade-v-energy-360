@@ -1,24 +1,18 @@
 import { Toaster as SonnerToaster, type ToasterProps } from 'sonner'
+import { useTheme } from '@/components/layout/useTheme'
 
 /**
- * Tema do aviso conforme a classe do `<html>` (o app usa `class="dark"`, com o escuro como padrão).
- *
- * @returns Tema atual para o Sonner.
- */
-function readTheme(): ToasterProps['theme'] {
-  return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-}
-
-/**
- * Área dos avisos (toasts) do portal, com as cores dos tokens shadcn.
+ * Área dos avisos (toasts) do portal, com as cores dos tokens shadcn e o tema escolhido no menu do usuário.
  *
  * @param props - Propriedades do Toaster do Sonner.
  * @returns Toaster montado uma vez na raiz do app.
  */
 function Toaster(props: ToasterProps) {
+  const { theme } = useTheme()
+
   return (
     <SonnerToaster
-      theme={readTheme()}
+      theme={theme === 'escuro' ? 'dark' : 'light'}
       className="toaster group"
       style={{
         '--normal-bg': 'var(--popover)',

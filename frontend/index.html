@@ -8,7 +8,8 @@
     <script>
       // Aplica o tema salvo antes da primeira pintura, para não piscar o tema errado. Padrão: escuro.
       try {
-        document.documentElement.classList.toggle('dark', localStorage.getItem('grid360.tema') !== 'light')
+        var tema = localStorage.getItem('grid360.tema')
+        document.documentElement.classList.toggle('dark', tema !== 'claro' && tema !== 'light')
       } catch (error) {
         document.documentElement.classList.add('dark')
       }

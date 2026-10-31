@@ -1,9 +1,11 @@
-export type Theme = 'dark' | 'light'
+export type Theme = 'claro' | 'escuro'
 
 /** Chave do `localStorage` com a escolha de tema (a mesma lida pelo script de `index.html`). */
 export const THEME_KEY = 'grid360.tema'
 
-const DEFAULT_THEME: Theme = 'dark'
+const DEFAULT_THEME: Theme = 'escuro'
+/** Valores gravados por versões anteriores (`light`/`dark`); só o `light` precisa ser reconhecido. */
+const LEGACY_LIGHT = 'light'
 const TRANSITION_CLASS = 'theme-transition'
 const TRANSITION_MS = 200
 
@@ -12,11 +14,13 @@ const themeListeners = new Set<() => void>()
 /**
  * Tema salvo no navegador.
  *
- * @returns `'light'` só se foi escolhido; qualquer outro valor (ou armazenamento indisponível) cai no padrão escuro.
+ * @returns `'claro'` só se foi escolhido (ou gravado como `light` por versão antiga); qualquer outro valor,
+ * ou armazenamento indisponível (janela privada), cai no padrão escuro.
  */
 export function getStoredTheme(): Theme {
   try {
-    return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : DEFAULT_THEME
+    const stored = localStorage.getItem(THEME_KEY)
+    return stored === 'claro' || stored === LEGACY_LIGHT ? 'claro' : DEFAULT_THEME
   } catch {
     return DEFAULT_THEME
   }
@@ -27,7 +31,8 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * Aplica o tema na página. A transição de cores (200 ms) é pulada com `prefers-reduced-motion: reduce`.
+ * Aplica o tema na página (classe `dark` no `<html>`). A transição de cores (200 ms) é pulada com
+ * `prefers-reduced-motion: reduce`.
  *
  * @param theme - Tema a aplicar.
  */
@@ -37,7 +42,7 @@ export function applyTheme(theme: Theme): void {
     root.classList.add(TRANSITION_CLASS)
     window.setTimeout(() => root.classList.remove(TRANSITION_CLASS), TRANSITION_MS)
   }
-  root.classList.toggle('dark', theme === 'dark')
+  root.classList.toggle('dark', theme === 'escuro')
 }
 
 /**

@@ -77,7 +77,7 @@ describe('UserMenu', () => {
 
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Usar modo claro' }))
 
-    expect(localStorage.getItem('grid360.tema')).toBe('light')
+    expect(localStorage.getItem('grid360.tema')).toBe('claro')
     expect(document.documentElement).not.toHaveClass('dark')
     expect(screen.getByRole('status')).toHaveTextContent('Modo claro ativado')
     await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())

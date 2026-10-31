@@ -7,7 +7,7 @@ import { getStoredTheme, setTheme, subscribeTheme, type Theme } from '@/lib/them
  * @returns Tema atual e `toggleTheme`, que alterna entre escuro e claro.
  */
 export function useTheme(): { theme: Theme; toggleTheme: () => void } {
-  const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => 'dark' as const)
+  const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => 'escuro' as const)
 
-  return { theme, toggleTheme: () => setTheme(theme === 'dark' ? 'light' : 'dark') }
+  return { theme, toggleTheme: () => setTheme(theme === 'escuro' ? 'claro' : 'escuro') }
 }
