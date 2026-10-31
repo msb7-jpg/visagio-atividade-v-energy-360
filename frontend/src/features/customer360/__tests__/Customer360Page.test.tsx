@@ -12,6 +12,9 @@ import type {
   HighBillDiagnosis,
   Invoice
 } from '@/features/customer360/types/customer360Types'
+import { fetchProactiveInsights } from '@/features/insights/api/insightsApi'
+
+vi.mock('@/features/insights/api/insightsApi', () => ({ fetchProactiveInsights: vi.fn() }))
 
 vi.mock('@/features/customer360/api/customer360Api', () => ({
   customer360Api: {
@@ -23,6 +26,7 @@ vi.mock('@/features/customer360/api/customer360Api', () => ({
 }))
 
 const mockedApi = vi.mocked(customer360Api)
+const mockedInsights = vi.mocked(fetchProactiveInsights)
 
 const summary: CustomerSummary = {
   id_uc: 'UC100004',
@@ -230,6 +234,7 @@ describe('Customer360Page', () => {
     vi.clearAllMocks()
     window.localStorage.clear()
     mockedApi.search.mockResolvedValue([])
+    mockedInsights.mockRejectedValue(new Error('IA indisponível'))
     mockedApi.getSummary.mockResolvedValue(summary)
     mockedApi.getHistory.mockResolvedValue(buildHistory(stableWithFlagChange))
     mockedApi.getEvents.mockResolvedValue(events)
@@ -441,6 +446,21 @@ describe('Customer360Page', () => {
 
     await waitFor(() => expect(screen.queryByText('Não foi possível carregar o consumo')).not.toBeInTheDocument())
     expect(mockedApi.getHistory).toHaveBeenCalledTimes(3)
+  })
+
+  it('mostra o insight de IA com as métricas da UC e some quando a IA está indisponível', async () => {
+    mockedInsights.mockResolvedValue({
+      resumo_executivo: 'A conta subiu pela bandeira, não pelo consumo.',
+      insights: ['Há 2 faturas em aberto.']
+    })
+    renderPage()
+    searchFor('UC100004')
+
+    expect(await screen.findByText('A conta subiu pela bandeira, não pelo consumo.')).toBeInTheDocument()
+    const payload = mockedInsights.mock.calls[0][0]
+    expect(payload.context).toBe('customer360')
+    expect(payload.filtros).toEqual({ id_uc: 'UC100004' })
+    expect(payload.metricas).toMatchObject({ faturas_em_aberto: 2, valor_em_aberto_rs: 380, tendencia_consumo: 'ESTAVEL' })
   })
 
   it('avisa quando a UC não existe', async () => {
