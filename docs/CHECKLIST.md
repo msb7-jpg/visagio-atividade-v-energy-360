@@ -63,7 +63,7 @@
 - [x] *(Diferencial)* **Exportar a fila** para a equipe de campo. (`/losses/inspections/export` responde; testes em `test_loss_export.py`)
 - [x] *(Diferencial)* **Subir a planilha de campo** pelo portal. (`test_loss_upload_router.py`)
 - [x] *(Diferencial)* **Login por perfil** com as telas do cargo. Cada um dos 5 logins abre na tela certa e recebe 403 fora dela. (conferido em 30/10: 5 perfis × 5 rotas na API; `RbacMatrix.test.tsx` no frontend)
-- [x] *(Diferencial)* **Testes automatizados no backend.** (731 testes no pytest em 30/10, depois dos PRs #54, #56 e #57, incluindo o filtro por causa da Continuidade)
+- [x] *(Diferencial)* **Testes automatizados no backend.** (736 testes no pytest em 31/10, depois dos PRs #54, #56, #57 e #70, incluindo o filtro por causa da Continuidade)
 - [x] **Telas sem dado sujo** (Orientações Gerais: "um portal que exibe dados sujos é pior"). Conferir bairros, datas e valores, sem "9999" e sem caractere quebrado. (varredura das respostas da API em 30/10 com o banco corrigido: 0 ocorrências)
 - [ ] **Desempenho:** nenhuma tela leva mais de cerca de 2 s com o banco real. (medição do Célio. ⚠️ Em 30/10, a decomposição e o ranking da Receita ainda levam cerca de 4,6 s)
 
