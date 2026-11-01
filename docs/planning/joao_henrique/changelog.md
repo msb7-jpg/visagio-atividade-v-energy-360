@@ -278,3 +278,11 @@
   - `ContinuityView.test.tsx` abre "Filtros" antes de escolher e ganhou teste dos chips e de "Limpar filtros".
 - **Validação de Testes:**
   - `make lint-all` aprovado; `make test-all` aprovado (723 vitest no frontend).
+
+### [2026-10-31] - Ajustes visuais do mapa e dos cards da Continuidade (revisão do PR #72)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Mapa: rótulo de Abreu e Lima passou para a coluna esquerda (a linha guia não cruza mais Igarassu e Paulista); teste monta as duas colunas com `MUNICIPALITY_SHAPES` reais e confere `LABEL_GAP` e os limites do mapa.
+  - Mapa: linha guia em `--color-foreground` (1) sobre um halo `--color-card` (3). Nenhuma cor única chega a 3:1 nas 4 faixas nos dois temas (foreground: 1,52 a 2,90; o `--color-muted-foreground` antigo ficava em 1,02 a 1,18); com o halo, o traço tem 5,95 a 9,68 contra as faixas.
+  - Cards de KPI: o período fica em linha própria e "valor · piora/melhora" fica junto, com `whitespace-nowrap`; o selo de variação passou para cima. `ContinuityView.test.tsx` ajustado ao novo formato. Os 4 cards usam o mesmo componente.
+- **Fora desta entrega:** conferência visual no navegador (feita por quem revisa).
