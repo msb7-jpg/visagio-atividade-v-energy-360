@@ -42,12 +42,12 @@ class AgentNode(StrEnum):
 
 
 NODE_LABELS: dict[str, str] = {
-    AgentNode.ROUTER.value: "Classificando intenção",
-    AgentNode.SQL_GENERATOR.value: "Escrevendo consulta SQL",
-    AgentNode.SQL_VALIDATOR.value: "Validando integridade da query",
-    AgentNode.SQL_EXECUTOR.value: "Executando no banco de dados",
-    AgentNode.SQL_CORRECTOR.value: "Auto-corrigindo consulta SQL",
-    AgentNode.SYNTHESIZER.value: "Formatando resposta analítica",
+    AgentNode.ROUTER.value: "Compreendendo o pedido",
+    AgentNode.SQL_GENERATOR.value: "Localizando indicadores no sistema",
+    AgentNode.SQL_VALIDATOR.value: "Garantindo segurança da consulta",
+    AgentNode.SQL_EXECUTOR.value: "Consultando base de dados da distribuidora",
+    AgentNode.SQL_CORRECTOR.value: "Refinando precisão da consulta",
+    AgentNode.SYNTHESIZER.value: "Preparando síntese executiva",
 }
 
 

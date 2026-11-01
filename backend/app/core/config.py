@@ -44,27 +44,37 @@ class Settings(BaseSettings):
     default_users: dict[str, dict[str, str]] = {
         "diretor@venergy.com": {
             "nome": "Henrique Duarte (Diretor Comercial)",
-            "senha": "venergy123",
+            "senha_hash": (
+                "$argon2id$v=19$m=65536,t=3,p=4$991YbQOF+cA9Q7K5kpBkTQ$NF+gckCtiivUGEx9Vm/5TC95qs6+9Hgv28lO058/Hok"
+            ),
             "role": "diretor",
         },
         "operacao@venergy.com": {
             "nome": "Beatriz Farias (Gerente de Operação)",
-            "senha": "venergy123",
+            "senha_hash": (
+                "$argon2id$v=19$m=65536,t=3,p=4$JkA9nCavgPH7MyJVO5uTcw$M1jJqVq7Jb+lHDElvz/GWOgwD8lg+ubRdJV+mveto3c"
+            ),
             "role": "gerente_operacao",
         },
         "atendimento@venergy.com": {
             "nome": "Camila Barreto (Atendimento)",
-            "senha": "venergy123",
+            "senha_hash": (
+                "$argon2id$v=19$m=65536,t=3,p=4$ZJV1u3FqLplUdVqprLyTbQ$naKUNRkqeoY7sfwNaS//YkAz6nNwcezCkASJOfkq4IA"
+            ),
             "role": "atendente",
         },
         "gerente.atendimento@venergy.com": {
             "nome": "Camila Barreto (Gerente de Atendimento)",
-            "senha": "venergy123",
+            "senha_hash": (
+                "$argon2id$v=19$m=65536,t=3,p=4$gWxNxh+iXi4Jj1U56Zt6rg$W+/M6YvJ0Q87G9wPRjb7Jh5VCh5RNXRuRWGQs5s9ois"
+            ),
             "role": "gerente_atendimento",
         },
         "perdas@venergy.com": {
             "nome": "Rafael Coutinho (Gerente de Perdas)",
-            "senha": "venergy123",
+            "senha_hash": (
+                "$argon2id$v=19$m=65536,t=3,p=4$LYaDhHVNO+yCod4S0Au9Rg$t0skciUoZE4xg069YmtVUiqfN2RovKKwl8X7iJdcFhU"
+            ),
             "role": "gerente_perdas",
         },
     }

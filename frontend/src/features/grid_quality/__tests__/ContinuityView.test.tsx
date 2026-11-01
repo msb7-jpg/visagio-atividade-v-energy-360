@@ -12,6 +12,7 @@ const mockedGet = vi.mocked(apiClient.get)
 // Valores fictícios e redondos no formato da API; não representam dados do case.
 const comparison = { current: 4, previous: 2, changePercent: 100 }
 const snapshot: ContinuitySnapshot = {
+  periods: { previous: { start: '2000-01', end: '2000-12' }, current: { start: '2001-01', end: '2001-12' } },
   kpis: { dec: comparison, fec: comparison, interruptions: comparison, averageDurationHours: comparison },
   event: {
     competencia: '2001-06',
@@ -101,6 +102,16 @@ describe('ContinuityView', () => {
     expect(screen.getByText('Mês do evento (06/2001)')).toBeInTheDocument()
   })
 
+  it('escreve as datas dos períodos em vez de "A" e "B"', async () => {
+    renderView()
+    expect(
+      await screen.findByText('Últimos 12 meses (01/2001 a 12/2001) comparados com os primeiros 12 meses da base (01/2000 a 12/2000).')
+    ).toBeInTheDocument()
+    expect(screen.getAllByText(/^01\/2000 a 12\/2000: .* · piora$/)).toHaveLength(4)
+    expect(screen.getByRole('columnheader', { name: 'DEC 2001 (h)' })).toBeInTheDocument()
+    expect(screen.queryByText(/período B/)).not.toBeInTheDocument()
+  })
+
   it('omite o cartão do evento quando a API devolve event nulo', async () => {
     mockedGet.mockResolvedValue({ data: { ...snapshot, event: null } })
     renderView()
@@ -111,8 +122,7 @@ describe('ContinuityView', () => {
   it('mostra o mapa e o DEC por município', async () => {
     renderView()
     expect(await screen.findByText('Onde estão as piores interrupções')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Mapa esquemático do DEC por município' })).toBeInTheDocument()
-    expect(within(screen.getAllByRole('list')[0]).getByText('Olinda')).toBeInTheDocument()
+    expect(within(screen.getByRole('img', { name: 'Mapa do DEC por município' })).getByText('Olinda')).toBeInTheDocument()
   })
 
   it('mostra os alimentadores por UC-horas e marca amostra pequena', async () => {

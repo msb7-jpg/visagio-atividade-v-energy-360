@@ -22,9 +22,6 @@ export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
   { email: 'perdas@venergy.com', nome: 'Rafael Coutinho', role: 'gerente_perdas' }
 ]
 
-/** Conta usada pelo botão "Entrar com SSO corporativo" (dados de exemplo: o SSO entra como diretor comercial). */
-export const SSO_ACCOUNT: DemoAccount = DEMO_ACCOUNTS[0]
-
 /**
  * Indica se o bloco "Acesso de demonstração" deve aparecer. É um protótipo, então fica ligado por padrão;
  * `VITE_DEMO_LOGIN=false` desliga.

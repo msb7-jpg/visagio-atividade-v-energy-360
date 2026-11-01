@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { DEMO_SENHA, MIN_STEP_MS, SSO_ACCOUNT, type DemoAccount } from '@/features/auth/lib/loginConfig'
+import { DEMO_SENHA, MIN_STEP_MS, type DemoAccount } from '@/features/auth/lib/loginConfig'
 import { resolveProfile, type LoginProfile } from '@/features/auth/lib/loginProfile'
 import { loginErrorMessage, validateLogin, type LoginFieldError } from '@/features/auth/lib/loginValidation'
 
 type LoginStage = 'form' | 'wait' | 'ok' | 'noprofile'
-type LoginMode = 'sso' | 'senha'
 
 /** Passos da tela de espera; o ativo acompanha o estado real do login (1 = resposta da API, 2 e 3 = depois dela). */
 export const LOGIN_STEP_LABELS = [
@@ -28,7 +27,6 @@ const pause = (milliseconds: number) => new Promise<void>((resolve) => {
 export function useLoginController() {
   const { login, logout } = useAuth()
   const [stage, setStage] = useState<LoginStage>('form')
-  const [mode, setMode] = useState<LoginMode>('senha')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [error, setError] = useState<LoginFieldError | null>(null)
@@ -46,7 +44,7 @@ export function useLoginController() {
     setErrorTick((tick) => tick + 1)
   }
 
-  const authenticate = async (nextMode: LoginMode, credentials: { email: string, senha: string }) => {
+  const authenticate = async (credentials: { email: string, senha: string }) => {
     const invalid = validateLogin(credentials.email, credentials.senha)
     if (invalid) {
       showError(invalid)
@@ -55,7 +53,6 @@ export function useLoginController() {
 
     attemptRef.current += 1
     const attemptId = attemptRef.current
-    setMode(nextMode)
     setError(null)
     setActiveStep(1)
     setStage('wait')
@@ -100,7 +97,6 @@ export function useLoginController() {
 
   return {
     stage,
-    mode,
     email,
     senha,
     error,
@@ -115,14 +111,10 @@ export function useLoginController() {
       setSenha(value)
       setError(null)
     },
-    submitPassword: () => authenticate('senha', { email, senha }),
-    submitSso: () => {
-      setEmail(SSO_ACCOUNT.email)
-      return authenticate('sso', { email: SSO_ACCOUNT.email, senha: DEMO_SENHA })
-    },
+    submitPassword: () => authenticate({ email, senha }),
     enterAsDemo: (account: DemoAccount) => {
       setEmail(account.email)
-      return authenticate('senha', { email: account.email, senha: DEMO_SENHA })
+      return authenticate({ email: account.email, senha: DEMO_SENHA })
     },
     backToForm
   }

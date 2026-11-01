@@ -1,6 +1,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.core.config import get_settings
 from app.main import app
 
 
@@ -33,3 +34,16 @@ async def test_auth_login_and_me():
             json={"email": "diretor@venergy.com", "senha": "senha-errada"},
         )
         assert invalid_resp.status_code == 401
+
+        unknown_resp = await ac.post(
+            "/api/v1/auth/login",
+            json={"email": "ninguem@venergy.com", "senha": "venergy123"},
+        )
+        assert unknown_resp.status_code == 401
+
+
+def test_demo_passwords_are_stored_only_as_hashes():
+    users = get_settings().default_users
+
+    assert all(user["senha_hash"].startswith("$argon2id$") for user in users.values())
+    assert "venergy123" not in str(users)

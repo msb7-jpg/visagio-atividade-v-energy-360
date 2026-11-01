@@ -4,6 +4,7 @@ import { ShareBar } from '@/features/grid_quality/components/ShareBar'
 import { formatCompetencia, formatDecimal } from '@/features/grid_quality/utils/qualityFormatters'
 import { formatInteger, labelOccurrence } from '@/features/grid_quality/utils/continuityFormatters'
 import type { ContinuityEvent } from '@/features/grid_quality/types/continuityTypes'
+import type { PeriodLabels } from '@/features/grid_quality/utils/periodLabels'
 
 function ComparisonBar({ label, value, maximum, tone }: { label: string; value: number; maximum: number; tone: string }) {
   return (
@@ -20,10 +21,10 @@ function ComparisonBar({ label, value, maximum, tone }: { label: string; value: 
  *
  * Com causa ativa e o mês dentro do padrão para ela, o texto fica neutro; com mediana zero não há "N vezes".
  *
- * @param props - Evento detectado pela API na rede inteira e a causa filtrada (vazia = todas).
+ * @param props - Evento detectado pela API na rede inteira, a causa filtrada (vazia = todas) e os textos dos períodos.
  * @returns Card com texto e barras comparativas.
  */
-export function ContinuityEventCard({ event, cause }: { event: ContinuityEvent; cause: string }) {
+export function ContinuityEventCard({ event, cause, periods }: { event: ContinuityEvent; cause: string; periods: PeriodLabels }) {
   const label = formatCompetencia(event.competencia)
   const maximum = Math.max(event.eventInterruptions, event.otherMonthsMedian)
   const neutral = cause !== '' && !event.extremeInScope
@@ -42,7 +43,7 @@ export function ContinuityEventCard({ event, cause }: { event: ContinuityEvent; 
             </h2>
           </div>
           <p className="text-muted-foreground text-sm">
-            {label} teve {formatInteger(event.eventInterruptions)} interrupções, {comparison}. Sem esse mês, o DEC do período B fica em {formatDecimal(event.decWithoutEvent)} h
+            {label} teve {formatInteger(event.eventInterruptions)} interrupções, {comparison}. Sem esse mês, o DEC de {periods.current} fica em {formatDecimal(event.decWithoutEvent)} h
             e o FEC em {formatDecimal(event.fecWithoutEvent)}.
           </p>
         </div>

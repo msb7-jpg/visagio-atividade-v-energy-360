@@ -6,6 +6,6 @@ describe('Smoke test V-Energy Grid 360', () => {
   it('renderiza a tela de login inicial', () => {
     render(<App />)
     expect(screen.getByText('V-Energy Grid 360')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Entrar com SSO corporativo' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
   })
 })

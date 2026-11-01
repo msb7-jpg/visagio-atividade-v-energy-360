@@ -12,8 +12,10 @@ from app.core.constants import UserRole
 from app.features.grid_quality.continuity_schemas import (
     AffectedCustomerDTO,
     ContinuityKpisDTO,
+    ContinuityPeriodsDTO,
     ContinuitySnapshotDTO,
     PeriodComparisonDTO,
+    PeriodRangeDTO,
 )
 from app.features.grid_quality.dependencies import get_continuity_service, get_grid_quality_service
 from app.features.grid_quality.router import router
@@ -46,6 +48,10 @@ AFFECTED_CUSTOMER = AffectedCustomerDTO(
 )
 COMPARISON = PeriodComparisonDTO(current=2.0, previous=1.0, change_percent=100.0)
 CONTINUITY = ContinuitySnapshotDTO(
+    periods=ContinuityPeriodsDTO(
+        previous=PeriodRangeDTO(start="2022-07", end="2023-06"),
+        current=PeriodRangeDTO(start="2025-07", end="2026-06"),
+    ),
     kpis=ContinuityKpisDTO(dec=COMPARISON, fec=COMPARISON, interruptions=COMPARISON, average_duration_hours=COMPARISON),
     event=None,
     municipalities=[],

@@ -5,16 +5,18 @@ import { Tooltip } from '@/components/ui/tooltip-card'
 import { formatDecimal } from '@/features/grid_quality/utils/qualityFormatters'
 import { formatHoursMinutes, formatInteger } from '@/features/grid_quality/utils/continuityFormatters'
 import type { ContinuityKpis, PeriodComparison } from '@/features/grid_quality/types/continuityTypes'
+import type { PeriodLabels } from '@/features/grid_quality/utils/periodLabels'
 
 interface ComparisonCardProps {
   title: string
   formula: string
   value: string
   previousValue: string
+  previousLabel: string
   comparison: PeriodComparison
 }
 
-function ComparisonCard({ title, formula, value, previousValue, comparison }: ComparisonCardProps) {
+function ComparisonCard({ title, formula, value, previousValue, previousLabel, comparison }: ComparisonCardProps) {
   const worse = comparison.changePercent > 0
   const Arrow = worse ? ArrowUp : ArrowDown
   return (
@@ -31,7 +33,7 @@ function ComparisonCard({ title, formula, value, previousValue, comparison }: Co
             <Arrow className="mr-1 size-3" aria-hidden="true" />
             {formatDecimal(Math.abs(comparison.changePercent))}%
           </Badge>
-          <CardDescription>A: {previousValue} · {worse ? 'piora' : 'melhora'}</CardDescription>
+          <CardDescription>{previousLabel}: {previousValue} · {worse ? 'piora' : 'melhora'}</CardDescription>
         </div>
       </CardContent>
     </Card>
@@ -41,10 +43,10 @@ function ComparisonCard({ title, formula, value, previousValue, comparison }: Co
 /**
  * Quatro cards do período B com a variação sobre o período A: DEC, FEC, interrupções e duração média.
  *
- * @param props - Indicadores comparados dos dois períodos.
+ * @param props - Indicadores comparados dos dois períodos e os textos com as datas de cada um.
  * @returns Grade de cards.
  */
-export function ContinuityKpiCards({ kpis }: { kpis: ContinuityKpis }) {
+export function ContinuityKpiCards({ kpis, periods }: { kpis: ContinuityKpis; periods: PeriodLabels }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <ComparisonCard
@@ -52,6 +54,7 @@ export function ContinuityKpiCards({ kpis }: { kpis: ContinuityKpis }) {
         formula="Soma das horas de interrupção dividida pelas UCs atendidas, ponderada entre alimentadores. Serve para comparar alimentadores e períodos entre si."
         value={`${formatDecimal(kpis.dec.current)} h`}
         previousValue={`${formatDecimal(kpis.dec.previous)} h`}
+        previousLabel={periods.previous}
         comparison={kpis.dec}
       />
       <ComparisonCard
@@ -59,6 +62,7 @@ export function ContinuityKpiCards({ kpis }: { kpis: ContinuityKpis }) {
         formula="UCs interrompidas divididas pelas UCs atendidas, ponderada entre alimentadores."
         value={formatDecimal(kpis.fec.current)}
         previousValue={formatDecimal(kpis.fec.previous)}
+        previousLabel={periods.previous}
         comparison={kpis.fec}
       />
       <ComparisonCard
@@ -66,6 +70,7 @@ export function ContinuityKpiCards({ kpis }: { kpis: ContinuityKpis }) {
         formula="Linhas de ocorrência no período; cada linha é uma UC interrompida."
         value={formatInteger(kpis.interruptions.current)}
         previousValue={formatInteger(kpis.interruptions.previous)}
+        previousLabel={periods.previous}
         comparison={kpis.interruptions}
       />
       <ComparisonCard
@@ -73,6 +78,7 @@ export function ContinuityKpiCards({ kpis }: { kpis: ContinuityKpis }) {
         formula="UC-horas interrompidas divididas pelo número de interrupções."
         value={formatHoursMinutes(kpis.averageDurationHours.current)}
         previousValue={formatHoursMinutes(kpis.averageDurationHours.previous)}
+        previousLabel={periods.previous}
         comparison={kpis.averageDurationHours}
       />
     </div>
