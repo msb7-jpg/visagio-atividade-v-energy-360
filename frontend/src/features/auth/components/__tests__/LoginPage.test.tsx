@@ -57,11 +57,11 @@ describe('LoginPage', () => {
   })
 
   describe('formulário', () => {
-    it('mostra SSO, campos com rótulo e foco no e-mail ao abrir', () => {
+    it('mostra os campos com rótulo, sem SSO, e foco no e-mail ao abrir', () => {
       renderLogin()
 
       expect(screen.getByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Entrar com SSO corporativo' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /SSO/ })).not.toBeInTheDocument()
       expect(screen.getByLabelText('Senha')).toBeInTheDocument()
       expect(screen.getByLabelText('E-mail corporativo')).toHaveFocus()
     })
@@ -137,16 +137,6 @@ describe('LoginPage', () => {
       expect(screen.getByRole('heading', { name: 'Olá, Henrique' })).toBeInTheDocument()
       expect(screen.getByText('Perfil Diretor Comercial')).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /Ir para Painel/ })).toHaveAttribute('href', '/dashboard')
-    })
-
-    it('entra como diretor comercial pelo SSO, mesmo com os campos vazios', async () => {
-      login.mockResolvedValue(directorResponse)
-      renderLogin()
-      fireEvent.click(screen.getByRole('button', { name: 'Entrar com SSO corporativo' }))
-      await advance(0)
-
-      expect(screen.getByRole('heading', { name: 'Entrando com SSO…' })).toBeInTheDocument()
-      expect(login).toHaveBeenCalledWith({ email: 'diretor@venergy.com', senha: 'venergy123' })
     })
 
     it('volta ao formulário ao cancelar a espera', async () => {

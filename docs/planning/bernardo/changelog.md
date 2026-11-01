@@ -267,3 +267,15 @@
 - **Validação de Testes:**
   - Backend: Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (725) aprovados.
   - Frontend: ESLint, Fallow (sem duplicação e sem função acima do limite), Vitest e build aprovados.
+
+### [2026-10-31] - Login sem SSO falso, mapa geográfico da Continuidade e README completo
+- **Autor:** Bernardo H
+- **Branch:** `fix/login-readme-mapa-dec`
+- **O que foi feito:**
+  - Login: removido o botão "Entrar com SSO corporativo", que não era SSO; senhas das contas de demonstração guardadas só como hash Argon2, conferidas pelo `verify_password` (também para e-mail inexistente, com tempo de resposta igual).
+  - Qualidade da Rede, Continuidade: o mapa de pontos sobrepunha os nomes; agora desenha o contorno real dos 14 municípios (malha municipal do IBGE), colorido pela faixa de DEC, com nome e DEC em duas colunas fora do mapa, ligados por uma linha.
+  - Sidebar: título "V-Energy 360", sem subtítulo.
+  - Continuidade: a tela escreve as datas ("07/2025 a 06/2026") em vez de "período A" e "período B". A API passou a devolver `periods` com a primeira e a última competência de cada período, calculadas da série, sem datas fixas no frontend.
+  - README: introdução corrigida, link do diagnóstico, logins e telas de cada perfil, aviso sobre o `v_energy.db`, arquitetura do backend e seção de diferenciais.
+  - `DECISOES.md`: ADR-009 unificada, ADRs em ordem, nome do menu na ADR-015 e o mapa na ADR-025.
+  - `CHECKLIST.md`: marcados Bronze, cabeçalho repetido, filtros de cada tela e os itens do README.

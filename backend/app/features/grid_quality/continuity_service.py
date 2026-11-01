@@ -19,7 +19,9 @@ from app.features.grid_quality.continuity_schemas import (
     AffectedCustomerDTO,
     CauseShareDTO,
     ContinuityEventDTO,
+    ContinuityPeriodsDTO,
     ContinuitySnapshotDTO,
+    PeriodRangeDTO,
     TypeShareDTO,
 )
 from app.features.grid_quality.municipalities import MUNICIPALITY_REFERENCES, normalize_municipality
@@ -62,6 +64,14 @@ def _event_card(
     period_b = split_periods(series)[1]
     period_b_without_event = sum_rows(_rows_in(scope_rows, period_b, {event_competencia}))
     return build_event(event_competencia, series, scope_rows, period_b_without_event, scope_ucs)
+
+
+def _period_ranges(series: list[str]) -> ContinuityPeriodsDTO:
+    period_a, period_b = split_periods(series)
+    return ContinuityPeriodsDTO(
+        previous=PeriodRangeDTO(start=period_a[0], end=period_a[-1]),
+        current=PeriodRangeDTO(start=period_b[0], end=period_b[-1]),
+    )
 
 
 class ContinuityService:
@@ -114,6 +124,7 @@ class ContinuityService:
 
         causes, types = await self._distributions(months_b, list(municipality_by_feeder), cause_key)
         return ContinuitySnapshotDTO(
+            periods=_period_ranges(series),
             kpis=build_kpis(sum_rows(current_rows), sum_rows(previous_rows), scope_ucs),
             event=_event_card(event_competencia, series, scope_rows, scope_ucs),
             municipalities=build_municipalities(current_rows, ucs_by_feeder, municipality_by_feeder),

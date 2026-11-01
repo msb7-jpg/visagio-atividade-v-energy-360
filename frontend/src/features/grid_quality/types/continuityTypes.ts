@@ -7,6 +7,18 @@ export interface ContinuityFilters {
   cause: string
 }
 
+/** Primeira e última competência ('YYYY-MM') de um período. */
+export interface PeriodRange {
+  start: string
+  end: string
+}
+
+/** Período A (primeiros 12 meses da série) e período B (últimos 12). */
+export interface ContinuityPeriods {
+  previous: PeriodRange
+  current: PeriodRange
+}
+
 /** Valor do período B, do período A e a variação percentual de B sobre A. */
 export interface PeriodComparison {
   current: number
@@ -70,6 +82,7 @@ export interface TypeShare {
 
 /** Visão de Continuidade devolvida por `GET /quality/continuity`; `event` é nulo se nenhum mês passa do limiar. */
 export interface ContinuitySnapshot {
+  periods: ContinuityPeriods
   kpis: ContinuityKpis
   event: ContinuityEvent | null
   municipalities: MunicipalityDec[]

@@ -3,20 +3,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ShareBar } from '@/features/grid_quality/components/ShareBar'
 import { formatPercent, labelOccurrence } from '@/features/grid_quality/utils/continuityFormatters'
 import type { CauseShare } from '@/features/grid_quality/types/continuityTypes'
+import type { PeriodLabels } from '@/features/grid_quality/utils/periodLabels'
 
 /**
  * Bloco "Interrupções por causa": participação de cada causa nas UC-horas do período B.
  * Causa vazia na origem chega da API como "Sem causa registrada", separada de `NAO IDENTIFICADA`.
  *
- * @param props - Causas ordenadas pela participação.
+ * @param props - Causas ordenadas pela participação e os textos dos períodos.
  * @returns Card com barras e selo de causa atacável ou não.
  */
-export function CauseSharesCard({ causes }: { causes: CauseShare[] }) {
+export function CauseSharesCard({ causes, periods }: { causes: CauseShare[]; periods: PeriodLabels }) {
   return (
     <Card variant="glass">
       <CardHeader>
         <CardTitle>Interrupções por causa</CardTitle>
-        <CardDescription>% das UC-horas do período B. Atacável: a manutenção preventiva consegue evitar.</CardDescription>
+        <CardDescription>% das UC-horas de {periods.current}. Atacável: a manutenção preventiva consegue evitar.</CardDescription>
       </CardHeader>
       <CardContent>
         <ul className="flex flex-col gap-3">

@@ -10,6 +10,20 @@ class ContinuityModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
+class PeriodRangeDTO(ContinuityModel):
+    """Primeira e última competência ('YYYY-MM') de um período, para a tela escrever as datas."""
+
+    start: str
+    end: str
+
+
+class ContinuityPeriodsDTO(ContinuityModel):
+    """Período A (primeiros 12 meses da série) e período B (últimos 12)."""
+
+    previous: PeriodRangeDTO
+    current: PeriodRangeDTO
+
+
 class PeriodComparisonDTO(ContinuityModel):
     """Valor do período B, do período A e a variação percentual de B sobre A."""
 
@@ -80,6 +94,7 @@ class TypeShareDTO(ContinuityModel):
 class ContinuitySnapshotDTO(ContinuityModel):
     """Visão de Continuidade completa; `event` é nulo quando nenhum mês passa do limiar."""
 
+    periods: ContinuityPeriodsDTO
     kpis: ContinuityKpisDTO
     event: ContinuityEventDTO | None
     municipalities: list[MunicipalityDecDTO]

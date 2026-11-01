@@ -8,13 +8,13 @@
 - [x] `make lint-all`, `make test-all` e `cd frontend && bun run build` passam na `main` a partir de um clone novo, com `bun install` do zero. (CI do GitHub Actions, que instala do zero pelos lockfiles: verde em todos os pushes na `main` até `c3cc124`, 30/10)
 
 ## 1. Engenharia de Dados (seção 5.1 e Módulo 1)
-- [ ] **Bronze com os 8 arquivos** como tabelas Delta, sem transformar o conteúdo: unidades_consumidoras, leituras (5 arquivos), faturas, medidores, ocorrencias_rede, atendimentos.json (com o histórico aninhado preservado) e inspecoes.xlsx (as 3 abas). (contagem bruto x Bronze, tabela por tabela)
+- [x] **Bronze com os 8 arquivos** como tabelas Delta, sem transformar o conteúdo: unidades_consumidoras, leituras (5 arquivos), faturas, medidores, ocorrencias_rede, atendimentos.json (com o histórico aninhado preservado) e inspecoes.xlsx (as 3 abas). (contagem bruto x Bronze, tabela por tabela) (31/10: `fatia01_bronze` e `fatia02_bronze` leem as 8 fontes, incluindo as 3 abas do `inspecoes.xlsx` e o JSON com o histórico aninhado)
 - [x] **Volumes batem com o case:** cerca de 46 mil UCs no bruto e 45 mil na Gold, 2,18 mi de leituras e de faturas, 52 mil medidores, 180 mil ocorrências, 319 mil atendimentos, 3,5 mil GD e 1,4 mil inspeções. (consulta em 30/10: Gold com 45.000 UCs, 2.152.336 leituras e faturas depois da limpeza, 51.299 medidores nas leituras, 180.000 ocorrências, 318.871 atendimentos, 3.510 GD e 1.389 inspeções)
 - [ ] **Silver:** cada problema de qualidade identificado tem tratamento e registro. Os já conhecidos:
   - [x] datas em vários formatos; (0 datas fora de `AAAA-MM-DD` na Gold; ADR-008)
   - [x] valores "R$ 1.000,11" e "242.56"; (`DATA_DICTIONARY.md`, faturamento)
   - [x] duplicatas; (0 faturas com `id_fatura` repetido na Gold)
-  - [ ] cabeçalho repetido no meio do CSV;
+  - [x] cabeçalho repetido no meio do CSV; (31/10: a Silver descarta a linha cujo valor é o próprio nome da coluna)
   - [x] bairros com dupla codificação (#45); (banco de 30/10: 0 bairros quebrados, 297 pares município + bairro, Recife com 86 bairros)
   - [x] data de pagamento 9999-12-31 (#44); (0 na Gold; 1.700 faturas `ABERTA`)
   - [x] consumo negativo e virada de medidor; (0 consumos negativos na Gold)
@@ -54,7 +54,7 @@
 - [x] **Capacidade do Rafael:** "mais de 200 inspeções por mês" e "pouco mais da metade encontra algo" aparecem coerentes na tela (capacidade mensal, taxa de 62,7%). (`/losses/queue-summary`: capacidade 200 e taxa de 62,7% em 1.389 inspeções)
 - [ ] **Ordens de inspeção:** gerar a partir da fila, mudar status, registrar o resultado de campo e cancelar. Testar o ciclo inteiro na tela.
 - [x] **Operação: DEC e FEC por alimentador ao longo do tempo** e os piores, mais regiões e onde a manutenção dá retorno. Textos sem falar em "multa" ou "violação" (glossário: o limite é só referência). (tela `/quality`; os textos dizem "Acima do limite de referência" e explicam que o DEC/FEC não mede violação)
-- [ ] **Filtrar e recortar:** cada tela tem filtros que funcionam (período, município, bairro, classe, status). Listar quais são. (Qualidade da Rede — Visão atual filtra por situação em relação ao limite de referência; Continuidade filtra por município, mês do evento e causa (`ContinuityFilters`, `GET /quality/continuity`); as demais telas ainda precisam listar os seus filtros)
+- [x] **Filtrar e recortar:** cada tela tem filtros que funcionam (período, município, bairro, classe, status). Listar quais são. (Qualidade da Rede — Visão atual filtra por situação em relação ao limite de referência; Continuidade filtra por município, mês do evento e causa (`ContinuityFilters`, `GET /quality/continuity`); Painel filtra pelos dois períodos; Receita por períodos, município, bairro e classe; Fila de Inspeção por motivo, município, bairro, classe e as abas de chance de acerto; Visão 360 busca por número da UC, do medidor ou nome do titular)
 - [x] **Mesmos números entre telas:** (conferido em 30/10 com o banco regerado)
   - [x] Receita = Painel = diagnóstico (+8,0%, −5,1%, +13,8%);
   - [x] inadimplência do Painel = diagnóstico (5,52% → 5,42%);
@@ -104,15 +104,15 @@
 - [x] **Estrutura sugerida** (`data-engineering/`, `backend/`, `frontend/`, `ai-agent/`, `docs/`).
   ⚠️ **Falso negativo:** o agente está em `backend/app/agent/`, não em `ai-agent/`. O README precisa dizer onde ele está e por quê. (30/10: README, seção "Inteligência Artificial")
 - [ ] O README tem os 5 itens obrigatórios:
-  - [ ] descrição geral e principais decisões de arquitetura (com links para as ADRs);
-  - [ ] passo a passo para configurar e rodar **cada módulo** do zero: pipeline, como obter o `v_energy.db`, `.env` (chaves de IA e `LOSS_REFERENCE_COMPETENCIA`), backend e frontend;
+  - [x] descrição geral e principais decisões de arquitetura (com links para as ADRs); (31/10: introdução corrigida e seção de arquitetura do backend preenchida)
+  - [x] passo a passo para configurar e rodar **cada módulo** do zero: pipeline, como obter o `v_energy.db`, `.env` (chaves de IA e `LOSS_REFERENCE_COMPETENCIA`), backend e frontend; (31/10: o guia rápido avisa que o banco não está no Git e aponta o pipeline)
   - [x] print do Workflow executado com sucesso; (`docs/img/workflow_databricks.png`)
-  - [ ] links para o dicionário de dados e o diagnóstico; (30/10: o dicionário tem link; o diagnóstico não)
+  - [x] links para o dicionário de dados e o diagnóstico; (31/10: diagnóstico linkado na introdução)
   - [ ] suposições de cada fatia. (30/10: Fatias 03, 05 e 06 escritas (Fatia 06 no PR #60); faltam 01, 02, 04 e 07)
 - [ ] ⚠️ **Falsos negativos do README:**
-  - [ ] lista dos 5 logins e o que cada perfil vê (sem isso, o avaliador não acha as telas);
-  - [ ] diferenciais citados explicitamente (testes, RBAC, exportar e subir planilha, follow-up, avaliação, testes do pipeline); (30/10: o README não tem seção de diferenciais)
-  - [ ] como obter o `v_energy.db`, já que ele não está no repositório. (30/10: o README só ensina a baixar do Databricks; quem não tem acesso ao workspace não consegue)
+  - [x] lista dos 5 logins e o que cada perfil vê (sem isso, o avaliador não acha as telas); (31/10: seção "Logins de demonstração")
+  - [x] diferenciais citados explicitamente (testes, RBAC, exportar e subir planilha, follow-up, avaliação, testes do pipeline); (31/10: seção "Além do mínimo pedido")
+  - [x] como obter o `v_energy.db`, já que ele não está no repositório. (30/10: o README só ensina a baixar do Databricks; quem não tem acesso ao workspace não consegue) (31/10: o guia rápido diz que o banco não vai para o Git e aponta o Databricks ou o pipeline local, que exige Linux, macOS ou WSL)
 - [ ] O passo a passo foi **testado por alguém que não escreveu o README**, num clone limpo.
 
 ## 6. Apresentação (15 min + 15 min de perguntas)

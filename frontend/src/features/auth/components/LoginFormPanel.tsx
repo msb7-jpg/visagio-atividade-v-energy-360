@@ -1,9 +1,7 @@
 import type { SyntheticEvent } from 'react'
-import { ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { LoginDemoAccess } from '@/features/auth/components/LoginDemoAccess'
 import type { LoginController } from '@/features/auth/hooks/useLoginController'
 import { motionClass } from '@/features/auth/lib/motionClass'
@@ -15,7 +13,7 @@ interface LoginFormPanelProps {
 }
 
 /**
- * Estado "formulário": SSO, e-mail e senha, erro de validação e acesso de demonstração.
+ * Estado "formulário": e-mail e senha, erro de validação e acesso de demonstração.
  *
  * @param props - Controlador da tela e preferência de movimento reduzido.
  * @returns Painel do formulário de login.
@@ -36,19 +34,8 @@ export function LoginFormPanel({ controller, reduced }: LoginFormPanelProps) {
       <div>
         <h2 id="login-title" className="text-2xl font-bold">Entrar</h2>
         <p className="text-muted-foreground mt-1">
-          Use a sua conta corporativa da V-Energy. O seu perfil de acesso vem da conta.
+          Entre com o e-mail e a senha da sua conta. As telas liberadas dependem do seu perfil.
         </p>
-      </div>
-
-      <Button type="button" size="lg" fullWidth onClick={() => void controller.submitSso()}>
-        <ShieldCheck aria-hidden="true" />
-        <span>Entrar com SSO corporativo</span>
-      </Button>
-
-      <div className="text-muted-foreground flex items-center gap-3 text-xs">
-        <Separator className="flex-1" />
-        <span>ou com e-mail e senha</span>
-        <Separator className="flex-1" />
       </div>
 
       <form className="flex flex-col gap-4" noValidate onSubmit={handleSubmit}>

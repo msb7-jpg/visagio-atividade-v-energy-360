@@ -13,7 +13,7 @@ export function MunicipalityDecBars({ municipalities }: { municipalities: Munici
   const maximum = municipalities[0]?.decHours ?? 0
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-foreground text-sm font-bold">DEC por município (h), período B</h3>
+      <h3 className="text-foreground text-sm font-bold">DEC por município (h)</h3>
       <ul className="flex flex-col gap-2">
         {municipalities.map((municipality) => (
           <li key={municipality.name} className="flex items-center gap-3 text-sm">

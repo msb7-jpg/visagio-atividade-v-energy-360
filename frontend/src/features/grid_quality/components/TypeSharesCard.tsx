@@ -2,20 +2,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ShareBar } from '@/features/grid_quality/components/ShareBar'
 import { formatPercent, labelOccurrence } from '@/features/grid_quality/utils/continuityFormatters'
 import type { TypeShare } from '@/features/grid_quality/types/continuityTypes'
+import type { PeriodLabels } from '@/features/grid_quality/utils/periodLabels'
 
 /**
  * Bloco "Por tipo de ocorrência": participação de cada tipo nas ocorrências do período B.
  * Todos os tipos, inclusive oscilação, contam no DEC e no FEC.
  *
- * @param props - Tipos ordenados pela participação.
+ * @param props - Tipos ordenados pela participação e os textos dos períodos.
  * @returns Card com uma barra por tipo.
  */
-export function TypeSharesCard({ types }: { types: TypeShare[] }) {
+export function TypeSharesCard({ types, periods }: { types: TypeShare[]; periods: PeriodLabels }) {
   return (
     <Card variant="glass">
       <CardHeader>
         <CardTitle>Por tipo de ocorrência</CardTitle>
-        <CardDescription>% das ocorrências do período B.</CardDescription>
+        <CardDescription>% das ocorrências de {periods.current}.</CardDescription>
       </CardHeader>
       <CardContent>
         <ul className="flex flex-col gap-3">
