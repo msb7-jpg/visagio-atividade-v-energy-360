@@ -6,6 +6,26 @@
 
 ## Registros de Execução
 
+### [2026-10-31] - Atendimento às Devolutivas de Design: IA Recolhível e Foco Executivo (Issues #65 e #69)
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Issue #65: Resposta da IA em Linguagem Natural com Auditoria Recolhida e Rótulos de Negócio:**
+    - Reordenada a hierarquia visual em `frontend/src/features/chat/components/feed/ChatMessage.tsx`: a resposta sintetizada em linguagem natural (`MarkdownRenderer`) com valores e tabelas destacados agora é renderizada no topo do balão de resposta.
+    - Criado o componente especializado `AiAuditBlock.tsx` (`frontend/src/features/chat/components/feed/AiAuditBlock.tsx`), agrupando `NodeStepper`, `ThoughtInspector` e `SqlCodeBlock` dentro de um bloco sanfonado recolhido por padrão: *"Ver raciocínio da IA (Auditoria)"*, reduzindo a carga cognitiva para o Diretor Comercial Henrique Duarte e mantendo 100% de transparência técnica para a Diretoria de Tecnologia (Patrícia Lins).
+    - Durante o streaming ativo inicial (`isStreaming && !message.content`), exibe um feedback executivo amigável (*"Consultando registros da distribuidora..."*), migrando dinamicamente para o texto assim que os tokens chegam.
+    - Atualizados os rótulos dos nós da FSM (`backend/app/core/constants.py`) para linguagem de negócio clara: *"Compreendendo o pedido"*, *"Localizando indicadores no sistema"*, *"Garantindo segurança da consulta"*, *"Consultando base de dados da distribuidora"*, *"Refinando precisão da consulta"* e *"Preparando síntese executiva"*.
+    - Criada suíte de testes unitários em `frontend/src/features/chat/components/feed/ChatMessage.test.tsx` cobrindo a priorização da resposta, a auditoria recolhida e a alternância de estado.
+  - **Issue #69: SmartInsightCard Recolhível por Padrão com Persistência em `localStorage`:**
+    - Refatorado `frontend/src/features/insights/SmartInsightCard.tsx` para iniciar recolhido em barra compacta horizontal (`py-2 px-3`), com o ícone `Sparkles`, badge de contexto e prévia de uma linha do resumo executivo, liberando espaço visual imediato para os gráficos e KPIs do Painel do Diretor (`ExecutiveDashboardPage.tsx`).
+    - Adicionado botão de toggle (*"Expandir"* / *"Minimizar"*) e persistência da preferência do usuário via `localStorage` sob chave `venergy_insight_collapsed_${context}` com tratamento seguro em `try/catch`.
+    - Ajustado para conformidade estrita com as regras do Design System (`design.md` e linter `shadcn/no-restyle`), utilizando apenas variantes de Card e tamanhos oficiais de Button.
+    - Atualizados os testes unitários em `frontend/src/features/insights/SmartInsightCard.test.tsx` cobrindo o estado recolhido inicial, expansão/minimização e respeito à preferência salva.
+  - **Validação de Qualidade e Governança:**
+    - `make lint-backend`: 10.00/10 no Pylint, Ruff sem advertências e 4/4 contratos do import-linter respeitados.
+    - `make lint-frontend`: ESLint 100% limpo e Fallow com 0 arquivos acima do teto de 150 LOC e 0% de duplicação.
+    - `make test-all`: 709 testes do backend e 544 testes do frontend aprovados (total de 1.253 testes verdes).
+
+
 ### [2026-10-30] - Execução Local dos Notebooks do Lakehouse via Feature Flags (`IS_DATABRICKS`), Script Único e Alembic
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

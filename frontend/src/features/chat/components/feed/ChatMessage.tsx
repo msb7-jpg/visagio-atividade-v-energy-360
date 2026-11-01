@@ -1,27 +1,23 @@
-import { User } from 'lucide-react'
+import { Loader2, User } from 'lucide-react'
 import type { JSX } from 'react'
 import { AgentAvatar } from '@/features/chat/components/feed/AgentAvatar'
+import { AiAuditBlock } from '@/features/chat/components/feed/AiAuditBlock'
 import { ChatErrorCard } from '@/features/chat/components/feed/ChatErrorCard'
 import { ChatMessageActions } from '@/features/chat/components/feed/ChatMessageActions'
 import { CommandBadge } from '@/features/chat/components/feed/CommandBadge'
-import { NodeStepper } from '@/features/chat/components/feed/NodeStepper'
 import { MarkdownRenderer } from '@/features/chat/components/renderers/MarkdownRenderer'
-import { SqlCodeBlock } from '@/features/chat/components/renderers/SqlCodeBlock'
-import { ThoughtInspector } from '@/features/chat/components/renderers/ThoughtInspector'
-import { MESSAGE_ROLE, type ChatMessage as ChatMessageType } from '@/features/chat/types/chat.types'
+import {
+  MESSAGE_ROLE,
+  STEP_STATUS,
+  type AgentStepItem,
+  type ChatMessage as ChatMessageType
+} from '@/features/chat/types/chat.types'
 import { cn } from '@/lib/utils'
 
-/**
- * Propriedades para renderização de uma mensagem de conversa individual no feed.
- */
 export interface ChatMessageProps {
-  /** Objeto consolidado da mensagem com etapas e metadados. */
   message: ChatMessageType
-  /** Callback para nova tentativa de envio. */
   onRetry?: () => void
-  /** Indica se o streaming está ativo para desabilitar ações. */
   isStreaming?: boolean
-  /** Classes CSS adicionais. */
   className?: string
 }
 
@@ -37,6 +33,17 @@ function parseUserContent(rawContent: string): { command: string | null; args: s
     command: rawContent.slice(0, spaceIdx),
     args: rawContent.slice(spaceIdx + 1)
   }
+}
+
+function getActiveStreamingLabel(steps?: AgentStepItem[]): string {
+  if (!steps || steps.length === 0) {
+    return 'Consultando registros da distribuidora...'
+  }
+  const activeStep = steps.find(step => step.status === STEP_STATUS.ACTIVE)
+  if (activeStep) {
+    return activeStep.label
+  }
+  return steps[steps.length - 1].label
 }
 
 function UserChatMessage({ message, className }: { message: ChatMessageType; className?: string }) {
@@ -68,43 +75,27 @@ interface AssistantMessageBodyProps {
   isStreaming?: boolean
 }
 
-interface MessageArtifactsProps {
-  thought?: string | null
-  sql?: string | null
-  error?: string | null
-  onRetry?: () => void
-}
-
-function MessageArtifacts({ thought, sql, error, onRetry }: MessageArtifactsProps): JSX.Element {
-  return (
-    <>
-      {thought ? <ThoughtInspector thought={thought} /> : null}
-      {sql ? <SqlCodeBlock query={sql} /> : null}
-      {error ? <ChatErrorCard message={error} onRetry={onRetry} /> : null}
-    </>
-  )
-}
-
 function AssistantMessageBody({
   message,
   onRetry,
   isStreaming = false
 }: AssistantMessageBodyProps): JSX.Element {
-  const hasSteps = Boolean(message.steps?.length || message.isStreaming)
   const showActions = !message.isStreaming && Boolean(message.content || message.error)
+  const streamingLabel = getActiveStreamingLabel(message.steps)
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-3">
-      {hasSteps ? (
-        <NodeStepper steps={message.steps ?? []} isStreaming={message.isStreaming} />
+      {message.error ? <ChatErrorCard message={message.error} onRetry={onRetry} /> : null}
+
+      {message.isStreaming && !message.content ? (
+        <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-foreground shadow-xs">
+          <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
+          <span className="font-medium">{streamingLabel}</span>
+        </div>
       ) : null}
-      <MessageArtifacts
-        thought={message.thought}
-        sql={message.sql}
-        error={message.error}
-        onRetry={onRetry}
-      />
+
       {message.content ? <MarkdownRenderer content={message.content} /> : null}
+
       {showActions ? (
         <ChatMessageActions
           content={message.content}
@@ -112,6 +103,13 @@ function AssistantMessageBody({
           isStreaming={isStreaming}
         />
       ) : null}
+
+      <AiAuditBlock
+        steps={message.steps ?? []}
+        thought={message.thought}
+        sql={message.sql}
+        isStreaming={message.isStreaming}
+      />
     </div>
   )
 }
@@ -136,9 +134,6 @@ function AssistantChatMessage({
 
 /**
  * Componente que renderiza um turno de conversa (usuário ou assistente IA).
- *
- * @param props - Propriedades de configuração da mensagem e callbacks de ação.
- * @returns Elemento JSX formatado para usuário ou assistente.
  */
 export function ChatMessage(props: ChatMessageProps): JSX.Element {
   if (props.message.role === MESSAGE_ROLE.USER) {
