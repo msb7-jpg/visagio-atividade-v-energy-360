@@ -107,7 +107,8 @@ describe('ContinuityView', () => {
     expect(
       await screen.findByText('Últimos 12 meses (01/2001 a 12/2001) comparados com os primeiros 12 meses da base (01/2000 a 12/2000).')
     ).toBeInTheDocument()
-    expect(screen.getAllByText(/^01\/2000 a 12\/2000: .* · piora$/)).toHaveLength(4)
+    expect(screen.getAllByText('01/2000 a 12/2000:')).toHaveLength(4)
+    expect(screen.getAllByText(/^.+ · piora$/)).toHaveLength(4)
     expect(screen.getByRole('columnheader', { name: 'DEC 2001 (h)' })).toBeInTheDocument()
     expect(screen.queryByText(/período B/)).not.toBeInTheDocument()
   })
