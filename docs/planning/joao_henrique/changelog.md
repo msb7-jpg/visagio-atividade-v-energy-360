@@ -268,3 +268,22 @@
 - **Validação de Testes:**
   - Banco real (`v_energy.db`, B = 12 últimos meses): DEC de B da rota igual ao SQL independente em todas as 7 causas (VEGETACAO 0,24127; CLIMATICA 2,14186); soma por causa 3,4493594 = DEC total 3,4493594.
   - `make lint-all` aprovado; `make test-all`: 731 pytest e 578 vitest.
+
+### [2026-10-31] - Filtros da Continuidade em popover (issue #68)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `ContinuityFilters` passou a usar o `FilterPopover` compartilhado: mês do evento (incluir/excluir), município e causa dentro do painel "Filtros".
+  - Chips "Município: X", "Causa: Y" e "Sem o mês do evento (MM/AAAA)" (rótulo de `formatCompetencia`); cada chip remove só o seu filtro e "Limpar filtros" volta município e causa para vazio e inclui o mês do evento.
+  - API do controller e parâmetros enviados a `GET /quality/continuity` inalterados; Visão atual sem mudança.
+  - `ContinuityView.test.tsx` abre "Filtros" antes de escolher e ganhou teste dos chips e de "Limpar filtros".
+- **Validação de Testes:**
+  - `make lint-all` aprovado; `make test-all` aprovado (723 vitest no frontend).
+
+### [2026-10-31] - Ajustes visuais do mapa e dos cards da Continuidade (revisão do PR #72)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Mapa: rótulo de Abreu e Lima passou para a coluna esquerda (a linha guia não cruza mais Igarassu e Paulista); teste monta as duas colunas com `MUNICIPALITY_SHAPES` reais e confere `LABEL_GAP` e os limites do mapa.
+  - Mapa: linha guia em `--color-foreground` (1) sobre um halo `--color-card` (3). Nenhuma cor única chega a 3:1 nas 4 faixas nos dois temas (foreground: 1,52 a 2,90; o `--color-muted-foreground` antigo ficava em 1,02 a 1,18); com o halo, o traço tem 5,95 a 9,68 contra as faixas.
+  - Cards de KPI: o período fica em linha própria e "valor · piora/melhora" fica junto, com `whitespace-nowrap`; o selo de variação passou para cima. `ContinuityView.test.tsx` ajustado ao novo formato. Os 4 cards usam o mesmo componente.
+  - Mapa: o `centroid` de Abreu e Lima (127,3; 102,7) caía fora do contorno côncavo; passou para (91,2; 84,9), o ponto mais afastado das bordas. Teste `municipalityCentroids.test.ts` confere os 14 municípios por ray casting.
+- **Fora desta entrega:** conferência visual no navegador (feita por quem revisa).

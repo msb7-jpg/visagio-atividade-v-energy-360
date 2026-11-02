@@ -108,6 +108,7 @@
 - [x] Criar testes no frontend com Vitest em `GridQualityPage.test.tsx` e `RbacNavigation.test.tsx`.
 - [x] Garantir conformidade com `make lint-frontend`.
 - [x] Aba Continuidade com dados reais (`GET /quality/continuity`) e tabela de clientes mais afetados no detalhe do circuito (`GET /quality/feeders/{id}/customers`). Concluído por Joao Henrique em 2026-10-28; registro no `changelog.md`.
+- [x] Filtros da Continuidade em `FilterPopover` (issue #68). Concluído por Joao Henrique em 2026-10-31; registro no `changelog.md`.
 - [ ] Filtro de bairro na Continuidade (próxima etapa, parâmetro opcional em `dim_unidade_consumidora`).
 
 ---

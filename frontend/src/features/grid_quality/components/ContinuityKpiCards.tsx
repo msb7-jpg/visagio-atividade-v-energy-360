@@ -28,12 +28,13 @@ function ComparisonCard({ title, formula, value, previousValue, previousLabel, c
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         <div className="text-foreground text-2xl font-bold tracking-tight">{value}</div>
-        <div className="flex items-center gap-2">
-          <Badge variant={worse ? 'destructive' : 'secondary'}>
-            <Arrow className="mr-1 size-3" aria-hidden="true" />
-            {formatDecimal(Math.abs(comparison.changePercent))}%
-          </Badge>
-          <CardDescription>{previousLabel}: {previousValue} · {worse ? 'piora' : 'melhora'}</CardDescription>
+        <Badge variant={worse ? 'destructive' : 'secondary'} className="self-start">
+          <Arrow className="mr-1 size-3" aria-hidden="true" />
+          {formatDecimal(Math.abs(comparison.changePercent))}%
+        </Badge>
+        <div>
+          <CardDescription>{previousLabel}:</CardDescription>
+          <CardDescription className="whitespace-nowrap">{previousValue} · {worse ? 'piora' : 'melhora'}</CardDescription>
         </div>
       </CardContent>
     </Card>
