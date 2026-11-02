@@ -186,6 +186,11 @@ fora (1.385 de 1.389 entram).
   separa as irregulares. Faltam exemplos de UCs que o campo nunca visitou, então só um **piloto de inspeção** em
   uma amostra de fora da fila valida um sinal novo.
 - **Em aberto:** depois de quanto tempo uma UC com irregularidade constatada volta à fila (reincidência).
+  - **Proposta (2026-11-02), não implementada:** 12 meses fora da fila após a conclusão da ordem com irregularidade
+    confirmada; uma nova queda súbita (50% ou mais) depois da regularização antecipa o retorno; UC inspecionada sem
+    irregularidade segue a janela de 15 meses. Motivos: 12 meses cobrem um ciclo sazonal completo, ficam abaixo dos 15
+    da janela atual e acompanham o `MESES_BASE_MINIMO` (11, D14). **É suposição:** não há dado para medir (ver D12) e a
+    decisão é do gerente de perdas e da equipe de campo. Revisar quando houver UCs inspecionadas mais de uma vez.
 
 ### D12. Remedição dos sinais na Gold real (2026-10-28)
 - **Método:** para cada uma das 1.385 inspeções avaliáveis (agosto a dezembro de 2025), a queda de consumo é calculada
