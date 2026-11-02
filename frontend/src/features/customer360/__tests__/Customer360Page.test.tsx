@@ -295,8 +295,6 @@ describe('Customer360Page', () => {
     renderPage()
     searchFor('UC100004')
 
-    fireEvent.click(await screen.findByRole('tab', { name: /Faturas.*2 em aberto/ }))
-
     expect(await screen.findByText(/2 faturas em aberto, total de R\$\s380,00/)).toBeInTheDocument()
     expect(screen.getByText('Últimas 11 contas: 8 pagas em dia, 2 com atraso (atraso médio de 6 dias) e 1 vencida em aberto.')).toBeInTheDocument()
     const table = screen.getByRole('table', { name: 'Faturas da unidade consumidora' })
@@ -308,8 +306,6 @@ describe('Customer360Page', () => {
   it('mostra falta de luz na região e os chamados do cliente', async () => {
     renderPage()
     searchFor('UC100004')
-
-    fireEvent.click(await screen.findByRole('tab', { name: /Interrupções/ }))
 
     expect(await screen.findByText(/1 mês ficou acima do normal; o pior foi mai\/2026 \(4,2 h\)/)).toBeInTheDocument()
     const outages = screen.getByRole('table', { name: 'Interrupções no alimentador' })
@@ -328,8 +324,6 @@ describe('Customer360Page', () => {
     renderPage()
     searchFor('UC100004')
 
-    fireEvent.click(await screen.findByRole('tab', { name: /Interrupções/ }))
-
     expect(await screen.findByText(/Esta unidade teve 81 interrupções registradas, somando 132,1 h sem energia/)).toBeInTheDocument()
     expect(screen.getByText(/A lista abaixo mostra as 2 mais recentes/)).toBeInTheDocument()
   })
@@ -337,8 +331,6 @@ describe('Customer360Page', () => {
   it('lista cada interrupção que atingiu a própria UC', async () => {
     renderPage()
     searchFor('UC100004')
-
-    fireEvent.click(await screen.findByRole('tab', { name: /Interrupções/ }))
 
     expect(await screen.findByText(/Esta unidade teve 2 interrupções registradas, somando 6,7 h sem energia/)).toBeInTheDocument()
     expect(screen.getByText(/A mais longa começou em 02\/03\/2026 às 07:05 e durou 4,2 h \(vegetação\)/)).toBeInTheDocument()
@@ -352,8 +344,6 @@ describe('Customer360Page', () => {
     renderPage()
     searchFor('UC100004')
 
-    fireEvent.click(await screen.findByRole('tab', { name: /Inspeções/ }))
-
     expect(await screen.findByText('2 inspeções feitas nesta unidade: irregularidade constatada em 1, com 1.250,5 kWh recuperados.')).toBeInTheDocument()
     const inspections = screen.getByRole('table', { name: 'Inspeções de perdas da unidade consumidora' })
     expect(within(inspections).getByText('Irregular')).toBeInTheDocument()
@@ -361,14 +351,26 @@ describe('Customer360Page', () => {
     expect(within(inspections).getByText('By-pass')).toBeInTheDocument()
   })
 
-  it('resume faturas em aberto, falta de luz e chamados sem trocar de aba', async () => {
+  it('mostra no topo o que precisa de atenção, com fatura vencida antes do resto', async () => {
     renderPage()
     searchFor('UC100004')
 
-    expect(await screen.findByText('R$ 380,00')).toBeInTheDocument()
-    expect(screen.getByText('2 faturas em aberto.')).toBeInTheDocument()
-    expect(await screen.findByText('Acima do normal no último ano; o mais recente foi mai/2026.')).toBeInTheDocument()
-    expect(screen.getByText('Último aberto em 25/06/2026.')).toBeInTheDocument()
+    const attention = await screen.findByRole('list', { name: 'Pontos de atenção da UC' }, { timeout: 5000 })
+    const labels = within(attention).getAllByRole('listitem').map((item) => item.firstChild?.textContent)
+    expect(labels).toEqual(['1 fatura vencida', '1 fatura em aberto no prazo', 'Falta de luz acima do normal na região', '1 chamado aberto'])
+    expect(within(attention).getByText(/R\$\s186,00 sem pagamento depois do vencimento/)).toBeInTheDocument()
+    expect(within(attention).getByText('1 mês no último ano; o mais recente foi mai/2026.')).toBeInTheDocument()
+  })
+
+  it('agrupa a ficha em blocos visíveis, sem abas', async () => {
+    renderPage()
+    searchFor('UC100004')
+
+    for (const block of ['Cliente e consumo', 'Histórico financeiro', 'Problemas técnicos']) {
+      expect(await screen.findByRole('region', { name: block })).toBeInTheDocument()
+    }
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: 'Histórico financeiro' })).getByText('Conta alta?')).toBeInTheDocument()
   })
 
   it('aceita só os dígitos do número da conta e guarda a UC no endereço da página', async () => {
@@ -442,7 +444,8 @@ describe('Customer360Page', () => {
     searchFor('UC100004')
 
     expect(await screen.findByText('Não foi possível carregar o consumo', {}, { timeout: 5000 })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    const consumptionBlock = screen.getByRole('region', { name: 'Cliente e consumo' })
+    fireEvent.click(within(consumptionBlock).getByRole('button', { name: 'Tentar novamente' }))
 
     await waitFor(() => expect(screen.queryByText('Não foi possível carregar o consumo')).not.toBeInTheDocument())
     expect(mockedApi.getHistory).toHaveBeenCalledTimes(3)
