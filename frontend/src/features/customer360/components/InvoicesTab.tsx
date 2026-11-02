@@ -62,7 +62,7 @@ interface InvoicesTabProps {
 }
 
 /**
- * Aba de faturas: total em aberto e histórico com bandeira e situação de pagamento.
+ * Faturas do bloco "Histórico financeiro": total em aberto e histórico com bandeira e situação de pagamento.
  *
  * @param props - Histórico retornado por `/history`.
  * @returns Resumo das faturas em aberto e tabela de faturas.

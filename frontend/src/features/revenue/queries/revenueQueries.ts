@@ -21,7 +21,7 @@ const revenueKeys = {
 
 // Os dados Gold mudam pouco: cache de 5 minutos evita refazer a consulta ao alternar filtros.
 const REVENUE_STALE_TIME_MS = 5 * 60 * 1000
-// Teto da API por página; níveis maiores (Recife tem 106 bairros) são lidos em várias páginas.
+// Teto da API por página; níveis maiores (297 pares município + bairro na rede inteira) são lidos em várias páginas.
 const OPTIONS_PAGE_SIZE = 100
 
 /**

@@ -279,3 +279,26 @@
   - README: introdução corrigida, link do diagnóstico, logins e telas de cada perfil, aviso sobre o `v_energy.db`, arquitetura do backend e seção de diferenciais.
   - `DECISOES.md`: ADR-009 unificada, ADRs em ordem, nome do menu na ADR-015 e o mapa na ADR-025.
   - `CHECKLIST.md`: marcados Bronze, cabeçalho repetido, filtros de cada tela e os itens do README.
+
+### [2026-11-02] - Correções finais de documentação e nome do produto
+- **Autor:** Bernardo H
+- **Branch:** `docs/correcoes-finais`
+- **O que foi feito:**
+  - README: suposições das Fatias 01 e 02 (dados), 04 (Receita) e 07 (IA), com como demonstrar; a seção de suposições agora cobre todas as fatias.
+  - `DATA_DICTIONARY.md`: tabela "que tabela responde a cada liderança", a tabela operacional `ordem_inspecao`, nomes dos notebooks da Fatia 01 e a concentração de irregularidades com o banco corrigido (835 de 871).
+  - `DECISOES.md`: ADR-029, potência solar fora da faixa mantida como veio do bruto.
+  - `CHECKLIST.md` e `CORRECOES.md`: itens já entregues marcados.
+  - Removido o `docs/ROTEIRO_SCREENCAST.md`, que não será mais usado.
+  - Sidebar volta a dizer "V-Energy Grid 360", o nome usado no login, no título da aba e no README.
+  - Comentários desatualizados corrigidos (número de bairros na Receita e linha guia do mapa).
+
+### [2026-11-02] - Hierarquia visual da Visão 360 (issue #66)
+- **Autor:** Bernardo H
+- **Branch:** `docs/correcoes-finais`
+- **O que foi feito:**
+  - Bloco "Precisa de atenção" no topo (`AttentionPanel` e `buildAttentionItems`): fatura vencida em vermelho; fatura em aberto no prazo, consumo em alta, leitura estimada, falta de luz acima do normal na região e chamado aberto em laranja. Os urgentes vêm primeiro; sem pendências, a tela diz "Nada pendente".
+  - As quatro abas viraram três blocos sempre visíveis (`Customer360Sections`): "Cliente e consumo" (cadastro, consumo de 12 meses e inspeções de perdas), "Histórico financeiro" (diagnóstico da conta alta e faturas) e "Problemas técnicos" (interrupções da UC e da região e chamados).
+  - Os três cards de resumo de mesmo peso (`CustomerQuickFacts`) saíram; o que eles mostravam está no bloco de atenção.
+  - Testes: `attentionItems.test.ts` e os da página (ordem dos alertas, blocos sem abas e "Tentar novamente" dentro do bloco).
+- **Validação de Testes:**
+  - Frontend: ESLint, Fallow (sem duplicação e sem função acima do limite), Vitest (733) e build aprovados.

@@ -10,7 +10,7 @@
 ## 1. Engenharia de Dados (seção 5.1 e Módulo 1)
 - [x] **Bronze com os 8 arquivos** como tabelas Delta, sem transformar o conteúdo: unidades_consumidoras, leituras (5 arquivos), faturas, medidores, ocorrencias_rede, atendimentos.json (com o histórico aninhado preservado) e inspecoes.xlsx (as 3 abas). (contagem bruto x Bronze, tabela por tabela) (31/10: `fatia01_bronze` e `fatia02_bronze` leem as 8 fontes, incluindo as 3 abas do `inspecoes.xlsx` e o JSON com o histórico aninhado)
 - [x] **Volumes batem com o case:** cerca de 46 mil UCs no bruto e 45 mil na Gold, 2,18 mi de leituras e de faturas, 52 mil medidores, 180 mil ocorrências, 319 mil atendimentos, 3,5 mil GD e 1,4 mil inspeções. (consulta em 30/10: Gold com 45.000 UCs, 2.152.336 leituras e faturas depois da limpeza, 51.299 medidores nas leituras, 180.000 ocorrências, 318.871 atendimentos, 3.510 GD e 1.389 inspeções)
-- [ ] **Silver:** cada problema de qualidade identificado tem tratamento e registro. Os já conhecidos:
+- [x] **Silver:** cada problema de qualidade identificado tem tratamento e registro. Os já conhecidos:
   - [x] datas em vários formatos; (0 datas fora de `AAAA-MM-DD` na Gold; ADR-008)
   - [x] valores "R$ 1.000,11" e "242.56"; (`DATA_DICTIONARY.md`, faturamento)
   - [x] duplicatas; (0 faturas com `id_fatura` repetido na Gold)
@@ -24,10 +24,10 @@
   - [x] dias_faturamento entre 1 e 58. (mínimo 1 e máximo 58 na Gold)
   (dicionário de dados + notebook)
 - [x] ⚠️ **`fato_anomalia_leitura` está vazia.** (documentado em `DATA_DICTIONARY.md`, "Por que está vazia": a regra não dispara com os dados de troca de medidor) Conferir se é correto (a regra da ADR-006 nunca dispara nos dados) ou se é bug. Se for correto, documentar. Hoje parece entrega faltando.
-- [ ] ⚠️ **Potência solar absurda:** 35 UCs acima de 100 kW (até 9.000 kW numa residência) vêm do bruto. Decidir o tratamento e documentar.
+- [x] ⚠️ **Potência solar absurda:** 35 UCs acima de 100 kW (até 9.000 kW numa residência) vêm do bruto. Decidir o tratamento e documentar. (02/11: ADR-029, o valor fica como veio do bruto e só a Visão 360 o exibe)
 - [x] **`subestacao` vazia** em todo o cadastro: documentar que veio assim. (0 preenchidas; `DATA_DICTIONARY.md`)
 - [x] **Integridade referencial:** 0 leituras e 0 faturas sem UC no cadastro. Faturas de UCs fora do cadastro (`FTX*`, `UC9xxxxxx`) com o tratamento documentado. (consulta em 30/10: 0 faturas e 0 leituras sem UC; as 32.285 faturas `FTX*` ficam na Silver, `DATA_DICTIONARY.md`)
-- [ ] **Gold modelada pelas perguntas das lideranças:** uma linha por liderança (Henrique, Camila, Rafael, Beatriz e Patrícia) dizendo qual tabela Gold responde a ela. (README ou dicionário)
+- [x] **Gold modelada pelas perguntas das lideranças:** uma linha por liderança (Henrique, Camila, Rafael, Beatriz e Patrícia) dizendo qual tabela Gold responde a ela. (README ou dicionário) (02/11: `DATA_DICTIONARY.md`, "Que tabela responde a cada liderança")
 - [x] **DEC e FEC por alimentador conforme a ANEEL:** DEC = Σ(duração × UCs interrompidas) ÷ UCs atendidas; FEC = Σ UCs interrompidas ÷ UCs atendidas. Conferir a fórmula no notebook com 1 alimentador calculado à mão. (consulta; conferido em 31/10 no `v_energy.db`, só leitura, com o alimentador `ALM-SAO-004` em 2022-07. **(a)** Das 24 linhas de `fato_ocorrencias_rede` (uma por UC atingida): Σ duração = 24,3501 h e Σ UCs interrompidas = 24; com 1.091 UCs atendidas, DEC = 24,3501 ÷ 1.091 = 0,022319 h e FEC = 24 ÷ 1.091 = 0,021998. **(b)** `fato_qualidade_alimentador` grava `ucs_atendidas` 1.091, `ucs_interrompidas` 24, DEC 0,0223 e FEC 0,0220: igual a (a) no arredondamento de 4 casas, e as 5.856 linhas alimentador-mês batem do mesmo jeito. A base é `ucs_atendidas` (contagem de `silver_uc_alimentador` no notebook `fatia02_gold.ipynb`), uma vez por alimentador (ADR-003, ADR-012, ADR-025). A fórmula é a da ANEEL, mas conta todas as ocorrências, sem as exclusões do PRODIST, e o limite é só referência.)
 - [x] ⚠️ **Exportação "em formato CSV"** para popular o banco local, como o case pede. Conferir se o pipeline gera os CSV ou se vai direto do Delta para o SQLite. Se não gerar, adicionar o passo ou justificar no README. (README: as tabelas Gold também saem em CSV em `gold/exports/`)
 - [x] **Workflow do Databricks** (`job.yaml`) que roda as 3 camadas de ponta a ponta e pode ser reexecutado. (print da execução com sucesso + `docs/img/workflow_databricks.png`)
@@ -103,13 +103,13 @@
 - [x] O repositório é **público** e **não tem dado confidencial** (`*.db` e `data/landing/*` ignorados pelo Git). (30/10: nenhum `.db`, `.csv` ou `.xlsx` de dados versionado)
 - [x] **Estrutura sugerida** (`data-engineering/`, `backend/`, `frontend/`, `ai-agent/`, `docs/`).
   ⚠️ **Falso negativo:** o agente está em `backend/app/agent/`, não em `ai-agent/`. O README precisa dizer onde ele está e por quê. (30/10: README, seção "Inteligência Artificial")
-- [ ] O README tem os 5 itens obrigatórios:
+- [x] O README tem os 5 itens obrigatórios:
   - [x] descrição geral e principais decisões de arquitetura (com links para as ADRs); (31/10: introdução corrigida e seção de arquitetura do backend preenchida)
   - [x] passo a passo para configurar e rodar **cada módulo** do zero: pipeline, como obter o `v_energy.db`, `.env` (chaves de IA e `LOSS_REFERENCE_COMPETENCIA`), backend e frontend; (31/10: o guia rápido avisa que o banco não está no Git e aponta o pipeline)
   - [x] print do Workflow executado com sucesso; (`docs/img/workflow_databricks.png`)
   - [x] links para o dicionário de dados e o diagnóstico; (31/10: diagnóstico linkado na introdução)
-  - [ ] suposições de cada fatia. (30/10: Fatias 03, 05 e 06 escritas (Fatia 06 no PR #60); faltam 01, 02, 04 e 07)
-- [ ] ⚠️ **Falsos negativos do README:**
+  - [x] suposições de cada fatia. (30/10: Fatias 03, 05 e 06 escritas (Fatia 06 no PR #60); faltam 01, 02, 04 e 07) (02/11: Fatias 01 e 02, 04 e 07 escritas)
+- [x] ⚠️ **Falsos negativos do README:**
   - [x] lista dos 5 logins e o que cada perfil vê (sem isso, o avaliador não acha as telas); (31/10: seção "Logins de demonstração")
   - [x] diferenciais citados explicitamente (testes, RBAC, exportar e subir planilha, follow-up, avaliação, testes do pipeline); (31/10: seção "Além do mínimo pedido")
   - [x] como obter o `v_energy.db`, já que ele não está no repositório. (30/10: o README só ensina a baixar do Databricks; quem não tem acesso ao workspace não consegue) (31/10: o guia rápido diz que o banco não vai para o Git e aponta o Databricks ou o pipeline local, que exige Linux, macOS ou WSL)
@@ -125,4 +125,4 @@
 ## 7. Orientações Gerais (seção 7)
 - [ ] **Qualidade acima de quantidade:** nenhuma funcionalidade quebrada ou "pela metade" na `main`. O que não ficar pronto sai da tela.
 - [ ] **Agente honesto:** nenhum número inventado, nem no chat nem no insight. (30/10: sem chave de IA, o chat avisa em vez de inventar, e o modo simulado se identifica; o insight barra número sem lastro. Falta conferir ao vivo, com o modelo da demonstração, as respostas do chat às perguntas do case e às perguntas sem dado)
-- [ ] **Suposições documentadas no README** onde o case não era explícito.
+- [x] **Suposições documentadas no README** onde o case não era explícito. (02/11: todas as fatias, na seção "Suposições e Demonstração por Fatia")

@@ -8,7 +8,7 @@ interface EventsTabProps {
 }
 
 /**
- * Aba de eventos: falta de luz na própria UC e na região, e chamados abertos pelo cliente.
+ * Conteúdo do bloco "Problemas técnicos": falta de luz na própria UC e na região, e chamados abertos pelo cliente.
  *
  * @param props - Eventos retornados por `/events`.
  * @returns Interrupções da UC no topo e, abaixo, região e chamados lado a lado no desktop e empilhados no celular.

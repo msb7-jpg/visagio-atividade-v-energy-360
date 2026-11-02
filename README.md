@@ -158,11 +158,29 @@ O banco sai em `data/gold_exports/v_energy.db`, e o `backend/v_energy.db` do por
 
 Cada fatia descreve aqui o que assumiu e como demonstrar o que entregou. As decisões completas, com números e alternativas descartadas, ficam em `docs/`.
 
+### 🗄️ Fatias 01 e 02: Dados (Bronze, Silver e Gold)
+
+Responde à diretora de tecnologia: **um número só para cada coisa**, com a origem de cada métrica explicada. Os oito arquivos brutos passam por Bronze (como vieram), Silver (limpeza) e Gold (tabelas para as perguntas), e os testes de qualidade do Workflow param a exportação se algo sair do contrato. O [dicionário de dados](docs/DATA_DICTIONARY.md) descreve cada tabela e diz qual tabela responde a cada liderança.
+
+**Suposições**
+
+| Suposição | Decisão | Onde está o detalhe |
+|---|---|---|
+| Datas e textos | datas em seis formatos lidas por cascata; bairro e município sem acento e em maiúsculas; os 61 bairros com dupla codificação (*mojibake*) revertidos | ADR-009 |
+| Virada de medidor | medidor de 5 dígitos: leitura anterior de 90.000 ou mais e atual de 10.000 ou menos vira consumo recalculado; recuo fora disso seria anomalia (não ocorre nos dados) | ADR-006 |
+| Medidor ativo | o mais recente sem data de retirada | ADR-007 |
+| Painel solar | `possui_gd` pelo cruzamento com `geracao_distribuida.csv` | ADR-008 |
+| Potência solar | mantida como veio do bruto, em kWp; as 35 UCs acima de 100 kWp (até 8.995) ficam como valor suspeito; nenhum indicador usa a potência, só a Visão 360 a exibe | ADR-029 |
+| Nota de satisfação | escala 1 a 5 da origem; chamado sem nota fica nulo | ADR-001 |
+| Ocorrências antes da ligação da UC | continuam no DEC/FEC e ficam marcadas (`fl_anterior_ligacao`, 595 linhas) | ADR-005 |
+| Limite de DEC/FEC | tabela da ANEEL, usada só como referência, nunca como violação | ADR-003 |
+| Volume faturado | a Gold mostra queda de **5,1%** entre jul/2022–jun/2023 e jul/2025–jun/2026, e o case fala em "quase 4%"; a receita (+8,0%) bate. Sem as 3.510 UCs com painel solar, o volume fica praticamente estável (−0,2%) | [diagnóstico](docs/DIAGNOSTICO_RECEITA.md), seções 4 e 6.1 |
+
 ### 📊 Fatia 03: Painel do Diretor e Visão 360 da UC
 
 **Painel do Diretor** (`/dashboard`, perfil `diretor`). Responde ao diretor: **o negócio melhorou ou piorou entre dois períodos?** São onze indicadores em cinco áreas, cada um com o valor dos dois períodos, a variação e o selo "Melhorou", "Piorou" ou "Estável". Ao lado ficam o retrato da Fila de Perdas e o insight da IA.
 
-**Visão 360 da UC** (`/customers`, perfis `atendente`, `gerente_atendimento`, `gerente_perdas`, `gerente_operacao` e `diretor`). Responde ao atendente: **por que a conta deste cliente veio alta, e a rua dele ficou sem luz?** O atendente busca pelo número da UC, do medidor ou pelo nome do titular e vê cadastro, consumo de 12 meses contra o ano anterior, faturas, interrupções, chamados e inspeções de perdas, com o diagnóstico da conta alta em frases prontas.
+**Visão 360 da UC** (`/customers`, perfis `atendente`, `gerente_atendimento`, `gerente_perdas`, `gerente_operacao` e `diretor`). Responde ao atendente: **por que a conta deste cliente veio alta, e a rua dele ficou sem luz?** O atendente busca pelo número da UC, do medidor ou pelo nome do titular e vê no topo o que **precisa de atenção** (fatura vencida em vermelho; fatura no prazo, consumo em alta, leitura estimada, falta de luz acima do normal e chamado aberto em laranja) e, abaixo, três blocos: **Cliente e consumo** (cadastro, 12 meses contra o ano anterior e inspeções de perdas), **Histórico financeiro** (diagnóstico da conta alta em frases prontas e faturas) e **Problemas técnicos** (interrupções da UC e da região e chamados).
 
 Os usuários de teste estão em [Logins de demonstração](#logins-de-demonstração).
 
@@ -170,7 +188,7 @@ Os usuários de teste estão em [Logins de demonstração](#logins-de-demonstra�
 
 - **Painel:** entre como `diretor@venergy.com`. Os períodos padrão comparam jul/2022–jun/2023 com jul/2025–jun/2026: faturamento **+8,0%**, energia faturada **−5,1%** e tarifa média **+13,8%**. Troque os períodos no seletor; as janelas ficam no endereço da página. Passe o mouse no nome de cada indicador para ver como ele é calculado.
 - **Retrato de perdas no Painel:** sem configurar nada, mostra **7 UCs prioritárias de 165 na fila** (2026-06). Com `LOSS_REFERENCE_COMPETENCIA="2025-09"` (ver Fatia 05), mostra **587 prioritárias de 39.243** e retorno esperado de **R$ 1,53 mi/ano**.
-- **Visão 360:** entre como `atendimento@venergy.com` e busque `UC100094` (ou só `100094`, ou parte do nome do titular). Essa UC tem faturas em aberto, interrupções, chamados e uma inspeção de perdas, então todas as abas têm dados.
+- **Visão 360:** entre como `atendimento@venergy.com` e busque `UC100094` (ou só `100094`, ou parte do nome do titular). Essa UC tem faturas em aberto, interrupções, chamados e uma inspeção de perdas, então todos os blocos têm dados.
 
 **Suposições**
 
@@ -190,6 +208,30 @@ Os usuários de teste estão em [Logins de demonstração](#logins-de-demonstra�
 - O Painel calcula outro par de períodos em cerca de 2,5 s na primeira vez; os períodos padrão abrem na hora, porque são calculados na subida da API (ADR-016). Ao trocar o `v_energy.db`, reinicie a API para limpar o cache.
 
 Detalhes: [`docs/DECISOES.md`](docs/DECISOES.md) (ADR-010 a ADR-023 e ADR-028) e os planos em [`docs/planning/bernardo/`](docs/planning/bernardo/painel_diretor.md).
+
+### 💰 Fatia 04: Inteligência Comercial (Receita)
+
+Responde ao diretor comercial: **quanto da variação da receita foi preço e quanto foi volume, e onde.** No portal (`/revenue`, perfil `diretor`) ele vê os indicadores dos dois períodos, a cascata da decomposição e o ranking por classe, município e bairro, com o histórico mensal de cada bairro. O [diagnóstico](docs/DIAGNOSTICO_RECEITA.md) usa as mesmas janelas e definições.
+
+**Como demonstrar**
+
+- Entre como `diretor@venergy.com` e abra "Inteligência Comercial". Nos períodos padrão: receita **+8,0%**, energia faturada **−5,1%** e tarifa média **+13,8%**, os mesmos números do Painel e do diagnóstico.
+- No ranking por bairro, Jardim Jordão e Brasília Teimosa estão entre as maiores quedas; clique em um bairro para ver a série mensal.
+
+**Suposições**
+
+| Suposição | Decisão | Onde está o detalhe |
+|---|---|---|
+| Períodos padrão | base jul/2022–jun/2023 e atual jul/2025–jun/2026; na tela, qualquer dia escolhido vale o mês inteiro | diagnóstico, seção 2 |
+| Receita | `valor_total_rs` (energia + tributos); sem tributos a variação também é +8,0% | diagnóstico, seção 2 |
+| Decomposição | preço, volume, mix e cruzado calculados em cada segmento (classe × município × bairro) e somados; a soma fecha com a variação total (testado) | diagnóstico, seção 3 |
+| Segmento novo ou perdido | sem tarifa comparável, toda a variação vai para o volume | diagnóstico, seção 3 |
+| Ticket médio | receita ÷ número de faturas (uma fatura por UC por mês) | diagnóstico, seção 2 |
+
+**Limites conhecidos**
+- Cada consulta da Receita leva cerca de 4,5 s no banco completo, e a tela faz várias ao abrir ([`docs/CORRECOES.md`](docs/CORRECOES.md), seção 7).
+
+Detalhes: [`docs/DIAGNOSTICO_RECEITA.md`](docs/DIAGNOSTICO_RECEITA.md) e o plano da fatia em [`docs/planning/celio/`](docs/planning/celio/inteligencia_comercial_receita.md).
 
 ### 🔎 Fatia 05: Gestão de Perdas e Fila de Inspeção
 
@@ -254,6 +296,29 @@ Responde ao gerente de operação: **onde e por quê a rede ficou sem luz, e o q
 - **Causa principal por circuito** e bloco **"Gerado por IA"**.
 
 Detalhes: [`docs/DECISOES.md`](docs/DECISOES.md) (ADR-003, ADR-024 e ADR-025) e o plano da fatia em [`docs/planning/joao_henrique/`](docs/planning/joao_henrique/qualidade_rede_rbac.md).
+
+### 🤖 Fatia 07: Assistente de IA (Text-to-SQL e insights)
+
+Responde à diretora de tecnologia: **qualquer pessoa pergunta em português e recebe a resposta na hora, e se o agente não souber, diz que não sabe.** O chat fica no canto de todas as telas e mostra a resposta, a consulta SQL e a tabela usadas. O Painel e a Visão 360 têm um insight gerado pela IA sobre os indicadores da própria tela.
+
+**Como demonstrar**
+
+- Com a IA configurada (seção "Inteligência Artificial" acima), pergunte no chat: "quantas unidades com painel solar em Olinda tiveram queda de consumo acima de 30%?". As respostas esperadas das perguntas do case estão nos casos #26 a #28 de [`backend/tests/golden_dataset.json`](backend/tests/golden_dataset.json).
+- Pergunte algo que a base não tem (CPF de um cliente, clima, outra cidade): o agente recusa em vez de inventar.
+
+**Suposições**
+
+| Suposição | Decisão | Onde está o detalhe |
+|---|---|---|
+| Acesso ao banco | conexão SQLite somente leitura (`mode=ro`); o validador só aceita `SELECT` e bloqueia as tabelas de sistema | `app/db/session.py` e `app/agent/nodes/sql_validator.py` |
+| SQL com erro | o agente corrige a consulta sozinho até 3 vezes; depois, responde que não conseguiu | `app/agent/graph.py` |
+| Tamanho da resposta | até 100 linhas por consulta | `app/agent/tools/query_runner.py` |
+| Gráficos | o agente responde com texto e tabela, sem gerar gráficos | ADR-026 |
+| Sem provedor de IA | o chat avisa que a IA está indisponível e o insight não aparece; o modo demonstração só liga quando escolhido (`AI_PROVIDER="mock"`) | seção "Inteligência Artificial" |
+| Insight | o servidor descarta qualquer frase com número que não esteja nos indicadores da tela | `app/features/chat/insights_service.py` |
+| Modelo | `gemini-2.5-flash-lite` no `.env.example`; o case recomenda o Gemini 3.1 Flash-Lite, que se usa trocando `AI_MODEL_NAME` | `backend/.env.example` |
+
+Detalhes: [`docs/STATE_MACHINE.md`](docs/STATE_MACHINE.md), ADR-026 e ADR-027 em [`docs/DECISOES.md`](docs/DECISOES.md) e o plano da fatia em [`docs/planning/miguel/`](docs/planning/miguel/agente_text_to_sql_ia.md).
 
 ---
 

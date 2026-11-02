@@ -263,3 +263,12 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 - **Números no banco real (30/10):** em 2026-06, 7 prioritárias de 165 UCs, retorno esperado de R$ 2,4 mil/ano. Em 2025-09, 587 de 39.243, retorno esperado de R$ 1,53 mi/ano (até R$ 1,64 mi se todas confirmarem).
 - **Alternativa descartada:** somar a fila inteira ponderada pela chance, que ainda inclui as UCs que a Fila manda para a aba "Baixa chance" e não seriam inspecionadas no mês.
 - **Conformidade:** `test_losses_snapshot_counts_value_only_for_priority_units_weighted_by_hit_chance`, `test_losses_snapshot_uses_loss_queue_ranking` e `ExecutiveDashboardPage.test.tsx`.
+
+## ADR-029 — Potência solar fora da faixa mantida como veio do bruto
+
+- **Data:** 2026-11-02 · **Fatia:** 01 (registrada por Bernardo H a partir do `CORRECOES.md`) · **Status:** Aceita
+- **Contexto:** `geracao_distribuida.csv` traz a potência em kWp. 35 UCs têm valor acima de 100 kWp, todas acima de 1.000 e até 8.994,91, inclusive residências, o que não é plausível para geração própria de baixa tensão. Não há como saber se é erro de unidade (W no lugar de kW) ou de digitação.
+- **Decisão:** manter o valor como veio em `dim_unidade_consumidora.potencia_gd_kw`, sem converter nem limitar. Nenhum indicador, fila ou consulta do portal usa a potência; ela só aparece na ficha da Visão 360. O que importa nas análises é se a UC tem painel (`possui_gd`) e a data de ligação, que não dependem desse valor.
+- **Alternativa descartada:** dividir por 1.000 os valores acima de 100, que só se justificaria com a confirmação da área de que a origem usa W nesses casos.
+- **Impacto:** a Visão 360 mostra o número da origem nessas 35 UCs. Se a área confirmar a unidade, a correção entra na Silver sem mudar nenhuma tela.
+- **Conformidade:** `SELECT count(*) FROM dim_unidade_consumidora WHERE potencia_gd_kw > 100` devolve 35 (02/11/2026).

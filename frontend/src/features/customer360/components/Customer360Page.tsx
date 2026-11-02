@@ -2,7 +2,6 @@ import { CloudOff, SearchX, UserSearch } from 'lucide-react'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { LoadingSkeleton } from '@/components/feedback/LoadingSkeleton'
 import { Customer360Details } from '@/features/customer360/components/Customer360Details'
-import { CustomerOverviewCard } from '@/features/customer360/components/CustomerOverviewCard'
 import { CustomerSearchBar } from '@/features/customer360/components/CustomerSearchBar'
 import { RecentCustomers } from '@/features/customer360/components/RecentCustomers'
 import { useCustomer360Controller } from '@/features/customer360/hooks/useCustomer360Controller'
@@ -40,18 +39,13 @@ function CustomerResult({ searchedId, summary, isNotFound, isError }: CustomerRe
   if (!summary) {
     return <LoadingSkeleton count={3} className="h-24" />
   }
-  return (
-    <div className="flex flex-col gap-4">
-      <CustomerOverviewCard summary={summary} />
-      <Customer360Details idUc={summary.id_uc} solar={{ hasSolar: summary.possui_gd, connectedAt: summary.data_conexao_gd }} />
-    </div>
-  )
+  return <Customer360Details summary={summary} />
 }
 
 /**
  * Página da Visão 360 da UC: o atendente digita o número da conta e vê o cliente numa tela só.
  *
- * @returns Página com busca, resumo do cliente, diagnóstico de conta alta e abas de detalhe.
+ * @returns Página com busca e a ficha da UC em blocos, com o que precisa de atenção no topo.
  */
 export function Customer360Page() {
   const { submitSearch, isSearching, recentCustomers, clearRecent, ...result } = useCustomer360Controller()
