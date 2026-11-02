@@ -189,8 +189,9 @@ fora (1.385 de 1.389 entram).
   - **Proposta (2026-11-02), implementada em `queue_query.py` no mesmo dia:** 12 meses fora da fila após a conclusão da ordem com irregularidade
     confirmada; uma nova queda súbita (50% ou mais) depois da regularização antecipa o retorno; UC inspecionada sem
     irregularidade segue a janela de 15 meses. Motivos: 12 meses cobrem um ciclo sazonal completo, ficam abaixo dos 15
-    da janela atual e acompanham o `MESES_BASE_MINIMO` (11, D14). **É suposição:** não há dado para medir (ver D12) e a
-    decisão é do gerente de perdas e da equipe de campo. Revisar quando houver UCs inspecionadas mais de uma vez.
+    da janela atual e acompanham o `MESES_BASE_MINIMO` (11, D14). **Decisão adotada pelo dono da fatia para a entrega:** é uma
+    suposição declarada, sem dado para medir (ver D12) e sem validação do gerente de perdas. Revisar quando houver UCs
+    inspecionadas mais de uma vez.
     **Medido no `v_energy.db` real (2026-11-02):** sem efeito em tempo real (2026-06) nem em 2025-07, 08 e 09; em 2025-12
     a fila vai de 16 para 25 UCs (9 voltam, todas com `recente/base` entre 0,47 e 0,50). Esses 9 casos ficam colados
     no limiar de 50% e coincidem com a queda geral da carteira (D12), então o retorno antecipado pode estar pegando essa
@@ -320,7 +321,8 @@ fora (1.385 de 1.389 entram).
 - A ordem grava a data da inspeção e o inspetor; o id externo da planilha do campo (`IN...`) **não é gravado**: a
   ordem não tem a coluna.
 - **Reincidência** (prazo em que a UC volta à fila depois de uma irregularidade): não há dado (nenhuma UC foi
-  inspecionada duas vezes, D12) e a regra depende de decisão da equipe (item 12.2 do checklist).
+  inspecionada duas vezes, D12). Os 12 meses são uma **decisão adotada pelo dono da fatia** (D11), não validada pelo
+  gerente de perdas nem medida na base.
 - **Nenhuma UC de fora da fila foi inspecionada:** as taxas valem para UCs que o campo já escolhera. O piloto do D13
   mede o que a fila deixa de ver e não foi executado.
 - Problemas de qualidade encontrados que **não são desta fatia**, para a Silver: 21.523 leituras duplicadas
