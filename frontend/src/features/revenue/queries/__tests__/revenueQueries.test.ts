@@ -13,7 +13,7 @@ vi.mock('@/features/revenue/api/revenueApi', () => ({
 const mockedGetBreakdown = vi.mocked(revenueApi.getBreakdown)
 const PAGE_SIZE = 100
 
-// Recife tem 106 bairros no banco real: a lista dos filtros precisa das duas páginas do ranking.
+// Mais bairros que o teto de uma página: a lista dos filtros precisa das duas páginas do ranking.
 const neighborhoods: BreakdownRow[] = Array.from({ length: 106 }, (_, position) =>
   breakdownRow({ bairro: `BAIRRO ${String(position + 1).padStart(3, '0')}` })
 )

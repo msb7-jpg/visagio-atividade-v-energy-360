@@ -41,7 +41,7 @@ function MunicipalityLabel({ shape, decHours, labelY }: PlacedShape) {
   const guidePoints = `${LABEL_COLUMN + centroidX},${centroidY} ${lineEndX},${labelY - 4}`
   return (
     <g aria-hidden="true">
-      {/* Halo claro sob o traço escuro: nenhuma cor única passa de 3:1 nas 4 faixas nos dois temas. */}
+      {/* Halo na cor do card sob o traço na cor do texto: nenhuma cor única passa de 3:1 nas 4 faixas nos dois temas. */}
       <polyline points={guidePoints} fill="none" stroke="var(--color-card)" strokeWidth={3} strokeLinecap="round" />
       <polyline points={guidePoints} fill="none" stroke="var(--color-foreground)" strokeWidth={1} strokeLinecap="round" />
       <circle cx={LABEL_COLUMN + centroidX} cy={centroidY} r={2} fill="var(--color-foreground)" />
