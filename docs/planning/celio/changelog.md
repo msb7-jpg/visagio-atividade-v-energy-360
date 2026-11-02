@@ -116,3 +116,8 @@
   - Conferir as janelas padrão com o banco real entregue pelo Ryei.
 - **Validação de Testes:**
   - `make lint-all` e `make test-all` passando (frontend 302 testes; backend 537).
+
+### [2026-11-02] - Registro da correção do filtro de bairro (feito por Bernardo H)
+- **Autor:** Bernardo H, a partir do `docs/CORRECOES.md`
+- **O que foi feito (commit `07a69c0`, mesclado em 2026-10-28):**
+  - A lista de bairros dos filtros da Receita lia só a primeira página do ranking (100 linhas) e cortava bairros. Passou a ler todas as páginas (`fetchAllBreakdownRows`), com teste em `revenueQueries.test.ts`.

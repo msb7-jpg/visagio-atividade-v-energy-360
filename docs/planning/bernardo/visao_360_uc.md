@@ -160,6 +160,7 @@
 - [x] Integrar `<AppLayout>` (João Henrique).
 - [x] Integrar `<SmartInsightCard context="customer360" ucId={id_uc} />` (Miguel) quando o #35 for mergeado. (31/10, com as métricas da UC)
 - [x] Rodar `make lint-all` e `make test-all`, abrir PR da branch `feat/fatia-03-visao360`. (#43 mesclado em 28/10)
+- [x] Hierarquia visual (issue #66, devolutiva de design): bloco "Precisa de atenção" no topo e os blocos "Cliente e consumo", "Histórico financeiro" e "Problemas técnicos" no lugar das abas. (02/11)
 
 ---
 

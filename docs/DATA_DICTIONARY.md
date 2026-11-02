@@ -14,11 +14,23 @@ Este dicionário descreve as tabelas que o pipeline Databricks publica em CSV (V
 
 **Origem:** catálogo `visagio_atividade_v_energy_360`, schema `gold` (ADR-004). Job: [`data-engineering/job.yaml`](../data-engineering/job.yaml).
 
+## Que tabela responde a cada liderança
+
+A Gold foi modelada pelas perguntas das lideranças do case. Cada linha diz quais tabelas respondem a cada uma e em que tela.
+
+| Liderança | Pergunta do case | Tabelas Gold | Onde aparece |
+|---|---|---|---|
+| Henrique Duarte, diretor comercial | Por que a receita subiu só 8% com o volume caindo? Quanto foi preço e quanto foi volume, por bairro e classe? | `fato_faturamento`, `dim_unidade_consumidora` (classe, município e bairro), `fato_medicao` | Inteligência Comercial, Painel e diagnóstico |
+| Patrícia Lins, diretora de tecnologia | Um número só para cada coisa, e qualquer pessoa pergunta em português | todas as tabelas Gold (catálogo do agente); a pergunta do painel solar em Olinda usa `dim_unidade_consumidora` (`possui_gd`) e `fato_medicao` | Assistente de IA |
+| Camila Barreto, gerente de atendimento | Tudo do cliente numa tela só, conta alta e falta de luz na rua | `dim_unidade_consumidora`, `fato_medicao`, `fato_faturamento`, `fato_ocorrencias_rede`, `fato_qualidade_alimentador`, `fato_atendimentos` e `fato_inspecoes_perdas` | Visão 360 |
+| Rafael Coutinho, gerente de perdas | Fila das UCs suspeitas, ordem de inspeção e registro do resultado | `fato_medicao`, `dim_unidade_consumidora`, `fato_faturamento` (tarifa), `fato_inspecoes_perdas` e a tabela operacional `ordem_inspecao` | Fila de Inspeção e Painel |
+| Beatriz Farias, gerente de operação | DEC e FEC por alimentador, regiões com as piores interrupções e onde a manutenção dá retorno | `fato_qualidade_alimentador`, `fato_ocorrencias_rede` e `dim_unidade_consumidora` | Qualidade da Rede e Painel |
+
 ---
 
 ## Fatia 01 — Cadastro, Medição & GD (Renan)
 
-Notebooks associados: `Landing_to_Bronze`, `Bronze_to_Silver`, `fatia01_gold`, e `fatia01_export_sqlite`. Decisões: [`DECISOES.md`](DECISOES.md) (ADR-006 a ADR-009).
+Notebooks: `fatia01_bronze`, `fatia01_silver`, `fatia01_gold`, `fatia01_testes_qualidade` e `fatia01_export_sqlite` em [`data-engineering/notebooks/`](../data-engineering/notebooks/). Decisões: [`DECISOES.md`](DECISOES.md) (ADR-006 a ADR-009).
 
 ### `dim_unidade_consumidora`
 
@@ -43,7 +55,7 @@ Notebooks associados: `Landing_to_Bronze`, `Bronze_to_Silver`, `fatia01_gold`, e
 | `subestacao` | TEXT | Projetado como Nulo na primeira versão. |
 | `numero_medidor_ativo` | TEXT | Número do medidor fisicamente instalado hoje (calculado via ADR-007: status = ATIVO ou retirada nula). |
 | `possui_gd` | BOOLEAN | `1` se existe no cadastro de geração distribuída, senão `0`. |
-| `potencia_gd_kw` | REAL | Valor original de `geracao_distribuida.csv:potencia_kwp`, convertido para número e mantido sem conversão ou limite. Apesar do nome da coluna Gold, a origem está expressa em kWp; a unidade e os valores extremos precisam de validação antes de usar este campo como capacidade instalada. Há 35 UCs acima de 100 kWp (todas acima de 1.000), com máximo de 8.994,91 kWp. Esses registros são preservados para rastreabilidade, não truncados silenciosamente e não usados no diagnóstico de volume. |
+| `potencia_gd_kw` | REAL | Valor original de `geracao_distribuida.csv:potencia_kwp`, convertido para número e mantido sem conversão ou limite. Apesar do nome da coluna Gold, a origem está expressa em kWp; a unidade e os valores extremos precisam de validação antes de usar este campo como capacidade instalada. Há 35 UCs acima de 100 kWp (todas acima de 1.000), com máximo de 8.994,91 kWp. Decisão (ADR-029): o valor fica como veio do bruto, nenhum indicador o usa e só a Visão 360 o exibe. Esses registros são preservados para rastreabilidade, não truncados silenciosamente e não usados no diagnóstico de volume. |
 | `data_conexao_gd` | TEXT | Data de ligação da geração própria. |
 | `status` | TEXT | `ATIVA` ou `INATIVA`. |
 
@@ -214,8 +226,39 @@ Notebooks: `fatia02_bronze`, `fatia02_silver`, `fatia02_gold`, `fatia02_testes_q
 | `tipo_irregularidade` | TEXT | Tipo de irregularidade (ex.: `BY-PASS`); nulo quando não há. |
 | `kwh_recuperado` | REAL | Energia recuperada pela inspeção, em kWh (decimais com vírgula convertidos). |
 
-Na conferência territorial de 29/10/2026, 828 das 871 inspeções com irregularidade confirmada (95,1%) estavam em Iputinga, Macaxeira, Jardim Jordão e Prazeres. Essa concentração sustenta a investigação de fraude nesses bairros, mas não permite concluir que toda UC ou todo kWh em queda tenha irregularidade ou seja recuperável.
+Na conferência territorial de 02/11/2026, com o banco de bairros corrigidos, 835 das 871 inspeções com irregularidade confirmada (95,9%) estavam em Iputinga, Macaxeira, Jardim Jordão e Prazeres. Essa concentração sustenta a investigação de fraude nesses bairros, mas não permite concluir que toda UC ou todo kWh em queda tenha irregularidade ou seja recuperável.
 
 ### Testes de qualidade da Fatia 02
 
 O notebook `fatia02_testes_qualidade` roda antes da exportação e interrompe o job se qualquer regra falhar (26 testes): totais das faturas, marcador `9999-12-31` ausente, `status_pagamento` coerente com o pagamento e a data de corte, ausência de órfãs, chaves únicas, DEC/FEC ≥ 0, limites ANEEL preenchidos, grade alimentador × mês completa, CSAT entre 1 e 5, datas das inspeções na campanha e contagens iguais às da Silver. Os 5 testes de `fato_ocorrencias_rede` conferem chave única, contagem igual à Silver, UC no cadastro e no mesmo alimentador, campos obrigatórios e a soma por alimentador e mês contra `fato_qualidade_alimentador`. O `fatia02_export_sqlite` confere ainda contagens SQLite = Gold, chaves estrangeiras e `PRAGMA integrity_check`.
+
+---
+
+## Tabela operacional da Fatia 05 (gravada pela API)
+
+### `ordem_inspecao`
+
+- **Grão:** 1 ordem de inspeção gerada no portal. **Chave:** `id_inspecao` (inteiro, gerado pelo banco).
+- **Origem:** não vem do pipeline. A API cria a tabela no `v_energy.db` ao subir (`app/features/loss_management/schema_upgrade.py`, também por `make db-upgrade`) e grava nela quando o gerente de perdas gera, envia, registra ou cancela uma ordem. É a única tabela que a API escreve; as tabelas Gold são só lidas.
+- **Regra:** no máximo uma ordem ativa (`gerada` ou `pendente`) por UC, garantida pelo índice único parcial `uq_ordem_inspecao_uc_ativa`.
+- O `v_energy.db` não vai para o Git, então as ordens de demonstração ficam só na máquina de quem as criou.
+
+| Coluna | Tipo | Descrição e regra |
+|---|---|---|
+| `id_inspecao` | INTEGER | Identificador da ordem. |
+| `id_uc` | TEXT | UC a inspecionar. |
+| `status` | TEXT | `gerada`, `pendente` (enviada a campo), `concluida` ou `cancelada`. |
+| `motivo` | TEXT | Motivo da suspeita copiado da fila. |
+| `kwh_estimado` | REAL | Energia a recuperar estimada pela fila, em kWh. |
+| `fiscal_responsavel` | TEXT | Fiscal que recebeu a ordem. |
+| `inspetor` | TEXT | Inspetor de campo. |
+| `data_inspecao` | DATE | Data da visita, registrada com o resultado. |
+| `irregularidade_constatada` | BOOLEAN | Resultado da visita; nulo até o registro. |
+| `tipo_irregularidade` | TEXT | Tipo encontrado (ex.: `BY-PASS`); nulo quando não há. |
+| `kwh_recuperado` | REAL | Energia recuperada informada pelo campo, em kWh. |
+| `numero_toi` | TEXT | Número do Termo de Ocorrência e Inspeção, quando houver. |
+| `motivo_cancelamento` | TEXT | Motivo escolhido ao cancelar. |
+| `justificativa_cancelamento` | TEXT | Texto livre do cancelamento. |
+| `criado_por` | TEXT | E-mail de quem gerou a ordem. |
+| `criado_em` | DATETIME | Data e hora de criação (UTC). |
+| `atualizado_em` | DATETIME | Data e hora da última mudança (UTC). |
