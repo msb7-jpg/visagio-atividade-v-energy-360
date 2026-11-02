@@ -83,10 +83,10 @@ GOLD_FIXTURE_STATEMENTS = (
         "CREATE TABLE dim_unidade_consumidora "
         "(id_uc TEXT, municipio TEXT, bairro TEXT, classe_consumo TEXT, possui_gd BOOLEAN)"
     ),
-    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT)",
+    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT, irregularidade_constatada BOOLEAN)",
     "INSERT INTO dim_unidade_consumidora VALUES ('UC1', 'Recife', 'Centro', 'Residencial', 0)",
     "INSERT INTO fato_medicao VALUES ('UC1', '2025-06', 300), ('UC1', '2026-01', 0)",
-    "INSERT INTO fato_inspecoes_perdas VALUES (NULL, '2025-12-01')",
+    "INSERT INTO fato_inspecoes_perdas (id_uc, data_inspecao) VALUES (NULL, '2025-12-01')",
 )
 
 
@@ -96,7 +96,7 @@ NEGATIVE_READING_FIXTURE_STATEMENTS = (
         "CREATE TABLE dim_unidade_consumidora "
         "(id_uc TEXT, municipio TEXT, bairro TEXT, classe_consumo TEXT, possui_gd BOOLEAN)"
     ),
-    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT)",
+    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT, irregularidade_constatada BOOLEAN)",
     "INSERT INTO dim_unidade_consumidora VALUES ('UC_ESTAVEL', 'Recife', 'Centro', 'Residencial', 0)",
     "INSERT INTO dim_unidade_consumidora VALUES ('UC_QUEDA_REAL', 'Recife', 'Centro', 'Residencial', 0)",
     (
@@ -154,7 +154,7 @@ HISTORY_BOUND_FIXTURE_STATEMENTS = (
         "CREATE TABLE dim_unidade_consumidora "
         "(id_uc TEXT, municipio TEXT, bairro TEXT, classe_consumo TEXT, possui_gd BOOLEAN)"
     ),
-    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT)",
+    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT, irregularidade_constatada BOOLEAN)",
     "INSERT INTO dim_unidade_consumidora VALUES ('UC_ANTES', 'Recife', 'Centro', 'Residencial', 0)",
     "INSERT INTO dim_unidade_consumidora VALUES ('UC_DEPOIS', 'Recife', 'Centro', 'Residencial', 0)",
     (
@@ -163,7 +163,10 @@ HISTORY_BOUND_FIXTURE_STATEMENTS = (
         "('UC_ANTES', '2025-08', 100), ('UC_DEPOIS', '2025-01', 300), ('UC_DEPOIS', '2025-06', 100), "
         "('UC_DEPOIS', '2025-07', 100), ('UC_DEPOIS', '2025-08', 100)"
     ),
-    "INSERT INTO fato_inspecoes_perdas VALUES ('UC_ANTES', '2025-08-15'), ('UC_DEPOIS', '2025-11-10')",
+    (
+        "INSERT INTO fato_inspecoes_perdas (id_uc, data_inspecao) "
+        "VALUES ('UC_ANTES', '2025-08-15'), ('UC_DEPOIS', '2025-11-10')"
+    ),
 )
 
 

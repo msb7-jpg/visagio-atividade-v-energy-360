@@ -245,7 +245,7 @@ ACTIVE_ORDER_FIXTURE_STATEMENTS = (
         "CREATE TABLE dim_unidade_consumidora "
         "(id_uc TEXT, municipio TEXT, bairro TEXT, classe_consumo TEXT, possui_gd BOOLEAN)"
     ),
-    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT)",
+    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT, irregularidade_constatada BOOLEAN)",
     "INSERT INTO dim_unidade_consumidora VALUES ('UC_ORDEM', 'Recife', 'Centro', 'Residencial', 0)",
     "INSERT INTO dim_unidade_consumidora VALUES ('UC_LIVRE', 'Recife', 'Centro', 'Residencial', 0)",
     "INSERT INTO dim_unidade_consumidora VALUES ('UC_CONCLUIDA', 'Recife', 'Centro', 'Residencial', 0)",
@@ -295,7 +295,7 @@ CANCELLATION_SCHEMA_STATEMENTS = (
         "CREATE TABLE dim_unidade_consumidora "
         "(id_uc TEXT, municipio TEXT, bairro TEXT, classe_consumo TEXT, possui_gd BOOLEAN)"
     ),
-    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT)",
+    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT, irregularidade_constatada BOOLEAN)",
 )
 CANCELLATION_MONTHLY_KWH = (("2025-06", 300), ("2025-11", 50), ("2025-12", 50), ("2026-01", 50))
 
@@ -391,12 +391,12 @@ async def test_summary_reports_capacity_selected_energy_and_expected_return(clie
     assert summary["tarifa_rs_kwh"] == pytest.approx(TARIFF_RS_KWH)
     assert summary["taxa_acerto"] == {
         "inspecoes_total": 2,
-        "irregularidades_confirmadas": 1,
-        "taxa": 0.5,
+        "irregularidades_confirmadas": 0,
+        "taxa": 0.0,
         "periodo_inicio": "2023-05",
         "periodo_fim": "2025-08",
     }
-    # UC_INSPECAO_ANTIGA é queda súbita (75%): 150 kWh/mês x 93%, e não x 50% (taxa histórica do seed).
+    # UC_INSPECAO_ANTIGA é queda súbita (75%): 150 kWh/mês x 93%, e não x 0% (taxa histórica do seed).
     assert summary["retorno_esperado_kwh_mes"] == pytest.approx(150.0 * 0.93)
     assert summary["retorno_esperado_valor_ano_rs"] == pytest.approx(150.0 * 12 * TARIFF_RS_KWH * 0.93, abs=0.01)
 

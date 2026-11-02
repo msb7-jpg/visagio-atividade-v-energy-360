@@ -27,6 +27,7 @@ from app.features.loss_management.schemas import InspectionStatus
 MESES_JANELA_RECENTE = 3
 MESES_JANELA_BASE = 12
 MESES_POR_ANO = 12
+MESES_PRAZO_REINCIDENCIA = 12  # quanto tempo uma irregularidade constatada mantém a UC fora da fila
 
 COMPLETED_STATUS = InspectionStatus.CONCLUIDA.value
 
@@ -125,8 +126,36 @@ def inspection_cutoff_date(windows: ConsumptionWindows) -> date:
     Returns:
         Primeiro dia da janela base (início da janela de análise).
     """
-    year_text, month_text = windows.inicio_base.split("-")
+    return competencia_first_day(windows.inicio_base)
+
+
+def competencia_first_day(competencia: str) -> date:
+    """Primeiro dia do mês de uma competência.
+
+    Args:
+        competencia: Competência no formato 'YYYY-MM'.
+
+    Returns:
+        A data do dia 1 desse mês.
+    """
+    year_text, month_text = competencia.split("-")
     return date(int(year_text), int(month_text), 1)
+
+
+def reincidence_cutoff_date(windows: ConsumptionWindows) -> date:
+    """Data a partir da qual uma irregularidade constatada ainda mantém a UC fora da fila.
+
+    O prazo de reincidência é de `MESES_PRAZO_REINCIDENCIA` competências contando a de referência: com referência
+    2026-01, inspeções de 2025-02 em diante ainda bloqueiam a UC.
+
+    Args:
+        windows: Janelas de análise da fila.
+
+    Returns:
+        Primeiro dia da competência em que o prazo de reincidência começa.
+    """
+    months_before_reference = MESES_PRAZO_REINCIDENCIA - 1
+    return competencia_first_day(shift_competencia(windows.fim_recente, -months_before_reference))
 
 
 def latest_competencia_query() -> Select[str | None]:
