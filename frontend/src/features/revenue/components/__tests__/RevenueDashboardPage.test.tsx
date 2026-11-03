@@ -25,6 +25,8 @@ vi.mock('@/features/insights/queries/useProactiveInsights', () => ({
 
 const mockedApi = vi.mocked(revenueApi)
 
+const SLOW_CI_TIMEOUT = 5000
+
 const NO_INSIGHT = { data: undefined, isLoading: false, isError: false, refetch: vi.fn(), isFetching: false }
 
 function renderPage() {
@@ -91,19 +93,22 @@ describe('RevenueDashboardPage', () => {
   it('não consulta a IA com números misturados enquanto a decomposição do novo recorte não chegou', async () => {
     mockHappyPath()
     renderPage()
-    await screen.findByRole('option', { name: 'OLINDA' })
-    await waitFor(() => expect(mockUseProactiveInsights).toHaveBeenCalled())
+    // No CI os testes rodam em paralelo e o tempo padrão de 1 s não basta: espera até 5 s por cada etapa.
+    await screen.findByRole('option', { name: 'OLINDA' }, { timeout: SLOW_CI_TIMEOUT })
+    await waitFor(() => expect(mockUseProactiveInsights).toHaveBeenCalled(), { timeout: SLOW_CI_TIMEOUT })
     mockUseProactiveInsights.mockClear()
     mockedApi.getDecomposition.mockReturnValue(new Promise(() => {}))
 
     fireEvent.change(screen.getByLabelText('Município'), { target: { value: 'OLINDA' } })
-    await waitFor(() =>
-      expect(mockedApi.getKpis).toHaveBeenLastCalledWith(
-        expect.objectContaining({ filters: { municipio: 'OLINDA' } }),
-        expect.anything()
-      )
+    await waitFor(
+      () =>
+        expect(mockedApi.getKpis).toHaveBeenLastCalledWith(
+          expect.objectContaining({ filters: { municipio: 'OLINDA' } }),
+          expect.anything()
+        ),
+      { timeout: SLOW_CI_TIMEOUT }
     )
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(mockUseProactiveInsights).not.toHaveBeenCalled()
   })
