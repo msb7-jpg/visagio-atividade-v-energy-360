@@ -213,7 +213,8 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 - **Data:** 2026-10-27 · **Fatia:** 03 (Bernardo H) · **Status:** Aceita
 - **Contexto:** As tabelas Gold vêm de duas fatias de dados e podem chegar em momentos diferentes.
 - **Decisão:** A feature só faz `SELECT`. Se uma tabela Gold estiver ausente, a API responde 500 com `DatabaseReadError`, nomeando a tabela, em vez de mostrar uma tela vazia que pareceria "cliente sem dados". A seed de desenvolvimento (`tests/customer360_seed.py`) reproduz o esquema exportado pelas Fatias 01 e 02 e se recusa a sobrescrever o `v_energy.db` real.
-- **Conformidade:** teste `test_missing_gold_tables_return_database_error`.
+- **Revisão (2026-11-03, PR #75):** a lista de inspeções também lê as ordens **concluídas** no portal de perdas (`ordem_inspecao`, a tabela operacional da Fatia 05), para o resultado registrado em campo aparecer na ficha. Elas entram junto com o histórico da Gold, da mais recente para a mais antiga, com o id `OS-<n>`. Se a tabela ainda não existir, a ficha mostra só a Gold, sem erro.
+- **Conformidade:** teste `test_missing_gold_tables_return_database_error` e `test_customer360_portal_orders.py`.
 
 ## ADR-024 — RBAC: papéis do `UserRole`, sem ADMIN, grupos centrais em `role_groups.py`
 

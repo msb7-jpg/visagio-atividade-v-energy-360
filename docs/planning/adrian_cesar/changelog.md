@@ -1047,3 +1047,11 @@
   - A resposta do servidor leva alguns segundos; durante a espera a tela mostra a fila anterior (`keepPreviousData`) e só troca de faixa quando os dados novos chegam.
 - **Validação de Testes:** vitest da fatia (317), ESLint, Fallow e `tsc -b` limpos.
 
+### [2026-11-03] - Revisão do PR #75 (feita por Bernardo H)
+- **Autor:** Bernardo H, na branch `feat/fatia-05-perdas`, a partir da revisão do PR #75.
+- **O que foi feito:**
+  - **Fila calculada uma vez ao abrir a tela:** a lista, o resumo da seleção e a contagem dos filtros pediam a mesma fila sem filtro e rodavam a consulta pesada três vezes. As linhas da fila agora ficam em cache por banco e por dia (`queue_rows_cache.py`, sobre o `DailyEngineCache`), com a versão das ordens do portal (quantidade e última alteração em `ordem_inspecao`) na chave: qualquer ordem criada, alterada, concluída ou cancelada refaz o cálculo. Medido no banco real, com as três chamadas ao mesmo tempo, como a tela faz: de 8,4 a 9,4 s para 4,6 a 5,8 s, com os mesmos números (39.243 UCs em 2025-09).
+  - README: a regra de reincidência de 12 meses (e 15 meses sem irregularidade) e a linha da tabela de suposições; a capacidade aparece no diálogo de gerar ordens, não mais num aviso da fila.
+  - `CHECKLIST.md`: onde a capacidade e a taxa de 62,7% aparecem depois do PR.
+  - ADR-023 e `LossInspectionDTO`: a Visão 360 também lê as ordens concluídas em `ordem_inspecao`.
+- **Validação de Testes:** `test_loss_queue_rows_cache.py` (reaproveita a fila e refaz quando uma ordem muda); backend com Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (777) aprovados.

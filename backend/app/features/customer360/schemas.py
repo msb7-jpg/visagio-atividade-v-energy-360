@@ -199,7 +199,7 @@ class UnitOutageSummaryDTO(BaseModel):
 
 
 class LossInspectionDTO(GoldRowModel):
-    """Inspeção de campo feita na UC pela equipe de perdas, lida de `fato_inspecoes_perdas`."""
+    """Inspeção de campo feita na UC: histórico de `fato_inspecoes_perdas` ou ordem concluída em `ordem_inspecao`."""
 
     id_inspecao: str
     data_inspecao: str | None = None
