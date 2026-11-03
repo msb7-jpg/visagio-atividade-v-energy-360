@@ -991,3 +991,36 @@
   - As janelas de 3 e 12 meses estão repetidas no frontend (`scoreWindows.ts`) e no backend (`MESES_JANELA_RECENTE` e `MESES_JANELA_BASE`, em `queries.py`). Se mudarem lá, mudam aqui.
   - O gráfico não foi conferido no navegador; a conferência foi pela API e pelos testes.
 - **Validação de Testes:** `make lint-all` e `make test-all` 100% (pytest 768; vitest 751 em 84 arquivos). Testes novos: série com histórico mais antigo que 12 meses, endpoint com `historico_completo`, `findScoreWindows`, faixas no gráfico e o seletor "Tudo" no painel.
+
+### [2026-11-03] - Revisão da branch: Top 10 pelo cache da fila e histórico do painel por UC
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - `useSuspiciousQueueController`: o Top 10 com a fila em outra situação deixou de chamar `lossApi` direto; usa `queryClient.infiniteQuery(suspiciousUnitsQueryOptions(...))`, com a mesma chave de cache da lista, cancelamento por `signal` e o erro visível na lista.
+  - `UnitDetailSheet`: trocar de UC com o painel aberto volta o gráfico para 12 meses (antes só voltava ao fechar). Teste novo em `UnitDetailSheetSwitch.test.tsx`.
+  - `gestao_perdas_campo.md`: itens 17.11 a 17.14 para o que foi feito além do "só visual", nota no 17.6 e fechamento do 17.8 atualizado.
+- **Dificuldades / Desafios:**
+  - `fetchInfiniteQuery` está deprecado nesta versão do TanStack Query; usei `infiniteQuery`.
+  - Reincidência de 50% bruto (sem normalizar pela mediana da carteira) segue em aberto, à espera de decisão.
+- **Validação de Testes:** vitest da fatia (314), ESLint, Fallow e `tsc -p tsconfig.app.json` limpos. `make lint-all` e `make test-all` completos não foram rodados.
+
+### [2026-11-03] - Reincidência: retorno antecipado mede a queda além da carteira
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - `queue_query.py`: `_reincidence_condition` recebe `portfolio_ratio` e a UC só volta antes dos 12 meses se `recente <= base × mediana(recente/base) × 0,5`. A mediana é limitada a 1,0 (carteira que cresceu não afrouxa a regra) e o padrão 1,0 mantém a queda bruta.
+  - `repository.py`: `_read_queue_rows` busca a mediana da carteira (`fetch_portfolio_ratio`, a mesma da chance de acerto, em cache) antes de montar a consulta e a repassa.
+  - `test_loss_reincidence.py` (TDD, RED visto antes): UC com queda de 50% volta com a carteira neutra e não volta com a carteira em 50%; a de 83% continua voltando; carteira em 1,4 dá a mesma fila que 1,0.
+  - `DECISOES_PERDAS.md` (D11) e `gestao_perdas_campo.md` (17.11) atualizados.
+- **Medição no `v_energy.db` real (somente leitura):** 2026-06 com mediana 0,918: 164 UCs antes e depois. 2025-12 com mediana 1,195 (teto 1,0): sem mudança, as 9 UCs seguem voltando. A hipótese de que elas eram a queda geral não se confirmou; o efeito só aparece em mês com queda real da carteira.
+- **Dificuldades / Desafios:**
+  - Os 4 testes de `test_loss_schema_upgrade.py` dão `PermissionError` na pasta temporária do pytest no Windows, com ou sem esta mudança.
+- **Validação de Testes:** pytest 772 passam (+4 erros do `tmp_path` acima), Ruff, Pylint 10/10 e import-linter 4/4. Frontend não foi alterado nesta entrada.
+
+### [2026-11-03] - Regras de negócio da Fatia 05 reunidas em um arquivo
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Novo `regras-de-negocio.md` com as 13 seções de regras da fatia: acesso, janelas, quem entra e quem sai da fila, valor da UC, chance de acerto, ordenação e faixas, situação, resumo da seleção, ordens e transições, CSV e retorno, detalhe e limites conhecidos. Cada regra aponta para o arquivo e a constante no código e para a decisão (D1 a D15) que explica o porquê.
+  - `gestao_perdas_campo.md`: item 17.15.
+- **Dificuldades / Desafios:**
+  - As regras estavam espalhadas entre `DECISOES_PERDAS.md`, o código e o changelog; o arquivo novo as conferiu contra o código de 2026-11-03.
+- **Validação de Testes:** só documentação, nada executado.
+

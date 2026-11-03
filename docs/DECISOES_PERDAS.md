@@ -201,6 +201,14 @@ fora (1.385 de 1.389 entram).
     a fila vai de 16 para 25 UCs (9 voltam, todas com `recente/base` entre 0,47 e 0,50). Esses 9 casos ficam colados
     no limiar de 50% e coincidem com a queda geral da carteira (D12), então o retorno antecipado pode estar pegando essa
     queda e não reincidência. Alternativa a testar: exigir a queda de 50% normalizada pela mediana da carteira.
+    **Decisão (2026-11-03, dono da fatia):** o retorno antecipado passa a exigir a queda de 50% **além da queda geral da
+    carteira**: a UC volta se `recente <= base × mediana(recente/base) × 0,5`, com a mediana limitada a 1,0 (carteira que
+    cresceu não afrouxa a regra). É a mesma mediana que a chance de acerto já usa (`fetch_portfolio_ratio`). Implementado
+    em `queue_query.py` (`portfolio_ratio`), com o repositório buscando a mediana antes de montar a consulta.
+    **Medido no `v_energy.db` real (2026-11-03), sem efeito:** em 2026-06 a mediana é 0,918 e a fila segue em 164 UCs; em
+    2025-12 a mediana é 1,195 (a carteira não caiu; o teto de 1,0 deixa a regra como era) e as 9 UCs continuam voltando.
+    Então a hipótese de que os 9 casos eram a queda geral **não se confirmou** pela mediana: o efeito da normalização só
+    aparece em meses com queda geral real da carteira.
 
 ### D12. Remedição dos sinais na Gold real (2026-10-28)
 - **Método:** para cada uma das 1.385 inspeções avaliáveis (agosto a dezembro de 2025), a queda de consumo é calculada
