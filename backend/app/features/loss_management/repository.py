@@ -23,6 +23,7 @@ from app.features.loss_management.queue_repository import (
     GOLD_TABLES_ERROR_MESSAGE,
     QueueSummaryRepositoryMixin,
 )
+from app.features.loss_management.queue_rows_cache import QueueRows, cached_queue_rows
 from app.features.loss_management.reference import AnalysisReference, resolve_analysis_reference
 from app.features.loss_management.schemas import (
     InspectionOrderCreateDTO,
@@ -123,8 +124,8 @@ class LossRepository(
 
     async def _read_queue_rows(
         self, filters: SuspicionFilters, field_history_applied: bool
-    ) -> tuple[AnalysisReference | None, list[RowMapping], float]:
-        """Executa a consulta da fila na competência de referência.
+    ) -> tuple[AnalysisReference | None, QueueRows, float]:
+        """Executa a consulta da fila na competência de referência (em cache, ver `queue_rows_cache`).
 
         Returns:
             A referência de análise, as linhas candidatas e a razão mediana recente/base da carteira;
@@ -142,8 +143,8 @@ class LossRepository(
             history_until=reference.history_until,
             portfolio_ratio=portfolio_ratio,
         )
-        result = await self.session.execute(query)
-        return reference, list(result.mappings()), portfolio_ratio
+        key = (filters, field_history_applied, reference.competencia, reference.history_until, portfolio_ratio)
+        return reference, await cached_queue_rows(self.session, key, query), portfolio_ratio
 
     async def fetch_registered_unit(self, id_uc: str) -> RegisteredUnit | None:
         """Busca a UC no cadastro com o consumo da mesma janela usada pela fila.
