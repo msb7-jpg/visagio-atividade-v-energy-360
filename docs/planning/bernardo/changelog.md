@@ -302,3 +302,13 @@
   - Testes: `attentionItems.test.ts` e os da página (ordem dos alertas, blocos sem abas e "Tentar novamente" dentro do bloco).
 - **Validação de Testes:**
   - Frontend: ESLint, Fallow (sem duplicação e sem função acima do limite), Vitest (733) e build aprovados.
+
+### [2026-11-03] - Inspeções da Visão 360 conferidas com o banco
+- **Autor:** Bernardo H
+- **Branch:** `fix/fatia-03-visao360-inspecoes`
+- **O que foi feito:**
+  - Conferido no `v_energy.db`: as 1.389 inspeções de `fato_inspecoes_perdas` (uma por UC, ago a dez/2025) chegam à tela com data, inspetor, resultado, tipo e kWh iguais ao banco.
+  - "LIGACAO CLANDESTINA" (164 inspeções) aparecia como "Ligacao clandestina"; agora "Ligação clandestina".
+  - Inspeção regular mostra "—" em energia recuperada, em vez de "0 kWh".
+- **Validação de Testes:**
+  - Frontend: ESLint, Fallow, Vitest (49 da Visão 360) e build aprovados.
