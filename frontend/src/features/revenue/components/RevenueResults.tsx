@@ -1,8 +1,10 @@
 import { BarChart3, MapPinned } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { SmartInsightCard } from '@/features/insights/SmartInsightCard'
 import { RevenueKpiCards } from '@/features/revenue/components/RevenueKpiCards'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { getRevenueErrorMessage } from '@/features/revenue/utils/revenueErrorMessage'
+import { buildInsightFilters, buildInsightMetrics } from '@/features/revenue/utils/revenueInsightContext'
 import { RevenueRankingCard } from '@/features/revenue/components/RevenueRankingCard'
 import { RevenueWaterfallCard } from '@/features/revenue/components/RevenueWaterfallCard'
 import type { useRevenueDashboardController } from '@/features/revenue/hooks/useRevenueDashboardController'
@@ -15,10 +17,12 @@ type Dashboard = ReturnType<typeof useRevenueDashboardController>
  * dependem das mesmas janelas e filtros.
  *
  * @param props - Controlador do dashboard com o estado das consultas.
- * @returns Cards de indicadores seguidos das abas, ou o estado de erro.
+ * @returns Cards de indicadores, o Smart Insight da tela e as abas, ou o estado de erro.
  */
 export function RevenueResults({ dashboard }: { dashboard: Dashboard }) {
-  const { kpisQuery, decompositionQuery, breakdownQuery, ranking } = dashboard
+  const { query, kpisQuery, decompositionQuery, breakdownQuery, ranking } = dashboard
+  // Na troca de recorte o React Query mostra os números antigos; só vale consultar a IA com os novos.
+  const hasFreshResults = !kpisQuery.isPlaceholderData && !decompositionQuery.isPlaceholderData
   return (
     <>
       <AsyncState
@@ -30,6 +34,14 @@ export function RevenueResults({ dashboard }: { dashboard: Dashboard }) {
       >
         {kpisQuery.data ? <RevenueKpiCards kpis={kpisQuery.data} /> : null}
       </AsyncState>
+
+      {hasFreshResults && kpisQuery.data && decompositionQuery.data ? (
+        <SmartInsightCard
+          context="revenue"
+          filters={buildInsightFilters(query)}
+          metrics={buildInsightMetrics(decompositionQuery.data, kpisQuery.data)}
+        />
+      ) : null}
 
       {kpisQuery.isError ? null : (
         <Tabs defaultValue="decomposition">

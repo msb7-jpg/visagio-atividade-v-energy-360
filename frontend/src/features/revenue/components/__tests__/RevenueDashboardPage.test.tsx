@@ -18,7 +18,14 @@ vi.mock('@/features/revenue/api/revenueApi', () => ({
   revenueApi: { getKpis: vi.fn(), getDecomposition: vi.fn(), getBreakdown: vi.fn(), getHistory: vi.fn() }
 }))
 
+const mockUseProactiveInsights = vi.hoisted(() => vi.fn())
+vi.mock('@/features/insights/queries/useProactiveInsights', () => ({
+  useProactiveInsights: mockUseProactiveInsights
+}))
+
 const mockedApi = vi.mocked(revenueApi)
+
+const NO_INSIGHT = { data: undefined, isLoading: false, isError: false, refetch: vi.fn(), isFetching: false }
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -49,6 +56,7 @@ function mockHappyPath() {
 describe('RevenueDashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUseProactiveInsights.mockReturnValue(NO_INSIGHT)
   })
 
   it('mostra título, indicadores e a ponte de receita quando a API responde', async () => {
@@ -60,6 +68,54 @@ describe('RevenueDashboardPage', () => {
     expect(await screen.findByText('Faturamento')).toBeInTheDocument()
     expect(screen.getByText('Volume faturado')).toBeInTheDocument()
     expect(await screen.findByText(/A receita caiu/)).toBeInTheDocument()
+  })
+
+  it('mostra o Smart Insight da receita com as janelas e os números da decomposição', async () => {
+    mockHappyPath()
+    mockUseProactiveInsights.mockReturnValue({
+      ...NO_INSIGHT,
+      data: { resumo_executivo: 'A receita caiu 4% porque o volume recuou.', insights: ['Volume caiu 5,8%.'] }
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('Smart Insights IA')).toBeInTheDocument()
+    expect(screen.getByText('A receita caiu 4% porque o volume recuou.')).toBeInTheDocument()
+    expect(mockUseProactiveInsights).toHaveBeenLastCalledWith({
+      context: 'revenue',
+      filtros: expect.objectContaining({ base: expect.any(String), atual: expect.any(String) }),
+      metricas: expect.objectContaining({ variacao_receita_pct: -4, variacao_volume_pct: -5.8 })
+    })
+  })
+
+  it('não consulta a IA com números misturados enquanto a decomposição do novo recorte não chegou', async () => {
+    mockHappyPath()
+    renderPage()
+    await screen.findByRole('option', { name: 'OLINDA' })
+    await waitFor(() => expect(mockUseProactiveInsights).toHaveBeenCalled())
+    mockUseProactiveInsights.mockClear()
+    mockedApi.getDecomposition.mockReturnValue(new Promise(() => {}))
+
+    fireEvent.change(screen.getByLabelText('Município'), { target: { value: 'OLINDA' } })
+    await waitFor(() =>
+      expect(mockedApi.getKpis).toHaveBeenLastCalledWith(
+        expect.objectContaining({ filters: { municipio: 'OLINDA' } }),
+        expect.anything()
+      )
+    )
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    expect(mockUseProactiveInsights).not.toHaveBeenCalled()
+  })
+
+  it('não consulta a IA enquanto a decomposição não chegou', async () => {
+    mockHappyPath()
+    mockedApi.getDecomposition.mockReturnValue(new Promise(() => {}))
+
+    renderPage()
+    await screen.findByText('Faturamento')
+
+    expect(mockUseProactiveInsights).not.toHaveBeenCalled()
   })
 
   it('alimenta os filtros com os municípios e classes que existem na base', async () => {
