@@ -12,6 +12,9 @@ MESES_POR_ANO = 12
 PESO_QUEDA_CONSUMO = 80.0
 BONUS_LEITURA_ZERADA = 20.0
 SCORE_MAXIMO = 100.0
+MAX_FILAS_GUARDADAS = 4  # filas ordenadas guardadas ao mesmo tempo (competências e bancos diferentes)
+
+_SCORED_QUEUES: dict[tuple, tuple[list, list]] = {}
 
 
 @dataclass(frozen=True, slots=True)
@@ -260,11 +263,28 @@ def rank_suspicious_units(
     Returns:
         Itens suspeitos em ordem decrescente de kWh esperado (desempate por score de risco), até `limit` itens.
     """
+    scored = _scored_queue(profiles, tariff_rs_kwh, portfolio_ratio)
+    visible = [unit for unit in scored if reason is None or reason in unit.motivos]
+    return visible if limit is None else visible[:limit]
+
+
+def _scored_queue(profiles: list[ConsumptionProfile], tariff_rs_kwh: float, portfolio_ratio: float) -> list:
+    """Fila inteira ordenada e com score, reaproveitada enquanto a lista de perfis for a mesma (ADR-031).
+
+    A leitura da fila devolve o mesmo objeto de lista enquanto o cache dela vale (`queue_rows_cache`), então a lista,
+    o resumo e os filtros da tela ordenam as 39 mil UCs uma vez só. A lista devolvida nunca é alterada por quem a usa.
+    """
+    key = (id(profiles), len(profiles), tariff_rs_kwh, portfolio_ratio)
+    cached = _SCORED_QUEUES.get(key)
+    if cached is not None and cached[0] is profiles:
+        return cached[1]
     built_units = (build_suspicious_unit(profile, tariff_rs_kwh, portfolio_ratio) for profile in profiles)
     candidates = [unit for unit in built_units if unit is not None]
     candidates_by_id = sorted(candidates, key=lambda unit: unit.id_uc)
     ranked = sorted(candidates_by_id, key=priority_key, reverse=True)
     top_expected_kwh = priority_key(ranked[0])[0] if ranked else 0.0
     scored = [unit.model_copy(update={"score": priority_score(unit, top_expected_kwh)}) for unit in ranked]
-    visible = [unit for unit in scored if reason is None or reason in unit.motivos]
-    return visible if limit is None else visible[:limit]
+    if len(_SCORED_QUEUES) >= MAX_FILAS_GUARDADAS:
+        _SCORED_QUEUES.clear()
+    _SCORED_QUEUES[key] = (profiles, scored)
+    return scored

@@ -115,7 +115,7 @@ class LossRepository(
             logger.exception("Falha ao consultar tabelas Gold para a fila de suspeitas.")
             raise DatabaseReadError(GOLD_TABLES_ERROR_MESSAGE) from e
         return QueueCandidates(
-            profiles=[ConsumptionProfile(**row) for row in rows],
+            profiles=rows,
             field_history_applied=field_history_applied,
             reference_competencia=reference.competencia if reference and reference.is_fixed_in_the_past else None,
             active_orders=await self.fetch_active_order_statuses(),
@@ -144,7 +144,8 @@ class LossRepository(
             portfolio_ratio=portfolio_ratio,
         )
         key = (filters, field_history_applied, reference.competencia, reference.history_until, portfolio_ratio)
-        return reference, await cached_queue_rows(self.session, key, query), portfolio_ratio
+        profiles = await cached_queue_rows(self.session, key, query, lambda row: ConsumptionProfile(**row))
+        return reference, profiles, portfolio_ratio
 
     async def fetch_registered_unit(self, id_uc: str) -> RegisteredUnit | None:
         """Busca a UC no cadastro com o consumo da mesma janela usada pela fila.

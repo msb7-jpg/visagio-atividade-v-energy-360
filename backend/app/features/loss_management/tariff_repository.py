@@ -2,7 +2,7 @@
 
 import logging
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.loss_management.daily_cache import DailyEngineCache
@@ -40,15 +40,18 @@ class TariffRepositoryMixin:
         return await _tariff_cache.get_or_compute(self.session.get_bind(), "tarifa", self._query_average_tariff)
 
     async def _query_average_tariff(self) -> AverageTariff:
+        """Soma o período no `CASE`, sem `WHERE` por competência: leitura sequencial, 4 vezes mais rápida (ADR-031)."""
         competencia = fato_faturamento.c.competencia
         try:
             period_end = await self.session.scalar(select(func.max(competencia)))
             if period_end is None:
                 raise DatabaseReadError(EMPTY_BILLING_MESSAGE)
             period_start = shift_competencia(period_end, 1 - MESES_TARIFA)
+            in_period = competencia.between(period_start, period_end)
             totals = select(
-                func.sum(fato_faturamento.c.valor_total_rs), func.sum(fato_faturamento.c.consumo_faturado_kwh)
-            ).where(competencia.between(period_start, period_end))
+                func.sum(case((in_period, fato_faturamento.c.valor_total_rs))),
+                func.sum(case((in_period, fato_faturamento.c.consumo_faturado_kwh))),
+            )
             revenue_rs, energy_kwh = (await self.session.execute(totals)).one()
         except GOLD_QUERY_ERRORS as e:
             logger.exception("Falha ao consultar fato_faturamento para a tarifa média.")

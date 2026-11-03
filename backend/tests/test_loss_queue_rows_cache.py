@@ -21,14 +21,14 @@ async def test_reuses_the_rows_until_an_order_changes():
         await connection.execute(text("CREATE TABLE candidatas (id_uc TEXT)"))
         await connection.execute(text("INSERT INTO candidatas VALUES ('UC1')"))
     async with async_sessionmaker(engine, expire_on_commit=False)() as session:
-        first = await cached_queue_rows(session, KEY, QUERY)
+        first = await cached_queue_rows(session, KEY, QUERY, dict)
         await session.execute(text("INSERT INTO candidatas VALUES ('UC2')"))
-        reused = await cached_queue_rows(session, KEY, QUERY)
+        reused = await cached_queue_rows(session, KEY, QUERY, dict)
 
         session.add(InspectionOrder(id_uc="UC1", status="gerada", kwh_estimado=1.0, criado_por="perdas@venergy.com",
                                     atualizado_em=datetime.now(UTC)))
         await session.commit()
-        refreshed = await cached_queue_rows(session, KEY, QUERY)
+        refreshed = await cached_queue_rows(session, KEY, QUERY, dict)
     await engine.dispose()
 
     assert first == reused == [{"id_uc": "UC1"}]
