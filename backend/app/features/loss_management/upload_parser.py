@@ -21,6 +21,7 @@ COLUMN_ALIASES = {
     "data": "data_inspecao",
     "resultado": "irregularidade_constatada",
     "id_inspetor": "inspetor",
+    "fiscal_responsavel": "inspetor",  # planilhas antigas: o fiscal de campo é o inspetor
 }
 MAX_DATA_ROWS = 10_000
 CSV_DELIMITERS = (";", ",", "\t")

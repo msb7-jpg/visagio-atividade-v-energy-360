@@ -257,7 +257,7 @@ async def test_inspection_lifecycle(client):
     order = created.json()
     assert order["status"] == "gerada"
     assert order["criado_por"] == "perdas@venergy.com"
-    assert order["fiscal_responsavel"] == "perdas@venergy.com"
+    assert order["fiscal_responsavel"] is None
 
     duplicated = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
     assert duplicated.status_code == 409

@@ -16,7 +16,6 @@ PREFILLED_COLUMNS = (
     "status",
     "motivo",
     "kwh_estimado",
-    "fiscal_responsavel",
     "criado_em",
 )
 FIELD_RESULT_COLUMNS = (
@@ -85,7 +84,6 @@ def build_export_row(order: InspectionOrderDTO) -> list[str]:
         order.status.value,
         neutralize_formula(order.motivo or ""),
         format_kwh(order.kwh_estimado),
-        neutralize_formula(order.fiscal_responsavel or ""),
         order.criado_em.isoformat(),
     ]
     return prefilled_values + build_field_result_values(order)

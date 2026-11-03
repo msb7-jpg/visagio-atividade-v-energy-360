@@ -51,13 +51,13 @@ def parse_export(content: str) -> list[dict[str, str]]:
 
 
 def test_csv_has_one_row_per_order_with_blank_result_columns():
-    orders = [make_order(7, "UC-1", fiscal_responsavel="Equipe 3"), make_order(8, "UC-2")]
+    orders = [make_order(7, "UC-1"), make_order(8, "UC-2")]
 
     rows = parse_export(render_field_orders_csv(orders))
 
     assert list(rows[0].keys()) == list(EXPORT_COLUMNS)
     assert [row["id_inspecao"] for row in rows] == ["7", "8"]
-    assert rows[0]["fiscal_responsavel"] == "Equipe 3"
+    assert "fiscal_responsavel" not in rows[0]  # o fiscal de campo é o inspetor: uma coluna só
     assert all(row[column] == "" for row in rows for column in RESULT_COLUMNS)
 
 
@@ -135,13 +135,20 @@ async def create_order(http_client, headers: dict[str, str], id_uc: str) -> int:
     return response.json()["id_inspecao"]
 
 
-async def test_export_fills_fiscal_with_who_generated_the_order(client):
+async def test_inspector_typed_in_the_old_fiscal_column_is_saved_as_inspetor(client):
     headers = await auth_headers(client, "perdas@venergy.com")
-    await create_order(client, headers, "UC_FRAUDE")
+    order_id = await create_order(client, headers, "UC_FRAUDE")
+    lines = [
+        "id_inspecao;fiscal_responsavel;data_inspecao;irregularidade_constatada",
+        f"{order_id};INSP-028;2026-10-25;nao",
+    ]
+    files = {"file": ("retorno.csv", "\r\n".join(lines).encode("utf-8-sig"), "text/csv")}
 
-    rows = parse_export((await client.get(EXPORT_URL, headers=headers)).text)
+    response = await client.post(f"{INSPECTIONS_URL}/upload", headers=headers, files=files)
 
-    assert [row["fiscal_responsavel"] for row in rows] == ["perdas@venergy.com"]
+    assert response.json()["conciliadas"] == 1
+    order = next(o for o in (await client.get(INSPECTIONS_URL, headers=headers)).json() if o["id_inspecao"] == order_id)
+    assert order["inspetor"] == "INSP-028"
 
 
 async def test_export_returns_only_orders_that_go_to_field(client):

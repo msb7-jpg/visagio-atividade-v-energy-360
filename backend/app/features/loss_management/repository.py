@@ -260,11 +260,8 @@ class LossRepository(
         Raises:
             ActiveOrderConflictError: Se a UC já tiver ordem ativa (índice único parcial no banco).
         """
-        order_fields = payload.model_dump()
-        # Sem fiscal informado, quem gerou a ordem é o responsável (sai preenchido no CSV de campo).
-        order_fields["fiscal_responsavel"] = payload.fiscal_responsavel or criado_por
         order = InspectionOrder(
-            **order_fields,
+            **payload.model_dump(),
             kwh_estimado=kwh_estimado,
             status=InspectionStatus.GERADA.value,
             criado_por=criado_por,
