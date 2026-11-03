@@ -262,9 +262,9 @@ Detalhes: [`docs/DIAGNOSTICO_RECEITA.md`](docs/DIAGNOSTICO_RECEITA.md) e o plano
 Responde ao gerente de perdas: **quais UCs mandar a campo primeiro**. No portal (`/losses`, perfil `gerente_perdas`; os usuários de teste estão em [`backend/app/core/config.py`](backend/app/core/config.py)) o gerente vê a fila priorizada, abre cada UC para entender por que ela está lá (motivo, conta do score, consumo de 12 meses e inspeções anteriores), gera ordens de inspeção, exporta a planilha para a equipe de campo e importa os resultados de volta.
 
 **Como a fila é montada**
-1. Entra a UC **sem geração distribuída** (painel solar) cujo consumo médio dos 3 últimos meses caiu **20% ou mais** frente aos 12 anteriores, ou que tem leitura zerada, e que não teve inspeção concluída nos últimos 15 meses.
+1. Entra a UC **sem geração distribuída** (painel solar) cujo consumo médio dos 3 últimos meses caiu **20% ou mais** frente aos 12 anteriores, ou que tem leitura zerada. Fica de fora por **12 meses** a UC inspecionada com irregularidade constatada (volta antes se tiver uma nova queda súbita depois da visita) e por 15 meses a inspecionada sem irregularidade.
 2. Cada UC recebe uma **chance de acerto histórica**, e a fila ordena pelo **kWh esperado** (kWh a recuperar × chance). O score de 0 a 100 é relativo à primeira UC da fila inteira e não muda com os filtros.
-3. A tela separa **Prioritárias** (chance de 30% ou mais), **Baixa chance** e **Todas**, e avisa quando as prioritárias passam da capacidade de 200 inspeções por mês.
+3. A tela separa **Prioritárias** (chance de 30% ou mais), **Baixa chance** e **Todas**, e, ao gerar as ordens, mostra quantas já estão programadas contra a capacidade de 200 inspeções por mês.
 
 **Como demonstrar**
 
@@ -283,11 +283,12 @@ Responde ao gerente de perdas: **quais UCs mandar a campo primeiro**. No portal 
 | Energia a recuperar | déficit mensal × 3 meses; em campo o recuperado foi 1,87× o estimado (mediana), então subestima o valor absoluto | D7 |
 | Valor em R$ | tarifa média ponderada dos 12 últimos meses de faturamento: R$ 0,7876/kWh | D8 |
 | Capacidade | 200 inspeções por mês, a fala do gerente | D6 |
+| Reincidência | UC com irregularidade constatada fica 12 meses fora da fila; uma nova queda súbita (50% ou mais) depois da visita antecipa o retorno. **Suposição** do dono da fatia: nenhuma UC foi inspecionada duas vezes, então não há como medir | D12 |
 | Dados | consumo negativo é descartado; datas com hífen na planilha do campo são mês-dia-ano | D5 e D10 |
 
 **O que a fila não garante**
 - As taxas de acerto vêm de UCs que o campo **já escolhera** inspecionar. Ninguém de fora da fila foi visitado, então não se sabe o que ela deixa de ver. Há um protocolo de piloto proposto (D13), não executado.
-- **Reincidência:** nenhuma UC foi inspecionada duas vezes, então o prazo para uma UC voltar à fila depois de uma irregularidade segue em aberto, à espera da equipe.
+- **Reincidência:** o prazo de 12 meses é uma suposição. Nenhuma UC foi inspecionada duas vezes, então ele deve ser revisto quando houver UCs visitadas mais de uma vez.
 
 Detalhes e medições: [`docs/DECISOES_PERDAS.md`](docs/DECISOES_PERDAS.md) (D1 a D15) e o plano da fatia em [`docs/planning/adrian_cesar/`](docs/planning/adrian_cesar/gestao_perdas_campo.md).
 

@@ -2,20 +2,24 @@
 
 from datetime import date, datetime, timedelta
 
-from sqlalchemy import CompoundSelect, Select, Subquery, select, true, union
+from sqlalchemy import CompoundSelect, Select, Subquery, and_, or_, select, true, union
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.features.loss_management.models import InspectionOrder
+from app.features.loss_management.portfolio_repository import NEUTRAL_PORTFOLIO_RATIO
 from app.features.loss_management.queries import (
     COMPLETED_STATUS,
     ConsumptionWindows,
     SuspicionFilters,
+    competencia_first_day,
     consumption_subquery,
     dim_unidade_consumidora,
     fato_inspecoes_perdas,
     inspection_cutoff_date,
+    reincidence_cutoff_date,
 )
 from app.features.loss_management.schemas import CancellationReason, InspectionStatus
+from app.features.loss_management.scoring import LIMIAR_QUEDA_SUBITA
 
 CANCELLATION_BLOCK_DAYS = 90
 BLOCKING_CANCELLATION_REASONS = (CancellationReason.CLIENTE_REGULARIZOU, CancellationReason.ENDERECO_NAO_LOCALIZADO)
@@ -32,8 +36,8 @@ def _optional_filters(filters: SuspicionFilters) -> list[ColumnElement[bool]]:
     ]
 
 
-def _system_orders_query(cutoff: date) -> Select:
-    """UCs com ordem concluída desde `cutoff` no sistema.
+def _system_orders_query(cutoff: date, *, irregular: bool) -> Select:
+    """UCs com ordem concluída desde `cutoff` no sistema, com ou sem irregularidade constatada.
 
     Ordens ativas não excluem: a UC segue na fila, marcada com a situação da ordem.
     """
@@ -41,7 +45,13 @@ def _system_orders_query(cutoff: date) -> Select:
     return select(InspectionOrder.id_uc).where(
         InspectionOrder.status == COMPLETED_STATUS,
         InspectionOrder.atualizado_em >= cutoff_datetime,
+        _irregularity_condition(InspectionOrder.irregularidade_constatada, irregular=irregular),
     )
+
+
+def _irregularity_condition(column: ColumnElement[bool], *, irregular: bool) -> ColumnElement[bool]:
+    """Inspeção com irregularidade constatada, ou sem ela (inclui o resultado ainda não informado)."""
+    return column.is_(true()) if irregular else column.is_not(true())
 
 
 def _blocking_cancellations_query() -> Select:
@@ -58,15 +68,57 @@ def _blocking_cancellations_query() -> Select:
     )
 
 
-def _field_history_query(cutoff: date, history_until: date | None) -> Select:
+def _field_history_query(cutoff: date, history_until: date | None, *, irregular: bool) -> Select:
     """UCs inspecionadas em campo desde `cutoff` e, se informado, antes de `history_until` (exclusivo)."""
     # Um único id_uc NULL faria o NOT IN avaliar UNKNOWN para todas as UCs e esvaziar a fila.
     until_condition = [fato_inspecoes_perdas.c.data_inspecao < history_until.isoformat()] if history_until else []
     return select(fato_inspecoes_perdas.c.id_uc).where(
         fato_inspecoes_perdas.c.id_uc.is_not(None),
         fato_inspecoes_perdas.c.data_inspecao >= cutoff.isoformat(),
+        _irregularity_condition(fato_inspecoes_perdas.c.irregularidade_constatada, irregular=irregular),
         *until_condition,
     )
+
+
+def _irregular_inspections_query(
+    since: date, *, include_field_history: bool, history_until: date | None
+) -> Select | CompoundSelect:
+    """UCs com irregularidade constatada desde `since`, por ordem concluída no sistema ou pelo histórico de campo."""
+    system_orders = _system_orders_query(since, irregular=True)
+    if not include_field_history:
+        return system_orders
+    return union(system_orders, _field_history_query(since, history_until, irregular=True))
+
+
+def _reincidence_condition(
+    consumo: Subquery,
+    windows: ConsumptionWindows,
+    *,
+    include_field_history: bool,
+    history_until: date | None,
+    portfolio_ratio: float,
+) -> ColumnElement[bool]:
+    """Prazo de reincidência: irregularidade constatada mantém a UC fora da fila por 12 meses.
+
+    A UC volta antes do prazo só com uma nova queda súbita, e só se a janela recente inteira for posterior à
+    inspeção; uma queda que começou antes da inspeção pode ser a mesma que motivou a visita.
+
+    A queda súbita é medida além da queda geral da carteira: com a mediana em 60% do consumo base, a UC só volta
+    se o consumo recente for 50% ou menos desses 60%. Carteira que cresceu não afrouxa a regra (teto de 1,0).
+    """
+    uc = dim_unidade_consumidora
+    within_term = _irregular_inspections_query(
+        reincidence_cutoff_date(windows), include_field_history=include_field_history, history_until=history_until
+    )
+    inspected_in_recent_window = _irregular_inspections_query(
+        competencia_first_day(windows.inicio_recente),
+        include_field_history=include_field_history,
+        history_until=history_until,
+    )
+    expected_recent_kwh = consumo.c.consumo_base_kwh * min(portfolio_ratio, NEUTRAL_PORTFOLIO_RATIO)
+    has_new_sudden_drop = consumo.c.consumo_recente_kwh <= expected_recent_kwh * (1 - LIMIAR_QUEDA_SUBITA)
+    returns_early = and_(uc.c.id_uc.not_in(inspected_in_recent_window), has_new_sudden_drop)
+    return or_(uc.c.id_uc.not_in(within_term), returns_early)
 
 
 def excluded_units_query(
@@ -88,10 +140,10 @@ def excluded_units_query(
         `id_uc` excluídos; UNION com o histórico de campo quando ele é aplicado.
     """
     cutoff = inspection_cutoff_date(windows)
-    system_exclusions = [_system_orders_query(cutoff), _blocking_cancellations_query()]
+    system_exclusions = [_system_orders_query(cutoff, irregular=False), _blocking_cancellations_query()]
     if not include_field_history:
         return union(*system_exclusions)
-    return union(*system_exclusions, _field_history_query(cutoff, history_until))
+    return union(*system_exclusions, _field_history_query(cutoff, history_until, irregular=False))
 
 
 def _candidate_select(consumo: Subquery) -> Select:
@@ -104,7 +156,10 @@ def _candidate_select(consumo: Subquery) -> Select:
 
 
 def _candidate_conditions(
-    consumo: Subquery, filters: SuspicionFilters, excluded_units: Select | CompoundSelect
+    consumo: Subquery,
+    filters: SuspicionFilters,
+    excluded_units: Select | CompoundSelect,
+    reincidence: ColumnElement[bool],
 ) -> list[ColumnElement[bool]]:
     """Condições para uma UC virar candidata: sem GD, sem inspeção recente, com queda acima do piso ou zerada."""
     uc = dim_unidade_consumidora
@@ -118,6 +173,7 @@ def _candidate_conditions(
         consumo.c.consumo_recente_kwh.is_not(None),
         has_sudden_drop | has_zero_reading,
         uc.c.id_uc.not_in(excluded_units),
+        reincidence,
         *_optional_filters(filters),
     ]
 
@@ -128,6 +184,7 @@ def suspicious_profiles_query(
     *,
     include_field_history: bool = True,
     history_until: date | None = None,
+    portfolio_ratio: float = NEUTRAL_PORTFOLIO_RATIO,
 ) -> Select:
     """Monta a consulta dos perfis de consumo candidatos à fila de suspeitas.
 
@@ -139,6 +196,8 @@ def suspicious_profiles_query(
         filters: Limiar de queda e filtros opcionais de município, bairro e classe.
         include_field_history: False monta a fila sem excluir as UCs do histórico de campo.
         history_until: Data (exclusiva) em que o histórico de campo deixa de valer; None usa todo o histórico.
+        portfolio_ratio: Razão mediana recente/base da carteira, que a regra de retorno antecipado desconta da
+            queda da UC; 1.0 (padrão) usa a queda bruta.
 
     Returns:
         SELECT com cadastro e consumo agregado das UCs candidatas.
@@ -147,4 +206,11 @@ def suspicious_profiles_query(
     excluded_units = excluded_units_query(
         windows, include_field_history=include_field_history, history_until=history_until
     )
-    return _candidate_select(consumo).where(*_candidate_conditions(consumo, filters, excluded_units))
+    reincidence = _reincidence_condition(
+        consumo,
+        windows,
+        include_field_history=include_field_history,
+        history_until=history_until,
+        portfolio_ratio=portfolio_ratio,
+    )
+    return _candidate_select(consumo).where(*_candidate_conditions(consumo, filters, excluded_units, reincidence))

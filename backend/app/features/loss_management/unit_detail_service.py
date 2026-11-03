@@ -19,6 +19,8 @@ from app.features.loss_management.unit_detail import (
 )
 from app.shared.exceptions import NotFoundException
 
+EARLIEST_COMPETENCIA = "0000-01"
+
 
 @dataclass(frozen=True, slots=True)
 class QueuedUnit:
@@ -38,7 +40,7 @@ class UnitDetailService:
         self.queue_repository = queue_repository
         self.detail_repository = detail_repository
 
-    async def get_unit_detail(self, id_uc: str) -> UnitDetailDTO:
+    async def get_unit_detail(self, id_uc: str, full_history: bool = False) -> UnitDetailDTO:
         """Devolve o detalhe de uma UC que está na fila (inclusive com ordem gerada ou em campo).
 
         A UC precisa estar na fila agora: UC com ordem concluída ou inspecionada na janela de análise sai da fila
@@ -47,17 +49,28 @@ class UnitDetailService:
 
         Args:
             id_uc: Unidade consumidora.
+            full_history: Se verdadeiro, a série vai da primeira leitura da UC até a competência da análise;
+                senão traz as 12 últimas. Nunca passa da competência de referência.
 
         Returns:
-            Identificação, situação, motivo, a conta do score, o consumo de 12 meses e as inspeções anteriores.
+            Identificação, situação, motivo, a conta do score, a série de consumo e as inspeções anteriores.
 
         Raises:
             NotFoundException: Se a UC não existir no cadastro ou não estiver na fila.
             DatabaseReadError: Se as tabelas Gold não puderem ser consultadas.
         """
         queued = await self._find_in_queue(id_uc)
-        competencias = series_competencias(queued.reference.competencia)
-        consumption = await self.detail_repository.fetch_monthly_consumption(id_uc, competencias[0], competencias[-1])
+        reference_competencia = queued.reference.competencia
+        competencias = series_competencias(reference_competencia)
+        if full_history:
+            consumption = await self.detail_repository.fetch_monthly_consumption(
+                id_uc, EARLIEST_COMPETENCIA, reference_competencia
+            )
+            competencias = series_competencias(reference_competencia, min(consumption, default=None))
+        else:
+            consumption = await self.detail_repository.fetch_monthly_consumption(
+                id_uc, competencias[0], competencias[-1]
+            )
         prior = await self.detail_repository.fetch_prior_inspections(id_uc, queued.reference.history_until)
         unit = queued.unit
         return UnitDetailDTO(

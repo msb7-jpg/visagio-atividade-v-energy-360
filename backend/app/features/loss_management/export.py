@@ -4,7 +4,7 @@ import csv
 import io
 from collections.abc import Sequence
 
-from app.features.loss_management.schemas import InspectionOrderDTO
+from app.features.loss_management.schemas import InspectionOrderDTO, InspectionStatus
 
 CSV_DELIMITER = ";"  # o Excel em pt-BR usa ';' como separador de lista
 UTF8_BOM = "﻿"  # faz o Excel reconhecer os acentos
@@ -16,12 +16,11 @@ PREFILLED_COLUMNS = (
     "status",
     "motivo",
     "kwh_estimado",
-    "fiscal_responsavel",
     "criado_em",
 )
 FIELD_RESULT_COLUMNS = (
     "data_inspecao",
-    "inspetor",
+    "inspetor_selecionado",
     "irregularidade_constatada",
     "tipo_irregularidade",
     "kwh_recuperado",
@@ -47,8 +46,41 @@ def format_kwh(kwh: float) -> str:
     return f"{kwh:.1f}".replace(".", ",")
 
 
+def format_irregularity(found: bool | None) -> str:
+    """Escreve o resultado da inspeção como o upload o lê de volta ("sim"/"nao"; vazio = ainda sem resultado)."""
+    if found is None:
+        return ""
+    return "sim" if found else "nao"
+
+
+def format_selected_inspector(order: InspectionOrderDTO) -> str:
+    """Inspetor escolhido ao enviar a ordem a campo; em branco se ainda não foi a campo ou não tem inspetor.
+
+    O envio a campo pode ou não indicar um inspetor, então vazio é um valor válido que a equipe preenche.
+    """
+    if order.status != InspectionStatus.PENDENTE:
+        return ""
+    return neutralize_formula(order.inspetor or "")
+
+
+def build_field_result_values(order: InspectionOrderDTO) -> list[str]:
+    """Colunas de retorno de campo: o que já está salvo na ordem, ou em branco para a equipe preencher.
+
+    Returns:
+        Valores na ordem de `FIELD_RESULT_COLUMNS`.
+    """
+    return [
+        order.data_inspecao.isoformat() if order.data_inspecao else "",
+        format_selected_inspector(order),
+        format_irregularity(order.irregularidade_constatada),
+        neutralize_formula(order.tipo_irregularidade or ""),
+        format_kwh(order.kwh_recuperado) if order.kwh_recuperado is not None else "",
+        neutralize_formula(order.numero_toi or ""),
+    ]
+
+
 def build_export_row(order: InspectionOrderDTO) -> list[str]:
-    """Monta a linha da planilha: dados da ordem preenchidos e colunas de retorno em branco.
+    """Monta a linha da planilha: dados da ordem e o que já foi registrado do retorno de campo.
 
     Args:
         order: Ordem de inspeção a ser despachada.
@@ -62,11 +94,9 @@ def build_export_row(order: InspectionOrderDTO) -> list[str]:
         order.status.value,
         neutralize_formula(order.motivo or ""),
         format_kwh(order.kwh_estimado),
-        neutralize_formula(order.fiscal_responsavel or ""),
         order.criado_em.isoformat(),
     ]
-    blank_result_values = [""] * len(FIELD_RESULT_COLUMNS)
-    return prefilled_values + blank_result_values
+    return prefilled_values + build_field_result_values(order)
 
 
 def render_field_orders_csv(orders: Sequence[InspectionOrderDTO]) -> str:

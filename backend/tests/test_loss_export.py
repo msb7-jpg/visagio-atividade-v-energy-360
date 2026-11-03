@@ -1,12 +1,13 @@
 import csv
 import io
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import pytest
 
 from app.db.session import get_db
 from app.features.loss_management.export import EXPORT_COLUMNS, render_field_orders_csv
 from app.features.loss_management.schemas import InspectionOrderDTO, InspectionStatus
+from app.features.loss_management.upload_values import parse_irregularity
 from app.main import app
 from tests.test_loss_router import auth_headers, open_client
 
@@ -14,7 +15,7 @@ EXPORT_URL = "/api/v1/losses/inspections/export"
 INSPECTIONS_URL = "/api/v1/losses/inspections"
 RESULT_COLUMNS = (
     "data_inspecao",
-    "inspetor",
+    "inspetor_selecionado",
     "irregularidade_constatada",
     "tipo_irregularidade",
     "kwh_recuperado",
@@ -50,14 +51,62 @@ def parse_export(content: str) -> list[dict[str, str]]:
 
 
 def test_csv_has_one_row_per_order_with_blank_result_columns():
-    orders = [make_order(7, "UC-1", fiscal_responsavel="Equipe 3"), make_order(8, "UC-2")]
+    orders = [make_order(7, "UC-1"), make_order(8, "UC-2")]
 
     rows = parse_export(render_field_orders_csv(orders))
 
     assert list(rows[0].keys()) == list(EXPORT_COLUMNS)
     assert [row["id_inspecao"] for row in rows] == ["7", "8"]
-    assert rows[0]["fiscal_responsavel"] == "Equipe 3"
+    assert "fiscal_responsavel" not in rows[0]  # o fiscal de campo é o inspetor: uma coluna só
     assert all(row[column] == "" for row in rows for column in RESULT_COLUMNS)
+
+
+def test_csv_keeps_field_data_already_saved_on_the_order():
+    order = make_order(
+        7,
+        "UC-1",
+        status=InspectionStatus.PENDENTE,
+        inspetor="INSP-028",
+        data_inspecao=date(2026, 10, 25),
+        irregularidade_constatada=True,
+        tipo_irregularidade="BY-PASS",
+        kwh_recuperado=838.1,
+        numero_toi="TOI-9",
+    )
+
+    row = parse_export(render_field_orders_csv([order]))[0]
+
+    assert row["inspetor_selecionado"] == "INSP-028"
+    assert "inspetor" not in row
+    assert row["data_inspecao"] == "2026-10-25"
+    assert parse_irregularity(row["irregularidade_constatada"]) is True
+    assert row["tipo_irregularidade"] == "BY-PASS"
+    assert row["kwh_recuperado"] == "838,1"
+    assert row["numero_toi"] == "TOI-9"
+
+
+def test_selected_inspector_shows_only_once_the_order_is_in_field():
+    generated = make_order(1, "UC-1", status=InspectionStatus.GERADA, inspetor="INSP-005")
+    in_field = make_order(2, "UC-2", status=InspectionStatus.PENDENTE, inspetor="INSP-005")
+
+    rows = parse_export(render_field_orders_csv([generated, in_field]))
+
+    assert [row["inspetor_selecionado"] for row in rows] == ["", "INSP-005"]
+
+
+def test_order_sent_to_field_without_inspector_leaves_the_column_blank_for_the_team():
+    order = make_order(1, "UC-1", status=InspectionStatus.PENDENTE, inspetor=None, fiscal_responsavel="Equipe 3")
+
+    row = parse_export(render_field_orders_csv([order]))[0]
+
+    assert row["inspetor_selecionado"] == ""
+    assert "Equipe 3" not in row.values()
+
+
+def test_csv_writes_no_irregularity_as_a_value_the_upload_understands():
+    row = parse_export(render_field_orders_csv([make_order(1, "UC-1", irregularidade_constatada=False)]))[0]
+
+    assert parse_irregularity(row["irregularidade_constatada"]) is False
 
 
 def test_csv_uses_decimal_comma_for_brazilian_spreadsheets():
@@ -103,6 +152,51 @@ async def client():
 async def create_order(http_client, headers: dict[str, str], id_uc: str) -> int:
     response = await http_client.post(INSPECTIONS_URL, headers=headers, json={"id_uc": id_uc})
     return response.json()["id_inspecao"]
+
+
+async def test_inspector_typed_in_the_old_fiscal_column_is_saved_as_inspetor(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    order_id = await create_order(client, headers, "UC_FRAUDE")
+    lines = [
+        "id_inspecao;fiscal_responsavel;data_inspecao;irregularidade_constatada",
+        f"{order_id};INSP-028;2026-10-25;nao",
+    ]
+    files = {"file": ("retorno.csv", "\r\n".join(lines).encode("utf-8-sig"), "text/csv")}
+
+    response = await client.post(f"{INSPECTIONS_URL}/upload", headers=headers, files=files)
+
+    assert response.json()["conciliadas"] == 1
+    order = next(o for o in (await client.get(INSPECTIONS_URL, headers=headers)).json() if o["id_inspecao"] == order_id)
+    assert order["inspetor"] == "INSP-028"
+
+
+async def test_exported_inspector_selected_column_comes_back_through_the_upload(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    order_id = await create_order(client, headers, "UC_FRAUDE")
+    await client.patch(f"{INSPECTIONS_URL}/{order_id}", headers=headers, json={"status": "pendente"})
+    lines = [
+        "id_inspecao;inspetor_selecionado;data_inspecao;irregularidade_constatada",
+        f"{order_id};INSP-028;2026-10-25;nao",
+    ]
+    files = {"file": ("retorno.csv", "\r\n".join(lines).encode("utf-8-sig"), "text/csv")}
+
+    response = await client.post(f"{INSPECTIONS_URL}/upload", headers=headers, files=files)
+
+    assert response.json()["conciliadas"] == 1
+    order = next(o for o in (await client.get(INSPECTIONS_URL, headers=headers)).json() if o["id_inspecao"] == order_id)
+    assert order["inspetor"] == "INSP-028"
+
+
+async def test_export_shows_the_inspector_chosen_when_dispatching(client):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    order_id = await create_order(client, headers, "UC_FRAUDE")
+    await client.patch(
+        f"{INSPECTIONS_URL}/{order_id}", headers=headers, json={"status": "pendente", "inspetor": "INSP-014"}
+    )
+
+    rows = parse_export((await client.get(EXPORT_URL, headers=headers)).text)
+
+    assert rows[0]["inspetor_selecionado"] == "INSP-014"
 
 
 async def test_export_returns_only_orders_that_go_to_field(client):

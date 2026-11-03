@@ -39,6 +39,14 @@ function renderTabs(units: SuspiciousUnit[], total?: number) {
   )
 }
 
+function rerenderTabs(rerender: ReturnType<typeof render>['rerender'], units: SuspiciousUnit[]) {
+  rerender(
+    <MemoryRouter>
+      <Harness units={units} />
+    </MemoryRouter>
+  )
+}
+
 const tab = (name: RegExp) => screen.getByRole('tab', { name })
 
 describe('QueueBandTabs', () => {
@@ -115,5 +123,33 @@ describe('QueueBandTabs', () => {
     renderTabs([buildUnit('UC1', 0.42)])
 
     expect(screen.queryByText(/Carregadas as/)).not.toBeInTheDocument()
+  })
+
+  it('volta para as prioritárias quando a fila passa a ter prioritárias depois de abrir na baixa chance', () => {
+    const { rerender } = renderTabs([buildUnit('UC1', 0.07)])
+    expect(tab(/Baixa chance · 1/)).toHaveAttribute('aria-selected', 'true')
+
+    rerenderTabs(rerender, [buildUnit('UC2', 0.93), buildUnit('UC3', 0.07)])
+
+    expect(tab(/Prioritárias · 1/)).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('link', { name: 'UC2' })).toBeInTheDocument()
+  })
+
+  it('sai da faixa que ficou vazia para a primeira com UCs', () => {
+    const { rerender } = renderTabs([buildUnit('UC1', 0.93), buildUnit('UC2', 0.07)])
+    fireEvent.click(tab(/Baixa chance/))
+
+    rerenderTabs(rerender, [buildUnit('UC3', 0.93)])
+
+    expect(tab(/Prioritárias · 1/)).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('mantém a faixa escolhida quando a fila muda e ela continua com UCs', () => {
+    const { rerender } = renderTabs([buildUnit('UC1', 0.93), buildUnit('UC2', 0.07)])
+    fireEvent.click(tab(/Baixa chance/))
+
+    rerenderTabs(rerender, [buildUnit('UC3', 0.93), buildUnit('UC4', 0.07), buildUnit('UC5', 0.07)])
+
+    expect(tab(/Baixa chance · 2/)).toHaveAttribute('aria-selected', 'true')
   })
 })

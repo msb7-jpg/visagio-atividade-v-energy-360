@@ -3,13 +3,12 @@ import { Card } from '@/components/ui/card'
 import { OrderCardActions } from '@/features/loss_management/components/OrderCardActions'
 import { useCanWriteLosses } from '@/features/loss_management/hooks/useCanWriteLosses'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
-import { describeCancellationReason } from '@/features/loss_management/utils/cancellationReasons'
+import { describeCancellationOutcome, describeCancellationReason } from '@/features/loss_management/utils/cancellationReasons'
 import { formatDate, formatKwh } from '@/features/loss_management/utils/lossFormatters'
 import { formatPlaceName } from '@/features/loss_management/utils/textFormat'
 import { formatIsoDate } from '@/features/loss_management/utils/unitDetailFormat'
 import {
   ACTIONS_BY_STATUS,
-  formatOrderAge,
   formatOrderCode,
   summarizeFieldResult,
   type OrderActionKind
@@ -21,64 +20,65 @@ interface OrderCardProps {
 }
 
 /**
- * Texto da faixa de cancelamento: motivo da lista e, se houver, a observação digitada.
+ * Texto da faixa de cancelamento: motivo da lista, observação digitada e o que houve com a UC na fila.
  *
  * @param order - Ordem de inspeção.
- * @returns Texto como "Ordem duplicada · já havia outra aberta", ou null se a ordem não registrou nenhum dos dois.
+ * @returns Texto como "Ordem duplicada · UC voltou à fila na hora", ou null se a ordem não registrou nada disso.
  */
 function describeCancellation(order: InspectionOrder): string | null {
-  const reasonLabel = order.motivo_cancelamento ? describeCancellationReason(order.motivo_cancelamento) : null
-  const parts = [reasonLabel, order.justificativa_cancelamento].filter((part): part is string => Boolean(part))
+  const reason = order.motivo_cancelamento
+  const parts = [
+    reason ? describeCancellationReason(reason) : null,
+    order.justificativa_cancelamento,
+    reason ? describeCancellationOutcome(reason, order.atualizado_em) : null
+  ].filter((part): part is string => Boolean(part))
   return parts.length > 0 ? parts.join(' · ') : null
 }
 
 /**
- * Linha de território do cartão: bairro e município da UC, ou "—" quando o cadastro não os traz.
+ * Linha de apoio do cartão: energia a recuperar (ordem aberta) e o inspetor, ou "sem inspetor" enquanto não há um.
  *
  * @param order - Ordem de inspeção.
- * @returns Texto como "Boa Viagem · Recife"; só uma parte presente mostra "—" no lugar da outra; nenhuma, só "—".
+ * @returns Texto como "189 kWh a recuperar · sem inspetor"; null em ordem concluída sem inspetor registrado.
  */
-function describeLocation(order: InspectionOrder): string {
-  if (!order.bairro && !order.municipio) return '—'
-  const district = order.bairro ? formatPlaceName(order.bairro) : '—'
-  const municipality = order.municipio ? formatPlaceName(order.municipio) : '—'
-  return `${district} · ${municipality}`
+function describeSupportLine(order: InspectionOrder): string | null {
+  const isOpen = order.status === 'gerada' || order.status === 'pendente'
+  const inspector = order.inspetor ?? order.fiscal_responsavel
+  const recoverable = isOpen && order.kwh_estimado > 0 ? `${formatKwh(order.kwh_estimado)} a recuperar` : null
+  const inspectorText = inspector ?? (order.status === 'concluida' ? null : 'sem inspetor')
+  const parts = [recoverable, inspectorText].filter((part): part is string => part !== null)
+  return parts.length > 0 ? parts.join(' · ') : null
 }
 
 /**
- * Cartão enxuto de uma ordem: código com a idade, UC com a energia a recuperar, território com o inspetor
- * (só quando já há um), resultado de campo e as ações da etapa.
+ * Cartão de uma ordem: código com a data, UC com o bairro, linha de apoio, resultado de campo,
+ * motivo do cancelamento e as ações da etapa.
  *
- * @param props - Ordem e callback das ações (enviar a campo, registrar resultado, cancelar).
+ * @param props - Ordem e callback das ações (despachar, registrar resultado, cancelar).
  * @returns Item de lista com o cartão da ordem.
  */
 export function OrderCard({ order, onAction }: OrderCardProps) {
   const resultSummary = summarizeFieldResult(order)
   const cancellationText = describeCancellation(order)
+  const supportLine = describeSupportLine(order)
   const canWrite = useCanWriteLosses()
   const actions = canWrite ? ACTIONS_BY_STATUS[order.status] : []
-  const isOpen = order.status === 'gerada' || order.status === 'pendente'
-  const inspector = order.inspetor ?? order.fiscal_responsavel
+  const placeName = order.bairro ? formatPlaceName(order.bairro) : null
 
   return (
     <li>
-      <Card className="flex flex-col gap-1 p-3">
+      <Card className="flex flex-col gap-1.5 p-3">
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-foreground text-sm font-bold tabular-nums">{formatOrderCode(order)}</span>
-          <time dateTime={order.criado_em} title={formatDate(order.criado_em)} className="text-muted-foreground text-xs tabular-nums">
-            {isOpen ? formatOrderAge(order.criado_em) : formatDate(order.criado_em)}
+          <time dateTime={order.criado_em} className="text-muted-foreground text-xs tabular-nums">
+            {formatDate(order.criado_em)}
           </time>
         </div>
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="text-foreground text-sm tabular-nums">{order.id_uc}</p>
-          {isOpen && order.kwh_estimado > 0 ? (
-            <p className="text-muted-foreground text-xs tabular-nums">{formatKwh(order.kwh_estimado)} a recuperar</p>
-          ) : null}
-        </div>
-        <div className="text-muted-foreground flex flex-wrap items-baseline justify-between gap-x-2 text-xs">
-          <p>{describeLocation(order)}</p>
-          {inspector ? <p>{inspector}</p> : null}
-        </div>
+        <p className="text-foreground text-sm">
+          <span className="tabular-nums">{order.id_uc}</span>
+          {placeName ? ` · ${placeName}` : ''}
+        </p>
+        {supportLine ? <p className="text-muted-foreground text-xs tabular-nums">{supportLine}</p> : null}
         {resultSummary ? (
           <Badge variant={resultSummary.tone} className="h-auto self-start whitespace-normal">{resultSummary.text}</Badge>
         ) : null}

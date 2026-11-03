@@ -90,6 +90,11 @@ fora (1.385 de 1.389 entram).
   mostra essa razão de 1,87× como nota, sem alterar o número exibido. Segue em 3 (valor da primeira versão); se
   a diretoria for citar valores absolutos, o time deve decidir se ajusta.
 - **Limite da evidência:** uma única competência de referência e uma amostra de 188 UCs.
+- **Origem e uso na ordem:** o 3 foi definido pela própria fatia 05 na primeira versão da fila (commit `da14cf0`,
+  2026-10-19), sem fonte regulatória; é a constante `JANELA_RECUPERACAO_MESES` em `scoring.py`. Ao gerar a ordem, o
+  servidor grava o resultado em `kwh_estimado` (`order_estimated_kwh`; 0 para UC com GD, sem leitura recente ou sem
+  suspeita) e o CSV de campo exporta o valor **gravado**, sem recalcular. Mudar a constante vale só para as ordens
+  criadas depois; as ativas mantêm o valor antigo, então a planilha pode misturar escalas até serem recalculadas.
 
 ### D8. Tarifa média calculada da base de faturamento
 - **Decisão:** o R$ a recuperar usa a tarifa média ponderada dos últimos 12 meses de `fato_faturamento`:
@@ -186,6 +191,24 @@ fora (1.385 de 1.389 entram).
   separa as irregulares. Faltam exemplos de UCs que o campo nunca visitou, então só um **piloto de inspeção** em
   uma amostra de fora da fila valida um sinal novo.
 - **Em aberto:** depois de quanto tempo uma UC com irregularidade constatada volta à fila (reincidência).
+  - **Proposta (2026-11-02), implementada em `queue_query.py` no mesmo dia:** 12 meses fora da fila após a conclusão da ordem com irregularidade
+    confirmada; uma nova queda súbita (50% ou mais) depois da regularização antecipa o retorno; UC inspecionada sem
+    irregularidade segue a janela de 15 meses. Motivos: 12 meses cobrem um ciclo sazonal completo, ficam abaixo dos 15
+    da janela atual e acompanham o `MESES_BASE_MINIMO` (11, D14). **Decisão adotada pelo dono da fatia para a entrega:** é uma
+    suposição declarada, sem dado para medir (ver D12) e sem validação do gerente de perdas. Revisar quando houver UCs
+    inspecionadas mais de uma vez.
+    **Medido no `v_energy.db` real (2026-11-02):** sem efeito em tempo real (2026-06) nem em 2025-07, 08 e 09; em 2025-12
+    a fila vai de 16 para 25 UCs (9 voltam, todas com `recente/base` entre 0,47 e 0,50). Esses 9 casos ficam colados
+    no limiar de 50% e coincidem com a queda geral da carteira (D12), então o retorno antecipado pode estar pegando essa
+    queda e não reincidência. Alternativa a testar: exigir a queda de 50% normalizada pela mediana da carteira.
+    **Decisão (2026-11-03, dono da fatia):** o retorno antecipado passa a exigir a queda de 50% **além da queda geral da
+    carteira**: a UC volta se `recente <= base × mediana(recente/base) × 0,5`, com a mediana limitada a 1,0 (carteira que
+    cresceu não afrouxa a regra). É a mesma mediana que a chance de acerto já usa (`fetch_portfolio_ratio`). Implementado
+    em `queue_query.py` (`portfolio_ratio`), com o repositório buscando a mediana antes de montar a consulta.
+    **Medido no `v_energy.db` real (2026-11-03), sem efeito:** em 2026-06 a mediana é 0,918 e a fila segue em 164 UCs; em
+    2025-12 a mediana é 1,195 (a carteira não caiu; o teto de 1,0 deixa a regra como era) e as 9 UCs continuam voltando.
+    Então a hipótese de que os 9 casos eram a queda geral **não se confirmou** pela mediana: o efeito da normalização só
+    aparece em meses com queda geral real da carteira.
 
 ### D12. Remedição dos sinais na Gold real (2026-10-28)
 - **Método:** para cada uma das 1.385 inspeções avaliáveis (agosto a dezembro de 2025), a queda de consumo é calculada
@@ -311,7 +334,8 @@ fora (1.385 de 1.389 entram).
 - A ordem grava a data da inspeção e o inspetor; o id externo da planilha do campo (`IN...`) **não é gravado**: a
   ordem não tem a coluna.
 - **Reincidência** (prazo em que a UC volta à fila depois de uma irregularidade): não há dado (nenhuma UC foi
-  inspecionada duas vezes, D12) e a regra depende de decisão da equipe (item 12.2 do checklist).
+  inspecionada duas vezes, D12). Os 12 meses são uma **decisão adotada pelo dono da fatia** (D11), não validada pelo
+  gerente de perdas nem medida na base.
 - **Nenhuma UC de fora da fila foi inspecionada:** as taxas valem para UCs que o campo já escolhera. O piloto do D13
   mede o que a fila deixa de ver e não foi executado.
 - Problemas de qualidade encontrados que **não são desta fatia**, para a Silver: 21.523 leituras duplicadas

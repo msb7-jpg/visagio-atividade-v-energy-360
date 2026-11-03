@@ -6,8 +6,8 @@ import { OrderBoardColumn } from '@/features/loss_management/components/OrderBoa
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { BOARD_COLUMNS, groupOrdersByStatus, type OrderActionKind } from '@/features/loss_management/utils/orderBoard'
 
-// Pilha no celular e linha no computador; cada coluna define a própria largura (vazia e canceladas ficam estreitas).
-const BOARD_LAYOUT_CLASSES = 'flex flex-col gap-2.5 lg:flex-row lg:items-start'
+// Quatro colunas iguais sempre na mesma linha; em tela estreita o quadro rola na horizontal em vez de quebrar.
+const BOARD_LAYOUT_CLASSES = 'grid min-w-264 grid-cols-4 items-start gap-3'
 
 /**
  * Esqueleto com a mesma grade do quadro (uma coluna por etapa), para o carregamento não deslocar o layout.
@@ -16,12 +16,14 @@ const BOARD_LAYOUT_CLASSES = 'flex flex-col gap-2.5 lg:flex-row lg:items-start'
  */
 function OrderBoardSkeleton() {
   return (
-    <div className={BOARD_LAYOUT_CLASSES} aria-busy="true" aria-label="Carregando ordens de inspeção">
-      {BOARD_COLUMNS.map((column) => (
-        <div key={column.status} className="bg-muted/40 rounded-lg p-3 lg:flex-1">
-          <LoadingSkeleton count={3} className="h-20" />
-        </div>
-      ))}
+    <div className="overflow-x-auto">
+      <div className={BOARD_LAYOUT_CLASSES} aria-busy="true" aria-label="Carregando ordens de inspeção">
+        {BOARD_COLUMNS.map((column) => (
+          <div key={column.status} className="bg-muted/40 border-border rounded-xl border p-3">
+            <LoadingSkeleton count={3} className="h-20" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -56,10 +58,12 @@ export function OrderBoard({ orders, isLoading, isError, onRetry, onAction }: Or
   }
   const ordersByStatus = groupOrdersByStatus(orders)
   return (
-    <section aria-label="Ordens de inspeção" className={BOARD_LAYOUT_CLASSES}>
-      {BOARD_COLUMNS.map((column) => (
-        <OrderBoardColumn key={column.status} column={column} orders={ordersByStatus[column.status]} onAction={onAction} />
-      ))}
-    </section>
+    <div className="overflow-x-auto">
+      <section aria-label="Ordens de inspeção" className={BOARD_LAYOUT_CLASSES}>
+        {BOARD_COLUMNS.map((column) => (
+          <OrderBoardColumn key={column.status} column={column} orders={ordersByStatus[column.status]} onAction={onAction} />
+        ))}
+      </section>
+    </div>
   )
 }

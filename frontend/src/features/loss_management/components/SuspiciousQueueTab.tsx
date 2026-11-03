@@ -1,16 +1,16 @@
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { GenerateOrdersDialog } from '@/features/loss_management/components/GenerateOrdersDialog'
-import { QueueActionsBar, TOP_SELECTION_COUNT } from '@/features/loss_management/components/QueueActionsBar'
-import { QueueCapacityNotice } from '@/features/loss_management/components/QueueCapacityNotice'
+import { QueueActionsBar } from '@/features/loss_management/components/QueueActionsBar'
 import { QueueBandTabs } from '@/features/loss_management/components/QueueBandTabs'
 import { QueueFilters } from '@/features/loss_management/components/QueueFilters'
-import { QueueSummaryCards } from '@/features/loss_management/components/QueueSummaryCards'
+import { QueueReferencePills } from '@/features/loss_management/components/QueueReferencePills'
 import { QueueWarnings } from '@/features/loss_management/components/QueueWarnings'
+import { SelectionStrip } from '@/features/loss_management/components/SelectionStrip'
 import { UnitDetailSheet } from '@/features/loss_management/components/UnitDetailSheet'
 import type { SuspiciousQueueController } from '@/features/loss_management/hooks/useSuspiciousQueueController'
-import { isPriorityUnit } from '@/features/loss_management/utils/queueBands'
 
 interface SuspiciousQueueTabProps {
   queue: SuspiciousQueueController
@@ -28,54 +28,56 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <QueueSummaryCards
-        summary={summary}
-        isUpdating={queue.isSummaryUpdating}
-        isError={queue.isSummaryError}
-        onRetry={queue.retrySummary}
-      />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <QueueFilters
-          filters={queue.filters}
-          options={queue.filterOptions}
-          onChange={queue.setFilters}
-          onClear={queue.clearFilters}
-        />
-        <QueueActionsBar
-          selectedUnits={queue.selectedUnits}
-          onSelectTop={() => selection.selectTop(TOP_SELECTION_COUNT, isPriorityUnit)}
-          onGenerate={queue.openDialog}
-        />
-      </div>
-      <QueueWarnings warnings={queue.warnings} />
-      {summary ? <QueueCapacityNotice units={units} capacity={summary.capacidade_total} /> : null}
-      {isFilteredEmpty ? (
-        <EmptyState
-          title="Nenhuma UC com esses filtros."
-          action={<Button type="button" variant="outline" onClick={queue.clearFilters}>Limpar filtros</Button>}
-        />
-      ) : (
-        <AsyncState
-          isLoading={queue.isLoading}
-          isError={queue.isError}
-          isEmpty={units.length === 0}
-          errorTitle="Não foi possível carregar a fila"
-          errorDescription="Verifique a conexão com a API e se as tabelas Gold de cadastro e medição estão disponíveis."
-          onRetry={queue.retryQueue}
-          emptyTitle="Nenhuma UC suspeita na fila"
-          emptyDescription="Nenhuma UC atende aos critérios. UCs com geração distribuída ou já inspecionadas na janela de análise ficam fora da fila."
-        >
-          <QueueBandTabs
-            key={JSON.stringify(queue.filters)}
-            units={units}
-            total={queue.total ?? units.length}
-            selection={selection}
-            onOpenDetail={queue.openDetail}
-            onLoadMore={queue.hasMoreUnits ? queue.loadMoreUnits : undefined}
-            isLoadingMore={queue.isLoadingMoreUnits}
+      <QueueReferencePills summary={summary} isError={queue.isSummaryError} onRetry={queue.retrySummary} />
+      <Card className="flex flex-col gap-4 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <QueueFilters
+            filters={queue.filters}
+            options={queue.filterOptions}
+            onChange={queue.setFilters}
+            onClear={queue.clearFilters}
           />
-        </AsyncState>
-      )}
+          <QueueActionsBar
+            selectedUnits={queue.selectedUnits}
+            onSelectTop={queue.selectTopUnits}
+            onGenerate={queue.openDialog}
+          />
+        </div>
+        <SelectionStrip
+          units={queue.selectedUnits}
+          summary={summary}
+          isUpdating={queue.isSummaryUpdating}
+          onClear={selection.clear}
+        />
+        <QueueWarnings warnings={queue.warnings} />
+        {isFilteredEmpty ? (
+          <EmptyState
+            title="Nenhuma UC com esses filtros."
+            action={<Button type="button" variant="outline" onClick={queue.clearFilters}>Limpar filtros</Button>}
+          />
+        ) : (
+          <AsyncState
+            isLoading={queue.isLoading}
+            isError={queue.isError}
+            isEmpty={units.length === 0}
+            errorTitle="Não foi possível carregar a fila"
+            errorDescription="Verifique a conexão com a API e se as tabelas Gold de cadastro e medição estão disponíveis."
+            onRetry={queue.retryQueue}
+            emptyTitle="Nenhuma UC suspeita na fila"
+            emptyDescription="Nenhuma UC atende aos critérios. UCs com geração distribuída ou já inspecionadas na janela de análise ficam fora da fila."
+          >
+            <QueueBandTabs
+              key={JSON.stringify(queue.filters)}
+              units={units}
+              total={queue.total ?? units.length}
+              selection={selection}
+              onOpenDetail={queue.openDetail}
+              onLoadMore={queue.hasMoreUnits ? queue.loadMoreUnits : undefined}
+              isLoadingMore={queue.isLoadingMoreUnits}
+            />
+          </AsyncState>
+        )}
+      </Card>
       <UnitDetailSheet idUc={queue.detailUcId} onClose={queue.closeDetail} onGenerateOrder={queue.generateForUnit} />
       {queue.isDialogOpen ? (
         <GenerateOrdersDialog

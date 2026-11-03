@@ -47,18 +47,22 @@ def situation_of(unit: SuspiciousUnitDTO, active_orders: dict[str, InspectionSta
 
 
 def apply_situation(
-    units: list[SuspiciousUnitDTO], active_orders: dict[str, InspectionStatus]
+    units: list[SuspiciousUnitDTO],
+    active_orders: dict[str, InspectionStatus],
+    only: QueueSituation | None = None,
 ) -> list[SuspiciousUnitDTO]:
     """Marca cada UC com a situação da sua ordem ativa; sem ordem ativa ela segue "na fila".
 
     Args:
         units: Itens da fila.
         active_orders: Status da ordem ativa por `id_uc`.
+        only: Se informada, devolve só as UCs nessa situação.
 
     Returns:
         Novos itens com `situacao` preenchida, na mesma ordem.
     """
-    return [unit.model_copy(update={"situacao": situation_of(unit, active_orders)}) for unit in units]
+    situated = [unit.model_copy(update={"situacao": situation_of(unit, active_orders)}) for unit in units]
+    return situated if only is None else [unit for unit in situated if unit.situacao == only]
 
 
 def hit_rate_dto(rate: FieldHitRate | None) -> HitRateDTO:

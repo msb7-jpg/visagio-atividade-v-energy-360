@@ -245,7 +245,7 @@ ACTIVE_ORDER_FIXTURE_STATEMENTS = (
         "CREATE TABLE dim_unidade_consumidora "
         "(id_uc TEXT, municipio TEXT, bairro TEXT, classe_consumo TEXT, possui_gd BOOLEAN)"
     ),
-    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT)",
+    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT, irregularidade_constatada BOOLEAN)",
     "INSERT INTO dim_unidade_consumidora VALUES ('UC_ORDEM', 'Recife', 'Centro', 'Residencial', 0)",
     "INSERT INTO dim_unidade_consumidora VALUES ('UC_LIVRE', 'Recife', 'Centro', 'Residencial', 0)",
     "INSERT INTO dim_unidade_consumidora VALUES ('UC_CONCLUIDA', 'Recife', 'Centro', 'Residencial', 0)",
@@ -295,7 +295,7 @@ CANCELLATION_SCHEMA_STATEMENTS = (
         "CREATE TABLE dim_unidade_consumidora "
         "(id_uc TEXT, municipio TEXT, bairro TEXT, classe_consumo TEXT, possui_gd BOOLEAN)"
     ),
-    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT)",
+    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT, irregularidade_constatada BOOLEAN)",
 )
 CANCELLATION_MONTHLY_KWH = (("2025-06", 300), ("2025-11", 50), ("2025-12", 50), ("2026-01", 50))
 
@@ -372,6 +372,38 @@ async def test_queue_accepts_the_motive_query_param(client: AsyncClient):
     assert [unit["id_uc"] for unit in response.json()["itens"]] == ["UC_ZERADA"]
 
 
+async def test_queue_filters_by_situation_and_keeps_the_total_of_the_filtered_queue(client: AsyncClient):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+    queue_url = f"{BASE_URL}/suspicious-units"
+    whole_queue = (await client.get(queue_url, headers=headers)).json()
+
+    generated = (await client.get(queue_url, headers=headers, params={"situacao": "ordem_gerada"})).json()
+    free = (await client.get(queue_url, headers=headers, params={"situacao": "na_fila"})).json()
+    in_field = (await client.get(queue_url, headers=headers, params={"situacao": "em_campo"})).json()
+
+    assert [unit["id_uc"] for unit in generated["itens"]] == ["UC_FRAUDE"]
+    assert generated["total"] == 1
+    assert "UC_FRAUDE" not in {unit["id_uc"] for unit in free["itens"]}
+    assert free["total"] == whole_queue["total"] - 1
+    assert (in_field["itens"], in_field["total"]) == ([], 0)
+
+
+async def test_situation_filter_paginates_over_the_filtered_queue(client: AsyncClient):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+
+    page = (
+        await client.get(
+            f"{BASE_URL}/suspicious-units", headers=headers, params={"situacao": "na_fila", "limit": 1, "offset": 1}
+        )
+    ).json()
+
+    assert len(page["itens"]) == 1
+    assert page["itens"][0]["situacao"] == "na_fila"
+    assert page["total"] == 2
+
+
 async def test_summary_reports_capacity_selected_energy_and_expected_return(client: AsyncClient):
     headers = await auth_headers(client, "perdas@venergy.com")
     await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
@@ -391,12 +423,12 @@ async def test_summary_reports_capacity_selected_energy_and_expected_return(clie
     assert summary["tarifa_rs_kwh"] == pytest.approx(TARIFF_RS_KWH)
     assert summary["taxa_acerto"] == {
         "inspecoes_total": 2,
-        "irregularidades_confirmadas": 1,
-        "taxa": 0.5,
+        "irregularidades_confirmadas": 0,
+        "taxa": 0.0,
         "periodo_inicio": "2023-05",
         "periodo_fim": "2025-08",
     }
-    # UC_INSPECAO_ANTIGA é queda súbita (75%): 150 kWh/mês x 93%, e não x 50% (taxa histórica do seed).
+    # UC_INSPECAO_ANTIGA é queda súbita (75%): 150 kWh/mês x 93%, e não x 0% (taxa histórica do seed).
     assert summary["retorno_esperado_kwh_mes"] == pytest.approx(150.0 * 0.93)
     assert summary["retorno_esperado_valor_ano_rs"] == pytest.approx(150.0 * 12 * TARIFF_RS_KWH * 0.93, abs=0.01)
 
@@ -440,7 +472,35 @@ async def test_queue_filters_list_available_municipalities_and_classes(client: A
     response = await client.get(f"{BASE_URL}/queue-filters", headers=headers)
 
     assert response.status_code == 200
-    assert response.json() == {"municipios": ["Recife"], "classes": ["Residencial"]}
+    assert (response.json()["municipios"], response.json()["classes"]) == (["Recife"], ["Residencial"])
+
+
+async def test_queue_filters_count_exactly_the_units_each_option_returns(client: AsyncClient):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    queue_url = f"{BASE_URL}/suspicious-units"
+
+    counts = (await client.get(f"{BASE_URL}/queue-filters", headers=headers)).json()["contagens"]
+
+    assert set(counts["motivos"]) == {"queda_subita", "queda_moderada", "leitura_zerada"}
+    for filter_name, key in (("municipio", "municipios"), ("classe", "classes")):
+        for option, count in counts[key].items():
+            returned = (await client.get(queue_url, headers=headers, params={filter_name: option})).json()["total"]
+            assert returned == count > 0
+    for reason, count in counts["motivos"].items():
+        assert (await client.get(queue_url, headers=headers, params={"motivo": reason})).json()["total"] == count
+
+
+async def test_queue_filters_count_the_units_of_each_situation(client: AsyncClient):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
+    queue_url = f"{BASE_URL}/suspicious-units"
+
+    counts = (await client.get(f"{BASE_URL}/queue-filters", headers=headers)).json()["contagens"]
+
+    assert set(counts["situacoes"]) == {"na_fila", "ordem_gerada", "em_campo"}
+    for situation, count in counts["situacoes"].items():
+        assert (await client.get(queue_url, headers=headers, params={"situacao": situation})).json()["total"] == count
+    assert counts["situacoes"]["ordem_gerada"] == 1
 
 
 def test_ranking_without_limit_returns_every_unit_and_an_empty_queue_has_no_score():

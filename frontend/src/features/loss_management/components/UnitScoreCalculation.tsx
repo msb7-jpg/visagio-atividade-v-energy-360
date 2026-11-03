@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { ScoreBreakdown } from '@/features/loss_management/types/unitDetailTypes'
 import { formatInteger, formatKwh, formatPercent } from '@/features/loss_management/utils/lossFormatters'
+import { cn } from '@/lib/utils'
 
 interface CalculationLineProps {
   label: string
@@ -10,9 +11,11 @@ interface CalculationLineProps {
 
 function CalculationLine({ label, children, isResult = false }: CalculationLineProps) {
   return (
-    <div className="flex items-baseline justify-between gap-4">
+    <div className={cn('flex items-baseline justify-between gap-4', isResult ? 'border-border border-t pt-2' : '')}>
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className={isResult ? 'text-foreground font-bold' : 'font-mono'}>{children}</dd>
+      <dd className={isResult ? 'text-foreground text-xl font-bold whitespace-nowrap' : 'font-mono whitespace-nowrap'}>
+        {children}
+      </dd>
     </div>
   )
 }
@@ -31,7 +34,7 @@ interface UnitScoreCalculationProps {
 export function UnitScoreCalculation({ breakdown }: UnitScoreCalculationProps) {
   const monthsLabel = breakdown.meses_janela_recuperacao === 1 ? 'mês' : 'meses'
   return (
-    <dl className="flex flex-col gap-2 text-sm">
+    <dl className="bg-muted/40 border-border flex flex-col gap-2 rounded-lg border p-3 text-sm">
       <CalculationLine
         label={`Energia recuperável: ${formatKwh(breakdown.kwh_mes_recuperavel)}/mês × ${breakdown.meses_janela_recuperacao} ${monthsLabel}`}
       >

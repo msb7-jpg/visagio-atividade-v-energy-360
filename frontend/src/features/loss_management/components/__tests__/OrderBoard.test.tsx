@@ -46,53 +46,45 @@ function renderBoard(orders: InspectionOrder[], overrides: Partial<Parameters<ty
 }
 
 describe('OrderBoard', () => {
-  it('mostra bairro e município da UC no cartão, com os acentos restaurados', () => {
+  it('mostra a UC com o bairro, com os acentos restaurados', () => {
     renderBoard([buildOrder({ bairro: 'BOA VIAGEM', municipio: 'JABOATAO DOS GUARARAPES' })])
 
-    expect(screen.getByText('Boa Viagem · Jaboatão dos Guararapes')).toBeInTheDocument()
+    expect(screen.getByText('UC131844', { exact: false }).closest('p')).toHaveTextContent('UC131844 · Boa Viagem')
   })
 
-  it('mostra "—" no cartão quando a ordem vem sem bairro e município', () => {
-    renderBoard([buildOrder({ bairro: null, municipio: null }), buildOrder({ id_inspecao: 2 })])
-
-    expect(screen.getAllByText('—')).toHaveLength(2)
-  })
-
-  it('mostra "—" só no lado que falta quando há apenas um dos dois', () => {
+  it('mostra só a UC quando a ordem vem sem bairro', () => {
     renderBoard([buildOrder({ bairro: null, municipio: 'RECIFE' })])
 
-    expect(screen.getByText('— · Recife')).toBeInTheDocument()
+    expect(screen.getByText('UC131844').closest('p')).toHaveTextContent(/^UC131844$/)
   })
 
   it('mostra as quatro etapas com contagem e aviso nas vazias', () => {
     renderBoard([buildOrder({ id_inspecao: 1 }), buildOrder({ id_inspecao: 2 })])
 
-    expect(screen.getByRole('region', { name: 'Pendente (2)' })).toBeInTheDocument()
-    const emptyColumn = screen.getByRole('region', { name: 'Em campo (0)' })
+    expect(screen.getByRole('region', { name: 'Gerada (2)' })).toBeInTheDocument()
+    const emptyColumn = screen.getByRole('region', { name: 'Pendente (em campo) (0)' })
     expect(within(emptyColumn).getByText('Nenhuma ordem nesta etapa.')).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Concluída (0)' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Cancelada (0)' })).toBeInTheDocument()
   })
 
-  it('oferece enviar a campo em ordem pendente e registrar resultado em campo, com o cancelamento no menu "⋯"', async () => {
+  it('oferece despachar e cancelar na ordem gerada, e registrar resultado e cancelar na que está em campo', () => {
     renderBoard([buildOrder({ id_inspecao: 1 }), buildOrder({ id_inspecao: 2, status: 'pendente' })])
 
-    const pendingColumn = screen.getByRole('region', { name: 'Pendente (1)' })
-    expect(within(pendingColumn).getByRole('button', { name: /^Enviar a campo/ })).toBeInTheDocument()
-    expect(within(pendingColumn).queryByRole('button', { name: /^Cancelar/ })).not.toBeInTheDocument()
-    fireEvent.keyDown(within(pendingColumn).getByRole('button', { name: /^Mais ações/ }), { key: 'Enter' })
-    expect(await screen.findByRole('menuitem', { name: /^Cancelar OI-/ })).toBeInTheDocument()
-    const fieldColumn = screen.getByRole('region', { name: 'Em campo (1)' })
+    const generatedColumn = screen.getByRole('region', { name: 'Gerada (1)' })
+    expect(within(generatedColumn).getByRole('button', { name: /^Despachar/ })).toBeInTheDocument()
+    expect(within(generatedColumn).getByRole('button', { name: /^Cancelar OI-/ })).toBeInTheDocument()
+    const fieldColumn = screen.getByRole('region', { name: 'Pendente (em campo) (1)' })
     expect(within(fieldColumn).getByRole('button', { name: /^Registrar resultado/ })).toBeInTheDocument()
-    expect(within(fieldColumn).queryByRole('button', { name: /^Enviar a campo/ })).not.toBeInTheDocument()
+    expect(within(fieldColumn).getByRole('button', { name: /^Cancelar OI-/ })).toBeInTheDocument()
+    expect(within(fieldColumn).queryByRole('button', { name: /^Despachar/ })).not.toBeInTheDocument()
   })
 
-  it('dispara o cancelamento com a ordem do cartão ao escolher "Cancelar ordem" no menu', async () => {
+  it('dispara o cancelamento com a ordem do cartão ao clicar em "Cancelar"', () => {
     const order = buildOrder({ id_inspecao: 5 })
     const { onAction } = renderBoard([order])
 
-    fireEvent.keyDown(screen.getByRole('button', { name: /^Mais ações/ }), { key: 'Enter' })
-    fireEvent.click(await screen.findByRole('menuitem', { name: /^Cancelar OI-/ }))
+    fireEvent.click(screen.getByRole('button', { name: /^Cancelar OI-/ }))
 
     expect(onAction).toHaveBeenCalledWith('cancel', order)
   })
@@ -102,33 +94,33 @@ describe('OrderBoard', () => {
       buildOrder({ id_inspecao: 3, status: 'concluida', irregularidade_constatada: true, tipo_irregularidade: 'BY-PASS', kwh_recuperado: 860 }),
       buildOrder({ id_inspecao: 4, status: 'cancelada', justificativa_cancelamento: 'UC regularizada pelo cliente' })
     ])
-    fireEvent.click(screen.getByRole('button', { name: /^Cancelada \(1\)/ }))
 
-    expect(screen.queryByRole('button', { name: /^(Enviar a campo|Registrar resultado|Mais ações)/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(screen.getByText('Irregularidade confirmada · BY-PASS · 860 kWh')).toBeInTheDocument()
     expect(screen.getByText('Cancelada: UC regularizada pelo cliente')).toBeInTheDocument()
   })
 
-  it('começa com a coluna de canceladas recolhida e a abre e fecha pelo cabeçalho', () => {
+  it('mostra a coluna de canceladas aberta, sem botão para recolher', () => {
     renderBoard([buildOrder({ id_inspecao: 4, status: 'cancelada', justificativa_cancelamento: 'UC regularizada pelo cliente' })])
 
-    const toggle = screen.getByRole('button', { name: 'Cancelada (1): expandir' })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByText(/^Cancelada: UC regularizada/)).not.toBeInTheDocument()
-
-    fireEvent.click(toggle)
-
-    expect(screen.getByRole('button', { name: 'Cancelada (1): recolher' })).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('Cancelada: UC regularizada pelo cliente')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /recolher|expandir/ })).not.toBeInTheDocument()
   })
 
-  it('mostra há quantos dias a ordem aberta existe e a energia a recuperar, e esconde "sem inspetor"', () => {
-    const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString()
-    renderBoard([buildOrder({ criado_em: twoDaysAgo, kwh_estimado: 189 })])
+  it('mostra a data de criação, a energia a recuperar e "sem inspetor" na ordem gerada', () => {
+    renderBoard([buildOrder({ kwh_estimado: 189 })])
 
-    expect(screen.getByText('há 2 dias')).toBeInTheDocument()
-    expect(screen.getByText('189 kWh a recuperar')).toBeInTheDocument()
-    expect(screen.queryByText('sem inspetor')).not.toBeInTheDocument()
+    expect(screen.getByText('26/06/2026')).toBeInTheDocument()
+    expect(screen.getByText('189 kWh a recuperar · sem inspetor')).toBeInTheDocument()
+  })
+
+  it('mostra "sem inspetor" na ordem cancelada sem inspetor, mas não na concluída', () => {
+    renderBoard([
+      buildOrder({ id_inspecao: 1, status: 'cancelada' }),
+      buildOrder({ id_inspecao: 2, status: 'concluida', irregularidade_constatada: false })
+    ])
+
+    expect(screen.getAllByText('sem inspetor')).toHaveLength(1)
   })
 
   it('mostra o inspetor quando já há um e não mostra energia a recuperar sem estimativa', () => {
@@ -145,22 +137,25 @@ describe('OrderBoard', () => {
     expect(screen.getByText('Inspeção em 27/10/2026')).toBeInTheDocument()
   })
 
-  it('mostra o motivo da lista, com a observação quando houver, nas ordens canceladas', () => {
+  it('mostra o motivo, a observação e o que houve com a UC na fila nas ordens canceladas', () => {
     renderBoard([
       buildOrder({ id_inspecao: 1, status: 'cancelada', motivo_cancelamento: 'ordem_duplicada' }),
-      buildOrder({ id_inspecao: 2, status: 'cancelada', motivo_cancelamento: 'outro', justificativa_cancelamento: 'Cliente mudou' })
+      buildOrder({ id_inspecao: 2, status: 'cancelada', motivo_cancelamento: 'outro', justificativa_cancelamento: 'Cliente mudou' }),
+      buildOrder({ id_inspecao: 3, status: 'cancelada', motivo_cancelamento: 'cliente_regularizou', atualizado_em: '2026-06-22T10:00:00' })
     ])
-    fireEvent.click(screen.getByRole('button', { name: /^Cancelada \(2\)/ }))
 
-    expect(screen.getByText('Cancelada: Ordem duplicada')).toBeInTheDocument()
-    expect(screen.getByText('Cancelada: Outro · Cliente mudou')).toBeInTheDocument()
+    expect(screen.getByText('Cancelada: Ordem duplicada · UC voltou à fila na hora')).toBeInTheDocument()
+    expect(screen.getByText('Cancelada: Outro · Cliente mudou · UC voltou à fila na hora')).toBeInTheDocument()
+    expect(
+      screen.getByText('Cancelada: UC regularizada pelo cliente · UC fora da fila por 90 dias (até 20/09/2026)')
+    ).toBeInTheDocument()
   })
 
   it('dispara a ação com a ordem do cartão', () => {
     const order = buildOrder({ id_inspecao: 7 })
     const { onAction } = renderBoard([order])
 
-    fireEvent.click(screen.getByRole('button', { name: /^Enviar a campo/ }))
+    fireEvent.click(screen.getByRole('button', { name: /^Despachar/ }))
 
     expect(onAction).toHaveBeenCalledWith('dispatch', order)
   })

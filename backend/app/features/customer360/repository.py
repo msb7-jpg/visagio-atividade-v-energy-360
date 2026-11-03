@@ -2,7 +2,7 @@
 
 from collections.abc import Mapping
 
-from sqlalchemy import TextClause, text
+from sqlalchemy import TextClause, inspect, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -93,6 +93,14 @@ WHERE id_uc = :id_uc
 ORDER BY data_inspecao DESC
 """)
 
+# Ordens concluídas no portal (Fatia 05); o prefixo evita colisão de id com o histórico Gold.
+COMPLETED_ORDERS_SQL = text("""
+SELECT 'OS-' || id_inspecao AS id_inspecao, data_inspecao, inspetor AS id_inspetor,
+       irregularidade_constatada, tipo_irregularidade, kwh_recuperado
+FROM ordem_inspecao
+WHERE id_uc = :id_uc AND status = 'concluida'
+""")
+
 
 class Customer360Repository:
     """Leitura somente das tabelas Gold necessárias para a tela única de atendimento."""
@@ -165,9 +173,19 @@ class Customer360Repository:
         )
 
     async def fetch_loss_inspections(self, id_uc: str) -> list[LossInspectionDTO]:
-        """Inspeções de perdas feitas na UC, mais recente primeiro."""
+        """Inspeções de perdas da UC (histórico Gold + ordens concluídas no portal), mais recente primeiro."""
         rows = await self._fetch_rows(LOSS_INSPECTIONS_SQL, {"id_uc": id_uc}, "fato_inspecoes_perdas")
-        return [LossInspectionDTO.model_validate(row) for row in rows]
+        inspections = [LossInspectionDTO.model_validate(row) for row in rows]
+        if await self._has_portal_orders_table():
+            order_rows = await self._fetch_rows(COMPLETED_ORDERS_SQL, {"id_uc": id_uc}, "ordem_inspecao")
+            inspections.extend(LossInspectionDTO.model_validate(row) for row in order_rows)
+        return sorted(inspections, key=lambda inspection: inspection.data_inspecao or "", reverse=True)
+
+    async def _has_portal_orders_table(self) -> bool:
+        """`ordem_inspecao` só existe depois que o módulo de perdas foi usado; sua ausência é tolerada."""
+        return await self.session.run_sync(
+            lambda sync_session: inspect(sync_session.connection()).has_table("ordem_inspecao")
+        )
 
     async def _fetch_rows(
         self, query: TextClause, params: Mapping[str, str | int], table_name: str

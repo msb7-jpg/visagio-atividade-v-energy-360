@@ -118,7 +118,9 @@ REGISTRY_AND_MEASUREMENT_DDL = (
     ),
     "CREATE TABLE fato_medicao (id_uc TEXT, competencia TEXT, consumo_kwh REAL)",
 )
-FIELD_HISTORY_DDL = "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT)"
+FIELD_HISTORY_DDL = (
+    "CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, data_inspecao TEXT, irregularidade_constatada BOOLEAN)"
+)
 FIELD_HISTORY_OUTSIDE_CONTRACT_DDL = "CREATE TABLE fato_inspecoes_perdas (id_inspecao TEXT)"
 ONE_MEASUREMENT_DML = "INSERT INTO fato_medicao VALUES ('UC1', '2026-01', 10)"
 

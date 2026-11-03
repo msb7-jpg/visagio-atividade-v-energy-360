@@ -149,7 +149,6 @@ def build_update(row: RawRow) -> InspectionOrderUpdateDTO | None:
     has_details = irregularity is True
     update = InspectionOrderUpdateDTO(
         status=InspectionStatus.CONCLUIDA,
-        fiscal_responsavel=text_or_none(cells.get("fiscal_responsavel")),
         inspetor=text_or_none(cells.get("inspetor")),
         data_inspecao=inspection_date,
         irregularidade_constatada=irregularity,

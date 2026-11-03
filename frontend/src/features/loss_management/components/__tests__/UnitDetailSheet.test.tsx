@@ -123,7 +123,11 @@ describe('Painel de detalhe da UC', () => {
       retorno_esperado_valor_ano_rs: 0,
       taxa_acerto: { inspecoes_total: 10, irregularidades_confirmadas: 6, taxa: 0.6, periodo_inicio: null, periodo_fim: null }
     })
-    mockedApi.getQueueFilters.mockResolvedValue({ municipios: [], classes: [] })
+    mockedApi.getQueueFilters.mockResolvedValue({
+      municipios: [],
+      classes: [],
+      contagens: { municipios: {}, classes: {}, motivos: {} }
+    })
     mockedApi.listInspections.mockResolvedValue([])
   })
 
@@ -138,7 +142,18 @@ describe('Painel de detalhe da UC', () => {
     expect(within(panel).getByText('× 93%')).toBeInTheDocument()
     expect(within(panel).getByText('= 5.133,6 kWh')).toBeInTheDocument()
     expect(within(panel).getByText('Score 86 de 100')).toBeInTheDocument()
-    expect(mockedApi.getUnitDetail).toHaveBeenCalledWith('UC100002', expect.anything())
+    expect(mockedApi.getUnitDetail).toHaveBeenCalledWith('UC100002', false, expect.anything())
+  })
+
+  it('pede o histórico completo ao escolher "Tudo" e volta aos 12 meses ao fechar o painel', async () => {
+    renderPage()
+    await openByClick()
+    const panel = await screen.findByRole('dialog', { name: 'UC100002' })
+
+    fireEvent.click(await within(panel).findByRole('tab', { name: 'Tudo' }))
+
+    await waitFor(() => expect(mockedApi.getUnitDetail).toHaveBeenCalledWith('UC100002', true, expect.anything()))
+    expect(await within(panel).findByText('Consumo no histórico da UC')).toBeInTheDocument()
   })
 
   it('abre por teclado com Enter na linha e mostra a data no formato brasileiro', async () => {
@@ -243,6 +258,26 @@ describe('Painel de detalhe da UC', () => {
     await openByClick()
 
     expect(await screen.findByRole('button', { name: 'Gerar ordem desta UC' })).toBeDisabled()
+  })
+
+  it('oferece "Abrir na UC 360", com o mesmo destino do link da tabela, ao lado do botão de gerar ordem', async () => {
+    renderPage()
+    await openByClick()
+
+    const panel = await screen.findByRole('dialog', { name: 'UC100002' })
+
+    expect(within(panel).getByRole('link', { name: 'Abrir na UC 360' })).toHaveAttribute('href', '/customers?uc=UC100002')
+    expect(await within(panel).findByRole('button', { name: 'Gerar ordem desta UC' })).toBeEnabled()
+  })
+
+  it('diretor, que só consulta, também pode abrir a UC na Visão 360', async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: { role: 'diretor' } } as ReturnType<typeof useAuth>)
+    renderPage()
+    await openByClick()
+
+    const panel = await screen.findByRole('dialog', { name: 'UC100002' })
+
+    expect(within(panel).getByRole('link', { name: 'Abrir na UC 360' })).toHaveAttribute('href', '/customers?uc=UC100002')
   })
 
   it('diretor abre o painel, mas não vê o botão de gerar ordem', async () => {

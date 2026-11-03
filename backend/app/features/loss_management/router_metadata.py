@@ -15,7 +15,9 @@ list_suspicious_units_doc = EndpointDoc(
         "de 20% a 50% é 'queda_moderada', com 'probabilidade_acerto' calibrada por faixa (42% de 30% a 50%; "
         "7% de 20% a 30%), então o topo da fila continua sendo a queda súbita. Exclui UCs com geração "
         "distribuída e as já inspecionadas dentro da janela de análise (ordem concluída ou histórico de "
-        "campo) e as com ordem cancelada por 'cliente_regularizou' ou 'endereco_nao_localizado' nos últimos 90 "
+        "campo). Quando a inspeção constatou irregularidade, a UC fica fora por 12 meses e volta antes só com "
+        "uma nova queda súbita, posterior à inspeção. Também saem as com ordem cancelada por "
+        "'cliente_regularizou' ou 'endereco_nao_localizado' nos últimos 90 "
         "dias; os demais motivos de cancelamento devolvem a UC à fila. UCs com ordem "
         "ativa seguem na lista, com `situacao` ordem_gerada ou em_campo. Cada UC traz `score` de 0 a 100 (kWh "
         "esperado relativo ao topo da fila). Filtros por município, bairro, classe e motivo; "
@@ -47,7 +49,8 @@ unit_detail_doc = EndpointDoc(
         "Devolve, para uma UC que está na fila agora (com ou sem ordem gerada ou em campo): identificação e "
         "situação; o motivo, com uma frase em pt-BR gerada dos números reais da UC; a conta do score "
         "(kWh recuperável da janela x chance de acerto = kWh esperado; score = kWh esperado / maior kWh esperado "
-        "da fila x 100); o consumo mensal das 12 últimas competências (mês sem leitura válida vem com "
+        "da fila x 100); o consumo mensal das 12 últimas competências, ou desde a primeira leitura da UC com "
+        "`historico_completo=true`, sempre até a competência da análise (mês sem leitura válida vem com "
         "`consumo_kwh` nulo, nunca zero) e as inspeções anteriores (histórico de campo e ordens concluídas no "
         "portal; lista vazia se a UC nunca foi inspecionada). UC com ordem concluída ou inspecionada na janela "
         "de análise sai da fila e responde 404, assim como a UC cancelada por cliente regularizado ou endereço "
@@ -80,8 +83,12 @@ queue_summary_doc = EndpointDoc(
 
 queue_filters_doc = EndpointDoc(
     summary="Opções dos filtros da Fila de Inspeção",
-    description="Lista os municípios e as classes de consumo presentes no cadastro de UCs, em ordem alfabética.",
-    response_description="Municípios e classes disponíveis para filtrar a fila.",
+    description=(
+        "Lista os municípios e as classes de consumo do cadastro de UCs, em ordem alfabética, e quantas UCs da fila "
+        "cada município, classe e motivo devolve (0 quando nenhuma). A contagem é sobre a fila inteira, "
+        "sem outros filtros."
+    ),
+    response_description="Municípios e classes para filtrar a fila, com a contagem de UCs de cada opção.",
     responses={
         **AUTH_ERROR_RESPONSES,
         500: {"description": "Falha ao consultar o cadastro de UCs."},

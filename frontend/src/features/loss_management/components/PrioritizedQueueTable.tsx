@@ -29,13 +29,16 @@ const COLUMNS = [
   'UC',
   'Bairro / município',
   'Classe',
-  'Score',
   'Queda',
   'Chance de acerto',
   'kWh/mês',
   'R$/ano',
+  'Score',
   'Situação'
 ] as const
+
+/** A fila vem ordenada do maior para o menor kWh esperado, e o score cresce junto com ele: a seta mostra isso. */
+const SORTED_COLUMN = 'Score'
 
 interface PrioritizedQueueTableProps {
   units: SuspiciousUnit[]
@@ -88,10 +91,13 @@ export function PrioritizedQueueTable({
               />
             </TableHead>
             {COLUMNS.map((column) => (
-              <TableHead key={column}>
+              <TableHead key={column} aria-sort={column === SORTED_COLUMN ? 'descending' : undefined}>
                 {COLUMN_HELP[column] ? (
                   <Tooltip content={COLUMN_HELP[column]}>
-                    <Button type="button" variant="link" size="sm">{column}</Button>
+                    <Button type="button" variant="link" size="sm">
+                      {column}
+                      {column === SORTED_COLUMN ? <span aria-hidden="true"> ↓</span> : null}
+                    </Button>
                   </Tooltip>
                 ) : column}
               </TableHead>

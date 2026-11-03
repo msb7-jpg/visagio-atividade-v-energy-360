@@ -49,7 +49,7 @@ describe('PrioritizedQueueTable', () => {
     renderTable([buildUnit('UC1', { meses_base: 3 })])
 
     const row = screen.getByRole('link', { name: 'UC1' }).closest('tr') as HTMLElement
-    expect(within(row).getByText('Ligação recente: base de 3 meses')).toBeInTheDocument()
+    expect(within(row).getByText('Ligação recente: 3 meses de base + 3 recentes')).toBeInTheDocument()
   })
 
   it.each([12, 11])('não avisa nada quando a UC tem %i meses de base', (baseMonths) => {
@@ -180,6 +180,35 @@ describe('PrioritizedQueueTable', () => {
 
     expect(within(screen.getByRole('row', { name: /UC1/ })).getByText('93%')).toBeInTheDocument()
     expect(within(screen.getByRole('row', { name: /UC2/ })).getByText('7%')).toBeInTheDocument()
+  })
+
+  it('organiza as colunas com a chance e o score no fim da linha, e a seta de ordem no cabeçalho do score', () => {
+    renderTable([buildUnit('UC1', { probabilidade_acerto: 0.93 })])
+
+    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent?.replace(/\s+/g, ' ').trim())
+    expect(headers).toEqual(['', '#', 'UC', 'Bairro / município', 'Classe', 'Queda', 'Chance de acerto', 'kWh/mês', 'R$/ano', 'Score ↓', 'Situação'])
+
+    const cells = within(screen.getByRole('row', { name: /UC1/ })).getAllByRole('cell')
+    expect(cells[6]).toHaveTextContent('93%')
+    expect(within(cells[9]).getByRole('meter')).toBeInTheDocument()
+    expect(cells[10]).toHaveTextContent('Na fila')
+  })
+
+  it('informa aos leitores de tela que a tabela está em ordem decrescente de score, e só nessa coluna', () => {
+    renderTable([buildUnit('UC1')])
+
+    expect(screen.getByRole('columnheader', { name: /Score/ })).toHaveAttribute('aria-sort', 'descending')
+    expect(screen.getByRole('columnheader', { name: 'Queda' })).not.toHaveAttribute('aria-sort')
+  })
+
+  it('mostra a chance de acerto como selo verde na faixa prioritária e neutro na de baixa chance', () => {
+    renderTable([
+      buildUnit('UC1', { probabilidade_acerto: 0.93 }),
+      buildUnit('UC2', { probabilidade_acerto: 0.07 })
+    ])
+
+    expect(within(screen.getByRole('row', { name: /UC1/ })).getByText('93%').className).toContain('text-success')
+    expect(within(screen.getByRole('row', { name: /UC2/ })).getByText('7%').className).not.toContain('text-success')
   })
 
   it('não repete o motivo em cada linha da tabela', () => {

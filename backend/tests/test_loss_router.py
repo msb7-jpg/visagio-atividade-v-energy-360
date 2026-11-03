@@ -27,8 +27,10 @@ SEED_UNITS = [
 ]
 
 # Janela de análise da última competência (2026-01) começa em 2024-11: só inspeções a partir dela excluem a UC.
+# A inspeção de UC_INSPECIONADA não achou irregularidade (0): com irregularidade e queda súbita nova, a UC voltaria
+# antes dos 12 meses de reincidência (test_loss_reincidence.py).
 SEED_INSPECTIONS = [
-    ("IN1", "UC_INSPECIONADA", "2025-08-10", 1),
+    ("IN1", "UC_INSPECIONADA", "2025-08-10", 0),
     ("IN2", "UC_INSPECAO_ANTIGA", "2023-05-02", 0),
 ]
 # Inspetor de cada inspeção acima, na mesma ordem; fora de ordem de propósito para provar a ordenação da lista.
@@ -255,6 +257,7 @@ async def test_inspection_lifecycle(client):
     order = created.json()
     assert order["status"] == "gerada"
     assert order["criado_por"] == "perdas@venergy.com"
+    assert order["fiscal_responsavel"] is None
 
     duplicated = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
     assert duplicated.status_code == 409
