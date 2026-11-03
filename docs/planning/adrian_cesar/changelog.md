@@ -1024,3 +1024,16 @@
   - As regras estavam espalhadas entre `DECISOES_PERDAS.md`, o código e o changelog; o arquivo novo as conferiu contra o código de 2026-11-03.
 - **Validação de Testes:** só documentação, nada executado.
 
+### [2026-11-03] - Conferência no navegador: gráfico com histórico completo e filtro de situação
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - Conferidos em `localhost:5173/losses`, **só leitura** (nenhuma ordem gerada, cancelada ou alterada; filtros limpos ao final):
+  - Detalhe da UC109003, aba "Tudo": eixo de dez/2022 a jun/2026 e legenda das faixas (3 últimos meses e 12 anteriores).
+  - Filtro de situação com contagens "Na fila (158)", "Ordem gerada (6)", "Em campo (0)"; "Ordem gerada" lista as 6 UCs. O Top 10 com esse filtro pediu `situacao=na_fila` e recebeu 200.
+- **Dificuldades / Desafios:**
+  - A captura de tela do navegador deu timeout (renderer sem foco); a conferência usou a árvore de acessibilidade e as requisições de rede, sem imagem.
+  - Um 503 em `situacao=ordem_gerada` na primeira tentativa, que não se repetiu: o backend recarregou por causa das edições feitas na hora. A segunda chamada voltou 200.
+  - Não foi possível testar a troca de UC com o painel aberto no navegador (o painel é modal); esse caso fica coberto por `UnitDetailSheetSwitch.test.tsx`.
+  - Observação: depois do Top 10 sem UC livre prioritária, a tela fica na faixa "Baixa chance" (vazia) mesmo ao trocar para um filtro com prioritárias. Não corrigido; fica como ajuste de acabamento.
+- **Validação de Testes:** sem mudança de código nesta entrada.
+
