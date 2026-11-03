@@ -83,8 +83,12 @@ queue_summary_doc = EndpointDoc(
 
 queue_filters_doc = EndpointDoc(
     summary="Opções dos filtros da Fila de Inspeção",
-    description="Lista os municípios e as classes de consumo presentes no cadastro de UCs, em ordem alfabética.",
-    response_description="Municípios e classes disponíveis para filtrar a fila.",
+    description=(
+        "Lista os municípios e as classes de consumo do cadastro de UCs, em ordem alfabética, e quantas UCs da fila "
+        "cada município, classe e motivo devolve (0 quando nenhuma). A contagem é sobre a fila inteira, "
+        "sem outros filtros."
+    ),
+    response_description="Municípios e classes para filtrar a fila, com a contagem de UCs de cada opção.",
     responses={
         **AUTH_ERROR_RESPONSES,
         500: {"description": "Falha ao consultar o cadastro de UCs."},

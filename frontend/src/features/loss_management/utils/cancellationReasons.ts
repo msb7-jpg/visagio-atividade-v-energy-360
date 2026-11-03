@@ -32,6 +32,21 @@ export function describeQueueEffect(reason: CancellationReason, idUc: string): s
   return `A UC ${idUc} volta para a fila e o score é recalculado no próximo processamento.`
 }
 
+const MS_PER_DAY = 86_400_000
+
+/**
+ * Diz o que aconteceu com a UC na fila depois de cancelada a ordem, para o cartão do quadro.
+ *
+ * @param reason - Motivo gravado na ordem.
+ * @param canceledAt - Instante do cancelamento em ISO 8601.
+ * @returns "UC fora da fila por 90 dias (até DD/MM/AAAA)" ou "UC voltou à fila na hora".
+ */
+export function describeCancellationOutcome(reason: CancellationReason, canceledAt: string): string {
+  if (!QUEUE_BLOCKING_REASONS.includes(reason)) return 'UC voltou à fila na hora'
+  const releaseDate = new Date(new Date(canceledAt).getTime() + QUEUE_BLOCK_DAYS * MS_PER_DAY)
+  return `UC fora da fila por ${QUEUE_BLOCK_DAYS} dias (até ${releaseDate.toLocaleDateString('pt-BR')})`
+}
+
 /**
  * Texto do motivo de cancelamento para o cartão e a lista.
  *

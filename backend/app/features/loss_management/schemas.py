@@ -257,8 +257,17 @@ class QueueSummaryDTO(BaseModel):
     taxa_acerto: HitRateDTO
 
 
+class QueueFilterCountsDTO(BaseModel):
+    """UCs da fila inteira (sem filtro) que cada opção devolve; 0 quando nenhuma UC da fila tem aquele valor."""
+
+    municipios: dict[str, int] = Field(default_factory=dict)
+    classes: dict[str, int] = Field(default_factory=dict)
+    motivos: dict[str, int] = Field(default_factory=dict, description="Por motivo; uma UC conta em cada motivo que tem")
+
+
 class QueueFiltersDTO(BaseModel):
-    """Opções dos filtros da tela, vindas do cadastro de UCs."""
+    """Opções dos filtros da tela, vindas do cadastro de UCs, com quantas UCs da fila cada uma devolve."""
 
     municipios: list[str]
     classes: list[str]
+    contagens: QueueFilterCountsDTO = Field(default_factory=QueueFilterCountsDTO)

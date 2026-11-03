@@ -134,7 +134,15 @@ describe('Fila de Inspeção', () => {
       kwh_mes_selecionadas: selectedIds.length * 1000,
       retorno_esperado_kwh_mes: selectedIds.length * 627
     }))
-    mockedApi.getQueueFilters.mockResolvedValue({ municipios: ['Olinda', 'Recife'], classes: ['Comercial', 'Residencial'] })
+    mockedApi.getQueueFilters.mockResolvedValue({
+      municipios: ['Olinda', 'Recife'],
+      classes: ['Comercial', 'Residencial'],
+      contagens: {
+        municipios: { Olinda: 15, Recife: 71 },
+        classes: { Comercial: 1, Residencial: 161 },
+        motivos: { queda_subita: 0, queda_moderada: 162, leitura_zerada: 0 }
+      }
+    })
     mockedApi.listInspections.mockResolvedValue([buildOrder('UC100001'), buildOrder('UC100004')])
     mockedApi.createInspection.mockImplementation(async ({ id_uc: idUc }) => buildOrder(idUc))
   })
@@ -147,14 +155,23 @@ describe('Fila de Inspeção', () => {
     expect(await screen.findByRole('tab', { name: /Ordens de inspeção \(2\)/ })).toBeInTheDocument()
   })
 
-  it('mostra só os cartões de energia recuperável e de retorno esperado, com a tarifa visível', async () => {
+  it('mostra a tarifa em uma pílula sob o título, sem cartões de resumo, e a faixa só com UC marcada', async () => {
     renderPage()
 
-    expect(await screen.findByText('Energia recuperável das selecionadas')).toBeInTheDocument()
-    expect(screen.getByText('Retorno esperado')).toBeInTheDocument()
-    expect(screen.getByText(/Tarifa média de 12 meses/)).toBeInTheDocument()
+    expect(await screen.findByText(/Tarifa média de 12 meses/)).toBeInTheDocument()
+    expect(screen.queryByText('Energia recuperável das selecionadas')).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Resumo da seleção' })).not.toBeInTheDocument()
     expect(screen.queryByText('Capacidade do mês')).not.toBeInTheDocument()
     expect(screen.queryByText('Taxa de acerto histórica')).not.toBeInTheDocument()
+  })
+
+  it('não mostra o aviso de capacidade da equipe, mesmo com poucas UCs prioritárias livres', async () => {
+    renderPage()
+    await rowOf('UC100002')
+    await screen.findByText(/Tarifa média de 12 meses/)
+
+    expect(screen.queryByText(/para uma capacidade de/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/de baixa chance acertam? no máximo/)).not.toBeInTheDocument()
   })
 
   it('lista a UC com score, queda, chance de acerto, kWh por mês, valor por ano e link para a Visão 360', async () => {
@@ -192,8 +209,28 @@ describe('Fila de Inspeção', () => {
 
     expect(await screen.findByRole('button', { name: 'Gerar 2 ordens' })).toBeEnabled()
     await waitFor(() => expect(mockedApi.getQueueSummary).toHaveBeenLastCalledWith(['UC100002', 'UC100003'], expect.anything()))
-    expect(await screen.findByText('2.000')).toBeInTheDocument()
-    expect(screen.getByText('1.254')).toBeInTheDocument()
+    const strip = await screen.findByRole('region', { name: 'Resumo da seleção' })
+    expect(await within(strip).findByText('2.000 kWh/mês · R$ 0/ano')).toBeInTheDocument()
+    expect(within(strip).getByText('1.254 kWh/mês · R$ 0/ano')).toBeInTheDocument()
+  })
+
+  it('mostra a faixa da seleção com os números do servidor e limpa a seleção pelo botão', async () => {
+    renderPage()
+    await rowOf('UC100002')
+    expect(screen.queryByRole('region', { name: 'Resumo da seleção' })).not.toBeInTheDocument()
+
+    fireEvent.click(within(await rowOf('UC100002')).getByRole('checkbox'))
+    fireEvent.click(within(await rowOf('UC100003')).getByRole('checkbox'))
+
+    const strip = await screen.findByRole('region', { name: 'Resumo da seleção' })
+    expect(within(strip).getByText('2 selecionadas')).toBeInTheDocument()
+    expect(await within(strip).findByText('2.000 kWh/mês · R$ 0/ano')).toBeInTheDocument()
+
+    fireEvent.click(within(strip).getByRole('button', { name: 'Limpar seleção' }))
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Resumo da seleção' })).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /^Gerar 0 ordens/ })).toBeDisabled()
+    expect(within(await rowOf('UC100002')).getByRole('checkbox')).not.toBeChecked()
   })
 
   it('seleciona o topo da fila pulando as UCs que já têm ordem', async () => {
@@ -390,7 +427,7 @@ describe('Fila de Inspeção', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
 
-    expect(await screen.findByRole('button', { name: 'Exportar planilha de campo' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Exportar para o campo (CSV)' })).toBeInTheDocument()
   })
 
   it('para o diretor, que só consulta, não mostra "Gerar" nem os botões de ação das ordens', async () => {
@@ -405,10 +442,10 @@ describe('Fila de Inspeção', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
 
-    expect(await screen.findByRole('button', { name: 'Exportar planilha de campo' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Exportar para o campo (CSV)' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Importar resultados de campo' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Registrar achado' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^Enviar a campo/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Despachar/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Cancelar/ })).not.toBeInTheDocument()
   })
 
@@ -420,14 +457,22 @@ describe('Fila de Inspeção', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
 
     expect(await screen.findByRole('button', { name: 'Importar resultados de campo' })).toBeInTheDocument()
-    expect((await screen.findAllByRole('button', { name: /^Enviar a campo/ })).length).toBeGreaterThan(0)
+    expect((await screen.findAllByRole('button', { name: /^Despachar/ })).length).toBeGreaterThan(0)
   })
 
   it('mostra município e classe com acento e sem caixa alta, e filtra pelo valor do banco', async () => {
     mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([
       { ...buildUnit('UC100002', 91), municipio: 'SAO LOURENCO DA MATA', classe_consumo: 'PODER PUBLICO' }
     ]))
-    mockedApi.getQueueFilters.mockResolvedValue({ municipios: ['SAO LOURENCO DA MATA'], classes: ['PODER PUBLICO'] })
+    mockedApi.getQueueFilters.mockResolvedValue({
+      municipios: ['SAO LOURENCO DA MATA'],
+      classes: ['PODER PUBLICO'],
+      contagens: {
+        municipios: { 'SAO LOURENCO DA MATA': 3 },
+        classes: { 'PODER PUBLICO': 1 },
+        motivos: { queda_subita: 0, queda_moderada: 1, leitura_zerada: 0 }
+      }
+    })
     renderPage()
 
     const row = await rowOf('UC100002')
@@ -441,7 +486,7 @@ describe('Fila de Inspeção', () => {
       { municipio: 'SAO LOURENCO DA MATA' },
       expect.anything()
     ))
-    expect(screen.getByRole('option', { name: 'Poder Público' })).toHaveValue('PODER PUBLICO')
+    expect(screen.getByRole('option', { name: 'Poder Público (1)' })).toHaveValue('PODER PUBLICO')
   })
 
   it('mostra "Limpar filtros" só com filtro ativo e volta à fila inteira ao clicar', async () => {

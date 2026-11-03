@@ -22,6 +22,8 @@ const STATUS_VOCABULARY = {
     pendente: { label: 'Pendente', tone: 'warning' },
     ordem_gerada: { label: 'Ordem gerada', tone: 'warning' },
     em_campo: { label: 'Em campo', tone: 'accent' },
+    gerada: { label: 'Gerada', tone: 'warning' },
+    pendente_em_campo: { label: 'Pendente (em campo)', tone: 'accent' },
     concluida: { label: 'Concluída', tone: 'success' },
     cancelada: { label: 'Cancelada', tone: 'muted' }
   },

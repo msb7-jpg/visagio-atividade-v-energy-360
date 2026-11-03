@@ -4,7 +4,7 @@ import csv
 import io
 from collections.abc import Sequence
 
-from app.features.loss_management.schemas import InspectionOrderDTO
+from app.features.loss_management.schemas import InspectionOrderDTO, InspectionStatus
 
 CSV_DELIMITER = ";"  # o Excel em pt-BR usa ';' como separador de lista
 UTF8_BOM = "﻿"  # faz o Excel reconhecer os acentos
@@ -20,7 +20,7 @@ PREFILLED_COLUMNS = (
 )
 FIELD_RESULT_COLUMNS = (
     "data_inspecao",
-    "inspetor",
+    "inspetor_selecionado",
     "irregularidade_constatada",
     "tipo_irregularidade",
     "kwh_recuperado",
@@ -53,6 +53,16 @@ def format_irregularity(found: bool | None) -> str:
     return "sim" if found else "nao"
 
 
+def format_selected_inspector(order: InspectionOrderDTO) -> str:
+    """Inspetor escolhido ao enviar a ordem a campo; em branco se ainda não foi a campo ou não tem inspetor.
+
+    O envio a campo pode ou não indicar um inspetor, então vazio é um valor válido que a equipe preenche.
+    """
+    if order.status != InspectionStatus.PENDENTE:
+        return ""
+    return neutralize_formula(order.inspetor or "")
+
+
 def build_field_result_values(order: InspectionOrderDTO) -> list[str]:
     """Colunas de retorno de campo: o que já está salvo na ordem, ou em branco para a equipe preencher.
 
@@ -61,7 +71,7 @@ def build_field_result_values(order: InspectionOrderDTO) -> list[str]:
     """
     return [
         order.data_inspecao.isoformat() if order.data_inspecao else "",
-        neutralize_formula(order.inspetor or ""),
+        format_selected_inspector(order),
         format_irregularity(order.irregularidade_constatada),
         neutralize_formula(order.tipo_irregularidade or ""),
         format_kwh(order.kwh_recuperado) if order.kwh_recuperado is not None else "",

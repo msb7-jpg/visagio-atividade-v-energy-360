@@ -90,6 +90,11 @@ fora (1.385 de 1.389 entram).
   mostra essa razão de 1,87× como nota, sem alterar o número exibido. Segue em 3 (valor da primeira versão); se
   a diretoria for citar valores absolutos, o time deve decidir se ajusta.
 - **Limite da evidência:** uma única competência de referência e uma amostra de 188 UCs.
+- **Origem e uso na ordem:** o 3 foi definido pela própria fatia 05 na primeira versão da fila (commit `da14cf0`,
+  2026-10-19), sem fonte regulatória; é a constante `JANELA_RECUPERACAO_MESES` em `scoring.py`. Ao gerar a ordem, o
+  servidor grava o resultado em `kwh_estimado` (`order_estimated_kwh`; 0 para UC com GD, sem leitura recente ou sem
+  suspeita) e o CSV de campo exporta o valor **gravado**, sem recalcular. Mudar a constante vale só para as ordens
+  criadas depois; as ativas mantêm o valor antigo, então a planilha pode misturar escalas até serem recalculadas.
 
 ### D8. Tarifa média calculada da base de faturamento
 - **Decisão:** o R$ a recuperar usa a tarifa média ponderada dos últimos 12 meses de `fato_faturamento`:

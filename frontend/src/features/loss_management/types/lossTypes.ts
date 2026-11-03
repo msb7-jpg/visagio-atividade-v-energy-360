@@ -91,10 +91,20 @@ export interface QueueSummary {
   taxa_acerto: HitRate
 }
 
-/** Opções dos filtros de município e classe (`GET /losses/queue-filters`). */
+/** Quantas UCs da fila inteira (sem filtro) cada opção devolve; 0 quando nenhuma UC da fila tem aquele valor. */
+export interface QueueFilterCounts {
+  municipios: Record<string, number>
+  classes: Record<string, number>
+  /** Por motivo; uma UC conta em cada motivo que tem. */
+  motivos: Partial<Record<SuspicionReason, number>>
+}
+
+/** Opções dos filtros de município e classe, com a contagem de cada opção (`GET /losses/queue-filters`). */
 export interface QueueFilterOptions {
   municipios: string[]
   classes: string[]
+  /** Ausente quando o backend ainda é anterior à contagem (versões diferentes em desenvolvimento). */
+  contagens?: QueueFilterCounts
 }
 
 /** UC cuja ordem não pôde ser gerada em um lote, com o motivo. */

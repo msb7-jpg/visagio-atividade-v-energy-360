@@ -440,7 +440,22 @@ async def test_queue_filters_list_available_municipalities_and_classes(client: A
     response = await client.get(f"{BASE_URL}/queue-filters", headers=headers)
 
     assert response.status_code == 200
-    assert response.json() == {"municipios": ["Recife"], "classes": ["Residencial"]}
+    assert (response.json()["municipios"], response.json()["classes"]) == (["Recife"], ["Residencial"])
+
+
+async def test_queue_filters_count_exactly_the_units_each_option_returns(client: AsyncClient):
+    headers = await auth_headers(client, "perdas@venergy.com")
+    queue_url = f"{BASE_URL}/suspicious-units"
+
+    counts = (await client.get(f"{BASE_URL}/queue-filters", headers=headers)).json()["contagens"]
+
+    assert set(counts["motivos"]) == {"queda_subita", "queda_moderada", "leitura_zerada"}
+    for filter_name, key in (("municipio", "municipios"), ("classe", "classes")):
+        for option, count in counts[key].items():
+            returned = (await client.get(queue_url, headers=headers, params={filter_name: option})).json()["total"]
+            assert returned == count > 0
+    for reason, count in counts["motivos"].items():
+        assert (await client.get(queue_url, headers=headers, params={"motivo": reason})).json()["total"] == count
 
 
 def test_ranking_without_limit_returns_every_unit_and_an_empty_queue_has_no_score():

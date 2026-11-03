@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button'
-import { SelectionSummary } from '@/features/loss_management/components/SelectionSummary'
 import { useCanWriteLosses } from '@/features/loss_management/hooks/useCanWriteLosses'
 import type { SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
 import { ordersLabel } from '@/features/loss_management/utils/lossFormatters'
@@ -13,10 +12,11 @@ interface QueueActionsBarProps {
 }
 
 /**
- * Ações da fila: resumo da seleção, selecionar o topo e gerar as ordens das UCs marcadas. A exportação fica na aba Ordens.
+ * Ações da fila: selecionar o topo e gerar as ordens das UCs marcadas. O resumo da seleção fica na `SelectionStrip`
+ * e a exportação na aba Ordens.
  *
  * @param props - UCs marcadas e os callbacks.
- * @returns Linha com resumo e botões; "Gerar" fica desligado sem UC marcada e não aparece para quem só consulta.
+ * @returns Linha com os botões; "Gerar" fica desligado sem UC marcada e não aparece para quem só consulta.
  */
 export function QueueActionsBar({ selectedUnits, onSelectTop, onGenerate }: QueueActionsBarProps) {
   const canWrite = useCanWriteLosses()
@@ -24,7 +24,6 @@ export function QueueActionsBar({ selectedUnits, onSelectTop, onGenerate }: Queu
 
   return (
     <div className="ml-auto flex flex-wrap items-center gap-3">
-      <SelectionSummary units={selectedUnits} />
       <Button type="button" variant="outline" size="sm" aria-label={`Selecionar top ${TOP_SELECTION_COUNT} prioritárias`} onClick={onSelectTop}>
         Top {TOP_SELECTION_COUNT}
       </Button>

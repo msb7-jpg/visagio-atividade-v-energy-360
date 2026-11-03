@@ -5,6 +5,7 @@ import asyncio
 from app.features.loss_management.exceptions import ActiveOrderConflictError, InspectionConflictError
 from app.features.loss_management.export import render_field_orders_csv
 from app.features.loss_management.queries import SuspicionFilters
+from app.features.loss_management.queue_filter_options import build_queue_filter_options
 from app.features.loss_management.queue_summary import apply_situation, build_queue_summary, hit_rate_dto
 from app.features.loss_management.queue_territory import filter_by_territory
 from app.features.loss_management.repository import LossRepository
@@ -119,10 +120,9 @@ class LossService:
             queue_filter: Filtros de município, bairro, classe e motivo, e a página (`offset` e `limit`).
 
         Returns:
-            UCs suspeitas, com score de 0 a 100 e situação (na fila, ordem gerada ou em campo), em ordem
-            decrescente de kWh esperado (a recuperar x taxa de acerto do sinal), só a página pedida (`offset` e
-            `limit`), o total antes do corte da página e os avisos de degradação da análise
-            (ex.: histórico de campo não aplicado).
+            UCs suspeitas com score de 0 a 100 e situação (na fila, ordem gerada ou em campo), em ordem decrescente
+            de kWh esperado (a recuperar x taxa de acerto do sinal), só a página pedida (`offset` e `limit`), o
+            total antes do corte e os avisos de degradação da análise (ex.: histórico de campo não aplicado).
 
         Raises:
             DatabaseReadError: Se as tabelas Gold não puderem ser consultadas.
@@ -175,15 +175,15 @@ class LossService:
         return build_queue_summary(selected_units, scheduled_orders, hit_rate, tariff)
 
     async def list_queue_filters(self) -> QueueFiltersDTO:
-        """Lista as opções dos filtros de município e classe da tela.
+        """Lista as opções dos filtros da tela, cada uma com quantas UCs da fila ela devolve.
 
         Returns:
-            Municípios e classes presentes no cadastro de UCs.
+            Municípios e classes do cadastro de UCs e a contagem por município, classe e motivo.
 
         Raises:
-            DatabaseReadError: Se o cadastro de UCs não puder ser consultado.
+            DatabaseReadError: Se as tabelas Gold não puderem ser consultadas.
         """
-        return await self.repository.fetch_filter_options()
+        return await build_queue_filter_options(self.repository)
 
     async def list_inspectors(self) -> list[InspectorDTO]:
         """Lista os inspetores de campo para os seletores de inspetor.

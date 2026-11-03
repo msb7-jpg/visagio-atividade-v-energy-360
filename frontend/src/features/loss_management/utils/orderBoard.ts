@@ -15,8 +15,8 @@ export interface BoardColumn {
  * e "gerada" a que ainda aguarda envio; o quadro usa os rótulos do fluxo de negócio.
  */
 export const BOARD_COLUMNS: readonly BoardColumn[] = [
-  { status: 'gerada', label: 'Pendente', badge: 'pendente' },
-  { status: 'pendente', label: 'Em campo', badge: 'em_campo' },
+  { status: 'gerada', label: 'Gerada', badge: 'gerada' },
+  { status: 'pendente', label: 'Pendente (em campo)', badge: 'pendente_em_campo' },
   { status: 'concluida', label: 'Concluída', badge: 'concluida' },
   { status: 'cancelada', label: 'Cancelada', badge: 'cancelada' }
 ]
@@ -32,26 +32,12 @@ export const ACTIONS_BY_STATUS: Record<InspectionStatus, readonly OrderActionKin
 }
 
 export const ACTION_LABELS: Record<OrderActionKind, string> = {
-  dispatch: 'Enviar a campo',
+  dispatch: 'Despachar',
   result: 'Registrar resultado',
   cancel: 'Cancelar'
 }
 
 const ORDER_NUMBER_DIGITS = 4
-const MS_PER_DAY = 86_400_000
-
-/**
- * Diz há quanto tempo a ordem foi criada, para a equipe ver o que está parado.
- *
- * @param createdAt - Data de criação em ISO 8601.
- * @param now - Instante de referência em milissegundos (a hora atual por padrão).
- * @returns "hoje", "há 1 dia" ou "há N dias" (data futura conta como hoje).
- */
-export function formatOrderAge(createdAt: string, now: number = Date.now()): string {
-  const days = Math.max(0, Math.floor((now - new Date(createdAt).getTime()) / MS_PER_DAY))
-  if (days === 0) return 'hoje'
-  return days === 1 ? 'há 1 dia' : `há ${days} dias`
-}
 
 /**
  * Agrupa as ordens por status, preservando a ordem recebida dentro de cada coluna.

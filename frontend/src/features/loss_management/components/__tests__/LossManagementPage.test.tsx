@@ -111,7 +111,11 @@ describe('LossManagementPage', () => {
     vi.clearAllMocks()
     mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([suspiciousUnit]))
     mockedApi.getQueueSummary.mockResolvedValue(summaryFixture)
-    mockedApi.getQueueFilters.mockResolvedValue({ municipios: [], classes: [] })
+    mockedApi.getQueueFilters.mockResolvedValue({
+      municipios: [],
+      classes: [],
+      contagens: { municipios: {}, classes: {}, motivos: {} }
+    })
     mockedApi.listInspections.mockResolvedValue([])
     mockedApi.listInspectors.mockResolvedValue([{ codigo: 'INSP-007' }, { codigo: 'INSP-014' }])
     mockedApi.createInspection.mockResolvedValue(buildOrder({}))
@@ -123,7 +127,7 @@ describe('LossManagementPage', () => {
     renderPage()
     await openOrdersTab()
 
-    expect(screen.getByRole('button', { name: /Exportar planilha de campo/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Exportar para o campo/ })).toBeDisabled()
   })
 
   it('habilita a exportação quando há ordem pendente em campo', async () => {
@@ -131,7 +135,7 @@ describe('LossManagementPage', () => {
     renderPage()
     await openOrdersTab()
 
-    expect(screen.getByRole('button', { name: /Exportar planilha de campo/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /Exportar para o campo/ })).toBeEnabled()
   })
 
   it('envia ordem gerada para campo com o inspetor escolhido na lista', async () => {
@@ -139,7 +143,7 @@ describe('LossManagementPage', () => {
     renderPage()
     const board = await openOrdersTab()
 
-    fireEvent.click(within(board).getByRole('button', { name: /^Enviar a campo OI-/ }))
+    fireEvent.click(within(board).getByRole('button', { name: /^Despachar OI-/ }))
     await screen.findByRole('option', { name: 'INSP-014' })
     fireEvent.change(screen.getByLabelText('Inspetor'), { target: { value: 'INSP-014' } })
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar envio' }))
@@ -169,7 +173,7 @@ describe('LossManagementPage', () => {
     const concludedColumn = await screen.findByRole('region', { name: 'Concluída (1)' })
     expect(within(concludedColumn).getByText('INSP-007')).toBeInTheDocument()
     expect(within(concludedColumn).getByText('Inspeção em 27/10/2026')).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Em campo (0)' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Pendente (em campo) (0)' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
@@ -184,8 +188,7 @@ async function openCancelDialog() {
   mockedApi.listInspections.mockResolvedValue([buildOrder({ status: 'pendente' })])
   renderPage()
   const board = await openOrdersTab()
-  fireEvent.keyDown(within(board).getByRole('button', { name: /^Mais ações OI-/ }), { key: 'Enter' })
-  fireEvent.click(await screen.findByRole('menuitem', { name: /^Cancelar OI-/ }))
+  fireEvent.click(within(board).getByRole('button', { name: /^Cancelar OI-/ }))
   fireEvent.change(await screen.findByLabelText(/^Motivo do cancelamento/), { target: { value: 'cliente_regularizou' } })
   return screen.getByRole('button', { name: 'Confirmar cancelamento' })
 }
@@ -195,7 +198,11 @@ describe('LossManagementPage - erros e estados de envio', () => {
     vi.clearAllMocks()
     mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue([suspiciousUnit]))
     mockedApi.getQueueSummary.mockResolvedValue(summaryFixture)
-    mockedApi.getQueueFilters.mockResolvedValue({ municipios: [], classes: [] })
+    mockedApi.getQueueFilters.mockResolvedValue({
+      municipios: [],
+      classes: [],
+      contagens: { municipios: {}, classes: {}, motivos: {} }
+    })
     mockedApi.listInspections.mockResolvedValue([])
   })
 

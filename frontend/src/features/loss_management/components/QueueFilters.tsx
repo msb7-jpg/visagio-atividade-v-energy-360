@@ -7,10 +7,15 @@ import type {
   SuspicionReason,
   SuspiciousUnitsFilter
 } from '@/features/loss_management/types/lossTypes'
-import { REASON_LABELS } from '@/features/loss_management/utils/lossFormatters'
+import { REASON_LABELS, formatInteger } from '@/features/loss_management/utils/lossFormatters'
 import { formatPlaceName } from '@/features/loss_management/utils/textFormat'
 
 const REASONS: SuspicionReason[] = ['queda_subita', 'queda_moderada', 'leitura_zerada']
+
+/** Põe ao lado do nome da opção quantas UCs da fila ela devolve; sem a contagem (ainda carregando), só o nome. */
+function withCount(label: string, count: number | undefined): string {
+  return count === undefined ? label : `${label} (${formatInteger(count)})`
+}
 
 interface QueueFiltersProps {
   filters: SuspiciousUnitsFilter
@@ -60,7 +65,7 @@ export function QueueFilters({ filters, options, onChange, onClear }: QueueFilte
         <Select id="filtro-motivo" value={filters.motivo ?? ''} onChange={changeReason}>
           <option value="">Todos os motivos</option>
           {REASONS.map((reason) => (
-            <option key={reason} value={reason}>{REASON_LABELS[reason]}</option>
+            <option key={reason} value={reason}>{withCount(REASON_LABELS[reason], options?.contagens?.motivos[reason])}</option>
           ))}
         </Select>
       </div>
@@ -69,7 +74,9 @@ export function QueueFilters({ filters, options, onChange, onClear }: QueueFilte
         <Select id="filtro-municipio" value={filters.municipio ?? ''} onChange={changeMunicipality}>
           <option value="">Todos</option>
           {(options?.municipios ?? []).map((municipality) => (
-            <option key={municipality} value={municipality}>{formatPlaceName(municipality)}</option>
+            <option key={municipality} value={municipality}>
+              {withCount(formatPlaceName(municipality), options?.contagens?.municipios[municipality])}
+            </option>
           ))}
         </Select>
       </div>
@@ -78,7 +85,9 @@ export function QueueFilters({ filters, options, onChange, onClear }: QueueFilte
         <Select id="filtro-classe" value={filters.classe ?? ''} onChange={changeClass}>
           <option value="">Todas</option>
           {(options?.classes ?? []).map((consumptionClass) => (
-            <option key={consumptionClass} value={consumptionClass}>{formatPlaceName(consumptionClass)}</option>
+            <option key={consumptionClass} value={consumptionClass}>
+              {withCount(formatPlaceName(consumptionClass), options?.contagens?.classes[consumptionClass])}
+            </option>
           ))}
         </Select>
       </div>

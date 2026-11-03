@@ -1,6 +1,7 @@
 import type { KeyboardEvent, MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ChanceBadge } from '@/features/loss_management/components/ChanceBadge'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { QueueSituationBadge } from '@/features/loss_management/components/QueueSituationBadge'
 import { ScoreBar } from '@/features/loss_management/components/ScoreBar'
@@ -8,8 +9,7 @@ import type { SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
 import {
   formatCompactCurrency,
   formatConsumptionDrop,
-  formatInteger,
-  formatPercent
+  formatInteger
 } from '@/features/loss_management/utils/lossFormatters'
 import { describeShortHistory } from '@/features/loss_management/utils/baseHistory'
 import { formatPlaceName } from '@/features/loss_management/utils/textFormat'
@@ -73,7 +73,6 @@ export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onTo
         </div>
       </TableCell>
       <TableCell>{unit.classe_consumo ? formatPlaceName(unit.classe_consumo) : '—'}</TableCell>
-      <TableCell><ScoreBar score={unit.score} /></TableCell>
       <TableCell>
         <div className="flex flex-col">
           <span className="font-mono">{formatConsumptionDrop(unit.consumo_base_kwh, unit.consumo_recente_kwh)}</span>
@@ -83,9 +82,10 @@ export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onTo
           {shortHistory ? <span className="text-warning text-xs">{shortHistory}</span> : null}
         </div>
       </TableCell>
-      <TableCell><span className="font-mono">{formatPercent(unit.probabilidade_acerto)}</span></TableCell>
+      <TableCell><ChanceBadge probability={unit.probabilidade_acerto} /></TableCell>
       <TableCell><span className="font-mono">{formatInteger(unit.kwh_mes_recuperavel)}</span></TableCell>
       <TableCell><span className="font-mono">{formatCompactCurrency(unit.valor_ano_rs)}</span></TableCell>
+      <TableCell><ScoreBar score={unit.score} /></TableCell>
       <TableCell><QueueSituationBadge situation={unit.situacao} /></TableCell>
     </TableRow>
   )

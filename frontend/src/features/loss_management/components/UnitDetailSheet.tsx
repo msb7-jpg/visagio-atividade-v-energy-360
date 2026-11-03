@@ -1,5 +1,6 @@
 import { isAxiosError } from 'axios'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -68,15 +69,16 @@ export function UnitDetailSheet({ idUc, onClose, onGenerateOrder }: UnitDetailSh
             {detail ? <UnitDetailBody detail={detail} fullHistory={fullHistory} onFullHistoryChange={setFullHistory} /> : null}
           </AsyncState>
         </div>
-        {canWrite ? (
+        {idUc ? (
           <SheetFooter>
-            <Button
-              type="button"
-              disabled={detail?.situacao !== 'na_fila'}
-              onClick={() => idUc && onGenerateOrder(idUc)}
-            >
-              Gerar ordem desta UC
+            <Button asChild variant="outline">
+              <Link to={`/customers?uc=${encodeURIComponent(idUc)}`}>Abrir na UC 360</Link>
             </Button>
+            {canWrite ? (
+              <Button type="button" disabled={detail?.situacao !== 'na_fila'} onClick={() => onGenerateOrder(idUc)}>
+                Gerar ordem desta UC
+              </Button>
+            ) : null}
           </SheetFooter>
         ) : null}
       </SheetContent>

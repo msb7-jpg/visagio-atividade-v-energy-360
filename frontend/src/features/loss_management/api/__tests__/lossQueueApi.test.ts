@@ -63,7 +63,15 @@ describe('lossApi.getQueueFilters', () => {
   })
 
   it('devolve as opções de município e classe', async () => {
-    const options: QueueFilterOptions = { municipios: ['Olinda', 'Recife'], classes: ['Comercial', 'Residencial'] }
+    const options: QueueFilterOptions = {
+      municipios: ['Olinda', 'Recife'],
+      classes: ['Comercial', 'Residencial'],
+      contagens: {
+        municipios: { Olinda: 15, Recife: 71 },
+        classes: { Comercial: 1, Residencial: 161 },
+        motivos: { queda_subita: 0, queda_moderada: 162, leitura_zerada: 0 }
+      }
+    }
     mockedGet.mockResolvedValue({ data: options })
 
     await expect(lossApi.getQueueFilters()).resolves.toEqual(options)
