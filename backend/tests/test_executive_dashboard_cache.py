@@ -1,4 +1,4 @@
-from app.features.executive_dashboard.cache import ResultCache
+from app.shared.result_cache import ResultCache
 
 
 class FakeClock:
