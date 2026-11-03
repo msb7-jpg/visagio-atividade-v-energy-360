@@ -92,3 +92,20 @@ export function validateRevenueQuery(query: RevenueQuery): string | null {
   }
   return null
 }
+
+/**
+ * Filtros enviados ao insight de IA da Receita. O servidor recalcula os indicadores com eles e ignora números
+ * vindos da tela, então só vão os períodos (no formato `AAAA-MM a AAAA-MM`) e os recortes.
+ *
+ * @param query - Janelas e recortes escolhidos na tela.
+ * @returns Filtros do insight, com recorte vazio como `null`.
+ */
+export function revenueInsightFilters(query: RevenueQuery): Record<string, string | null> {
+  return {
+    base: `${query.base.inicio} a ${query.base.fim}`,
+    atual: `${query.atual.inicio} a ${query.atual.fim}`,
+    municipio: query.filters.municipio ?? null,
+    bairro: query.filters.bairro ?? null,
+    classe_consumo: query.filters.classe_consumo ?? null
+  }
+}
