@@ -51,6 +51,7 @@ export function RevenueDashboardPage() {
         isLoading={historyQuery.isLoading}
         isError={historyQuery.isError}
         error={historyQuery.error}
+        onRetry={() => void historyQuery.refetch()}
         onClose={ranking.closeNeighborhood}
       />
     </main>

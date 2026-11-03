@@ -54,6 +54,7 @@ export function RevenueRankingCard({ breakdownQuery, ranking }: RevenueRankingCa
           isEmpty={data?.items.length === 0}
           errorTitle="Não foi possível carregar o ranking"
           errorDescription={getRevenueErrorMessage(error)}
+          onRetry={() => void breakdownQuery.refetch()}
           emptyTitle="Nenhuma linha neste recorte"
           emptyIcon={<SearchX className="size-10" />}
         >

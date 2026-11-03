@@ -3,9 +3,9 @@
 import logging
 import uuid
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 from sse_starlette.sse import EventSourceResponse
@@ -14,10 +14,11 @@ if TYPE_CHECKING:
     from langchain_core.runnables import RunnableConfig
 
 from app.agent.graph import create_agent_graph
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.core.constants import StreamErrorCode
 from app.core.llm_factory.availability import AI_UNAVAILABLE_MESSAGE, resolve_configured_provider
 from app.features.chat.event_dispatcher import SSEEventDispatcher
+from app.features.chat.insight_metrics import server_metrics
 from app.features.chat.insights_service import generate_proactive_insights_service
 from app.features.chat.schemas import (
     ChatQueryRequest,
@@ -26,6 +27,7 @@ from app.features.chat.schemas import (
     StreamErrorPayload,
 )
 from app.shared.dependencies import CurrentUser, DbSession
+from app.shared.exceptions import ServiceUnavailableError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Agente de Inteligência Artificial"])
@@ -121,15 +123,25 @@ async def chat_stream(
 async def generate_proactive_insights(
     request: ProactiveInsightsRequest,
     current_user: CurrentUser,
+    db: DbSession,
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> ProactiveInsightsResponse:
     """Gera insights proativos de acordo com o contexto operacional do usuário.
 
+    As métricas que a tela envia são substituídas pelas que o servidor calcula no banco (`server_metrics`), com o
+    mesmo controle de acesso da tela; a verificação de fidelidade compara o texto da IA com esses números.
+
     Args:
-        request: Payload contendo a tela ativa, filtros e métricas observadas.
+        request: Payload contendo a tela ativa e os filtros dela.
         current_user: Usuário autenticado obtido via token JWT.
+        db: Sessão do banco.
+        settings: Configuração da aplicação.
 
     Returns:
         ProactiveInsightsResponse com lista de achados e resumo executivo.
     """
-    del current_user  # Autenticação validada via injeção de dependência
-    return await generate_proactive_insights_service(request)
+    if resolve_configured_provider() is None:
+        raise ServiceUnavailableError("Provedor de inteligência artificial indisponível.")
+    context = request.context or request.tela or ""
+    metrics = await server_metrics(context, request.filtros, current_user, db, settings)
+    return await generate_proactive_insights_service(request.model_copy(update={"metricas": metrics}))

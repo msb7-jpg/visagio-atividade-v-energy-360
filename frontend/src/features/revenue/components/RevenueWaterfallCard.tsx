@@ -12,15 +12,16 @@ interface RevenueWaterfallCardProps {
   isLoading: boolean
   isError: boolean
   error: unknown
+  onRetry: () => void
 }
 
 /**
  * Card da ponte Preço-Volume-Mix: uma frase de leitura, o gráfico e o aviso sobre o eixo.
  *
- * @param props - Resultado da consulta de decomposição.
+ * @param props - Resultado da consulta de decomposição e a nova tentativa quando ela falha.
  * @returns Card com estados de carregamento, erro ou o gráfico.
  */
-export function RevenueWaterfallCard({ decomposition, isLoading, isError, error }: RevenueWaterfallCardProps) {
+export function RevenueWaterfallCard({ decomposition, isLoading, isError, error, onRetry }: RevenueWaterfallCardProps) {
   const axis = decomposition ? buildWaterfallAxis(buildWaterfallSteps(decomposition)) : null
   return (
     <Card variant="glass">
@@ -41,6 +42,7 @@ export function RevenueWaterfallCard({ decomposition, isLoading, isError, error 
           isError={isError}
           errorTitle="Não foi possível carregar a decomposição"
           errorDescription={getRevenueErrorMessage(error)}
+          onRetry={onRetry}
           skeletonCount={3}
         >
           {axis ? (

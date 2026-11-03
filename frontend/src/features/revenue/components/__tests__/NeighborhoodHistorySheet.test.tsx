@@ -14,6 +14,7 @@ function renderSheet(overrides: Partial<Parameters<typeof NeighborhoodHistoryShe
       isLoading={false}
       isError={false}
       error={null}
+      onRetry={vi.fn()}
       onClose={onClose}
       {...overrides}
     />

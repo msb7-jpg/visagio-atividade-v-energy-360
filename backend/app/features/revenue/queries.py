@@ -5,7 +5,7 @@ não entram no `Base.metadata` e nunca são criadas pela API. Só os filtros pre
 SQL é gerado pelo dialeto do banco e nenhum parâmetro chega ao servidor como NULL sem tipo.
 """
 # pylint: disable=not-callable
-from sqlalchemy import Float, Select, String, case, column, distinct, func, or_, select, table
+from sqlalchemy import Float, Select, String, Subquery, case, column, func, select, table
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.features.revenue.schemas import PeriodWindow, RevenueFilters
@@ -51,24 +51,53 @@ def optional_conditions(filters: RevenueFilters) -> list[ColumnElement[bool]]:
     return [filter_column == filter_value for filter_value, filter_column in candidates if filter_value is not None]
 
 
+def window_count(window: PeriodWindow) -> ColumnElement[int]:
+    """Quantidade de faturas da janela."""
+    return func.count(case((in_window(window), 1)))
+
+
+def per_unit_totals(base: PeriodWindow, current: PeriodWindow) -> Subquery:
+    """Volume, receita e faturas de cada UC nas duas janelas, numa leitura sequencial do faturamento.
+
+    Agregar por UC antes de juntar com o cadastro, sem `WHERE` por competência, é cerca de 7 vezes mais rápido no
+    SQLite do que juntar as 2,1 milhões de faturas e agrupar por segmento: a busca pelo índice de competência
+    obriga a ler as faturas fora de ordem (ADR-030).
+    """
+    volume = fato_faturamento.c.consumo_faturado_kwh
+    revenue = fato_faturamento.c.valor_total_rs
+    return (
+        select(
+            fato_faturamento.c.id_uc,
+            window_sum(volume, base).label("volume_base_kwh"),
+            window_sum(revenue, base).label("receita_base_rs"),
+            window_count(base).label("faturas_base"),
+            window_sum(volume, current).label("volume_atual_kwh"),
+            window_sum(revenue, current).label("receita_atual_rs"),
+            window_count(current).label("faturas_atual"),
+        )
+        .group_by(fato_faturamento.c.id_uc)
+        .subquery("por_uc")
+    )
+
+
 def segment_totals_query(base: PeriodWindow, current: PeriodWindow, filters: RevenueFilters) -> Select:
     """Volume e receita por classe, município e bairro nas janelas base e atual."""
     uc = dim_unidade_consumidora
-    volume = fato_faturamento.c.consumo_faturado_kwh
-    revenue = fato_faturamento.c.valor_total_rs
+    per_unit = per_unit_totals(base, current)
     return (
         select(
             uc.c.classe_consumo,
             uc.c.municipio,
             uc.c.bairro,
-            window_sum(volume, base).label("volume_base_kwh"),
-            window_sum(revenue, base).label("receita_base_rs"),
-            window_sum(volume, current).label("volume_atual_kwh"),
-            window_sum(revenue, current).label("receita_atual_rs"),
+            func.sum(per_unit.c.volume_base_kwh).label("volume_base_kwh"),
+            func.sum(per_unit.c.receita_base_rs).label("receita_base_rs"),
+            func.sum(per_unit.c.volume_atual_kwh).label("volume_atual_kwh"),
+            func.sum(per_unit.c.receita_atual_rs).label("receita_atual_rs"),
         )
-        .select_from(faturas_com_cadastro)
-        .where(or_(in_window(base), in_window(current)), *optional_conditions(filters))
+        .select_from(per_unit.join(uc, uc.c.id_uc == per_unit.c.id_uc))
+        .where(*optional_conditions(filters))
         .group_by(uc.c.classe_consumo, uc.c.municipio, uc.c.bairro)
+        .having(func.sum(per_unit.c.faturas_base) + func.sum(per_unit.c.faturas_atual) > 0)
         .order_by(uc.c.municipio, uc.c.bairro, uc.c.classe_consumo)
     )
 
@@ -76,26 +105,25 @@ def segment_totals_query(base: PeriodWindow, current: PeriodWindow, filters: Rev
 def period_totals_query(base: PeriodWindow, current: PeriodWindow, filters: RevenueFilters) -> Select:
     """Receita, volume, número de faturas e UCs distintas nas janelas base e atual (uma linha).
 
-    Sem `WHERE` por competência: cada soma filtra a janela no `CASE`, o que é mais rápido no SQLite (ADR-016).
+    Parte dos totais por UC (`per_unit_totals`); uma UC conta numa janela quando tem fatura nela.
     """
     territorial_conditions = optional_conditions(filters)
-    volume = fato_faturamento.c.consumo_faturado_kwh
-    revenue = fato_faturamento.c.valor_total_rs
-    id_uc = fato_faturamento.c.id_uc
-    return (
-        select(
-            window_sum(revenue, base).label("receita_base_rs"),
-            window_sum(volume, base).label("volume_base_kwh"),
-            func.count(case((in_window(base), 1))).label("faturas_base"),
-            func.count(distinct(case((in_window(base), id_uc)))).label("ucs_base"),
-            window_sum(revenue, current).label("receita_atual_rs"),
-            window_sum(volume, current).label("volume_atual_kwh"),
-            func.count(case((in_window(current), 1))).label("faturas_atual"),
-            func.count(distinct(case((in_window(current), id_uc)))).label("ucs_atual"),
-        )
-        .select_from(faturas_com_cadastro if territorial_conditions else fato_faturamento)
-        .where(*territorial_conditions)
+    per_unit = per_unit_totals(base, current)
+    source = (
+        per_unit.join(dim_unidade_consumidora, dim_unidade_consumidora.c.id_uc == per_unit.c.id_uc)
+        if territorial_conditions
+        else per_unit
     )
+    return select(
+        func.coalesce(func.sum(per_unit.c.receita_base_rs), 0).label("receita_base_rs"),
+        func.coalesce(func.sum(per_unit.c.volume_base_kwh), 0).label("volume_base_kwh"),
+        func.coalesce(func.sum(per_unit.c.faturas_base), 0).label("faturas_base"),
+        func.count(case((per_unit.c.faturas_base > 0, 1))).label("ucs_base"),
+        func.coalesce(func.sum(per_unit.c.receita_atual_rs), 0).label("receita_atual_rs"),
+        func.coalesce(func.sum(per_unit.c.volume_atual_kwh), 0).label("volume_atual_kwh"),
+        func.coalesce(func.sum(per_unit.c.faturas_atual), 0).label("faturas_atual"),
+        func.count(case((per_unit.c.faturas_atual > 0, 1))).label("ucs_atual"),
+    ).select_from(source).where(*territorial_conditions)
 
 
 def monthly_totals_query(window: PeriodWindow, filters: RevenueFilters) -> Select:

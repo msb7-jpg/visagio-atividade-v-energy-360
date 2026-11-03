@@ -1,11 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { decompositionFixture } from '@/features/revenue/__tests__/revenueFixtures'
 import { RevenueWaterfallCard } from '@/features/revenue/components/RevenueWaterfallCard'
 
 function renderCard(props: Partial<Parameters<typeof RevenueWaterfallCard>[0]> = {}) {
   return render(
-    <RevenueWaterfallCard decomposition={decompositionFixture} isLoading={false} isError={false} error={null} {...props} />
+    <RevenueWaterfallCard decomposition={decompositionFixture} isLoading={false} isError={false} error={null} onRetry={vi.fn()} {...props} />
   )
 }
 
@@ -43,10 +43,13 @@ describe('RevenueWaterfallCard', () => {
     expect(screen.getByText(/sem trocar a composição do consumo/)).toBeInTheDocument()
   })
 
-  it('mostra a mensagem do backend quando a consulta falha', () => {
-    renderCard({ decomposition: undefined, isError: true, error: new Error('rede') })
+  it('mostra a mensagem do backend quando a consulta falha e oferece tentar de novo', () => {
+    const onRetry = vi.fn()
+    renderCard({ decomposition: undefined, isError: true, error: new Error('rede'), onRetry })
 
     expect(screen.getByText('Não foi possível carregar a decomposição')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(onRetry).toHaveBeenCalledTimes(1)
   })
 
   it('não desenha o gráfico enquanto carrega', () => {
