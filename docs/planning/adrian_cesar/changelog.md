@@ -1037,3 +1037,13 @@
   - Observação: depois do Top 10 sem UC livre prioritária, a tela fica na faixa "Baixa chance" (vazia) mesmo ao trocar para um filtro com prioritárias. Não corrigido; fica como ajuste de acabamento.
 - **Validação de Testes:** sem mudança de código nesta entrada.
 
+### [2026-11-03] - A faixa da fila volta para Prioritárias quando ela passa a ter UCs
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - `QueueBandTabs`: a faixa aberta deixava de ser refeita quando a fila mudava. Agora, se as prioritárias aparecem ou somem, ou a faixa aberta esvazia, a aba é refeita (prioritárias, senão baixa chance, senão todas). Enquanto a faixa escolhida tem UCs, a escolha da pessoa é mantida.
+  - 3 testes novos em `QueueBandTabs.test.tsx` (RED visto antes: 2 falhavam): volta às prioritárias, sai da faixa que esvaziou e mantém a faixa escolhida.
+  - Conferido no navegador, só leitura: filtro "Ordem gerada", Top 10 (vai para "na fila", faixa "Baixa chance · 158") e de volta a "Ordem gerada": a tabela passou para "Fila: prioritárias" ao chegar a resposta. Filtros limpos ao final.
+- **Dificuldades / Desafios:**
+  - A resposta do servidor leva alguns segundos; durante a espera a tela mostra a fila anterior (`keepPreviousData`) e só troca de faixa quando os dados novos chegam.
+- **Validação de Testes:** vitest da fatia (317), ESLint, Fallow e `tsc -b` limpos.
+

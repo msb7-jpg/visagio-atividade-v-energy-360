@@ -31,11 +31,21 @@ function firstBandWithUnits(priorityCount: number, lowChanceCount: number): Band
  * A ordem dentro de cada aba é a do backend (kWh esperado), então a posição (#) vale dentro da aba.
  *
  * @param props - UCs carregadas, total da fila e controle de seleção.
- * @returns Abas acima da tabela; abre nas prioritárias, ou na primeira aba com UCs quando elas não existem.
+ * @returns Abas acima da tabela; abre nas prioritárias, ou na primeira aba com UCs quando elas não existem, e
+ * volta para elas quando a fila passa a ter prioritárias.
  */
 export function QueueBandTabs({ units, total, selection, onOpenDetail, onLoadMore, isLoadingMore = false }: QueueBandTabsProps) {
   const { priority, lowChance } = splitQueueBands(units)
   const [band, setBand] = useState<BandKey>(() => firstBandWithUnits(priority.length, lowChance.length))
+  const [hadPriority, setHadPriority] = useState(priority.length > 0)
+  const hasPriority = priority.length > 0
+  const isBandEmpty = (band === 'priority' && !hasPriority) || (band === 'lowChance' && lowChance.length === 0)
+  // A fila muda com os filtros: se as prioritárias aparecem ou somem, ou a faixa aberta esvazia, a aba é refeita
+  // (ajuste no render, sem efeito). Enquanto a faixa escolhida tem UCs, a escolha do usuário é mantida.
+  if (hadPriority !== hasPriority || isBandEmpty) {
+    setHadPriority(hasPriority)
+    setBand(firstBandWithUnits(priority.length, lowChance.length))
+  }
   const minHitLabel = formatPercent(PRIORITY_MIN_HIT_PROBABILITY)
   const bands = [
     { key: 'priority', label: 'Prioritárias', units: priority, hint: `Chance de acerto de ${minHitLabel} ou mais` },
