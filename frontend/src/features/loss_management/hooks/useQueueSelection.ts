@@ -37,6 +37,7 @@ export function useQueueSelection(units: SuspiciousUnit[]) {
     },
     [units]
   )
+  const selectIds = useCallback((idUcs: readonly string[]) => setPickedIds(new Set(idUcs)), [])
   const clear = useCallback(() => setPickedIds(new Set()), [])
   const selectOnly = useCallback(
     (idUc: string) => setPickedIds(new Set(selectableIds.includes(idUc) ? [idUc] : [])),
@@ -60,5 +61,5 @@ export function useQueueSelection(units: SuspiciousUnit[]) {
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds])
   const isSelected = useCallback((idUc: string) => selectedIdSet.has(idUc), [selectedIdSet])
 
-  return { selectedIds, isSelected, isSelectable, toggle, selectTop, selectOnly, toggleMany, clear }
+  return { selectedIds, isSelected, isSelectable, toggle, selectTop, selectIds, selectOnly, toggleMany, clear }
 }

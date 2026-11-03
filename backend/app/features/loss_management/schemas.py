@@ -57,6 +57,9 @@ class SuspiciousUnitsFilterDTO(BaseModel):
     bairro: str | None = None
     classe: str | None = None
     motivo: SuspicionReason | None = None
+    situacao: QueueSituation | None = Field(
+        default=None, description="Só as UCs nesta situação: na fila, com ordem gerada ou em campo"
+    )
     limit: int = Field(default=FILA_CAPACIDADE_MENSAL, ge=1, le=500)
     offset: int = Field(default=0, ge=0, description="UCs da fila ignoradas antes da página (paginação)")
 
@@ -263,6 +266,7 @@ class QueueFilterCountsDTO(BaseModel):
     municipios: dict[str, int] = Field(default_factory=dict)
     classes: dict[str, int] = Field(default_factory=dict)
     motivos: dict[str, int] = Field(default_factory=dict, description="Por motivo; uma UC conta em cada motivo que tem")
+    situacoes: dict[str, int] = Field(default_factory=dict, description="Por situação: na fila, ordem gerada, em campo")
 
 
 class QueueFiltersDTO(BaseModel):

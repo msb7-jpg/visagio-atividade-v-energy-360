@@ -6,6 +6,9 @@ import type { SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
  */
 export const PRIORITY_MIN_HIT_PROBABILITY = 0.3
 
+/** Quantas UCs o botão "Top" marca. */
+export const TOP_SELECTION_COUNT = 10
+
 export interface QueueBands {
   priority: SuspiciousUnit[]
   lowChance: SuspiciousUnit[]

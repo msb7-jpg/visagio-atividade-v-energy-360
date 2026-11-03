@@ -117,7 +117,7 @@ class LossService:
         """Monta a fila de UCs suspeitas priorizada pela energia estimada a recuperar.
 
         Args:
-            queue_filter: Filtros de município, bairro, classe e motivo, e a página (`offset` e `limit`).
+            queue_filter: Filtros de município, bairro, classe, motivo e situação, e a página (`offset` e `limit`).
 
         Returns:
             UCs suspeitas com score de 0 a 100 e situação (na fila, ordem gerada ou em campo), em ordem decrescente
@@ -139,12 +139,12 @@ class LossService:
             ),
             queue_filter,
         )
-        page_end = queue_filter.offset + queue_filter.limit
-        units = apply_situation(ranked_units[queue_filter.offset : page_end], candidates.active_orders)
+        queue_units = apply_situation(ranked_units, candidates.active_orders, queue_filter.situacao)
+        units = queue_units[queue_filter.offset : queue_filter.offset + queue_filter.limit]
         fixed_competencia = candidates.reference_competencia
         reference_warnings = [reference_competencia_warning(fixed_competencia)] if fixed_competencia else []
         history_warnings = [] if candidates.field_history_applied else [FIELD_HISTORY_NOT_APPLIED_WARNING]
-        return SuspiciousQueueDTO(itens=units, total=len(ranked_units), avisos=[*reference_warnings, *history_warnings])
+        return SuspiciousQueueDTO(itens=units, total=len(queue_units), avisos=[*reference_warnings, *history_warnings])
 
     async def summarize_queue(self, selected_ids: list[str]) -> QueueSummaryDTO:
         """Calcula os cartões do topo: capacidade, energia das selecionadas, retorno esperado e taxa histórica.

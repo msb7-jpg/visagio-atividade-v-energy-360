@@ -4,13 +4,15 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import type {
   QueueFilterOptions,
+  QueueSituation,
   SuspicionReason,
   SuspiciousUnitsFilter
 } from '@/features/loss_management/types/lossTypes'
-import { REASON_LABELS, formatInteger } from '@/features/loss_management/utils/lossFormatters'
+import { REASON_LABELS, SITUATION_LABELS, formatInteger } from '@/features/loss_management/utils/lossFormatters'
 import { formatPlaceName } from '@/features/loss_management/utils/textFormat'
 
 const REASONS: SuspicionReason[] = ['queda_subita', 'queda_moderada', 'leitura_zerada']
+const SITUATIONS: QueueSituation[] = ['na_fila', 'ordem_gerada', 'em_campo']
 
 /** Põe ao lado do nome da opção quantas UCs da fila ela devolve; sem a contagem (ainda carregando), só o nome. */
 function withCount(label: string, count: number | undefined): string {
@@ -25,14 +27,17 @@ interface QueueFiltersProps {
 }
 
 /**
- * Monta um chip por filtro aplicado (motivo, município e classe), cada um removendo só o seu filtro.
+ * Monta um chip por filtro aplicado (situação, motivo, município e classe), cada um removendo só o seu filtro.
  *
  * @param filters - Filtros atuais da fila.
  * @param onChange - Aplica os filtros sem o que foi removido.
- * @returns Chips na ordem motivo, município, classe.
+ * @returns Chips na ordem situação, motivo, município, classe.
  */
 function buildActiveChips(filters: SuspiciousUnitsFilter, onChange: QueueFiltersProps['onChange']): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = []
+  if (filters.situacao) {
+    chips.push({ key: 'situacao', label: `Situação: ${SITUATION_LABELS[filters.situacao]}`, onRemove: () => onChange({ ...filters, situacao: undefined }) })
+  }
   if (filters.motivo) {
     chips.push({ key: 'motivo', label: `Motivo: ${REASON_LABELS[filters.motivo]}`, onRemove: () => onChange({ ...filters, motivo: undefined }) })
   }
@@ -46,12 +51,14 @@ function buildActiveChips(filters: SuspiciousUnitsFilter, onChange: QueueFilters
 }
 
 /**
- * Filtros da fila priorizada: motivo, município e classe num painel recolhido, aplicados assim que mudam.
+ * Filtros da fila priorizada: situação, motivo, município e classe num painel recolhido, aplicados assim que mudam.
  *
  * @param props - Filtros atuais, opções vindas do cadastro e callbacks de mudança e de limpeza.
  * @returns Botão "Filtros" com os chips dos filtros ativos; "Limpar filtros" aparece só com algum filtro ativo.
  */
 export function QueueFilters({ filters, options, onChange, onClear }: QueueFiltersProps) {
+  const changeSituation = (event: ChangeEvent<HTMLSelectElement>) =>
+    onChange({ ...filters, situacao: SITUATIONS.find((situation) => situation === event.target.value) })
   const changeReason = (event: ChangeEvent<HTMLSelectElement>) =>
     onChange({ ...filters, motivo: REASONS.find((reason) => reason === event.target.value) })
   const changeMunicipality = (event: ChangeEvent<HTMLSelectElement>) =>
@@ -60,6 +67,17 @@ export function QueueFilters({ filters, options, onChange, onClear }: QueueFilte
 
   return (
     <FilterPopover activeFilters={buildActiveChips(filters, onChange)} onClear={onClear}>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="filtro-situacao">Situação</Label>
+        <Select id="filtro-situacao" value={filters.situacao ?? ''} onChange={changeSituation}>
+          <option value="">Todas as situações</option>
+          {SITUATIONS.map((situation) => (
+            <option key={situation} value={situation}>
+              {withCount(SITUATION_LABELS[situation], options?.contagens?.situacoes?.[situation])}
+            </option>
+          ))}
+        </Select>
+      </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="filtro-motivo">Motivo</Label>
         <Select id="filtro-motivo" value={filters.motivo ?? ''} onChange={changeReason}>

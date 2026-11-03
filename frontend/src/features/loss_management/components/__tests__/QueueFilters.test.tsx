@@ -9,7 +9,8 @@ const options: QueueFilterOptions = {
   contagens: {
     municipios: { OLINDA: 15, RECIFE: 1234 },
     classes: { INDUSTRIAL: 0, RESIDENCIAL: 161 },
-    motivos: { queda_subita: 0, queda_moderada: 162, leitura_zerada: 0 }
+    motivos: { queda_subita: 0, queda_moderada: 162, leitura_zerada: 0 },
+    situacoes: { na_fila: 120, ordem_gerada: 40, em_campo: 2 }
   }
 }
 
@@ -34,6 +35,15 @@ describe('QueueFilters', () => {
     expect(await screen.findByRole('option', { name: 'Industrial (0)' })).toHaveValue('INDUSTRIAL')
     expect(screen.getByRole('option', { name: 'Queda abrupta de consumo (0)' })).toHaveValue('queda_subita')
     expect(screen.getByRole('option', { name: 'Consumo zero com medidor ativo (0)' })).toHaveValue('leitura_zerada')
+  })
+
+  it('mostra a contagem de cada situação e mantém "Todas as situações" sem contagem', async () => {
+    renderFilters()
+
+    expect(await screen.findByRole('option', { name: 'Na fila (120)' })).toHaveValue('na_fila')
+    expect(screen.getByRole('option', { name: 'Ordem gerada (40)' })).toHaveValue('ordem_gerada')
+    expect(screen.getByRole('option', { name: 'Em campo (2)' })).toHaveValue('em_campo')
+    expect(screen.getByRole('option', { name: 'Todas as situações' })).toHaveValue('')
   })
 
   it('mostra a contagem de cada motivo', async () => {

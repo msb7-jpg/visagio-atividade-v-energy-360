@@ -309,6 +309,55 @@ describe('Fila de Inspeção', () => {
     expect(screen.queryByLabelText('Score mínimo')).not.toBeInTheDocument()
   })
 
+  it('filtra pela situação da UC e mostra o chip do filtro', async () => {
+    renderPage()
+    await rowOf('UC100002')
+
+    openFilters()
+    fireEvent.change(screen.getByLabelText('Situação'), { target: { value: 'ordem_gerada' } })
+
+    await waitFor(() => expect(mockedApi.listSuspiciousUnits).toHaveBeenLastCalledWith(
+      { situacao: 'ordem_gerada' },
+      expect.anything()
+    ))
+    expect(await screen.findByText('Situação: Ordem gerada')).toBeInTheDocument()
+  })
+
+  it('no Top 10, com a fila em ordem gerada, passa o filtro para "na fila" e marca só as UCs livres', async () => {
+    mockedApi.listSuspiciousUnits.mockImplementation(async (filters) => {
+      if (filters.situacao === 'ordem_gerada') return buildQueue([UNITS[0]])
+      if (filters.situacao === 'na_fila') return buildQueue([UNITS[1], UNITS[2], UNITS[4]])
+      return buildQueue(UNITS)
+    })
+    renderPage()
+    await rowOf('UC100002')
+    openFilters()
+    fireEvent.change(screen.getByLabelText('Situação'), { target: { value: 'ordem_gerada' } })
+    await waitFor(() => expect(screen.queryByRole('row', { name: /UC100002/ })).not.toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Selecionar top 10 prioritárias' }))
+
+    await waitFor(() => expect(mockedApi.listSuspiciousUnits).toHaveBeenLastCalledWith(
+      { situacao: 'na_fila' },
+      expect.anything()
+    ))
+    expect(await screen.findByRole('button', { name: 'Gerar 3 ordens' })).toBeEnabled()
+    expect(within(await rowOf('UC100005')).getByRole('checkbox')).toBeChecked()
+  })
+
+  it('no Top 10, com a fila sem filtro de situação, mantém os filtros e não troca a situação', async () => {
+    renderPage()
+    await rowOf('UC100002')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Selecionar top 10 prioritárias' }))
+
+    expect(await screen.findByRole('button', { name: 'Gerar 3 ordens' })).toBeEnabled()
+    expect(mockedApi.listSuspiciousUnits).not.toHaveBeenCalledWith(
+      expect.objectContaining({ situacao: expect.anything() }),
+      expect.anything()
+    )
+  })
+
   it('carrega a próxima página da fila quando há mais UCs do que as carregadas', async () => {
     mockedApi.listSuspiciousUnits.mockImplementation(async (filters) =>
       filters.offset ? buildQueue([buildUnit('UC100099', 70)], [], 6) : buildQueue(UNITS, [], 6)

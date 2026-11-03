@@ -54,6 +54,7 @@ export interface SuspiciousUnitsFilter {
   bairro?: string
   classe?: string
   motivo?: SuspicionReason
+  situacao?: QueueSituation
 }
 
 /** Página da fila: os filtros e quantas UCs pular (`offset`); sem `offset` vem a primeira página. */
@@ -97,6 +98,8 @@ export interface QueueFilterCounts {
   classes: Record<string, number>
   /** Por motivo; uma UC conta em cada motivo que tem. */
   motivos: Partial<Record<SuspicionReason, number>>
+  /** Por situação; ausente quando o backend ainda é anterior ao filtro de situação. */
+  situacoes?: Partial<Record<QueueSituation, number>>
 }
 
 /** Opções dos filtros de município e classe, com a contagem de cada opção (`GET /losses/queue-filters`). */

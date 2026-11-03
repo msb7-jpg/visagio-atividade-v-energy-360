@@ -3,7 +3,7 @@ import { EmptyState } from '@/components/feedback/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { GenerateOrdersDialog } from '@/features/loss_management/components/GenerateOrdersDialog'
-import { QueueActionsBar, TOP_SELECTION_COUNT } from '@/features/loss_management/components/QueueActionsBar'
+import { QueueActionsBar } from '@/features/loss_management/components/QueueActionsBar'
 import { QueueBandTabs } from '@/features/loss_management/components/QueueBandTabs'
 import { QueueFilters } from '@/features/loss_management/components/QueueFilters'
 import { QueueReferencePills } from '@/features/loss_management/components/QueueReferencePills'
@@ -11,7 +11,6 @@ import { QueueWarnings } from '@/features/loss_management/components/QueueWarnin
 import { SelectionStrip } from '@/features/loss_management/components/SelectionStrip'
 import { UnitDetailSheet } from '@/features/loss_management/components/UnitDetailSheet'
 import type { SuspiciousQueueController } from '@/features/loss_management/hooks/useSuspiciousQueueController'
-import { isPriorityUnit } from '@/features/loss_management/utils/queueBands'
 
 interface SuspiciousQueueTabProps {
   queue: SuspiciousQueueController
@@ -40,7 +39,7 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
           />
           <QueueActionsBar
             selectedUnits={queue.selectedUnits}
-            onSelectTop={() => selection.selectTop(TOP_SELECTION_COUNT, isPriorityUnit)}
+            onSelectTop={queue.selectTopUnits}
             onGenerate={queue.openDialog}
           />
         </div>

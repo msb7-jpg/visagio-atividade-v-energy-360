@@ -2,8 +2,7 @@ import { Button } from '@/components/ui/button'
 import { useCanWriteLosses } from '@/features/loss_management/hooks/useCanWriteLosses'
 import type { SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
 import { ordersLabel } from '@/features/loss_management/utils/lossFormatters'
-
-export const TOP_SELECTION_COUNT = 10
+import { TOP_SELECTION_COUNT } from '@/features/loss_management/utils/queueBands'
 
 interface QueueActionsBarProps {
   selectedUnits: SuspiciousUnit[]
