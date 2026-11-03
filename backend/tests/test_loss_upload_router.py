@@ -82,7 +82,7 @@ async def test_upload_in_the_field_team_format_matches_orders_by_unit(client):
     assert order["status"] == "concluida"
     assert order["inspetor"] == "INSP-028"
     assert order["data_inspecao"] == "2025-09-25"
-    assert order["fiscal_responsavel"] is None
+    assert order["fiscal_responsavel"] == "perdas@venergy.com"  # mantém quem gerou a ordem
     assert order["tipo_irregularidade"] == "BY-PASS"
 
 
