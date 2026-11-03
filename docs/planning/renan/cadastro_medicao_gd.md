@@ -9,6 +9,7 @@
 
 ## Trabalho compartilhado atual — Diagnóstico da Receita
 
+- [x] Tornar explícitos no README principal a organização real do monorepo e o resumo das decisões arquiteturais para a entrega (2026-11-03).
 - [- Em andamento por Renan - 2026-10-30] Contribuição para fechar `docs/DIAGNOSTICO_RECEITA.md`: consolidar a evidência de fraude nos quatro bairros, explicar divergências de receita/volume e reconciliar a contagem divulgada de 887 UCs com queda ≥40% antes de validar os sete valores territoriais contra a tela.
 - [x] Medir planos e tempos das consultas analíticas no `v_energy.db`, comparar os PRAGMAs de cache/temporários/mmap e registrar recomendações compartilhadas com evidência (2026-10-30).
 - [- Em andamento por Renan - 2026-10-30] Aplicar a omissão do JOIN de Receita sem filtros territoriais e o intervalo semiaberto em Atendimento; avaliar o índice de data e cobrir as consultas com testes.

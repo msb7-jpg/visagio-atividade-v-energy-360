@@ -118,3 +118,10 @@
 - **Limite:** a base somente leitura não continha `ordem_inspecao`; a consulta da fila usou uma tabela temporária vazia, portanto deve ser repetida após o startup/migração operacional.
 - **Decisão:** não aplicar `mmap_size` globalmente sem orçamento de memória para a concorrência observada; preferir primeiro as otimizações locais e reavaliar com a configuração real do pool.
 - **Validação:** medições repetidas em conexões SQLite novas e warmup em modo somente leitura; sem alteração de código, não se aplicam testes de aplicação.
+
+### [2026-11-03] - README de entrega do repositório
+- **Autor:** Renan
+- **O que foi feito:**
+  - Tornada explícita no README a estrutura real do monorepo e a localização do agente Text-to-SQL integrado ao backend.
+  - Resumidas as decisões arquiteturais e apontados os documentos de dados e diagnóstico já versionados.
+- **Validação:** `git diff --check`; alteração somente documental.

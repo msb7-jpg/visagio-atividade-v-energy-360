@@ -4,6 +4,30 @@ Plataforma inteligente de análise de dados e indicadores regulatórios do setor
 
 Diagnóstico da queda de receita (a pergunta central do case): [`docs/DIAGNOSTICO_RECEITA.md`](docs/DIAGNOSTICO_RECEITA.md).
 
+## 📁 Organização do repositório e decisões arquiteturais
+
+O repositório oficial da solução é o [GitHub do time](https://github.com/msb7-jpg/visagio-atividade-v-energy-360). A estrutura versionada reflete os módulos realmente implementados:
+
+| Diretório / arquivo | Responsabilidade |
+|---|---|
+| [`data-engineering/`](data-engineering/) | Notebooks Bronze → Silver → Gold, testes de qualidade e configuração do Workflow Databricks |
+| [`backend/`](backend/) | API FastAPI, regras de negócio, acesso ao SQLite e agente Text-to-SQL |
+| [`frontend/`](frontend/) | Portal web React 19 e TypeScript |
+| [`docs/`](docs/) | [`Dicionário de dados`](docs/DATA_DICTIONARY.md), [`diagnóstico da receita`](docs/DIAGNOSTICO_RECEITA.md), decisões arquiteturais e evidências |
+| [`README.md`](README.md) | Configuração, execução local, demonstração e suposições da solução |
+
+O agente de IA está em [`backend/app/agent/`](backend/app/agent/), integrado ao backend para compartilhar autenticação, banco e implantação; por isso, não há um diretório `ai-agent/` separado. Os arquivos brutos do case não são versionados: obtenha `base_dados_1.zip` e `base_dados_2.zip` conforme as instruções da equipe antes de executar a carga local.
+
+| Decisão | Motivo e consequência |
+|---|---|
+| Monorepositório organizado em fatias verticais | Mantém pipeline, API, interface e documentação da solução no repositório oficial, com responsabilidades por domínio. |
+| Pipeline Lakehouse Bronze → Silver → Gold | Preserva a origem e trata os dados em camadas; o Workflow executa testes de qualidade e condiciona a exportação final da Fatia 02 à aprovação dos testes das duas fatias. |
+| Exportação da Gold para SQLite | Permite ao portal e ao agente consultar localmente os mesmos dados publicados pelo pipeline, sem depender de acesso ao Databricks durante a execução da aplicação. |
+| Agente Text-to-SQL integrado à API | Reutiliza a autenticação e o ciclo de implantação do backend; as consultas do agente são somente leitura e limitadas aos dados disponíveis. |
+| Portal React 19 separado da API FastAPI | Mantém interface e serviços desacoplados, comunicando-se pelos endpoints HTTP do backend. |
+
+Os detalhes, alternativas consideradas e decisões de domínio estão em [`docs/DECISOES.md`](docs/DECISOES.md). Os passos de configuração e execução de cada módulo estão nas seções abaixo.
+
 ---
 
 ## 🚀 Como Rodar o Projeto (Guia Rápido)
