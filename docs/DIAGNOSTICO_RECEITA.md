@@ -165,7 +165,7 @@ Antes de atribuir a queda a qualquer causa, separar de onde ela vem. A base de c
 - **Como medir:** queda das UCs mantidas, sem GD e sem leitura anômala, por classe, município e bairro (consulta **C5**). Cruzar com o ranking territorial da tela.
 - **Medido (C1 e C5):** no total, as UCs mantidas sem GD variaram -1.101 MWh (queda pequena, de 0,5%). Mas a queda se concentra em poucos bairros: Iputinga e Macaxeira (Recife), Jardim Jordão e Prazeres (Jaboatão dos Guararapes). No comércio desses bairros o consumo caiu perto de 50% e na residencial perto de 17%, num total de 2.735 MWh (1.786 comercial e 949 residencial). Outros locais compensam parte disso.
 - **Medido (C8):** a queda começa de uma vez em maio de 2025, nos quatro bairros ao mesmo tempo (entre -10% e -11% em maio, e de -13% a -21% em junho e julho, contra o mesmo mês de 2024). Até abril de 2025 o consumo repete o de 2024. O número de UCs não muda, então não são clientes que saíram.
-- **Causa:** a evidência de campo aponta fraude/irregularidade como causa da queda local: 835 de 871 irregularidades confirmadas estão nesses quatro bairros. A queda aparece em seis alimentadores (três em Jaboatão e três em Recife), enquanto o ALM-REC-024 também atende IPSEP, que cai apenas 2,8%; isso afasta uma falha isolada de alimentador como explicação suficiente. A `subestacao` vazia impede testar agrupamento por subestação. A queda individual também é concentrada: 894 das 3.276 UCs sem painel solar desses bairros caíram 40% ou mais (C2d). A evidência sustenta uma causa local de fraude, mas não determina individualmente a irregularidade de cada UC nem a energia recuperável sem inspeção.
+- **Causa:** a evidência de campo aponta fraude/irregularidade como causa da queda local: 835 de 871 irregularidades confirmadas estão nesses quatro bairros. A queda aparece em seis alimentadores (três em Jaboatão e três em Recife), enquanto o ALM-REC-024 também atende IPSEP, que cai apenas 2,8%; isso afasta uma falha isolada de alimentador como explicação suficiente. `subestacao` não existe em `unidades_consumidoras.csv` e, portanto, não há dado de origem para agrupar por subestação. A queda individual também é concentrada: 894 das 3.276 UCs sem painel solar desses bairros caíram 40% ou mais (C2d). A evidência sustenta uma causa local de fraude, mas não determina individualmente a irregularidade de cada UC nem a energia recuperável sem inspeção.
 - **Ação proposta:** cruzar as 894 UCs com queda de 40% ou mais (C2d) com as irregularidades e inspeções já registradas, e priorizar apenas os casos ainda sem evidência de campo; acompanhar kWh efetivamente recuperado por bairro.
 - **Valor em jogo:** até ≈ R$ 2,02 mi no ano comparável se os 2.735 MWh voltassem ao nível de referência (1.786 MWh comerciais × R$ 0,754 + 949 MWh residenciais × R$ 0,7145). É teto de receita faturada, não ganho garantido nem valor a somar às recuperações de campo.
 
@@ -560,7 +560,7 @@ ORDER BY u.bairro, f.competencia;
 Até abril de 2025 o consumo repete o de 2024, com a mesma sazonalidade. A partir de maio de 2025 cai de uma vez, nos quatro bairros ao mesmo tempo, e fica abaixo da curva anterior até junho de 2026 (a série completa tem 48 meses por bairro).
 
 
-**C9: alimentador e subestação dos quatro bairros (causa 6.5)**
+**C9: alimentadores dos quatro bairros (causa 6.5)**
 
 Ver se os quatro bairros compartilham a rede, e quanto cada alimentador caiu.
 
@@ -572,7 +572,7 @@ WITH por_uc AS (
   FROM fato_faturamento f
   GROUP BY f.id_uc
 )
-SELECT u.subestacao, u.alimentador, u.bairro, u.municipio,
+SELECT u.alimentador, u.bairro, u.municipio,
        COUNT(*)                                      AS ucs,
        ROUND(SUM(p.kwh_2025) - SUM(p.kwh_2024), 0)   AS variacao_kwh,
        ROUND(100.0 * (SUM(p.kwh_2025) - SUM(p.kwh_2024)) / SUM(p.kwh_2024), 1) AS variacao_pct
@@ -580,13 +580,13 @@ FROM por_uc p
 JOIN dim_unidade_consumidora u ON u.id_uc = p.id_uc
 WHERE p.kwh_2024 IS NOT NULL AND p.kwh_2025 IS NOT NULL
   AND COALESCE(u.possui_gd, 0) = 0
-GROUP BY u.subestacao, u.alimentador, u.bairro, u.municipio
+GROUP BY u.alimentador, u.bairro, u.municipio
 HAVING COUNT(*) >= 30
 ORDER BY variacao_pct
 LIMIT 25;
 ```
 
-**Resultado** (banco com os bairros corrigidos, 30/10/2026): variação do consumo de mai a dez/2025 contra mai a dez/2024, UCs sem GD, grupos com 30 UCs ou mais. A coluna `subestacao` está vazia em todas as linhas.
+**Resultado** (banco com os bairros corrigidos, 30/10/2026): variação do consumo de mai a dez/2025 contra mai a dez/2024, UCs sem GD, grupos com 30 UCs ou mais. `subestacao` não existe na source; a Gold mantém o campo apenas como compatibilidade e o preenche com `NULL`. Por isso, a consulta agrupa somente por alimentador, bairro e município.
 
 | Alimentador | Bairro | Município | UCs | Variação kWh | Variação % |
 |---|---|---|---|---|---|
@@ -610,7 +610,7 @@ As demais 18 linhas do top 25 ficam entre -4,2% e -1,6%. Os seis alimentadores d
 - As 894 UCs com queda de 40% ou mais (C2d) dependem da definição das janelas; outras definições dão entre 880 e 900. Os números por bairro usam o banco com os nomes corrigidos (PR #45, distribuído em 30/10).
 - A conta de até R$ 2,02 mi para os quatro bairros é um limite de receita em jogo calculado com as tarifas-base por classe; não é economia, recuperação observada nem previsão garantida.
 - Os R$ 7,45 mil/ano da fila são retorno esperado para a fila real de 2026-06; a configuração de demonstração `LOSS_REFERENCE_COMPETENCIA=2025-09` produz outra fila.
-- A coluna `subestacao` de `dim_unidade_consumidora` está vazia no banco real; só o `alimentador` está preenchido.
+- `subestacao` não está disponível na source `unidades_consumidoras.csv`; o campo na Gold é um placeholder sempre nulo. Só `alimentador` está preenchido como circuito da rede.
 - A tela pode limitar a lista de bairros retornados pela API; este documento não usa a lista truncada como fonte de totais.
 - Uma fatura por UC por competência (usada no ticket médio).
 - Os valores de DEC/FEC e qualquer limite de referência são só comparativos; **não** são multas nem violações regulatórias reais (glossário do case).

@@ -9,6 +9,7 @@
 
 ## Trabalho compartilhado atual — Diagnóstico da Receita
 
+- [x] Esclarecer que `subestacao` não existe em `unidades_consumidoras.csv` e é mantida apenas como nula na Gold (2026-11-03; `DATA_DICTIONARY.md`, prompt da IA e `DIAGNOSTICO_RECEITA.md`).
 - [x] Tornar explícitos no README principal a organização real do monorepo e o resumo das decisões arquiteturais para a entrega (2026-11-03).
 - [- Em andamento por Renan - 2026-10-30] Contribuição para fechar `docs/DIAGNOSTICO_RECEITA.md`: consolidar a evidência de fraude nos quatro bairros, explicar divergências de receita/volume e reconciliar a contagem divulgada de 887 UCs com queda ≥40% antes de validar os sete valores territoriais contra a tela.
 - [x] Medir planos e tempos das consultas analíticas no `v_energy.db`, comparar os PRAGMAs de cache/temporários/mmap e registrar recomendações compartilhadas com evidência (2026-10-30).
@@ -71,7 +72,7 @@
 
 ### Fase 3: Modelagem Star Schema na Camada Gold
 - [x] Construir a dimensão `dim_unidade_consumidora` com atributos desnormalizados:
-  - `id_uc`, `codigo_cliente`, `classe_consumo`, `subgrupo_tarifario`, `municipio`, `bairro`, `alimentador`, `subestacao`, `numero_medidor_ativo`, `possui_gd`, `potencia_gd_kw`.
+  - `id_uc`, `codigo_cliente`, `classe_consumo`, `subgrupo_tarifario`, `municipio`, `bairro`, `alimentador`, `subestacao` (coluna de compatibilidade, ausente de `unidades_consumidoras.csv` e sempre nula), `numero_medidor_ativo`, `possui_gd`, `potencia_gd_kw`.
 - [x] Construir a dimensão `dim_tempo` / `dim_calendario` (ano, mês, competência formatada MM/YYYY).
 - [x] Construir a tabela de fatos `fato_medicao`:
   - `id_medicao`, `id_uc`, `competencia`, `leitura_anterior`, `leitura_atual`, `consumo_kwh`, `dias_faturamento`, `media_diaria_kwh`.
@@ -117,7 +118,7 @@
 ### 4.2 Contratos de Integração da Fatia ("Quem Cria vs Quem Pluga")
 - **O que Renan ENTREGA para os outros colegas:**
   - Tabela `dim_unidade_consumidora` no SQLite `v_energy.db`:
-    - Colunas: `id_uc` (PK), `codigo_cliente`, `classe_consumo`, `subgrupo_tarifario`, `municipio`, `bairro`, `alimentador`, `subestacao`, `numero_medidor_ativo`, `possui_gd` (BOOLEAN), `potencia_gd_kw` (REAL).
+    - Colunas: `id_uc` (PK), `codigo_cliente`, `classe_consumo`, `subgrupo_tarifario`, `municipio`, `bairro`, `alimentador`, `subestacao` (compatibilidade; não existe na source e é sempre `NULL`), `numero_medidor_ativo`, `possui_gd` (BOOLEAN), `potencia_gd_kw` (REAL).
   - Tabela `fato_medicao` no SQLite `v_energy.db`:
     - Colunas: `id_medicao` (PK), `id_uc` (FK), `competencia` (TEXT 'YYYY-MM'), `leitura_anterior` (REAL), `leitura_atual` (REAL), `consumo_kwh` (REAL), `dias_faturamento` (INT).
 - **O que Renan RECEBE dos outros colegas:**

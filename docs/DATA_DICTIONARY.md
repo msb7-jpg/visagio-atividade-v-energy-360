@@ -52,7 +52,7 @@ Notebooks: `fatia01_bronze`, `fatia01_silver`, `fatia01_gold`, `fatia01_testes_q
 | `classe_consumo` | TEXT | Residencial, Comercial, Industrial, etc. (vem de `classe`). |
 | `subgrupo_tarifario` | TEXT | B1, B2, B3, A4 (trim e maiúsculas). |
 | `alimentador` | TEXT | Circuito da rede ao qual a UC está conectada. |
-| `subestacao` | TEXT | Projetado como Nulo na primeira versão. |
+| `subestacao` | TEXT | Não existe em `unidades_consumidoras.csv`. A Gold mantém a coluna apenas por compatibilidade de schema e preenche todas as linhas com `NULL`; não representa um atributo disponível na origem. |
 | `numero_medidor_ativo` | TEXT | Número do medidor fisicamente instalado hoje (calculado via ADR-007: status = ATIVO ou retirada nula). |
 | `possui_gd` | BOOLEAN | `1` se existe no cadastro de geração distribuída, senão `0`. |
 | `potencia_gd_kw` | REAL | Valor original de `geracao_distribuida.csv:potencia_kwp`, convertido para número e mantido sem conversão ou limite. Apesar do nome da coluna Gold, a origem está expressa em kWp; a unidade e os valores extremos precisam de validação antes de usar este campo como capacidade instalada. Há 35 UCs acima de 100 kWp (todas acima de 1.000), com máximo de 8.994,91 kWp. Decisão (ADR-029): o valor fica como veio do bruto, nenhum indicador o usa e só a Visão 360 o exibe. Esses registros são preservados para rastreabilidade, não truncados silenciosamente e não usados no diagnóstico de volume. |

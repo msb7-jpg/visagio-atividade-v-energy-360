@@ -6,6 +6,14 @@
 
 ## Registros de Execução
 
+### [2026-11-03] - Esclarecimento sobre subestação ausente na origem
+- **Autor:** Renan
+- **O que foi feito:**
+  - Documentado que `subestacao` não existe em `unidades_consumidoras.csv`; a Gold mantém o campo somente por compatibilidade e o preenche com `NULL`.
+  - Atualizado o prompt do agente analítico para não usar esse campo em filtros, agrupamentos ou inferências.
+  - Ajustado o diagnóstico da receita para consultar apenas alimentador, bairro e município.
+- **Validação:** `git diff --check` e compilação sintática do prompt Python.
+
 ### [2026-10-16] - Inicialização do Planejamento da Fatia 01
 - **Autor:** Renan
 - **O que foi feito:**
