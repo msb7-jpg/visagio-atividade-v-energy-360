@@ -1055,3 +1055,9 @@
   - `CHECKLIST.md`: onde a capacidade e a taxa de 62,7% aparecem depois do PR.
   - ADR-023 e `LossInspectionDTO`: a Visão 360 também lê as ordens concluídas em `ordem_inspecao`.
 - **Validação de Testes:** `test_loss_queue_rows_cache.py` (reaproveita a fila e refaz quando uma ordem muda); backend com Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (777) aprovados.
+
+### [2026-11-03] - Desempenho da Fila de Inspeção (feito por Bernardo H)
+- **Autor:** Bernardo H, na branch `perf/fila-inspecao-e-insight-receita`.
+- **O que foi feito (ADR-031):** a consulta da carteira lê `fato_medicao` em sequência (limites das janelas dentro do `CASE`), a tarifa média também, e a ordenação das UCs é reaproveitada entre a lista, o resumo e a contagem dos filtros. A tela passou de 4,6 a 5,8 s para 0,74 s na competência 2025-09 e 0,17 s em tempo real.
+- **Conferência:** a fila gerada é idêntica à da `main` em 2025-09 (39.243 UCs), 2025-12 (25) e tempo real (165), em todos os campos e na mediana da carteira.
+- **Validação de Testes:** `test_loss_scored_queue_cache.py` (novo) e os testes da Fila e do Painel sem mudança.

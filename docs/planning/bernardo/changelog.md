@@ -320,3 +320,11 @@
   - Receita: ADR-030 (agregação por UC e cache de 30 minutos), filtros no `FilterPopover` e "Tentar novamente" nos quatro erros. Cache do Painel movido para `app/shared/result_cache.py`, com cálculo único para chamadas simultâneas.
   - IA: métricas do insight calculadas no servidor (`chat/insight_metrics.py`) e realce de SQL só com a gramática de SQL.
   - Documentos: ADR-029 com os números exatos e o alcance do agente, ADR-030, README (limite da Receita), `CHECKLIST.md` (desempenho) e `CORRECOES.md` (`mmap_size`, insight, Receita, filtros e "Tentar novamente").
+
+### [2026-11-03] - Fila de Inspeção rápida e insight na Receita
+- **Autor:** Bernardo H
+- **Branch:** `perf/fila-inspecao-e-insight-receita`
+- **O que foi feito:**
+  - Fila de Inspeção (ADR-031): de 4,6 a 5,8 s para 0,74 s na competência 2025-09 e 0,17 s em tempo real, com a fila idêntica à anterior.
+  - Insight de IA na Receita (issue #11), com as métricas calculadas no servidor e acesso só do diretor.
+  - `CHECKLIST.md`: desempenho marcado e seção da apresentação removida.

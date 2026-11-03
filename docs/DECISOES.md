@@ -285,3 +285,15 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 - **Alternativa descartada:** `PRAGMA mmap_size`, que o Renan mediu e decidiu não aplicar globalmente sem orçamento de memória.
 - **Impacto:** ao trocar o `v_energy.db`, reinicie a API para limpar o cache (README).
 - **Conformidade:** os testes da Receita e do Painel (`test_revenue_*`, `test_executive_dashboard_*`) passam sem mudança de números.
+
+## ADR-031 — Desempenho da Fila de Inspeção: leitura sequencial e ordenação reaproveitada
+
+- **Data:** 2026-11-03 · **Fatia:** 05 (feito por Bernardo H) · **Status:** Aceita
+- **Contexto:** depois do cache da fila (PR #75), a tela ainda abria em 4,6 a 5,8 s na competência 2025-09 (39.243 UCs). A meta do checklist é cerca de 2 s. Medido no banco real: a consulta da fila e a mediana da carteira levavam 2,1 s cada, a tarifa média 1,4 s e a ordenação das 39 mil UCs 0,7 s, repetida nas três chamadas da tela (lista, resumo da seleção e contagem dos filtros).
+- **Decisão:**
+  1. **Leitura sequencial de `fato_medicao`** na consulta da carteira inteira (`consumption_subquery` sem UC): os limites das janelas e o descarte de consumo negativo saem do `WHERE` e vão para cada `CASE`, como na Receita (ADR-030). De 2,1 s para 0,65 s. A consulta de uma UC só continua com o `WHERE`, porque usa o índice do `id_uc`.
+  2. **Tarifa média** somada no `CASE`, sem `WHERE` por competência: de 1,4 s para 0,3 s, com o mesmo valor (R$ 0,7876/kWh).
+  3. **Ordenação reaproveitada:** a leitura da fila devolve a mesma lista de perfis enquanto o cache dela vale, e `rank_suspicious_units` guarda a fila ordenada por essa lista, pela tarifa e pela mediana. O filtro por motivo e o limite continuam aplicados a cada chamada.
+- **Resultado:** com o Painel já pré-calculado, a tela abre em 0,74 s na primeira vez e 0,58 s depois na competência 2025-09, e em 0,17 s em tempo real (165 UCs). A fila gerada é idêntica à anterior em 2025-09, 2025-12 e tempo real (todas as UCs, todos os campos e a mediana da carteira).
+- **Impacto:** nenhuma regra da fila muda. O cache continua sendo refeito quando uma ordem do portal muda (PR #75) e no dia seguinte.
+- **Conformidade:** testes da Fila e do Painel sem mudança de números, `test_loss_queue_rows_cache.py` e `test_loss_scored_queue_cache.py`.

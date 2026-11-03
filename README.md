@@ -93,7 +93,7 @@ O assistente de IA aparece para todos os perfis. O backend recusa (403) qualquer
 
 ### Inteligência Artificial (`backend/.env`)
 
-O agente Text-to-SQL (LangGraph) fica em [`backend/app/agent/`](backend/app/agent/), dentro da API, e não numa pasta `ai-agent/` separada: ele usa a mesma autenticação, o mesmo banco somente leitura e o mesmo deploy do backend. O chat aparece no canto da tela em todas as páginas, e o insight automático fica no Painel do Diretor.
+O agente Text-to-SQL (LangGraph) fica em [`backend/app/agent/`](backend/app/agent/), dentro da API, e não numa pasta `ai-agent/` separada: ele usa a mesma autenticação, o mesmo banco somente leitura e o mesmo deploy do backend. O chat aparece no canto da tela em todas as páginas, e o insight automático fica no Painel do Diretor, na Inteligência Comercial e na Visão 360.
 
 Copie [`backend/.env.example`](backend/.env.example) para `backend/.env` e escolha um provedor:
 
@@ -324,7 +324,7 @@ Detalhes: [`docs/DECISOES.md`](docs/DECISOES.md) (ADR-003, ADR-024 e ADR-025) e 
 
 ### 🤖 Fatia 07: Assistente de IA (Text-to-SQL e insights)
 
-Responde à diretora de tecnologia: **qualquer pessoa pergunta em português e recebe a resposta na hora, e se o agente não souber, diz que não sabe.** O chat fica no canto de todas as telas e mostra a resposta, a consulta SQL e a tabela usadas. O Painel e a Visão 360 têm um insight gerado pela IA sobre os indicadores da própria tela.
+Responde à diretora de tecnologia: **qualquer pessoa pergunta em português e recebe a resposta na hora, e se o agente não souber, diz que não sabe.** O chat fica no canto de todas as telas e mostra a resposta, a consulta SQL e a tabela usadas. O Painel, a Inteligência Comercial e a Visão 360 têm um insight gerado pela IA sobre os indicadores da própria tela.
 
 **Como demonstrar**
 
@@ -340,7 +340,7 @@ Responde à diretora de tecnologia: **qualquer pessoa pergunta em português e r
 | Tamanho da resposta | até 100 linhas por consulta | `app/agent/tools/query_runner.py` |
 | Gráficos | o agente responde com texto e tabela, sem gerar gráficos | ADR-026 |
 | Sem provedor de IA | o chat avisa que a IA está indisponível e o insight não aparece; o modo demonstração só liga quando escolhido (`AI_PROVIDER="mock"`) | seção "Inteligência Artificial" |
-| Insight | o servidor descarta qualquer frase com número que não esteja nos indicadores da tela | `app/features/chat/insights_service.py` |
+| Insight | o servidor recalcula no banco os indicadores da tela (Painel, Receita e Visão 360, com o mesmo controle de acesso delas) e descarta qualquer frase com número que não esteja neles | `app/features/chat/insight_metrics.py` e `insights_service.py` |
 | Modelo | `gemini-2.5-flash-lite` no `.env.example`; o case recomenda o Gemini 3.1 Flash-Lite, que se usa trocando `AI_MODEL_NAME` | `backend/.env.example` |
 
 Detalhes: [`docs/STATE_MACHINE.md`](docs/STATE_MACHINE.md), ADR-026 e ADR-027 em [`docs/DECISOES.md`](docs/DECISOES.md) e o plano da fatia em [`docs/planning/miguel/`](docs/planning/miguel/agente_text_to_sql_ia.md).
@@ -395,7 +395,7 @@ O backend é estruturado em **Fatias Verticais (*Vertical Slices*)** e adota os 
 - **Testes automatizados** no backend (pytest) e no frontend (Vitest), rodando no CI a cada PR, e **testes de qualidade de dados** no próprio Workflow, que para a exportação se algum falhar.
 - **Avaliação do agente de IA** com um conjunto de perguntas e respostas esperadas ([`backend/tests/golden_dataset.json`](backend/tests/golden_dataset.json)), executado por [`backend/scripts/evaluate_agent.py`](backend/scripts/evaluate_agent.py).
 - **Conversa com contexto:** o chat lembra as perguntas anteriores da mesma conversa ("e no ano anterior?").
-- **Insight de IA verificado:** o Painel e a Visão 360 mostram um resumo gerado pela IA, e o servidor descarta qualquer frase com número que não esteja nos indicadores da tela.
+- **Insight de IA verificado:** o Painel, a Inteligência Comercial e a Visão 360 mostram um resumo gerado pela IA. O servidor calcula ele mesmo os indicadores da tela e descarta qualquer frase com número que não esteja neles.
 - **Controle de acesso por perfil (RBAC)** no backend e no menu.
 - **Ciclo de campo da Fila de Inspeção:** gerar ordens, exportar a planilha para a equipe e importar os resultados de volta.
 - **Pipeline local** opcional, sem Databricks, com os mesmos notebooks.

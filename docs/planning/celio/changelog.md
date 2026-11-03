@@ -129,3 +129,8 @@
   - **Filtros em popover (#68):** município, bairro e classe no `FilterPopover`, com um chip por filtro e "Limpar filtros"; os dois períodos e "Restaurar padrão" continuam visíveis.
   - **"Tentar novamente"** nos erros dos indicadores, da decomposição, do ranking e do histórico do bairro.
 - **Validação de Testes:** testes da Receita atualizados para abrir o painel de filtros, mais um do chip e um do "Tentar novamente".
+
+### [2026-11-03] - Insight de IA na Receita (feito por Bernardo H)
+- **Autor:** Bernardo H, na branch `perf/fila-inspecao-e-insight-receita`.
+- **O que foi feito:** `SmartInsightCard context="revenue"` abaixo dos indicadores, com os períodos e os recortes da tela (`revenueInsightFilters`). O servidor recalcula os indicadores e os efeitos da decomposição no banco (`chat/insight_metrics.py`), só para o diretor, e a verificação de fidelidade barra número que não esteja neles. Fecha o último item da issue #11.
+- **Validação de Testes:** teste da página da Receita com o pedido do insight e teste do contexto `revenue` no backend.
