@@ -12,8 +12,11 @@ from app.features.chat.schemas import ProactiveInsightsRequest, ProactiveInsight
 from app.features.customer360.dependencies import get_customer360_service
 from app.shared.exceptions import BadRequestException, ForbiddenException
 from tests.customer360_seed import seed_customer360_tables
+from tests.executive_dashboard_seed import seed_dashboard_tables
 
 ATTENDANT = UserDTO(id="user-atendimento", email="atendimento@venergy.com", nome="Camila", role="atendente")
+DIRECTOR = UserDTO(id="user-diretor", email="diretor@venergy.com", nome="Henrique", role="diretor")
+WINDOWS = {"base": "2022-07 a 2023-06", "atual": "2025-07 a 2026-06"}
 
 
 @pytest.fixture
@@ -67,3 +70,19 @@ async def test_route_replaces_the_numbers_sent_by_the_screen(session, monkeypatc
 async def test_refuses_screens_the_profile_cannot_see_or_without_insight(session, context, filters, error):
     with pytest.raises(error):
         await server_metrics(context, filters, ATTENDANT, session, get_settings())
+
+
+async def test_revenue_metrics_come_from_the_database_and_respect_filters():
+    engine = create_async_engine("sqlite+aiosqlite://", poolclass=StaticPool)
+    async with engine.begin() as connection:
+        await seed_dashboard_tables(connection)
+    async with async_sessionmaker(engine, expire_on_commit=False)() as db_session:
+        everything = await server_metrics("revenue", WINDOWS, DIRECTOR, db_session, get_settings())
+        recife_filters = {**WINDOWS, "municipio": "RECIFE"}
+        recife = await server_metrics("revenue", recife_filters, DIRECTOR, db_session, get_settings())
+        with pytest.raises(ForbiddenException):
+            await server_metrics("revenue", WINDOWS, ATTENDANT, db_session, get_settings())
+    await engine.dispose()
+
+    assert {"faturamento_rs_atual", "volume_kwh_var_pct", "efeito_preco_rs", "efeito_volume_rs"} <= everything.keys()
+    assert recife["faturamento_rs_atual"] <= everything["faturamento_rs_atual"]

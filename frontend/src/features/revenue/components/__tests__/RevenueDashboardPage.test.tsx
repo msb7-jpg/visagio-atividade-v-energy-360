@@ -10,6 +10,7 @@ import {
   municipalitiesFixture,
   neighborhoodsFixture
 } from '@/features/revenue/__tests__/revenueFixtures'
+import { fetchProactiveInsights } from '@/features/insights/api/insightsApi'
 import { revenueApi } from '@/features/revenue/api/revenueApi'
 import { RevenueDashboardPage } from '@/features/revenue/components/RevenueDashboardPage'
 import type { BreakdownControls } from '@/features/revenue/types/revenueTypes'
@@ -18,7 +19,10 @@ vi.mock('@/features/revenue/api/revenueApi', () => ({
   revenueApi: { getKpis: vi.fn(), getDecomposition: vi.fn(), getBreakdown: vi.fn(), getHistory: vi.fn() }
 }))
 
+vi.mock('@/features/insights/api/insightsApi', () => ({ fetchProactiveInsights: vi.fn() }))
+
 const mockedApi = vi.mocked(revenueApi)
+const mockedInsights = vi.mocked(fetchProactiveInsights)
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -64,6 +68,23 @@ describe('RevenueDashboardPage', () => {
     expect(await screen.findByText('Faturamento')).toBeInTheDocument()
     expect(screen.getByText('Volume faturado')).toBeInTheDocument()
     expect(await screen.findByText(/A receita caiu/)).toBeInTheDocument()
+  })
+
+  it('mostra o insight de IA da Receita com os períodos e os recortes da tela', async () => {
+    mockHappyPath()
+    mockedInsights.mockResolvedValue({ resumo_executivo: 'O preço segurou a receita.', insights: ['O volume caiu.'] })
+    renderPage()
+
+    await waitFor(() => expect(mockedInsights).toHaveBeenCalled())
+    const payload = mockedInsights.mock.calls[0][0]
+    expect(payload.context).toBe('revenue')
+    expect(payload.filtros).toEqual({
+      base: '2022-07 a 2023-06',
+      atual: '2025-07 a 2026-06',
+      municipio: null,
+      bairro: null,
+      classe_consumo: null
+    })
   })
 
   it('alimenta os filtros com os municípios e classes que existem na base', async () => {

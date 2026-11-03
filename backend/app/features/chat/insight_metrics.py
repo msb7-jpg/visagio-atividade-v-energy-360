@@ -18,7 +18,8 @@ from app.features.executive_dashboard.dependencies import (
     get_executive_dashboard_service,
 )
 from app.features.executive_dashboard.schemas import DashboardIndicatorsDTO
-from app.features.revenue.schemas import PeriodWindow
+from app.features.revenue.dependencies import get_revenue_service
+from app.features.revenue.schemas import PeriodWindow, PriceVolumeDecompositionDTO, RevenueFilters, RevenueKpisDTO
 from app.shared.exceptions import BadRequestException, ForbiddenException
 from app.shared.role_groups import CUSTOMER360_ACCESS, DIRETORIA_ONLY
 
@@ -96,6 +97,36 @@ def dashboard_metrics(indicators: DashboardIndicatorsDTO) -> InsightMetrics:
     return metrics
 
 
+REVENUE_KPIS = ("faturamento_rs", "volume_kwh", "tarifa_media_rs_kwh", "ticket_medio_rs", "ucs_ativas")
+REVENUE_EFFECTS = (
+    "variacao_rs",
+    "variacao_pct",
+    "efeito_preco_rs",
+    "efeito_volume_rs",
+    "efeito_mix_rs",
+    "efeito_cruzado_rs",
+)
+
+
+def revenue_metrics(kpis: RevenueKpisDTO, decomposition: PriceVolumeDecompositionDTO) -> InsightMetrics:
+    """Indicadores e efeitos da decomposição que a tela da Receita mostra, lidos do banco."""
+    metrics: InsightMetrics = {}
+    for name in REVENUE_KPIS:
+        value = getattr(kpis, name)
+        for suffix, number in (("base", value.base), ("atual", value.atual), ("var_pct", value.variacao_pct)):
+            if number is not None:
+                metrics[f"{name}_{suffix}"] = number
+    for name in REVENUE_EFFECTS:
+        if (number := getattr(decomposition, name)) is not None:
+            metrics[name] = number
+    return metrics
+
+
+def _revenue_filters(filters: Mapping[str, object]) -> RevenueFilters:
+    values = {name: str(filters[name]) for name in ("municipio", "bairro", "classe_consumo") if filters.get(name)}
+    return RevenueFilters(**values)
+
+
 def _window(text: object, default_start: str, default_end: str) -> PeriodWindow:
     match = WINDOW_TEXT.match(str(text)) if text else None
     start, end = match.groups() if match else (default_start, default_end)
@@ -116,8 +147,9 @@ async def server_metrics(
     """Recalcula no banco as métricas da tela, com o mesmo controle de acesso da tela.
 
     Args:
-        context: Tela que pediu o insight (`executive` ou `customer360`).
-        filters: Filtros da tela: períodos do Painel (`base`, `atual`) ou a UC da Visão 360 (`id_uc`).
+        context: Tela que pediu o insight (`executive`, `revenue` ou `customer360`).
+        filters: Filtros da tela: períodos do Painel e da Receita (`base`, `atual`), recortes da Receita
+            (`municipio`, `bairro`, `classe_consumo`) ou a UC da Visão 360 (`id_uc`).
         user: Usuário autenticado.
         session: Sessão do banco.
         settings: Configuração da aplicação (competência de referência da fila).
@@ -135,6 +167,14 @@ async def server_metrics(
         current = _window(filters.get("atual"), ATUAL_INICIO_PADRAO, ATUAL_FIM_PADRAO)
         service = get_executive_dashboard_service(session, settings)
         return dashboard_metrics(await service.get_indicators(base, current))
+    if context == "revenue":
+        _ensure_role(user, DIRETORIA_ONLY, context)
+        base = _window(filters.get("base"), BASE_INICIO_PADRAO, BASE_FIM_PADRAO)
+        current = _window(filters.get("atual"), ATUAL_INICIO_PADRAO, ATUAL_FIM_PADRAO)
+        service = get_revenue_service(session)
+        revenue_filters = _revenue_filters(filters)
+        kpis = await service.get_kpis(base, current, revenue_filters)
+        return revenue_metrics(kpis, await service.get_decomposition(base, current, revenue_filters))
     if context == "customer360":
         _ensure_role(user, CUSTOMER360_ACCESS, context)
         id_uc = filters.get("id_uc")

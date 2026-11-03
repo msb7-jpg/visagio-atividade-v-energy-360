@@ -65,7 +65,7 @@
 - [x] *(Diferencial)* **Login por perfil** com as telas do cargo. Cada um dos 5 logins abre na tela certa e recebe 403 fora dela. (conferido em 30/10: 5 perfis × 5 rotas na API; `RbacMatrix.test.tsx` no frontend)
 - [x] *(Diferencial)* **Testes automatizados no backend.** (736 testes no pytest em 31/10, depois dos PRs #54, #56, #57 e #70, incluindo o filtro por causa da Continuidade)
 - [x] **Telas sem dado sujo** (Orientações Gerais: "um portal que exibe dados sujos é pior"). Conferir bairros, datas e valores, sem "9999" e sem caractere quebrado. (varredura das respostas da API em 30/10 com o banco corrigido: 0 ocorrências)
-- [ ] **Desempenho:** nenhuma tela leva mais de cerca de 2 s com o banco real. (medição do Célio. 03/11: a Receita abre em 1,1 s na primeira vez e 0,03 s depois, ADR-030. ⚠️ Falta a Fila de Inspeção: abre em 4,6 a 5,8 s na competência 2025-09, depois do cache do PR #75)
+- [x] **Desempenho:** nenhuma tela leva mais de cerca de 2 s com o banco real. (03/11: a Receita abre em 1,1 s na primeira vez e 0,03 s depois, ADR-030; a Fila de Inspeção abre em 0,74 s na competência 2025-09 (39.243 UCs) e 0,17 s em tempo real, ADR-031)
 
 ## 3. Inteligência Artificial (seção 5.3 e Módulo 3)
 - [x] **Agente Text-to-SQL integrado ao FastAPI**, usando um framework de agentes da lista (LangGraph), em Python, sobre o banco local. (código + README, seção "Inteligência Artificial": o agente fica em `backend/app/agent/`)
@@ -115,14 +115,7 @@
   - [x] como obter o `v_energy.db`, já que ele não está no repositório. (30/10: o README só ensina a baixar do Databricks; quem não tem acesso ao workspace não consegue) (31/10: o guia rápido diz que o banco não vai para o Git e aponta o Databricks ou o pipeline local, que exige Linux, macOS ou WSL)
 - [ ] O passo a passo foi **testado por alguém que não escreveu o README**, num clone limpo.
 
-## 6. Apresentação (15 min + 15 min de perguntas)
-- [ ] Roteiro: pergunta do diretor → dados → plataforma → resposta → recomendações. Cabe em 15 minutos cronometrados.
-- [ ] Demonstração ao vivo com o banco certo, `.env` pronto e logins à mão.
-- [ ] ⚠️ Plano B: vídeo gravado da demonstração e prints, caso a internet ou a IA falhem.
-- [ ] Banco de perguntas prováveis da banca, com resposta e dono. Todos sabem responder sobre a própria fatia e a da sua dupla.
-- [ ] As decisões que a banca pode questionar estão nas ADRs e têm resposta curta pronta: DEC/FEC sem limite real, fila em ago/2025, inadimplência por valor, causas atacáveis e outras.
-
-## 7. Orientações Gerais (seção 7)
+## 6. Orientações Gerais (seção 7)
 - [ ] **Qualidade acima de quantidade:** nenhuma funcionalidade quebrada ou "pela metade" na `main`. O que não ficar pronto sai da tela.
 - [ ] **Agente honesto:** nenhum número inventado, nem no chat nem no insight. (30/10: sem chave de IA, o chat avisa em vez de inventar, e o modo simulado se identifica; o insight barra número sem lastro. Falta conferir ao vivo, com o modelo da demonstração, as respostas do chat às perguntas do case e às perguntas sem dado)
 - [x] **Suposições documentadas no README** onde o case não era explícito. (02/11: todas as fatias, na seção "Suposições e Demonstração por Fatia")

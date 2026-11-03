@@ -5,12 +5,14 @@ import { AsyncState } from '@/components/feedback/AsyncState'
 import { getRevenueErrorMessage } from '@/features/revenue/utils/revenueErrorMessage'
 import { RevenueRankingCard } from '@/features/revenue/components/RevenueRankingCard'
 import { RevenueWaterfallCard } from '@/features/revenue/components/RevenueWaterfallCard'
+import { revenueInsightFilters } from '@/features/revenue/utils/revenueFilters'
+import { SmartInsightCard } from '@/features/insights/SmartInsightCard'
 import type { useRevenueDashboardController } from '@/features/revenue/hooks/useRevenueDashboardController'
 
 type Dashboard = ReturnType<typeof useRevenueDashboardController>
 
 /**
- * Resultados do dashboard: indicadores e as abas de decomposição e ranking territorial.
+ * Resultados do dashboard: indicadores, insight de IA e as abas de decomposição e ranking territorial.
  * Se os indicadores falham (ex.: recorte sem faturamento), mostra só esse erro, já que todas as consultas
  * dependem das mesmas janelas e filtros.
  *
@@ -18,7 +20,7 @@ type Dashboard = ReturnType<typeof useRevenueDashboardController>
  * @returns Cards de indicadores seguidos das abas, ou o estado de erro.
  */
 export function RevenueResults({ dashboard }: { dashboard: Dashboard }) {
-  const { kpisQuery, decompositionQuery, breakdownQuery, ranking } = dashboard
+  const { query, kpisQuery, decompositionQuery, breakdownQuery, ranking } = dashboard
   return (
     <>
       <AsyncState
@@ -31,6 +33,8 @@ export function RevenueResults({ dashboard }: { dashboard: Dashboard }) {
       >
         {kpisQuery.data ? <RevenueKpiCards kpis={kpisQuery.data} /> : null}
       </AsyncState>
+
+      {kpisQuery.data ? <SmartInsightCard context="revenue" filters={revenueInsightFilters(query)} /> : null}
 
       {kpisQuery.isError ? null : (
         <Tabs defaultValue="decomposition">

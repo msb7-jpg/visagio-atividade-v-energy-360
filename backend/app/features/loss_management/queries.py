@@ -167,12 +167,20 @@ def latest_competencia_query() -> Select[str | None]:
     return select(func.max(fato_medicao.c.competencia))
 
 
-def _consumption_aggregates(windows: ConsumptionWindows) -> list[Label]:
-    """Colunas agregadas por UC: média das duas janelas, meses zerados na recente e meses com leitura na base."""
+def _consumption_aggregates(windows: ConsumptionWindows, *, bounded_in_case: bool = False) -> list[Label]:
+    """Colunas agregadas por UC: média das duas janelas, meses zerados na recente e meses com leitura na base.
+
+    Com `bounded_in_case`, os limites das janelas e o descarte de consumo negativo ficam dentro de cada `CASE`,
+    para a consulta da carteira inteira ler `fato_medicao` em sequência, sem `WHERE` por competência (ADR-031).
+    """
     competencia = fato_medicao.c.competencia
     consumo_kwh = fato_medicao.c.consumo_kwh
     is_base = competencia < windows.inicio_recente
     is_recent = competencia >= windows.inicio_recente
+    if bounded_in_case:
+        valid_reading = consumo_kwh >= 0
+        is_base = and_(competencia >= windows.inicio_base, is_base, valid_reading)
+        is_recent = and_(is_recent, competencia <= windows.fim_recente, valid_reading)
     is_zero_recent = and_(is_recent, consumo_kwh == 0)
     return [
         func.avg(case((is_base, consumo_kwh))).label("consumo_base_kwh"),
@@ -194,18 +202,24 @@ def consumption_subquery(windows: ConsumptionWindows, id_uc: str | None = None) 
         id_uc: Restringe a agregação a uma única UC; None agrega todas.
 
     Returns:
-        Subquery `consumo` com `id_uc`, `consumo_base_kwh`, `consumo_recente_kwh` e `meses_zerados`.
+        Subquery `consumo` com `id_uc`, `consumo_base_kwh`, `consumo_recente_kwh` e `meses_zerados`. Sem `id_uc`,
+        UCs sem leitura válida nas janelas também aparecem, com as médias nulas; quem usa a subquery já exige
+        consumo base positivo e consumo recente não nulo.
     """
+    if id_uc is None:
+        return (
+            select(fato_medicao.c.id_uc, *_consumption_aggregates(windows, bounded_in_case=True))
+            .group_by(fato_medicao.c.id_uc)
+            .subquery("consumo")
+        )
     competencia = fato_medicao.c.competencia
-    consumo_kwh = fato_medicao.c.consumo_kwh
-    unit_condition = [fato_medicao.c.id_uc == id_uc] if id_uc is not None else []
     return (
         select(fato_medicao.c.id_uc, *_consumption_aggregates(windows))
         .where(
             competencia >= windows.inicio_base,
             competencia <= windows.fim_recente,
-            consumo_kwh >= 0,
-            *unit_condition,
+            fato_medicao.c.consumo_kwh >= 0,
+            fato_medicao.c.id_uc == id_uc,
         )
         .group_by(fato_medicao.c.id_uc)
         .subquery("consumo")
