@@ -19,6 +19,10 @@ function setup(windowError: string | null = null, filters: RevenueFilters = {}) 
   return handlers
 }
 
+function openFilters() {
+  fireEvent.click(screen.getByRole('button', { name: /^Filtros/ }))
+}
+
 describe('RevenueFiltersBar', () => {
   it('mostra o primeiro dia do mês inicial e o último dia do mês final', () => {
     setup()
@@ -38,6 +42,7 @@ describe('RevenueFiltersBar', () => {
 
   it('lista os municípios e classes recebidos e avisa a escolha', () => {
     const handlers = setup()
+    openFilters()
 
     fireEvent.change(screen.getByLabelText('Município'), { target: { value: 'RECIFE' } })
     fireEvent.change(screen.getByLabelText('Classe de consumo'), { target: { value: 'B1' } })
@@ -49,6 +54,7 @@ describe('RevenueFiltersBar', () => {
 
   it('só libera o bairro depois de escolher o município', () => {
     setup()
+    openFilters()
 
     const neighborhood = screen.getByLabelText('Bairro')
     expect(neighborhood).toBeDisabled()
@@ -57,6 +63,7 @@ describe('RevenueFiltersBar', () => {
 
   it('lista os bairros do município escolhido e avisa a escolha', () => {
     const handlers = setup(null, { municipio: 'RECIFE' })
+    openFilters()
 
     const neighborhood = screen.getByLabelText('Bairro')
     expect(neighborhood).toBeEnabled()
@@ -64,6 +71,16 @@ describe('RevenueFiltersBar', () => {
 
     expect(screen.getByRole('option', { name: 'Todos os bairros' })).toBeInTheDocument()
     expect(handlers.onFilterChange).toHaveBeenCalledWith('bairro', 'CASA AMARELA')
+  })
+
+  it('mostra um chip por filtro ativo e limpa município e classe', () => {
+    const handlers = setup(null, { municipio: 'RECIFE', classe_consumo: 'B1' })
+
+    expect(screen.getByRole('button', { name: 'Remover filtro Município: RECIFE' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+
+    expect(handlers.onFilterChange).toHaveBeenCalledWith('classe_consumo', '')
+    expect(handlers.onFilterChange).toHaveBeenCalledWith('municipio', '')
   })
 
   it('restaura o padrão', () => {

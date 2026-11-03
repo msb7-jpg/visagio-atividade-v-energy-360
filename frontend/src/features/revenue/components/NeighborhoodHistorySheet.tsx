@@ -15,17 +15,18 @@ interface NeighborhoodHistorySheetProps {
   isLoading: boolean
   isError: boolean
   error: unknown
+  onRetry: () => void
   onClose: () => void
 }
 
 /**
  * Gaveta lateral com a série mensal (receita, volume ou tarifa) do bairro escolhido no ranking.
  *
- * @param props - Bairro aberto, resultado da consulta do histórico e callback de fechamento.
+ * @param props - Bairro aberto, resultado da consulta do histórico, nova tentativa e callback de fechamento.
  * @returns Gaveta com abas de métrica, gráfico de barras e estados de carregamento/erro/vazio.
  */
 export function NeighborhoodHistorySheet(props: NeighborhoodHistorySheetProps) {
-  const { neighborhood, history, isLoading, isError, error, onClose } = props
+  const { neighborhood, history, isLoading, isError, error, onRetry, onClose } = props
   const [metricKey, setMetricKey] = useState<HistoryMetricKey>('receita_rs')
   const metric = HISTORY_METRICS.find((candidate) => candidate.key === metricKey) ?? HISTORY_METRICS[0]
   const points = history?.pontos ?? []
@@ -52,6 +53,7 @@ export function NeighborhoodHistorySheet(props: NeighborhoodHistorySheetProps) {
             isEmpty={history !== undefined && points.length === 0}
             errorTitle="Não foi possível carregar o histórico"
             errorDescription={getRevenueErrorMessage(error)}
+            onRetry={onRetry}
             emptyTitle="Sem histórico para este bairro"
             emptyIcon={<History className="size-10" />}
           >

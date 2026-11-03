@@ -46,6 +46,10 @@ function mockHappyPath() {
   })
 }
 
+async function openFilters() {
+  fireEvent.click(await screen.findByRole('button', { name: /^Filtros/ }))
+}
+
 describe('RevenueDashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -66,6 +70,7 @@ describe('RevenueDashboardPage', () => {
     mockHappyPath()
 
     renderPage()
+    await openFilters()
 
     expect(await screen.findByRole('option', { name: 'OLINDA' })).toBeInTheDocument()
     expect(await screen.findByRole('option', { name: 'B3' })).toBeInTheDocument()
@@ -74,6 +79,7 @@ describe('RevenueDashboardPage', () => {
   it('refaz as consultas com o município escolhido', async () => {
     mockHappyPath()
     renderPage()
+    await openFilters()
     await screen.findByRole('option', { name: 'OLINDA' })
 
     fireEvent.change(screen.getByLabelText('Município'), { target: { value: 'OLINDA' } })
@@ -89,6 +95,7 @@ describe('RevenueDashboardPage', () => {
   it('filtra por bairro depois de escolher o município e limpa o bairro ao trocar de município', async () => {
     mockHappyPath()
     renderPage()
+    await openFilters()
     await screen.findByRole('option', { name: 'RECIFE' })
     expect(screen.getByLabelText('Bairro')).toBeDisabled()
 

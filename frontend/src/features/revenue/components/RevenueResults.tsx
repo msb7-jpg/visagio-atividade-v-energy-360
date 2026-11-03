@@ -26,6 +26,7 @@ export function RevenueResults({ dashboard }: { dashboard: Dashboard }) {
         isError={kpisQuery.isError}
         errorTitle="Não foi possível carregar os indicadores"
         errorDescription={getRevenueErrorMessage(kpisQuery.error)}
+        onRetry={() => void kpisQuery.refetch()}
         skeletonCount={2}
       >
         {kpisQuery.data ? <RevenueKpiCards kpis={kpisQuery.data} /> : null}
@@ -51,6 +52,7 @@ export function RevenueResults({ dashboard }: { dashboard: Dashboard }) {
               isLoading={decompositionQuery.isLoading}
               isError={decompositionQuery.isError}
               error={decompositionQuery.error}
+              onRetry={() => void decompositionQuery.refetch()}
             />
           </TabsContent>
           <TabsContent value="ranking" className="mt-4">
