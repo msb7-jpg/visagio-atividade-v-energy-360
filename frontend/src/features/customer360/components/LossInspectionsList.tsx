@@ -61,7 +61,7 @@ export function LossInspectionsList({ inspections }: LossInspectionsListProps) {
                 <TableCell><span className="font-mono">{inspection.id_inspetor ?? '—'}</span></TableCell>
                 <TableCell><Badge variant={result.variant}>{result.label}</Badge></TableCell>
                 <TableCell>{inspection.tipo_irregularidade ? formatGoldCode(inspection.tipo_irregularidade) : '—'}</TableCell>
-                <TableCell>{formatKwh(inspection.kwh_recuperado)}</TableCell>
+                <TableCell>{inspection.irregularidade_constatada ? formatKwh(inspection.kwh_recuperado) : '—'}</TableCell>
               </TableRow>
             )
           })}

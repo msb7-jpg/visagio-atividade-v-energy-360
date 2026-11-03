@@ -169,7 +169,7 @@ const events: CustomerEventTimeline = {
       data_inspecao: '2025-11-04',
       id_inspetor: 'INSP-02',
       irregularidade_constatada: true,
-      tipo_irregularidade: 'BY-PASS',
+      tipo_irregularidade: 'LIGACAO CLANDESTINA',
       kwh_recuperado: 1250.5
     },
     {
@@ -347,8 +347,9 @@ describe('Customer360Page', () => {
     expect(await screen.findByText('2 inspeções feitas nesta unidade: irregularidade constatada em 1, com 1.250,5 kWh recuperados.')).toBeInTheDocument()
     const inspections = screen.getByRole('table', { name: 'Inspeções de perdas da unidade consumidora' })
     expect(within(inspections).getByText('Irregular')).toBeInTheDocument()
-    expect(within(inspections).getByText('Regular')).toBeInTheDocument()
-    expect(within(inspections).getByText('By-pass')).toBeInTheDocument()
+    expect(within(inspections).getByText('Ligação clandestina')).toBeInTheDocument()
+    const regularRow = within(inspections).getByText('Regular').closest('tr') as HTMLElement
+    expect(within(regularRow).queryByText(/kWh/)).not.toBeInTheDocument()
   })
 
   it('mostra no topo o que precisa de atenção, com fatura vencida antes do resto', async () => {

@@ -3,7 +3,8 @@ const ACCENTED_LABELS: Record<string, string> = {
   VEGETACAO: 'Vegetação',
   OSCILACAO: 'Oscilação',
   'NAO IDENTIFICADA': 'Não identificada',
-  'NAO INFORMADA': 'Não informada'
+  'NAO INFORMADA': 'Não informada',
+  'LIGACAO CLANDESTINA': 'Ligação clandestina'
 }
 
 /**
