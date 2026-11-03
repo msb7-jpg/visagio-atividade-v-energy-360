@@ -134,14 +134,16 @@ class LossRepository(
         if ultima_competencia is None:
             return None, [], NEUTRAL_PORTFOLIO_RATIO
         reference = resolve_analysis_reference(ultima_competencia, self.reference_competencia)
+        portfolio_ratio = await self.fetch_portfolio_ratio(reference.competencia)
         query = suspicious_profiles_query(
             build_windows(reference.competencia),
             filters,
             include_field_history=field_history_applied,
             history_until=reference.history_until,
+            portfolio_ratio=portfolio_ratio,
         )
         result = await self.session.execute(query)
-        return reference, list(result.mappings()), await self.fetch_portfolio_ratio(reference.competencia)
+        return reference, list(result.mappings()), portfolio_ratio
 
     async def fetch_registered_unit(self, id_uc: str) -> RegisteredUnit | None:
         """Busca a UC no cadastro com o consumo da mesma janela usada pela fila.

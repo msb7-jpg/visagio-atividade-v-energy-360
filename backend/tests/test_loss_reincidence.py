@@ -18,6 +18,7 @@ REFERENCE_COMPETENCIA = "2026-01"
 BASE_KWH = 300
 MODERATE_DROP_KWH = 200  # queda de 33%: candidata, mas abaixo da queda súbita
 SUDDEN_DROP_KWH = 50  # queda de 83%
+PORTFOLIO_WIDE_DROP_KWH = 150  # queda de 50%: súbita pela conta bruta, mas igual à queda geral de uma carteira em 50%
 
 SCHEMA_STATEMENTS = (
     "CREATE TABLE fato_medicao (id_uc TEXT, competencia TEXT, consumo_kwh REAL)",
@@ -33,6 +34,7 @@ FIELD_HISTORY_CASES = (
     ("H_IRREGULAR_MODERADA", MODERATE_DROP_KWH, "2025-08-10", True),
     ("H_IRREGULAR_QUEDA_SUBITA", SUDDEN_DROP_KWH, "2025-08-10", True),
     ("H_IRREGULAR_NA_JANELA_RECENTE", SUDDEN_DROP_KWH, "2025-12-05", True),
+    ("H_IRREGULAR_QUEDA_DA_CARTEIRA", PORTFOLIO_WIDE_DROP_KWH, "2025-08-10", True),
     ("H_IRREGULAR_13_MESES", MODERATE_DROP_KWH, "2025-01-10", True),
     ("H_LIMPA_RECENTE", SUDDEN_DROP_KWH, "2025-08-10", False),
     ("H_LIMPA_13_MESES", MODERATE_DROP_KWH, "2025-01-10", False),
@@ -51,6 +53,7 @@ EXPECTED_IN_QUEUE = {
     "H_IRREGULAR_MODERADA": False,  # irregular há 5 meses e sem queda súbita: ainda no prazo
     "H_IRREGULAR_QUEDA_SUBITA": True,  # nova queda súbita depois da regularização antecipa o retorno
     "H_IRREGULAR_NA_JANELA_RECENTE": False,  # a queda pode ser a de antes da inspeção: não conta como nova
+    "H_IRREGULAR_QUEDA_DA_CARTEIRA": True,  # sem queda geral conhecida (razão 1,0) a queda de 50% é súbita
     "H_IRREGULAR_13_MESES": True,  # passou dos 12 meses (antes ficava até 15)
     "H_LIMPA_RECENTE": False,  # sem irregularidade a janela é de 15 meses, mesmo com queda súbita
     "H_LIMPA_13_MESES": False,
@@ -100,7 +103,7 @@ def _seed_completed_orders(connection) -> None:
         )
 
 
-def _queue_ids() -> set[str]:
+def _queue_ids(portfolio_ratio: float = 1.0) -> set[str]:
     engine = create_engine("sqlite://")
     InspectionOrder.__table__.create(engine)
     with engine.begin() as connection:
@@ -109,7 +112,9 @@ def _queue_ids() -> set[str]:
         _seed_field_history(connection)
         _seed_completed_orders(connection)
         query = suspicious_profiles_query(
-            build_windows(REFERENCE_COMPETENCIA), SuspicionFilters(limiar_queda=LIMIAR_QUEDA_MODERADA)
+            build_windows(REFERENCE_COMPETENCIA),
+            SuspicionFilters(limiar_queda=LIMIAR_QUEDA_MODERADA),
+            portfolio_ratio=portfolio_ratio,
         )
         return {row.id_uc for row in connection.execute(query)}
 
@@ -126,3 +131,20 @@ def test_reincidence_cutoff_is_twelve_competencias_counting_the_reference():
 @pytest.mark.parametrize(("id_uc", "expected_in_queue"), sorted(EXPECTED_IN_QUEUE.items()))
 def test_unit_enters_the_queue_according_to_the_reincidence_rule(queue_ids, id_uc, expected_in_queue):
     assert (id_uc in queue_ids) is expected_in_queue
+
+
+@pytest.fixture(scope="module")
+def queue_ids_with_portfolio_drop() -> set[str]:
+    return _queue_ids(portfolio_ratio=0.5)
+
+
+def test_return_needs_a_drop_beyond_the_portfolio_drop(queue_ids_with_portfolio_drop):
+    # Carteira em 50% do consumo base: a queda de 50% da UC é a geral e não antecipa o retorno;
+    # a de 83% passa de 50% da carteira (0,25 do base) e continua antecipando.
+    assert "H_IRREGULAR_QUEDA_DA_CARTEIRA" not in queue_ids_with_portfolio_drop
+    assert "H_IRREGULAR_QUEDA_SUBITA" in queue_ids_with_portfolio_drop
+    assert "O_IRREGULAR_QUEDA_SUBITA" in queue_ids_with_portfolio_drop
+
+
+def test_portfolio_growth_does_not_loosen_the_return_rule():
+    assert _queue_ids(portfolio_ratio=1.4) == _queue_ids(portfolio_ratio=1.0)

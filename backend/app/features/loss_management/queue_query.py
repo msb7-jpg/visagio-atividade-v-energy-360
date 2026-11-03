@@ -6,6 +6,7 @@ from sqlalchemy import CompoundSelect, Select, Subquery, and_, or_, select, true
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.features.loss_management.models import InspectionOrder
+from app.features.loss_management.portfolio_repository import NEUTRAL_PORTFOLIO_RATIO
 from app.features.loss_management.queries import (
     COMPLETED_STATUS,
     ConsumptionWindows,
@@ -90,12 +91,20 @@ def _irregular_inspections_query(
 
 
 def _reincidence_condition(
-    consumo: Subquery, windows: ConsumptionWindows, *, include_field_history: bool, history_until: date | None
+    consumo: Subquery,
+    windows: ConsumptionWindows,
+    *,
+    include_field_history: bool,
+    history_until: date | None,
+    portfolio_ratio: float,
 ) -> ColumnElement[bool]:
     """Prazo de reincidência: irregularidade constatada mantém a UC fora da fila por 12 meses.
 
     A UC volta antes do prazo só com uma nova queda súbita, e só se a janela recente inteira for posterior à
     inspeção; uma queda que começou antes da inspeção pode ser a mesma que motivou a visita.
+
+    A queda súbita é medida além da queda geral da carteira: com a mediana em 60% do consumo base, a UC só volta
+    se o consumo recente for 50% ou menos desses 60%. Carteira que cresceu não afrouxa a regra (teto de 1,0).
     """
     uc = dim_unidade_consumidora
     within_term = _irregular_inspections_query(
@@ -106,7 +115,8 @@ def _reincidence_condition(
         include_field_history=include_field_history,
         history_until=history_until,
     )
-    has_new_sudden_drop = consumo.c.consumo_recente_kwh <= consumo.c.consumo_base_kwh * (1 - LIMIAR_QUEDA_SUBITA)
+    expected_recent_kwh = consumo.c.consumo_base_kwh * min(portfolio_ratio, NEUTRAL_PORTFOLIO_RATIO)
+    has_new_sudden_drop = consumo.c.consumo_recente_kwh <= expected_recent_kwh * (1 - LIMIAR_QUEDA_SUBITA)
     returns_early = and_(uc.c.id_uc.not_in(inspected_in_recent_window), has_new_sudden_drop)
     return or_(uc.c.id_uc.not_in(within_term), returns_early)
 
@@ -174,6 +184,7 @@ def suspicious_profiles_query(
     *,
     include_field_history: bool = True,
     history_until: date | None = None,
+    portfolio_ratio: float = NEUTRAL_PORTFOLIO_RATIO,
 ) -> Select:
     """Monta a consulta dos perfis de consumo candidatos à fila de suspeitas.
 
@@ -185,6 +196,8 @@ def suspicious_profiles_query(
         filters: Limiar de queda e filtros opcionais de município, bairro e classe.
         include_field_history: False monta a fila sem excluir as UCs do histórico de campo.
         history_until: Data (exclusiva) em que o histórico de campo deixa de valer; None usa todo o histórico.
+        portfolio_ratio: Razão mediana recente/base da carteira, que a regra de retorno antecipado desconta da
+            queda da UC; 1.0 (padrão) usa a queda bruta.
 
     Returns:
         SELECT com cadastro e consumo agregado das UCs candidatas.
@@ -194,6 +207,10 @@ def suspicious_profiles_query(
         windows, include_field_history=include_field_history, history_until=history_until
     )
     reincidence = _reincidence_condition(
-        consumo, windows, include_field_history=include_field_history, history_until=history_until
+        consumo,
+        windows,
+        include_field_history=include_field_history,
+        history_until=history_until,
+        portfolio_ratio=portfolio_ratio,
     )
     return _candidate_select(consumo).where(*_candidate_conditions(consumo, filters, excluded_units, reincidence))
