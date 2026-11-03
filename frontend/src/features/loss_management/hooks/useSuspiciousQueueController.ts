@@ -1,11 +1,12 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { lossApi } from '@/features/loss_management/api/lossApi'
 import { useQueueSelection } from '@/features/loss_management/hooks/useQueueSelection'
 import {
   useQueueFiltersQuery,
   useQueueSummaryQuery,
   useSuspiciousUnitsQuery
 } from '@/features/loss_management/hooks/useLossQueries'
+import { suspiciousUnitsQueryOptions } from '@/features/loss_management/queries/lossQueries'
 import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
 import { TOP_SELECTION_COUNT, isPriorityUnit } from '@/features/loss_management/utils/queueBands'
 import { hasActiveFilters } from '@/features/loss_management/utils/queueFilters'
@@ -18,6 +19,7 @@ import { hasActiveFilters } from '@/features/loss_management/utils/queueFilters'
  * @returns Estado e ações que os componentes da fila consomem.
  */
 export function useSuspiciousQueueController() {
+  const queryClient = useQueryClient()
   const [filters, setFilters] = useState<SuspiciousUnitsFilter>({})
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [detailUcId, setDetailUcId] = useState<string | null>(null)
@@ -38,11 +40,16 @@ export function useSuspiciousQueueController() {
     const freeFilters = { ...filters, situacao: 'na_fila' as const }
     setFilters(freeFilters)
     try {
-      const freeQueue = await lossApi.listSuspiciousUnits(freeFilters)
-      const topIds = freeQueue.itens.filter(isPriorityUnit).slice(0, TOP_SELECTION_COUNT).map((unit) => unit.id_uc)
+      // Mesma chave de cache da lista: a chamada é uma só, e uma falha também aparece na lista com o botão de tentar de novo.
+      const freeQueue = await queryClient.infiniteQuery(suspiciousUnitsQueryOptions(freeFilters))
+      const topIds = freeQueue.pages
+        .flatMap((page) => page.itens)
+        .filter(isPriorityUnit)
+        .slice(0, TOP_SELECTION_COUNT)
+        .map((unit) => unit.id_uc)
       selection.selectIds(topIds)
     } catch {
-      // A lista mostra o erro e o botão de tentar de novo; sem a fila não há o que marcar.
+      // O erro fica no estado da query da lista (isError), que mostra o aviso; sem a fila não há o que marcar.
     }
   }
 

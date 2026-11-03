@@ -37,6 +37,12 @@ interface UnitDetailSheetProps {
 export function UnitDetailSheet({ idUc, onClose, onGenerateOrder }: UnitDetailSheetProps) {
   const canWrite = useCanWriteLosses()
   const [fullHistory, setFullHistory] = useState(false)
+  const [historyIdUc, setHistoryIdUc] = useState(idUc)
+  // Trocar de UC com o painel aberto volta para os 12 meses; ajusta o estado no render, sem efeito.
+  if (historyIdUc !== idUc) {
+    setHistoryIdUc(idUc)
+    setFullHistory(false)
+  }
   const query = useUnitDetailQuery(idUc, fullHistory)
   const isNotFound = isAxiosError(query.error) && query.error.response?.status === NOT_FOUND_STATUS
   const hasLoadError = query.isError && !isNotFound
