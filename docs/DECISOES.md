@@ -268,8 +268,20 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 ## ADR-029 — Potência solar fora da faixa mantida como veio do bruto
 
 - **Data:** 2026-11-02 · **Fatia:** 01 (registrada por Bernardo H a partir do `CORRECOES.md`) · **Status:** Aceita
-- **Contexto:** `geracao_distribuida.csv` traz a potência em kWp. 35 UCs têm valor acima de 100 kWp, todas acima de 1.000 e até 8.994,91, inclusive residências, o que não é plausível para geração própria de baixa tensão. Não há como saber se é erro de unidade (W no lugar de kW) ou de digitação.
-- **Decisão:** manter o valor como veio em `dim_unidade_consumidora.potencia_gd_kw`, sem converter nem limitar. Nenhum indicador, fila ou consulta do portal usa a potência; ela só aparece na ficha da Visão 360. O que importa nas análises é se a UC tem painel (`possui_gd`) e a data de ligação, que não dependem desse valor.
+- **Contexto:** `geracao_distribuida.csv` traz a potência em kWp. 35 UCs têm valor acima de 100 kWp, todas entre 3.049,99 e 8.994,91, e 33 delas são residenciais, o que não é plausível para geração própria de baixa tensão. Não há como saber se é erro de unidade (W no lugar de kW) ou de digitação.
+- **Decisão:** manter o valor como veio em `dim_unidade_consumidora.potencia_gd_kw`, sem converter nem limitar. Nenhum indicador, fila ou consulta do portal usa a potência; ela só aparece na ficha da Visão 360. O assistente de IA também enxerga a coluna (catálogo do agente), então uma pergunta sobre potência instalada inclui esses valores. O que importa nas análises é se a UC tem painel (`possui_gd`) e a data de ligação, que não dependem desse valor.
 - **Alternativa descartada:** dividir por 1.000 os valores acima de 100, que só se justificaria com a confirmação da área de que a origem usa W nesses casos.
 - **Impacto:** a Visão 360 mostra o número da origem nessas 35 UCs. Se a área confirmar a unidade, a correção entra na Silver sem mudar nenhuma tela.
 - **Conformidade:** `SELECT count(*) FROM dim_unidade_consumidora WHERE potencia_gd_kw > 100` devolve 35 (02/11/2026).
+
+## ADR-030 — Desempenho da Receita: agregação por UC e cache de 30 minutos
+
+- **Data:** 2026-11-03 · **Fatia:** 04 (feito por Bernardo H) · **Status:** Aceita
+- **Contexto:** em 03/11, no banco completo, a decomposição levava 11 a 13 s e o ranking 11 s, e a tela abre seis consultas de uma vez (indicadores, decomposição, ranking e as listas de municípios e bairros). A meta do checklist é cerca de 2 s. As duas consultas pesadas juntavam as 2,1 milhões de faturas com o cadastro, filtravam a competência pelo índice e agrupavam por segmento.
+- **Decisão:**
+  1. **Agregar por UC antes de juntar com o cadastro** (`per_unit_totals` em `revenue/queries.py`), numa leitura sequencial de `fato_faturamento`, sem `WHERE` por competência: cada soma filtra a janela no `CASE`. A busca pelo índice de competência obrigava a ler as faturas fora de ordem. A consulta dos segmentos caiu de 4,9 s para 0,7 s no SQLite e a dos totais, de 1,2 s para 0,8 s, com resultados idênticos (1.106 segmentos).
+  2. **Cache de 30 minutos** (`ResultCache` em `app/shared/result_cache.py`, o mesmo do Painel, agora compartilhado) para os segmentos e os totais, por banco, janelas e filtros. A decomposição, o ranking de todos os níveis e páginas e as listas dos filtros usam o mesmo resultado, e chamadas simultâneas esperam um único cálculo.
+- **Resultado:** a abertura da tela, com as seis chamadas ao mesmo tempo, caiu para 1,1 s na primeira vez e 0,03 s nas seguintes, com os mesmos números (+8,0%, −5,1%, +13,8%). O Painel usa a mesma consulta de totais (ADR-016) e não muda.
+- **Alternativa descartada:** `PRAGMA mmap_size`, que o Renan mediu e decidiu não aplicar globalmente sem orçamento de memória.
+- **Impacto:** ao trocar o `v_energy.db`, reinicie a API para limpar o cache (README).
+- **Conformidade:** os testes da Receita e do Painel (`test_revenue_*`, `test_executive_dashboard_*`) passam sem mudança de números.

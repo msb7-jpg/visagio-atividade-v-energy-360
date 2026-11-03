@@ -312,3 +312,11 @@
   - Inspeção regular mostra "—" em energia recuperada, em vez de "0 kWh".
 - **Validação de Testes:**
   - Frontend: ESLint, Fallow, Vitest (49 da Visão 360) e build aprovados.
+
+### [2026-11-03] - Receita rápida e pendências de outras fatias
+- **Autor:** Bernardo H
+- **Branch:** `fix/receita-desempenho-e-pendencias`
+- **O que foi feito:**
+  - Receita: ADR-030 (agregação por UC e cache de 30 minutos), filtros no `FilterPopover` e "Tentar novamente" nos quatro erros. Cache do Painel movido para `app/shared/result_cache.py`, com cálculo único para chamadas simultâneas.
+  - IA: métricas do insight calculadas no servidor (`chat/insight_metrics.py`) e realce de SQL só com a gramática de SQL.
+  - Documentos: ADR-029 com os números exatos e o alcance do agente, ADR-030, README (limite da Receita), `CHECKLIST.md` (desempenho) e `CORRECOES.md` (`mmap_size`, insight, Receita, filtros e "Tentar novamente").

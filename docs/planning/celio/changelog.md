@@ -121,3 +121,11 @@
 - **Autor:** Bernardo H, a partir do `docs/CORRECOES.md`
 - **O que foi feito (commit `07a69c0`, mesclado em 2026-10-28):**
   - A lista de bairros dos filtros da Receita lia só a primeira página do ranking (100 linhas) e cortava bairros. Passou a ler todas as páginas (`fetchAllBreakdownRows`), com teste em `revenueQueries.test.ts`.
+
+### [2026-11-03] - Desempenho, filtros e "Tentar novamente" da Receita (feito por Bernardo H)
+- **Autor:** Bernardo H, na branch `fix/receita-desempenho-e-pendencias`.
+- **O que foi feito:**
+  - **Desempenho (ADR-030):** segmentos e totais agregados por UC antes de juntar com o cadastro, sem `WHERE` por competência, e cache de 30 minutos compartilhado pela decomposição, pelo ranking e pelas listas dos filtros. A abertura da tela caiu de 11 a 13 s para 1,1 s (0,03 s com cache), com os mesmos números.
+  - **Filtros em popover (#68):** município, bairro e classe no `FilterPopover`, com um chip por filtro e "Limpar filtros"; os dois períodos e "Restaurar padrão" continuam visíveis.
+  - **"Tentar novamente"** nos erros dos indicadores, da decomposição, do ranking e do histórico do bairro.
+- **Validação de Testes:** testes da Receita atualizados para abrir o painel de filtros, mais um do chip e um do "Tentar novamente".

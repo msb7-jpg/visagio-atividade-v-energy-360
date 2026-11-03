@@ -253,7 +253,7 @@ Responde ao diretor comercial: **quanto da variação da receita foi preço e qu
 | Ticket médio | receita ÷ número de faturas (uma fatura por UC por mês) | diagnóstico, seção 2 |
 
 **Limites conhecidos**
-- Cada consulta da Receita leva cerca de 4,5 s no banco completo, e a tela faz várias ao abrir ([`docs/CORRECOES.md`](docs/CORRECOES.md), seção 7).
+- A primeira abertura da Receita leva cerca de 1 s no banco completo; as seguintes respondem na hora, porque os totais ficam em cache por 30 minutos (ADR-030). Ao trocar o `v_energy.db`, reinicie a API para limpar o cache.
 
 Detalhes: [`docs/DIAGNOSTICO_RECEITA.md`](docs/DIAGNOSTICO_RECEITA.md) e o plano da fatia em [`docs/planning/celio/`](docs/planning/celio/inteligencia_comercial_receita.md).
 

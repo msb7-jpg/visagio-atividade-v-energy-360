@@ -429,9 +429,9 @@
   - `make lint-all`: Ruff OK, Pylint 10.00/10, import-linter 4/4 mantidos, ESLint e Fallow 100% aprovados.
   - `make test-all`: 537 testes backend e 185 testes frontend aprovados (total 722 testes verdes).
 
-
-
-
-
-
-
+### [2026-11-03] - Métricas do insight no servidor e realce de SQL enxuto (feito por Bernardo H)
+- **Autor:** Bernardo H, na branch `fix/receita-desempenho-e-pendencias`.
+- **O que foi feito:**
+  - **Insight:** `/ai/insights` deixa de confiar nas `metricas` enviadas pela tela. `chat/insight_metrics.py` recalcula no banco as métricas do Painel (`executive`, só diretor) e da Visão 360 (`customer360`, perfis da Visão 360), com as mesmas chaves que o frontend envia; tela sem insight responde 400. A verificação de fidelidade passa a comparar o texto da IA com números do servidor. Sem provedor de IA, a rota responde 503 antes de consultar o banco.
+  - **Realce de SQL:** `SqlCodeBlock` usa `sqlHighlighter.ts`, com `shiki/core`, só a gramática de SQL, os dois temas e o motor JavaScript. O build caiu de 331 arquivos (12 MB) para 24 (1,9 MB). O texto da consulta é escapado quando o realce falha.
+- **Validação de Testes:** `test_insight_server_metrics.py` (5 casos) e `sqlHighlighter.test.ts` (2 casos).
