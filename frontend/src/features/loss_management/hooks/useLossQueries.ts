@@ -23,12 +23,14 @@ export function useSuspiciousUnitsQuery(filters: SuspiciousUnitsFilter) {
  * Detalhe de uma UC da fila (conta do score, consumo de 12 meses e inspeções anteriores), em cache por UC.
  *
  * @param idUc - UC aberta no painel; nulo mantém a consulta desligada.
- * @returns Estado da query do detalhe.
+ * @param fullHistory - Consumo desde a primeira leitura da UC, em vez dos 12 últimos meses.
+ * @returns Estado da query do detalhe; ao trocar o período da mesma UC, mantém o detalhe anterior na tela.
  */
-export function useUnitDetailQuery(idUc: string | null) {
+export function useUnitDetailQuery(idUc: string | null, fullHistory: boolean) {
   return useQuery({
-    ...unitDetailQueryOptions(idUc ?? ''),
-    enabled: idUc !== null
+    ...unitDetailQueryOptions(idUc ?? '', fullHistory),
+    enabled: idUc !== null,
+    placeholderData: (previousData) => (idUc !== null && previousData?.id_uc === idUc ? previousData : undefined)
   })
 }
 

@@ -1,4 +1,5 @@
 import { isAxiosError } from 'axios'
+import { useState } from 'react'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -34,13 +35,19 @@ interface UnitDetailSheetProps {
  */
 export function UnitDetailSheet({ idUc, onClose, onGenerateOrder }: UnitDetailSheetProps) {
   const canWrite = useCanWriteLosses()
-  const query = useUnitDetailQuery(idUc)
+  const [fullHistory, setFullHistory] = useState(false)
+  const query = useUnitDetailQuery(idUc, fullHistory)
   const isNotFound = isAxiosError(query.error) && query.error.response?.status === NOT_FOUND_STATUS
   const hasLoadError = query.isError && !isNotFound
   const detail = query.data
 
+  function handleClose() {
+    setFullHistory(false)
+    onClose()
+  }
+
   return (
-    <Sheet open={idUc !== null} onOpenChange={(isOpen) => (isOpen ? undefined : onClose())}>
+    <Sheet open={idUc !== null} onOpenChange={(isOpen) => (isOpen ? undefined : handleClose())}>
       <SheetContent side="right" className="flex flex-col">
         <SheetHeader>
           <SheetTitle>{idUc}</SheetTitle>
@@ -58,7 +65,7 @@ export function UnitDetailSheet({ idUc, onClose, onGenerateOrder }: UnitDetailSh
             emptyTitle="Sem dados para esta UC"
             emptyDescription="Esta UC não está mais na fila ou não tem medição no período."
           >
-            {detail ? <UnitDetailBody detail={detail} /> : null}
+            {detail ? <UnitDetailBody detail={detail} fullHistory={fullHistory} onFullHistoryChange={setFullHistory} /> : null}
           </AsyncState>
         </div>
         {canWrite ? (

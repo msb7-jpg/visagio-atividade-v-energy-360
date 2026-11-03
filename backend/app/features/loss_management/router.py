@@ -63,9 +63,16 @@ async def list_suspicious_units(
 
 
 @router.get("/suspicious-units/{id_uc}", response_model=UnitDetailDTO, **unit_detail_doc.to_dict())
-async def get_suspicious_unit_detail(id_uc: Annotated[UnitId, Path()], service: UnitDetailSvc) -> UnitDetailDTO:
-    """Devolve o detalhe de uma UC da fila: motivo, conta do score, consumo de 12 meses e inspeções anteriores."""
-    return await service.get_unit_detail(id_uc)
+async def get_suspicious_unit_detail(
+    id_uc: Annotated[UnitId, Path()],
+    service: UnitDetailSvc,
+    full_history: Annotated[
+        bool,
+        Query(alias="historico_completo", description="Série de consumo desde a primeira leitura, em vez de 12 meses."),
+    ] = False,
+) -> UnitDetailDTO:
+    """Devolve o detalhe de uma UC da fila: motivo, conta do score, série de consumo e inspeções anteriores."""
+    return await service.get_unit_detail(id_uc, full_history)
 
 
 @router.get("/queue-summary", response_model=QueueSummaryDTO, **queue_summary_doc.to_dict())

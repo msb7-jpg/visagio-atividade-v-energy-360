@@ -21,7 +21,8 @@ vi.mock('recharts', () => ({
   CartesianGrid: () => null,
   XAxis: () => null,
   YAxis: () => null,
-  Tooltip: () => null
+  Tooltip: () => null,
+  ReferenceArea: ({ x1, x2 }: { x1: string; x2: string }) => <i data-testid="score-area" data-x1={x1} data-x2={x2} />
 }))
 
 function buildMonths(values: Array<number | null>): MonthlyConsumption[] {
@@ -52,5 +53,22 @@ describe('UnitConsumptionChart', () => {
 
     expect(screen.getByText('Sem leituras nos últimos 12 meses.')).toBeInTheDocument()
     expect(screen.queryByTestId('line-chart')).not.toBeInTheDocument()
+  })
+
+  it('avisa que não há leituras no histórico quando a série é a completa', () => {
+    render(<UnitConsumptionChart months={buildMonths([null, null])} fullHistory />)
+
+    expect(screen.getByText('Sem leituras no histórico da UC.')).toBeInTheDocument()
+  })
+
+  it('sombreia a janela recente e a base do score com a legenda explicando as faixas', () => {
+    render(<UnitConsumptionChart months={buildMonths([1, 2, 3, 4, 5, 6])} />)
+
+    const areas = screen.getAllByTestId('score-area')
+    expect(areas.map((area) => [area.dataset.x1, area.dataset.x2])).toEqual([
+      ['2026-01', '2026-03'],
+      ['2026-04', '2026-06']
+    ])
+    expect(screen.getByText(/3 últimos meses \(consumo recente do score\)/)).toBeInTheDocument()
   })
 })

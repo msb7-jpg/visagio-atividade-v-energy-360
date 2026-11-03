@@ -39,9 +39,9 @@ async def run_sql(statement: str) -> None:
         await session.commit()
 
 
-async def get_detail(client, id_uc: str, email: str = "perdas@venergy.com"):
+async def get_detail(client, id_uc: str, email: str = "perdas@venergy.com", params: dict | None = None):
     headers = await auth_headers(client, email)
-    return await client.get(f"{DETAIL_URL}/{id_uc}", headers=headers)
+    return await client.get(f"{DETAIL_URL}/{id_uc}", headers=headers, params=params)
 
 
 async def open_order(client, id_uc: str) -> int:
@@ -113,6 +113,18 @@ async def test_monthly_consumption_has_twelve_ordered_months_ending_at_the_refer
     assert months == sorted(months)
     assert months[-1] == detail["competencia_referencia"]
     assert {point["consumo_kwh"] for point in detail["consumo_mensal"][:-3]} == {300.0}
+
+
+async def test_full_history_starts_at_the_first_reading_and_still_ends_at_the_reference(client):
+    default_months = (await get_detail(client, "UC_FRAUDE")).json()["consumo_mensal"]
+
+    detail = (await get_detail(client, "UC_FRAUDE", params={"historico_completo": "true"})).json()
+
+    months = [point["competencia"] for point in detail["consumo_mensal"]]
+    assert months[0] == COMPETENCIAS[0]
+    assert months[-1] == detail["competencia_referencia"]
+    assert months == COMPETENCIAS
+    assert detail["consumo_mensal"][-12:] == default_months
 
 
 async def test_month_without_reading_or_with_invalid_reading_is_null_not_zero(client):
@@ -317,6 +329,18 @@ def test_series_crosses_the_year_boundary_and_keeps_twelve_months():
     assert competencias[0] == "2025-03"
     assert competencias[-1] == "2026-02"
     assert len(competencias) == 12
+
+
+def test_series_starts_at_first_reading_when_it_is_older_than_twelve_months():
+    competencias = series_competencias("2026-02", "2025-01")
+
+    assert competencias[0] == "2025-01"
+    assert competencias[-1] == "2026-02"
+    assert len(competencias) == 14
+
+
+def test_series_keeps_twelve_months_when_first_reading_is_recent():
+    assert series_competencias("2026-02", "2025-11") == series_competencias("2026-02")
 
 
 def test_fill_series_turns_missing_months_into_none():

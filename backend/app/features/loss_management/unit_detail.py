@@ -23,16 +23,25 @@ PERCENT = 100
 DROP_REASONS = frozenset({SuspicionReason.QUEDA_SUBITA, SuspicionReason.QUEDA_MODERADA})
 
 
-def series_competencias(reference_competencia: str) -> list[str]:
-    """Lista as 12 competências da série, em ordem crescente, terminando na de referência.
+def series_competencias(reference_competencia: str, first_competencia: str | None = None) -> list[str]:
+    """Lista as competências da série, em ordem crescente, terminando na de referência.
+
+    Por padrão são as 12 últimas. Com `first_competencia` anterior a elas, a série começa nela (histórico completo);
+    nunca fica abaixo de 12 meses.
 
     Args:
         reference_competencia: Última competência da análise ('YYYY-MM').
+        first_competencia: Primeira competência com leitura da UC, quando se quer o histórico todo.
 
     Returns:
-        As 12 competências, com a de referência por último.
+        As competências, com a de referência por último.
     """
-    return [shift_competencia(reference_competencia, -offset) for offset in range(MESES_SERIE - 1, -1, -1)]
+    default_first = shift_competencia(reference_competencia, -(MESES_SERIE - 1))
+    series_first = min(default_first, first_competencia) if first_competencia else default_first
+    competencias = [series_first]
+    while competencias[-1] < reference_competencia:
+        competencias.append(shift_competencia(competencias[-1], 1))
+    return competencias
 
 
 def fill_monthly_series(

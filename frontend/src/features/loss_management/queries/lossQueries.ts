@@ -5,7 +5,7 @@ import type { SuspiciousQueue, SuspiciousUnitsFilter } from '@/features/loss_man
 export const lossKeys = {
   all: ['losses'] as const,
   suspiciousUnits: (filters: SuspiciousUnitsFilter) => [...lossKeys.all, 'suspicious-units', filters] as const,
-  unitDetail: (idUc: string) => [...lossKeys.all, 'unit-detail', idUc] as const,
+  unitDetail: (idUc: string, fullHistory: boolean) => [...lossKeys.all, 'unit-detail', idUc, fullHistory] as const,
   inspections: () => [...lossKeys.all, 'inspections'] as const,
   queueSummary: (selectedIds: string[]) => [...lossKeys.all, 'queue-summary', selectedIds] as const,
   queueFilters: () => [...lossKeys.all, 'queue-filters'] as const,
@@ -65,12 +65,13 @@ export function suspiciousUnitsQueryOptions(filters: SuspiciousUnitsFilter) {
  * Opções reutilizáveis do detalhe de uma UC da fila; o cache é por UC, então reabrir a mesma UC não refaz a chamada.
  *
  * @param idUc - UC aberta no painel.
- * @returns Opções de query com chave por UC e cancelamento via signal.
+ * @param fullHistory - Consumo desde a primeira leitura da UC, em vez dos 12 últimos meses.
+ * @returns Opções de query com chave por UC e período, e cancelamento via signal.
  */
-export function unitDetailQueryOptions(idUc: string) {
+export function unitDetailQueryOptions(idUc: string, fullHistory: boolean) {
   return queryOptions({
-    queryKey: lossKeys.unitDetail(idUc),
-    queryFn: ({ signal }) => lossApi.getUnitDetail(idUc, signal),
+    queryKey: lossKeys.unitDetail(idUc, fullHistory),
+    queryFn: ({ signal }) => lossApi.getUnitDetail(idUc, fullHistory, signal),
     staleTime: LOSS_STALE_TIME_MS
   })
 }

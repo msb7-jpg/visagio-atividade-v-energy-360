@@ -56,6 +56,6 @@ class UnitDetailDTO(BaseModel):
     consumo_recente_kwh: float = Field(description="Média mensal das 3 últimas competências")
     decomposicao_score: ScoreBreakdownDTO
     consumo_mensal: list[MonthlyConsumptionDTO] = Field(
-        description="12 competências em ordem crescente, terminando na de referência"
+        description="Competências em ordem crescente, terminando na de referência: 12 por padrão ou o histórico todo"
     )
     inspecoes_anteriores: list[PriorInspectionDTO] = Field(description="Da mais recente para a mais antiga")

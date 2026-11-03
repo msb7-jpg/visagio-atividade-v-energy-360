@@ -138,7 +138,18 @@ describe('Painel de detalhe da UC', () => {
     expect(within(panel).getByText('× 93%')).toBeInTheDocument()
     expect(within(panel).getByText('= 5.133,6 kWh')).toBeInTheDocument()
     expect(within(panel).getByText('Score 86 de 100')).toBeInTheDocument()
-    expect(mockedApi.getUnitDetail).toHaveBeenCalledWith('UC100002', expect.anything())
+    expect(mockedApi.getUnitDetail).toHaveBeenCalledWith('UC100002', false, expect.anything())
+  })
+
+  it('pede o histórico completo ao escolher "Tudo" e volta aos 12 meses ao fechar o painel', async () => {
+    renderPage()
+    await openByClick()
+    const panel = await screen.findByRole('dialog', { name: 'UC100002' })
+
+    fireEvent.click(await within(panel).findByRole('tab', { name: 'Tudo' }))
+
+    await waitFor(() => expect(mockedApi.getUnitDetail).toHaveBeenCalledWith('UC100002', true, expect.anything()))
+    expect(await within(panel).findByText('Consumo no histórico da UC')).toBeInTheDocument()
   })
 
   it('abre por teclado com Enter na linha e mostra a data no formato brasileiro', async () => {

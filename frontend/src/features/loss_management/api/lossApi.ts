@@ -23,8 +23,12 @@ export const lossApi = {
     return data
   },
 
-  async getUnitDetail(idUc: string, signal?: AbortSignal): Promise<UnitDetail> {
-    const { data } = await apiClient.get<UnitDetail>(`/losses/suspicious-units/${encodeURIComponent(idUc)}`, { signal })
+  async getUnitDetail(idUc: string, fullHistory: boolean, signal?: AbortSignal): Promise<UnitDetail> {
+    // Sem o parâmetro a API devolve os 12 últimos meses; só o histórico completo precisa pedir.
+    const { data } = await apiClient.get<UnitDetail>(`/losses/suspicious-units/${encodeURIComponent(idUc)}`, {
+      params: fullHistory ? { historico_completo: true } : undefined,
+      signal
+    })
     return data
   },
 
