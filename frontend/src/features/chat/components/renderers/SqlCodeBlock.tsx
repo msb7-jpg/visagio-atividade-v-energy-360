@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { CollapsibleMotion } from '@/components/animations/CollapsibleMotion'
 import { useTheme } from '@/components/layout/useTheme'
 import { Button } from '@/components/ui/button'
+import { escapeHtml, highlightSql } from '@/features/chat/components/renderers/sqlHighlighter'
 import { useCopyToClipboard } from '@/lib/clipboard'
 import { cn, handleKeyboardClick } from '@/lib/utils'
 
@@ -32,17 +33,13 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
     let isMounted = true
     async function highlight() {
       try {
-        const { codeToHtml } = await import('shiki')
-        const html = await codeToHtml(query, {
-          lang: 'sql',
-          theme: appTheme === 'escuro' ? 'vitesse-dark' : 'vitesse-light'
-        })
+        const html = await highlightSql(query, appTheme === 'escuro')
         if (isMounted) {
           setHighlightedHtml(html)
         }
       } catch {
         if (isMounted) {
-          setHighlightedHtml(`<pre><code>${query}</code></pre>`)
+          setHighlightedHtml(`<pre><code>${escapeHtml(query)}</code></pre>`)
         }
       }
     }
