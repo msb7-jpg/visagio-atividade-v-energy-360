@@ -5,7 +5,11 @@ from app.main import app
 
 
 @pytest.mark.asyncio
-async def test_agent_chat_stream_and_insights():
+async def test_agent_chat_stream_and_insights(monkeypatch):
+    monkeypatch.setattr(
+        "app.features.chat.router.resolve_configured_provider",
+        lambda requested=None: requested if requested == "mock" else None,
+    )
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:

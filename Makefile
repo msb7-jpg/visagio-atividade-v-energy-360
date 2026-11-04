@@ -2,7 +2,7 @@
 # V-Energy Grid 360 -- Monorepo Management Makefile
 # ==============================================================================
 
-.PHONY: help setup-all data-unzip pipeline-local db-upgrade run-backend run-frontend run-llm run-all test-all lint-all lint-backend lint-frontend
+.PHONY: help setup-all data-unzip pipeline-local db-upgrade db-backup db-restore run-backend run-frontend run-llm run-all expose-ngrok expose-cloudflared test-all lint-all lint-backend lint-frontend
 
 help:
 	@echo "======================================================================"
@@ -12,10 +12,14 @@ help:
 	@echo "  make data-unzip     - Extrai as bases de dados para data/landing/"
 	@echo "  make pipeline-local - Executa os 10 notebooks localmente e gera data/gold_exports/v_energy.db (Linux/macOS/WSL)"
 	@echo "  make db-upgrade     - Aplica migrações operacionais via Alembic (ordem_inspecao)"
+	@echo "  make db-backup      - Salva snapshot consistente em backend/v_energy.db.pristine"
+	@echo "  make db-restore     - Restaura banco limpo para ensaio/demonstração"
 	@echo "  make run-backend    - Inicia API FastAPI com Agente de IA integrado (:8000)"
 	@echo "  make run-frontend   - Inicia Portal Web React 19 com Vite (:5173)"
 	@echo "  make run-llm        - Inicia servidor llama-server local com modelo Qwen3.5-4B (:1234)"
 	@echo "  make run-all        - Inicia a stack completa: llama-server + backend + frontend"
+	@echo "  make expose-ngrok   - Expõe Frontend e Backend via Ngrok com URLs públicas"
+	@echo "  make expose-cloudflared - Expõe Frontend e Backend via Cloudflare Tunnels"
 	@echo "  make test-all       - Executa testes no backend (pytest) e frontend (vitest)"
 	@echo "  make lint-backend   - Executa Ruff, Pylint e import-linter (fronteiras arquiteturais)"
 	@echo "  make lint-frontend  - Executa ESLint e Fallow (arquitetura/thresholds/complexidade)"
@@ -38,23 +42,48 @@ pipeline-local:
 db-upgrade:
 	@cd backend && uv run alembic upgrade head
 
+db-backup:
+	@echo "==> Criando backup consistente do banco SQLite..."
+	@sqlite3 backend/v_energy.db ".backup backend/v_energy.db.pristine"
+	@echo "✓ Backup salvo em backend/v_energy.db.pristine!"
+
+db-restore:
+	@echo "==> Restaurando banco de dados para estado limpo de demonstração..."
+	@cp backend/v_energy.db.pristine backend/v_energy.db
+	@rm -f backend/v_energy.db-wal backend/v_energy.db-shm
+	@echo "✓ Banco v_energy.db restaurado com sucesso!"
+
 run-backend:
 	@cd backend && uv run uvicorn app.main:app --reload --port 8000
 
 run-frontend:
 	@cd frontend && bun run dev
 
+MODEL ?= spark-x2.6-4b
+
 run-llm:
-	@~/workspace/llama.cpp/build/bin/llama-server \
-		-m ~/workspace/llama.cpp/models/Qwen3.5-4B-Q4_K_M.gguf \
-		-ngl 999 -c 64000 -np 2 \
-		-fa on \
-		--host 0.0.0.0 \
-		--port 1234 \
-		--no-context-shift
+	@if command -v lcpp >/dev/null 2>&1; then \
+		lcpp up $(MODEL) -p 1234; \
+	else \
+		~/workspace/llama.cpp/build/bin/llama-server \
+			-m ~/workspace/llama.cpp/models/Spark-X2.6-4B-Q4_K_M.gguf \
+			-ngl 999 -c 48000 -np 1 -t 8 \
+			-fa on \
+			--cache-type-k q4_0 --cache-type-v q4_0 \
+			--spec-type ngram-mod --spec-draft-n-max 2 \
+			--host 0.0.0.0 \
+			--port 1234 \
+			--no-context-shift; \
+	fi
 
 run-all:
 	@bash scripts/dev_local.sh
+
+expose-ngrok:
+	@bash scripts/expose_ngrok.sh
+
+expose-cloudflared:
+	@bash scripts/expose_cloudflared.sh
 
 test-all:
 	@echo "==> Executando testes do backend..."

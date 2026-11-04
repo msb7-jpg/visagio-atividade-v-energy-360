@@ -21,11 +21,8 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 
     database_url: str = "sqlite+aiosqlite:///./v_energy.db"
-    backend_cors_origins: list[str] = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-    ]
+    # Permite todas as origens para facilitar a demo com túneis dinâmicos
+    backend_cors_origins: list[str] = ["*"]
     log_level: str = "INFO"
 
     # Gestão de perdas: fixa a competência ('YYYY-MM') em que a fila de suspeitas é calculada, para demonstrar a fila

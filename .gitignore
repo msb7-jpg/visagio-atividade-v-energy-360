@@ -29,6 +29,11 @@ frontend/node_modules/
 *.db-wal
 *.db-shm
 *.db-journal
+*.pristine
+
+# Logs & Packages
+*.log
+*.deb
 
 # Environment & Credentials
 .env

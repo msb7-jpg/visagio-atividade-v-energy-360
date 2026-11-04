@@ -91,6 +91,7 @@ async def chat_stream(
                 "base_url": settings.ai_base_url,
                 "thread_id": session_thread_id,
                 "role": current_user.role,
+                "timeout_seconds": 90,
             }
         }
 

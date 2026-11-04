@@ -25,7 +25,15 @@ def get_db_path() -> Path:
     """Retorna o caminho validado para o arquivo sqlite."""
     url = settings.database_url
     raw_path = url.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
-    path = Path(raw_path).resolve()
+    path = Path(raw_path)
+    if not path.is_absolute():
+        if not path.exists():
+            backend_candidate = Path(__file__).resolve().parent.parent.parent / raw_path
+            if backend_candidate.exists():
+                return backend_candidate.resolve()
+        path = path.resolve()
+    else:
+        path = path.resolve()
     if not path.exists():
         # Cria banco vazio se ainda não existir para permitir consultas
         path.parent.mkdir(parents=True, exist_ok=True)
