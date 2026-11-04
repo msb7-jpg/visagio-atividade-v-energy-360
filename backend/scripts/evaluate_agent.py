@@ -259,12 +259,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--model",
-        default=os.getenv("AI_MODEL_NAME", "models/Qwen3.5-4B-Q4_K_M.gguf"),
+        default=os.getenv("AI_MODEL_NAME", "Qwen3.5-4B-Q4_K_M"),
         help="Nome do modelo",
     )
     parser.add_argument(
         "--base-url",
-        default=os.getenv("AI_BASE_URL", "http://127.0.0.1:8080/v1"),
+        default=os.getenv("AI_BASE_URL", "http://127.0.0.1:1234/v1"),
         help="URL base para provedores compatíveis com OpenAI / llama.cpp",
     )
     args = parser.parse_args()

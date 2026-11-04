@@ -6,6 +6,34 @@
 
 ## Registros de Execução
 
+### [2026-11-03] - Resolução Integral dos Critérios do CHECKLIST.md e Fechamento da Issue #19
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Validação de Modelo e Dinamismo via `.env`:**
+    - Validada a operação local do servidor `llama-server` com `Qwen3.5-4B-Q4_K_M.gguf` escutando na porta `1234` (`AI_BASE_URL="http://127.0.0.1:1234/v1"`).
+    - Comprovada a resolução dinâmica de modelo e provedor via `resolve_configured_provider()` e `get_chat_model()` em `backend/app/core/llm_factory/factory.py`, respeitando sem reiniciar código as variáveis `AI_PROVIDER`, `AI_MODEL_NAME` e `AI_BASE_URL`.
+  - **Perguntas em Português sobre os 4 Pilares de Domínio (Testes ao Vivo):**
+    - Executados com sucesso pares de perguntas cobrindo todos os temas:
+      - **Faturamento:** Total 2024 (R$ 172.232.176,56) e Faturas com bandeira vermelha (89.746 faturas).
+      - **Interrupções:** Ocorrências de interrupção (40.355 eventos) e Top 5 alimentadores em DEC (liderado por `ALM-JAB-016` com 27,74 h).
+      - **Atendimento:** Volume de chamados e CSAT médio no ano (nota média 4,10 / 5).
+      - **Consumo:** Consumo faturado em Recife e médias por unidade da classe comercial.
+  - **Aferição e Gabarito das Perguntas Canônicas do Case (#26 a #28):**
+    - Todas as consultas executaram em menos de 8 s no SQLite sem estourar tempo:
+      - **Caso #26 (Patrícia):** 153 UCs com painel solar em Olinda apresentando queda de consumo > 30%.
+      - **Caso #27 (Henrique):** Bairro com maior perda de volume residencial identificado como **Iputinga** (perda de 367.963 kWh), com acerto de ponta a ponta pelo agente e geração de tabela comparativa.
+      - **Caso #28 (Henrique):** Variação de receita comercial em Jaboatão confirmada em **−5,12%** (redução de R$ 7.204.335,20 para R$ 6.835.320,91).
+  - **Mapeamento de Jargões do Dia a Dia:**
+    - "Conta de luz" mapeada com sucesso para `fato_faturamento` (`SUM(valor_total_rs)`).
+    - "Falta de luz" mapeada com sucesso para `fato_ocorrencias_rede` (`tipo_ocorrencia = 'FALTA DE ENERGIA'`).
+  - **Suíte de Recusa e Não-Alucinação com Script Corrigido:**
+    - Aferidos os 8 casos de recusa (#29 a #36 do `golden_dataset.json`) com o script `evaluate_agent.py` corrigido por Bernardo (evitando classificar erro ou tempo esgotado como recusa válida).
+    - Atingidos **0 crashes** em 8 casos e latência mediana de **7,1 s**. O agente bloqueia mutações DDL/DML e consultas a metadados (`sqlite_master`) com `SECURITY_VIOLATION`, recusa pedidos fora de concessão ou sem dados com `UNSUPPORTED_REQUEST` e responde via rota `direct` a perguntas de clima/tempo.
+  - **Follow-up Conversacional Multi-Turno:**
+    - Testado encadeamento de 2 perguntas preservando contexto geográfico e anáfora via `MemorySaver` com chave `user_id:thread_id`: pergunta 1 ("Quantas UCs existem em Olinda?" → 4.212) seguida de pergunta 2 ("E quantas delas possuem painel solar?" → 328 UCs com `municipio = 'OLINDA' AND possui_gd = 1`).
+  - **Preenchimento do CHECKLIST.md e Fechamento da Issue #19:**
+    - Atualizados todos os 6 critérios pendentes na Seção 3 do `docs/CHECKLIST.md` e encerrada a **Issue #19** no repositório.
+
 ### [2026-10-31] - Atendimento às Devolutivas de Design: IA Recolhível e Foco Executivo (Issues #65 e #69)
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**
