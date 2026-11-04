@@ -68,7 +68,7 @@
   - `service.py`: `GridQualityService` com indicadores, ranking e histórico. O limite é lido da coluna do contrato (anual, por conjunto ou mediana RMR, ADR-003); B1 resolvida pelo ADR-003 revisado.
   - `dependencies.py`: Fábrica `get_grid_quality_service` e alias `GridQualitySvc`.
   - `router.py`: Rotas `GET /quality/indicators` (`competencia`), `/quality/feeders` (`competencia`, `status`) e `/quality/feeders/{id_alimentador}/history` (`meses`, de 1 a 48, padrão 48), sob `/api/v1`, protegidas com `RequireOperacao`.
-  - Continuidade (`continuity_*.py`, `municipalities.py`): `GET /quality/continuity` (`municipio`, `incluir_evento`) e `GET /quality/feeders/{id_alimentador}/customers` (`meses` 1 a 48, padrão 12; `limite` 1 a 50, padrão 10), ambas `RequireOperacao`. Períodos A/B de 12 meses derivados da série; evento extremo com `LIMIAR_EVENTO_EXTREMO = 3` sobre a mediana mensal da rede inteira; causas atacáveis (suposição, a validar com a Fatia 02): `VEGETACAO`, `FALHA DE EQUIPAMENTO`, `SOBRECARGA`; coordenadas dos municípios estáticas (aproximação, não vêm do banco). Filtro de escopo isolado em `scope_query`.
+  - Continuidade (`continuity_*.py`, `municipalities.py`): `GET /quality/continuity` (`municipio`, `incluir_evento`, `causa`) e `GET /quality/feeders/{id_alimentador}/customers` (`meses` 1 a 48, padrão 12; `limite` 1 a 50, padrão 10), ambas `RequireOperacao`. Períodos A/B de 12 meses derivados da série; evento extremo com `LIMIAR_EVENTO_EXTREMO = 3` sobre a mediana mensal da rede inteira; causas atacáveis (suposição, a validar com a Fatia 02): `VEGETACAO`, `FALHA DE EQUIPAMENTO`, `SOBRECARGA`; coordenadas dos municípios estáticas (aproximação, não vêm do banco). Filtro de escopo isolado em `scope_query`.
 - `auth/rbac`:
   - Enriquecimento de token JWT com perfil de cargo. Papéis existentes no código (`UserRole` em `backend/app/core/constants.py`): `diretor`, `gerente_operacao`, `gerente_atendimento`, `gerente_perdas`, `atendente`. Não haverá perfil ADMIN (decisão de 2026-10-21).
   - Dependência central `require_role(allowed_roles: Sequence[UserRole | str])` em `backend/app/shared/dependencies.py`, com os grupos de papéis em `backend/app/shared/role_groups.py`.
@@ -109,6 +109,7 @@
 - [x] Garantir conformidade com `make lint-frontend`.
 - [x] Aba Continuidade com dados reais (`GET /quality/continuity`) e tabela de clientes mais afetados no detalhe do circuito (`GET /quality/feeders/{id}/customers`). Concluído por Joao Henrique em 2026-10-28; registro no `changelog.md`.
 - [x] Filtros da Continuidade em `FilterPopover` (issue #68). Concluído por Joao Henrique em 2026-10-31; registro no `changelog.md`.
+- [x] Filtro de causa na Continuidade (`GET /quality/continuity?causa=`, ADR-025, item 7). Concluído por Joao Henrique em 2026-10-30; registro no `changelog.md`.
 - [x] Índice de regras de negócio da Fatia 06 em [`regras-de-negocio.md`](regras-de-negocio.md).
 
 ---
