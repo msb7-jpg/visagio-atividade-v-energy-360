@@ -262,7 +262,7 @@ Detalhes: [`docs/DIAGNOSTICO_RECEITA.md`](docs/DIAGNOSTICO_RECEITA.md) e o plano
 Responde ao gerente de perdas: **quais UCs mandar a campo primeiro**. No portal (`/losses`, perfil `gerente_perdas`; os usuários de teste estão em [`backend/app/core/config.py`](backend/app/core/config.py)) o gerente vê a fila priorizada, abre cada UC para entender por que ela está lá (motivo, conta do score, consumo de 12 meses e inspeções anteriores), gera ordens de inspeção, exporta a planilha para a equipe de campo e importa os resultados de volta.
 
 **Como a fila é montada**
-1. Entra a UC **sem geração distribuída** (painel solar) cujo consumo médio dos 3 últimos meses caiu **20% ou mais** frente aos 12 anteriores, ou que tem leitura zerada. Fica de fora por **12 meses** a UC inspecionada com irregularidade constatada (volta antes se tiver uma nova queda súbita depois da visita) e por 15 meses a inspecionada sem irregularidade.
+1. Entra a UC **sem geração distribuída** (painel solar) cujo consumo médio dos 3 últimos meses caiu **20% ou mais** frente aos 12 anteriores, ou que tem leitura zerada. Fica de fora por **12 meses** a UC inspecionada com irregularidade constatada (volta antes se, depois da visita, a janela recente inteira mostrar uma nova queda súbita além da queda da carteira) e por 15 meses a inspecionada sem irregularidade.
 2. Cada UC recebe uma **chance de acerto histórica**, e a fila ordena pelo **kWh esperado** (kWh a recuperar × chance). O score de 0 a 100 é relativo à primeira UC da fila inteira e não muda com os filtros.
 3. A tela separa **Prioritárias** (chance de 30% ou mais), **Baixa chance** e **Todas**, e, ao gerar as ordens, mostra quantas já estão programadas contra a capacidade de 200 inspeções por mês.
 
@@ -270,7 +270,7 @@ Responde ao gerente de perdas: **quais UCs mandar a campo primeiro**. No portal 
 
 - **Sem configurar nada**, a fila usa a competência mais recente dos dados (2026-06): **165 UCs, 7 prioritárias e 158 de baixa chance**. É curta de propósito: as 559 maiores quedas do mês são de UCs com painel solar, que a fila exclui, e 491 das 656 candidatas restantes já foram inspecionadas pelo campo em 2025.
 - **Para ver a fila na onda de quedas de 2025**, em `backend/.env` (copie de [`backend/.env.example`](backend/.env.example)) descomente `LOSS_REFERENCE_COMPETENCIA="2025-09"` e reinicie o backend. A tela mostra o aviso "Competência de referência fixada". Nessa competência a fila tem **39.243 UCs**, quase todas de baixa chance, porque a carteira inteira perdeu consumo em 2025 e a maioria das UCs passa do piso de queda; o que vale é o topo, e as páginas levam alguns segundos. Das 200 primeiras, **196 foram inspecionadas depois, com 93,9% de acerto**, contra 62,7% de todas as inspeções do período (medição e causa no [D9](docs/DECISOES_PERDAS.md)). Para voltar ao tempo real, comente a linha e reinicie.
-- **Roteiro:** "Selecionar top 10 prioritárias" → "Gerar ordens" → aba "Ordens de inspeção" → "Exportar planilha de campo" → "Importar resultados de campo" (a planilha `inspecoes.xlsx` do case ou a exportada pelo portal). As ordens ficam na tabela `ordem_inspecao` do `backend/v_energy.db`, que não vai para o Git.
+- **Roteiro:** botão "Top 10" (marca as 10 primeiras prioritárias) → "Gerar 10 ordens" → aba "Ordens de inspeção" → "Exportar para o campo (CSV)" → "Importar resultados de campo" (a planilha `inspecoes.xlsx` do case ou a exportada pelo portal). As ordens ficam na tabela `ordem_inspecao` do `backend/v_energy.db`, que não vai para o Git.
 
 **Suposições**
 
@@ -280,7 +280,7 @@ Responde ao gerente de perdas: **quais UCs mandar a campo primeiro**. No portal 
 | Chance de acerto | 93% na queda de 50% ou mais; 91,5% na queda moderada quando a queda além da carteira é de 20% ou mais, e 7,6% abaixo disso | D2 e D12 |
 | Leitura zerada | 62,7% (a taxa geral): **suposição**, o sinal nunca ocorre nos dados | D2 e D12 |
 | Ligação recente | menos de 11 meses de base recebe só 7,6%: prudência, não medição | D14 |
-| Energia a recuperar | déficit mensal × 3 meses; em campo o recuperado foi 1,87× o estimado (mediana), então subestima o valor absoluto | D7 |
+| Energia a recuperar | déficit mensal × 3 meses; nas inspeções reais com irregularidade (865) o recuperado foi 1,72× a 1,80× o estimado (mediana, referências 2025-08 e 2025-09), então subestima o valor absoluto | D7 |
 | Valor em R$ | tarifa média ponderada dos 12 últimos meses de faturamento: R$ 0,7876/kWh | D8 |
 | Capacidade | 200 inspeções por mês, a fala do gerente | D6 |
 | Reincidência | UC com irregularidade constatada fica 12 meses fora da fila; uma nova queda súbita (50% ou mais) depois da visita antecipa o retorno. **Suposição** do dono da fatia: nenhuma UC foi inspecionada duas vezes, então não há como medir | D12 |

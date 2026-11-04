@@ -1061,3 +1061,14 @@
 - **O que foi feito (ADR-031):** a consulta da carteira lê `fato_medicao` em sequência (limites das janelas dentro do `CASE`), a tarifa média também, e a ordenação das UCs é reaproveitada entre a lista, o resumo e a contagem dos filtros. A tela passou de 4,6 a 5,8 s para 0,74 s na competência 2025-09 e 0,17 s em tempo real.
 - **Conferência:** a fila gerada é idêntica à da `main` em 2025-09 (39.243 UCs), 2025-12 (25) e tempo real (165), em todos os campos e na mediana da carteira.
 - **Validação de Testes:** `test_loss_scored_queue_cache.py` (novo) e os testes da Fila e do Painel sem mudança.
+
+### [2026-11-04] - Conferência do README da Fatia 05 contra o código e a Gold real
+- **Autor:** Adrian Cesar, com apoio do Claude Code.
+- **O que foi feito:**
+  - Cada afirmação da seção "Fatia 05" do README foi conferida no código e no `v_energy.db`: fila de 2026-06 (165 UCs, 7 prioritárias), fila de 2025-09 (39.243 UCs, 587 prioritárias, R$ 1,53 mi/ano esperado), top 200 (196 inspecionadas, 93,9% de acerto contra 62,7%), tarifa de R$ 0,7876/kWh, prazos de 12 e 15 meses, capacidade de 200 e as 559 quedas de 50% ou mais em UCs com GD. Tudo conferiu.
+  - README: o roteiro usava rótulos que não existem na tela ("Selecionar top 10 prioritárias", "Gerar ordens", "Exportar planilha de campo"); agora cita "Top 10", "Gerar 10 ordens" e "Exportar para o campo (CSV)". A suposição do kWh passou de "1,87×" para a medição na Gold real, e o texto da reincidência passou a dizer que a janela recente inteira precisa ser posterior à visita.
+  - D7 (`DECISOES_PERDAS.md`): remedição com as 865 inspeções reais com irregularidade; mediana de 1,72× (referência 2025-08) e 1,80× (2025-09), contra 1,87× da demonstração antiga.
+- **Dificuldades / Desafios:**
+  - A tela ainda mostra 1,87×: o texto do cartão "Energia recuperável das selecionadas" está fixo em `recoveryEstimate.ts` (`OBSERVED_RECOVERY_RATIO`) e é checado em `QueueReferencePills.test.tsx`. Fica como decisão pendente da fatia: atualizar o código ou manter o número da medição original.
+  - O retorno esperado de R$ 7,45 mil/ano do `DIAGNOSTICO_RECEITA.md` (fila inteira, 165 UCs) e o de R$ 2,4 mil/ano do D9 (só as 7 prioritárias) medem coisas diferentes; ambos estão corretos.
+- **Validação de Testes:** só documentação; nenhum código alterado, então `make lint-all` e `make test-all` não foram reexecutados.

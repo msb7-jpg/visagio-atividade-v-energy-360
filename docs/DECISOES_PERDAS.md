@@ -89,7 +89,15 @@ fora (1.385 de 1.389 entram).
   `JANELA_RECUPERACAO_MESES` altera os kWh e R$ exibidos, não a ordem. O cartão "Energia recuperável das selecionadas"
   mostra essa razão de 1,87× como nota, sem alterar o número exibido. Segue em 3 (valor da primeira versão); se
   a diretoria for citar valores absolutos, o time deve decidir se ajusta.
-- **Limite da evidência:** uma única competência de referência e uma amostra de 188 UCs.
+- **Remedição na Gold real (2026-11-04):** com as 865 inspeções que constataram irregularidade e têm estimativa na
+  fila sem exclusão do histórico, o recuperado (`kwh_recuperado`) foi em mediana **1,72 vez** o estimado na referência
+  `2025-08` (quartis 1,28 e 2,18; estimativa abaixo do recuperado em 806 UCs) e **1,80 vez** em `2025-09` (quartis
+  1,34 e 2,28; 826 UCs). A conclusão não muda (a estimativa ordena e subestima o valor absoluto), mas o número fica
+  perto de 5,2 a 5,4 meses de déficit, não de 5,6. **A tela ainda mostra 1,87×**: o texto do cartão "Energia
+  recuperável das selecionadas" está fixo em `recoveryEstimate.ts` (`OBSERVED_RECOVERY_RATIO`) e vem da medição
+  anterior. Atualizar o código e o teste de `QueueReferencePills` é uma decisão pendente da fatia.
+- **Limite da evidência:** a medição original usa uma única competência de referência e 188 UCs da demonstração; a
+  remedição usa as inspeções reais, mas só das UCs que o campo já escolhera inspecionar.
 - **Origem e uso na ordem:** o 3 foi definido pela própria fatia 05 na primeira versão da fila (commit `da14cf0`,
   2026-10-19), sem fonte regulatória; é a constante `JANELA_RECUPERACAO_MESES` em `scoring.py`. Ao gerar a ordem, o
   servidor grava o resultado em `kwh_estimado` (`order_estimated_kwh`; 0 para UC com GD, sem leitura recente ou sem
