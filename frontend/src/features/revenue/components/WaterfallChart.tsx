@@ -7,7 +7,7 @@ import type { WaterfallAxis, WaterfallBar, WaterfallKind } from '@/features/reve
 
 const BAR_STYLES: Record<WaterfallKind, string> = {
   total: 'bg-primary',
-  increase: 'bg-chart-2',
+  increase: 'bg-success',
   decrease: 'bg-destructive'
 }
 const GRID_STEPS = [0, 1 / 3, 2 / 3, 1]

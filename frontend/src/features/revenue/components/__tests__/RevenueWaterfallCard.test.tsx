@@ -19,12 +19,6 @@ describe('RevenueWaterfallCard', () => {
     )
   })
 
-  it('avisa que o eixo não começa em zero', () => {
-    renderCard()
-
-    expect(screen.getByText(/não em zero/)).toBeInTheDocument()
-  })
-
   it('deixa cada coluna alcançável pelo teclado, com valor e explicação para leitores de tela', () => {
     renderCard()
 

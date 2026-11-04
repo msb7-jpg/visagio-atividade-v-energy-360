@@ -4,7 +4,6 @@ import { AsyncState } from '@/components/feedback/AsyncState'
 import { getRevenueErrorMessage } from '@/features/revenue/utils/revenueErrorMessage'
 import { WaterfallChart } from '@/features/revenue/components/WaterfallChart'
 import type { PriceVolumeDecomposition } from '@/features/revenue/types/revenueTypes'
-import { formatCompactCurrency } from '@/features/revenue/utils/revenueFormatters'
 import { buildInsight, buildWaterfallAxis, buildWaterfallSteps } from '@/features/revenue/utils/revenueWaterfall'
 
 interface RevenueWaterfallCardProps {
@@ -16,7 +15,7 @@ interface RevenueWaterfallCardProps {
 }
 
 /**
- * Card da ponte Preço-Volume-Mix: uma frase de leitura, o gráfico e o aviso sobre o eixo.
+ * Card da ponte Preço-Volume-Mix: uma frase de leitura e o gráfico.
  *
  * @param props - Resultado da consulta de decomposição e a nova tentativa quando ela falha.
  * @returns Card com estados de carregamento, erro ou o gráfico.
@@ -45,15 +44,7 @@ export function RevenueWaterfallCard({ decomposition, isLoading, isError, error,
           onRetry={onRetry}
           skeletonCount={3}
         >
-          {axis ? (
-            <>
-              <WaterfallChart axis={axis} />
-              <p className="text-muted-foreground text-xs">
-                O eixo vertical começa em {formatCompactCurrency(axis.min)}, não em zero, para os efeitos ficarem
-                visíveis. A soma dos quatro efeitos é exatamente a variação de receita.
-              </p>
-            </>
-          ) : null}
+          {axis ? <WaterfallChart axis={axis} /> : null}
         </AsyncState>
       </CardContent>
     </Card>
