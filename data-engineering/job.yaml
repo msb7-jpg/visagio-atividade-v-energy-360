@@ -1,12 +1,13 @@
 # Workflow do Lakehouse V-Energy Grid 360 (formato Databricks Asset Bundle).
 # Notebooks fatia01_* são da Fatia 01 (Renan); fatia02_* são da Fatia 02 (Ryei Estevan).
 #
-# Ordem de cada fatia: Bronze -> Silver -> Gold -> testes de qualidade -> exportação.
+# Cada exportação gera CSVs da Gold e carrega as tabelas SQLite lendo esses arquivos.
+# Fatia 01: Bronze -> Silver -> Gold -> CSV/SQLite -> testes; Fatia 02: Gold -> testes -> CSV/SQLite.
 # As duas exportações gravam o MESMO v_energy.db e por isso rodam em sequência:
-#   1. fatia01_export_sqlite recria o arquivo do zero com as tabelas da Fatia 01;
+#   1. fatia01_export_sqlite recria o arquivo do zero, lendo os CSVs das tabelas Gold da Fatia 01;
 #   2. Testes (Fatia 01) confere a Gold e esse arquivo;
-#   3. fatia02_export_sqlite, só depois dos testes das duas fatias, acrescenta as
-#      tabelas da Fatia 02 ao arquivo (nunca rodar em paralelo com o passo 1).
+#   3. fatia02_export_sqlite, só depois dos testes das duas fatias, lê os CSVs Gold e acrescenta
+#      as tabelas da Fatia 02 ao arquivo (nunca rodar em paralelo com o passo 1).
 #
 # Todos os notebooks ficam na mesma pasta do workspace (variável notebooks_dir).
 # Para rodar em outro workspace: --var="notebooks_dir=/Workspace/<pasta>".

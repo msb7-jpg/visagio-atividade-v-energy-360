@@ -149,7 +149,7 @@ cd ..
 databricks fs cp dbfs:/Volumes/visagio_atividade_v_energy_360/gold/exports/v_energy.db backend/v_energy.db --overwrite
 ```
 
-As tabelas Gold também ficam em CSV (um arquivo por tabela) em `/Volumes/visagio_atividade_v_energy_360/gold/exports/`.
+As tabelas Gold também ficam em CSV (um arquivo por tabela) em `/Volumes/visagio_atividade_v_energy_360/gold/exports/`. Esses CSVs são a origem da carga SQLite em ambos os notebooks de exportação: cada notebook lê o arquivo CSV recém-gerado e insere seus registros no banco, em lotes. O contrato DDL do SQLite restaura os tipos (`TEXT`, `INTEGER`, `REAL` e booleanos `0/1`), e um marcador explícito preserva valores nulos; assim, o banco é efetivamente populado a partir dos CSVs, não diretamente das tabelas Delta.
 
 Ao trocar o `backend/v_energy.db`, apague também o `v_energy.db-wal` e o `v_energy.db-shm` da mesma pasta e reinicie a API. O banco fica em modo WAL: um `-wal` do banco antigo faz o SQLite acusar "database disk image is malformed", e o Painel guarda os indicadores em cache.
 

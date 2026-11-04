@@ -78,7 +78,7 @@
   - `id_medicao`, `id_uc`, `competencia`, `leitura_anterior`, `leitura_atual`, `consumo_kwh`, `dias_faturamento`, `media_diaria_kwh`.
 
 ### Fase 4: Exportação para o SQLite Local (`backend/v_energy.db`)
-- [x] Script de exportação das tabelas Gold do seu domínio para SQLite em modo WAL (`PRAGMA journal_mode=WAL;`).
+- [x] Carregar as tabelas SQLite a partir dos CSVs publicados pela Gold, preservando nulos, tipos do contrato, modo WAL e validações de integridade (2026-11-04).
 - [x] Criar índices analíticos essenciais:
   - `CREATE INDEX IF NOT EXISTS idx_dim_uc_id ON dim_unidade_consumidora(id_uc);`
   - `CREATE INDEX IF NOT EXISTS idx_dim_uc_bairro ON dim_unidade_consumidora(bairro);`
