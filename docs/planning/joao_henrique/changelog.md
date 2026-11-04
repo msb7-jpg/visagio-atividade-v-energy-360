@@ -287,3 +287,13 @@
   - Cards de KPI: o período fica em linha própria e "valor · piora/melhora" fica junto, com `whitespace-nowrap`; o selo de variação passou para cima. `ContinuityView.test.tsx` ajustado ao novo formato. Os 4 cards usam o mesmo componente.
   - Mapa: o `centroid` de Abreu e Lima (127,3; 102,7) caía fora do contorno côncavo; passou para (91,2; 84,9), o ponto mais afastado das bordas. Teste `municipalityCentroids.test.ts` confere os 14 municípios por ray casting.
 - **Fora desta entrega:** conferência visual no navegador (feita por quem revisa).
+
+### [2026-11-04] - Índice de regras de negócio da Fatia 06
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Criado `regras-de-negocio.md` (índice enxuto, no formato do da Fatia 05): para cada regra, a constante e o arquivo onde vive e a ADR que explica o porquê (ADR-003, 012, 022, 024 e 025). Cobre acesso por perfil, DEC/FEC e denominador `ucs_atendidas`, limite de referência e alerta em 85%, períodos A e B, evento K=3, causas atacáveis, bairro que não é filtro, amostra pequena, ranking dos 20 maiores e limites conhecidos.
+  - Todos os caminhos e constantes citados foram conferidos no código.
+  - `qualidade_rede_rbac.md`: bairro retirado do checklist e da especificação (região = município, filtros, abas e dependência de Renan) por estar fora de escopo (ADR-025, item 6); status da fatia em Concluído.
+- **Fora desta entrega:** mudança de código ou de regra; só documentação.
+- **Validação de Testes:**
+  - `make lint-all` e `make test-all` aprovados.
