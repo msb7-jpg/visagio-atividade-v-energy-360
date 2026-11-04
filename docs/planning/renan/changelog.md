@@ -133,3 +133,11 @@
   - Tornada explícita no README a estrutura real do monorepo e a localização do agente Text-to-SQL integrado ao backend.
   - Resumidas as decisões arquiteturais e apontados os documentos de dados e diagnóstico já versionados.
 - **Validação:** `git diff --check`; alteração somente documental.
+
+### [2026-11-04] - Carga do SQLite a partir dos CSVs da Gold
+- **Autor:** Renan
+- **O que foi feito:**
+  - Alterados os notebooks de exportação das Fatias 01 e 02 para gerar CSVs com marcador explícito de nulos e carregar o SQLite lendo esses arquivos, em lotes.
+  - Convertidos os campos segundo os tipos do DDL SQLite, preservando IDs textuais, números, booleanos `0/1` e datas ISO.
+  - Esclarecidos no README e no `job.yaml` que os CSVs são a origem da carga SQLite; atualizado o checklist da Fatia 01.
+- **Validação:** JSON e sintaxe das células Python dos dois notebooks válidos; conversões de nulo, booleano, inteiro, real e texto validadas; `git diff --check` aprovado. `make lint-all` e `make test-all` não executaram: `make` não está instalado e o WSL não inicializa por falta de virtualização.
