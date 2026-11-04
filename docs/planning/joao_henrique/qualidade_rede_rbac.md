@@ -1,7 +1,7 @@
 # 🌐 Fatia 06: Qualidade da Rede (DEC/FEC) & Plataforma com RBAC (Fullstack)
 
 > **Dono Único:** Joao Henrique  
-> **Status:** Em andamento  
+> **Status:** Concluído  
 > **Skills de Referência:** [`.agents/skills/backend-coding-standards/SKILL.md`](.agents/skills/backend-coding-standards/SKILL.md) & [`.agents/skills/frontend-coding-standards/SKILL.md`](.agents/skills/frontend-coding-standards/SKILL.md)  
 > **Log Individual:** [`changelog.md`](changelog.md)
 
@@ -21,7 +21,7 @@
 
 ### Requisitos extraídos do case
 
-- **Regiões com as piores interrupções:** Beatriz Farias, pág. 6: *"saber quais regiões concentram as piores interrupções"*. Região = município e bairro (decisão do grupo, B3). O município vem do alimentador (relação 1:1, observado nos dados brutos). A visão por bairro depende de dado ainda pendente (origem do bairro: provável origem `dim_unidade_consumidora` (Renan), a confirmar).
+- **Regiões com as piores interrupções:** Beatriz Farias, pág. 6: *"saber quais regiões concentram as piores interrupções"*. Região = município. O município vem do alimentador (relação 1:1, observado nos dados brutos). O bairro está fora de escopo (ADR-025, item 6).
 - **Retorno da manutenção preventiva:** Beatriz Farias, pág. 6: *"onde a manutenção preventiva dá mais retorno"*; user story, pág. 8: *"...para direcionar a manutenção preventiva."* Como medir o "retorno": pendente da decisão do grupo (B4).
 
 ### Prioridade dos requisitos
@@ -68,14 +68,14 @@
   - `service.py`: `GridQualityService` com indicadores, ranking e histórico. O limite é lido da coluna do contrato (anual, por conjunto ou mediana RMR, ADR-003); B1 resolvida pelo ADR-003 revisado.
   - `dependencies.py`: Fábrica `get_grid_quality_service` e alias `GridQualitySvc`.
   - `router.py`: Rotas `GET /quality/indicators` (`competencia`), `/quality/feeders` (`competencia`, `status`) e `/quality/feeders/{id_alimentador}/history` (`meses`, de 1 a 48, padrão 48), sob `/api/v1`, protegidas com `RequireOperacao`.
-  - Continuidade (`continuity_*.py`, `municipalities.py`): `GET /quality/continuity` (`municipio`, `incluir_evento`) e `GET /quality/feeders/{id_alimentador}/customers` (`meses` 1 a 48, padrão 12; `limite` 1 a 50, padrão 10), ambas `RequireOperacao`. Períodos A/B de 12 meses derivados da série; evento extremo com `LIMIAR_EVENTO_EXTREMO = 3` sobre a mediana mensal da rede inteira; causas atacáveis (suposição, a validar com a Fatia 02): `VEGETACAO`, `FALHA DE EQUIPAMENTO`, `SOBRECARGA`; coordenadas dos municípios estáticas (aproximação, não vêm do banco). Filtro de escopo isolado em `scope_query`, para o bairro entrar depois.
+  - Continuidade (`continuity_*.py`, `municipalities.py`): `GET /quality/continuity` (`municipio`, `incluir_evento`) e `GET /quality/feeders/{id_alimentador}/customers` (`meses` 1 a 48, padrão 12; `limite` 1 a 50, padrão 10), ambas `RequireOperacao`. Períodos A/B de 12 meses derivados da série; evento extremo com `LIMIAR_EVENTO_EXTREMO = 3` sobre a mediana mensal da rede inteira; causas atacáveis (suposição, a validar com a Fatia 02): `VEGETACAO`, `FALHA DE EQUIPAMENTO`, `SOBRECARGA`; coordenadas dos municípios estáticas (aproximação, não vêm do banco). Filtro de escopo isolado em `scope_query`.
 - `auth/rbac`:
   - Enriquecimento de token JWT com perfil de cargo. Papéis existentes no código (`UserRole` em `backend/app/core/constants.py`): `diretor`, `gerente_operacao`, `gerente_atendimento`, `gerente_perdas`, `atendente`. Não haverá perfil ADMIN (decisão de 2026-10-21).
   - Dependência central `require_role(allowed_roles: Sequence[UserRole | str])` em `backend/app/shared/dependencies.py`, com os grupos de papéis em `backend/app/shared/role_groups.py`.
 
 ### Frontend (`frontend/src/features/grid_quality/` & `frontend/src/components/layout/`):
 - `GridQualityPage.tsx`: Painel de continuidade operacional ($\le 150$ linhas).
-- `hooks/useGridQualityController.ts`: Hook headless controlando filtros de município, bairro e alimentador.
+- `hooks/useGridQualityController.ts`: Hook headless controlando filtros de município e alimentador.
 - `components/QualityKpiCards.tsx`: Cards de DEC e FEC médios consolidados vs limite de referência.
 - `components/FeederRankingTable.tsx`: Tabela dos piores circuitos com badges de alerta.
 - `components/FeederTimeSeriesChart.tsx`: Série histórica mensal de 48 meses do circuito selecionado.
@@ -85,10 +85,10 @@
 #### 🧩 Componentes do Design System Recomendados (`@/components/ui/` & `@/components/feedback/`):
 - **Layout & Navegação:** `<AppLayout>` com `<SidebarNav>`, utilizando `<Separator />` para agrupamento de módulos permitidos por cargo (RBAC).
 - **KPIs Regulatórios:** `<Card variant="glass">` e `<Card variant="interactive">` para DEC/FEC consolidado e percentual de violação do limite de referência.
-- **Alternância de Módulos:** `<Tabs>` e `<TabsList>` / `<TabsTrigger>` para alternar entre *Visão por Região (município e bairro; a visão por bairro depende de dado ainda pendente)*, *Ranking de Alimentadores* e *Série Temporal*.
+- **Alternância de Módulos:** `<Tabs>` e `<TabsList>` / `<TabsTrigger>` para alternar entre *Visão por Região (município)*, *Ranking de Alimentadores* e *Série Temporal*.
 - **Tabela de Circuitos:** `<Table>` com `<TableHeader>`, `<TableRow>` e `<TableCell>` para ordenar alimentadores críticos com paginação limpa.
 - **Badges Regulatórios:** `<Badge variant="destructive">` para circuitos que ultrapassaram o limite de referência e `<Badge variant="secondary">` para circuitos conformes.
-- **Filtros Operacionais:** `<Select>` com `<Label>` para seleção dinâmica de Município, Bairro e Alimentador.
+- **Filtros Operacionais:** `<Select>` com `<Label>` para seleção dinâmica de Município e Alimentador.
 - **Gaveta Lateral de Circuito:** `<Sheet side="right">` disparado ao clicar em um alimentador para inspecionar gráfico de interrupções e UCs afetadas.
 - **Tooltips Técnicos:** `<Tooltip>` de `@/components/ui/tooltip-card` explicando as fórmulas regulatórias de DEC (Duração Equivalente) e FEC (Frequência Equivalente).
 - **Feedback & Estados:** `<LoadingSkeleton count={4} />` e `<EmptyState title="Nenhum alimentador com violação">`.
@@ -109,7 +109,7 @@
 - [x] Garantir conformidade com `make lint-frontend`.
 - [x] Aba Continuidade com dados reais (`GET /quality/continuity`) e tabela de clientes mais afetados no detalhe do circuito (`GET /quality/feeders/{id}/customers`). Concluído por Joao Henrique em 2026-10-28; registro no `changelog.md`.
 - [x] Filtros da Continuidade em `FilterPopover` (issue #68). Concluído por Joao Henrique em 2026-10-31; registro no `changelog.md`.
-- [ ] Filtro de bairro na Continuidade (próxima etapa, parâmetro opcional em `dim_unidade_consumidora`).
+- [x] Índice de regras de negócio da Fatia 06 em [`regras-de-negocio.md`](regras-de-negocio.md).
 
 ---
 
@@ -126,13 +126,13 @@
      - Card 3: **Percentual de Alimentadores em Violação (%)** com contagem absoluta (ex: *"14 de 122 circuitos"*).
      - Card 4: **Total de UCs Expostas a Circuitos Críticos** (impacto regulatório e risco de compensação).
 2. **Filtros Operacionais:**
-   - `<Select>` Município (por alimentador, relação 1:1), `<Select>` Bairro (origem pendente) e `<Select>` Alimentador.
+   - `<Select>` Município (por alimentador, relação 1:1) e `<Select>` Alimentador.
    - `<Select>` Status Regulatório ("Todos", "Somente com Violação do Limite", "Conformes").
 3. **Tabela de Alimentadores Críticos (`FeederRankingTable.tsx`):**
    - Ordenação inicial por **maior excesso de DEC sobre o limite de referência ($\Delta \text{DEC}$)**.
    - Colunas:
      - Código do Alimentador.
-     - Município Atendido, Bairro e Quantidade de UCs conectadas.
+     - Município Atendido e Quantidade de UCs conectadas.
      - DEC Apurado (h) e Limite de Referência (h).
      - FEC Apurado (vezes) e Limite de Referência (vezes).
      - Status Regulatório (Badges: `<Badge variant="destructive">Violação Crítica</Badge>`, `<Badge variant="outline">Alerta ($\ge 85\%$ do limite)</Badge>`, `<Badge variant="secondary">Conforme</Badge>`).
@@ -161,8 +161,7 @@
 - **O que João Henrique RECEBE dos outros colegas:**
   - **De Ryei Estevan (Fatia 02):** Consome a tabela `fato_qualidade_alimentador` no SQLite `v_energy.db` para alimentar os cards e o ranking.
     - **Dependência atendida (PR #38, `fato_ocorrencias_rede`):** tabela de ocorrências com causa (CLIMATICA, VEGETACAO, TERCEIROS, FALHA DE EQUIPAMENTO, SOBRECARGA, NAO IDENTIFICADA), com colunas `id_ocorrencia`, `id_uc`, `alimentador`, `tipo`, `causa`, `data_abertura`, `data_encerramento`, `duracao_min` e índices em `id_uc` e `alimentador`. O contrato de `fato_qualidade_alimentador` não tem causa.
-  - **De Renan (Fatia 01):** Consome `dim_unidade_consumidora` para contabilizar o número de UCs ativas ligadas a cada circuito elétrico, usadas como denominador do DEC e do FEC (fixo por alimentador, ADR-003; a Gold da Fatia 02 já traz `ucs_atendidas`). Provável origem do bairro: `dim_unidade_consumidora` (Renan), a confirmar.
-  - **De Miguel (Fatia 07):**
+  - **De Renan (Fatia 01):** Consome `dim_unidade_consumidora` para contabilizar o número de UCs ativas ligadas a cada circuito elétrico, usadas como denominador do DEC e do FEC (fixo por alimentador, ADR-003; a Gold da Fatia 02 já traz `ucs_atendidas`).  - **De Miguel (Fatia 07):**
     - Importa o componente `<ChatDrawer />` e insere o botão de disparo no cabeçalho (*Header*) global do `AppLayout.tsx`.
   - **De Bernardo, Célio e Adrian:** Recebe as rotas e títulos de suas páginas para compor as entradas autorizadas no menu dinâmico do `SidebarNav.tsx`.
 
