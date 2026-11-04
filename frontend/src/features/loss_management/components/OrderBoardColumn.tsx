@@ -20,7 +20,7 @@ export function OrderBoardColumn({ column, orders, onAction }: OrderBoardColumnP
   return (
     <section
       aria-label={`${column.label} (${orders.length})`}
-      className="bg-muted/40 border-border flex min-w-0 flex-col gap-2.5 rounded-xl border p-3"
+      className="bg-muted/40 border-border flex min-w-0 flex-col gap-2.5 rounded-lg border p-3"
     >
       <header className="flex items-center justify-between">
         <StatusBadge kind="ordem" status={column.badge} />

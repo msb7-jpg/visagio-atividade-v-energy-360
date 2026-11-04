@@ -29,9 +29,7 @@ describe('ChatWidgetTrigger', () => {
       />
     )
 
-    const pingIndicator = container.querySelector('.animate-ping')
-    expect(pingIndicator).toBeInTheDocument()
-    expect(pingIndicator).toHaveClass('pointer-events-none')
+    expect(container.querySelector('[data-testid="chat-streaming-indicator"]')).toBeInTheDocument()
 
     const button = screen.getByRole('button', { name: /Abrir Assistente V-Energy IA/i })
     fireEvent.click(button)
@@ -39,23 +37,16 @@ describe('ChatWidgetTrigger', () => {
     expect(handleOpen).toHaveBeenCalledTimes(1)
   })
 
-  it('deve possuir estilização circular e acessibilidade de foco no botão principal', () => {
-    const handleOpen = vi.fn()
+  it('mostra o rótulo visível e só exibe o indicador de resposta durante o streaming', () => {
     const { container } = render(
       <ChatWidgetTrigger
-        isStreaming
+        isStreaming={false}
         positionClass="right-6 bottom-6"
-        onOpen={handleOpen}
+        onOpen={vi.fn()}
       />
     )
 
-    const circularContainer = container.querySelector('.size-14')
-    expect(circularContainer).toBeInTheDocument()
-    expect(circularContainer).toHaveClass('rounded-full')
-
-    const button = screen.getByRole('button', { name: /Abrir Assistente V-Energy IA/i })
-    fireEvent.click(button)
-
-    expect(handleOpen).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('button', { name: /Abrir Assistente V-Energy IA/i })).toHaveTextContent('Assistente')
+    expect(container.querySelector('[data-testid="chat-streaming-indicator"]')).not.toBeInTheDocument()
   })
 })

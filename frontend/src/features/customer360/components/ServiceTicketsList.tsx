@@ -2,7 +2,7 @@ import { Headset } from 'lucide-react'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import type { ServiceTicket } from '@/features/customer360/types/customer360Types'
-import { formatDate } from '@/features/customer360/utils/customer360Formatters'
+import { formatDate, formatSentenceCase } from '@/features/customer360/utils/customer360Formatters'
 
 interface ServiceTicketsListProps {
   tickets: ServiceTicket[]
@@ -27,16 +27,16 @@ export function ServiceTicketsList({ tickets }: ServiceTicketsListProps) {
   return (
     <ul aria-label="Chamados abertos" className="flex flex-col gap-2">
       {tickets.map((ticket) => (
-        <li key={ticket.id_atendimento} className="border-border flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+        <li key={ticket.id_atendimento} className="border-border flex flex-wrap items-center justify-between gap-3 rounded-md border px-3 py-2.5">
           <div className="flex flex-col">
-            <span className="text-foreground text-sm font-semibold">{ticket.motivo_chamado ?? 'Motivo não informado'}</span>
+            <span className="text-foreground text-sm font-medium">{ticket.motivo_chamado ? formatSentenceCase(ticket.motivo_chamado) : 'Motivo não informado'}</span>
             <span className="text-muted-foreground text-xs">
               <span className="font-mono">{ticket.numero_protocolo ?? ticket.id_atendimento}</span> · aberto em {formatDate(ticket.data_abertura)}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {ticket.nota_csat === null ? null : <Badge variant="outline">Nota {ticket.nota_csat}</Badge>}
-            <Badge variant="secondary">{ticket.status_chamado ?? 'Sem status'}</Badge>
+            {ticket.nota_csat === null ? null : <span className="text-muted-foreground text-xs">Nota {ticket.nota_csat}</span>}
+            <Badge variant={ticket.status_chamado === 'ABERTO' ? 'warning' : 'muted'}>{ticket.status_chamado ? formatSentenceCase(ticket.status_chamado) : 'Sem status'}</Badge>
           </div>
         </li>
       ))}

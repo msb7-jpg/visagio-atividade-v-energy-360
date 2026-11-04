@@ -24,14 +24,17 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-sidebar: var(--sidebar);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   /* Escala de tipo (tamanho / altura de linha): nada abaixo de 12px. */
   --text-xs: 12px;
@@ -49,79 +52,85 @@
   --text-3xl: 30px;
   --text-3xl--line-height: 36px;
 
-  /* Raio: base de 8px. sm = barras e selos de tabela; md = botões, campos e linhas; lg = cards e gaveta. */
+  /* Raio: sm = selos e barras; md = botões, campos e linhas; lg = cards, gaveta e diálogos. */
   --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shadow-sm: 0 1px 2px rgba(16, 17, 19, 0.06);
 }
 
-/* Tema claro: variação (o padrão do portal é escuro, via <html class="dark">). */
+/* Tema claro (padrão do portal). */
 :root {
   color-scheme: light;
-  --background: #F2F5F8;
-  --foreground: #0F1B2D;
+  --background: #F6F6F3;
+  --foreground: #18191C;
   --card: #FFFFFF;
-  --card-foreground: #0F1B2D;
-  --muted: #F5F7FA;
-  --muted-foreground: #4C5A6D;
-  --primary: #0B5C7A;
+  --card-foreground: #18191C;
+  --muted: #F0F0EC;
+  --muted-foreground: #5A5E66;
+  --primary: #1B4D89;
   --primary-foreground: #FFFFFF;
-  --secondary: #E9EEF4;
-  --secondary-foreground: #0F1B2D;
-  --accent: #E1EEF4;
-  --accent-foreground: #0B5C7A;
-  --destructive: #B8322A;
+  --secondary: #ECECE7;
+  --secondary-foreground: #18191C;
+  --accent: #E9EFF7;
+  --accent-foreground: #1B4D89;
+  --destructive: #B42318;
   --destructive-foreground: #FFFFFF;
-  --success: #176B41;
+  --success: #0D6640;
   --success-foreground: #FFFFFF;
-  --warning: #7F5200;
+  --warning: #8A4600;
   --warning-foreground: #FFFFFF;
-  --border: #DCE2E9;
-  --input: #7C8BA0;
-  --ring: #0B5C7A;
-  --chart-1: #0B5C7A;
-  --chart-2: #C2410C;
-  --chart-3: #7B4FC4;
-  --chart-4: #8A5A00;
-  --chart-5: #0E8C80;
-  --radius: 8px;
-  /* Menus, painéis e diálogos: no claro, sombra suave (o escuro mantém as sombras padrão do Tailwind). */
-  --shadow-xl: 0 4px 16px rgba(0, 0, 0, 0.1);
-  --shadow-2xl: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --border: #E2E2DC;
+  --input: #84888F;
+  --ring: #1B4D89;
+  --brand: #F2B01E;
+  --brand-foreground: #18191C;
+  --sidebar: #FBFBF9;
+  --chart-1: #1B4D89;
+  --chart-2: #C2621B;
+  --chart-3: #6B5CA5;
+  --chart-4: #868C94;
+  --chart-5: #2A8577;
+  --radius: 6px;
+  --shadow-xl: 0 4px 12px rgba(16, 17, 19, 0.08);
+  --shadow-2xl: 0 8px 24px rgba(16, 17, 19, 0.1);
 }
 
+/* Tema escuro (opção do menu do usuário): grafite neutro. */
 .dark {
   color-scheme: dark;
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-  --background: #0A121E;
-  --foreground: #E7EDF4;
-  --card: #111B2A;
-  --card-foreground: #E7EDF4;
-  --muted: #172437;
-  --muted-foreground: #A8B6C8;
-  --primary: #5BB8DD;
-  --primary-foreground: #06121C;
-  --secondary: #1D2D44;
-  --secondary-foreground: #E7EDF4;
-  --accent: #123349;
-  --accent-foreground: #5BB8DD;
-  --destructive: #F28479;
+  --background: #101113;
+  --foreground: #ECECEE;
+  --card: #17181B;
+  --card-foreground: #ECECEE;
+  --muted: #1E2024;
+  --muted-foreground: #A3A7AE;
+  --primary: #8CB2EE;
+  --primary-foreground: #101113;
+  --secondary: #232529;
+  --secondary-foreground: #ECECEE;
+  --accent: #1B2534;
+  --accent-foreground: #A9C6F5;
+  --destructive: #F2897E;
   --destructive-foreground: #1A0A09;
-  --success: #5BCB93;
-  --success-foreground: #06121C;
-  --warning: #F2B92B;
+  --success: #5DC68F;
+  --success-foreground: #101113;
+  --warning: #E6B045;
   --warning-foreground: #1A1204;
-  --border: #24354D;
-  --input: #5A7396;
-  --ring: #5BB8DD;
-  --chart-1: #5BB8DD;
-  --chart-2: #F59A6B;
-  --chart-3: #B39DF0;
-  --chart-4: #F2B92B;
-  --chart-5: #4FD1C0;
+  --border: #2B2D32;
+  --input: #60656D;
+  --ring: #8CB2EE;
+  --brand: #F2B01E;
+  --brand-foreground: #18191C;
+  --sidebar: #131416;
+  --chart-1: #8CB2EE;
+  --chart-2: #EE9A5E;
+  --chart-3: #B3A6E8;
+  --chart-4: #70767F;
+  --chart-5: #5FC4B4;
+  --shadow-xl: 0 8px 20px rgba(0, 0, 0, 0.35);
+  --shadow-2xl: 0 16px 40px rgba(0, 0, 0, 0.45);
 }
 
 body {
@@ -130,20 +139,14 @@ body {
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 20px;
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.dark body {
-  background-color: var(--background);
-  background-image:
-    radial-gradient(ellipse 70% 45% at 50% -15%, rgba(91, 184, 221, 0.14), transparent 70%),
-    radial-gradient(ellipse 50% 35% at 90% 90%, rgba(18, 51, 73, 0.25), transparent 60%);
-  background-attachment: fixed;
-}
-
-/* Fundo da tela de login e banners hero, derivado só de tokens. */
+/* Fundo da tela de login: liso, sem gradiente. */
 .glass-gradient {
-  background: linear-gradient(135deg, var(--background) 0%, var(--accent) 100%);
+  background: var(--sidebar);
 }
 
 @keyframes shimmer {
@@ -294,43 +297,24 @@ html.theme-transition * {
   background-color: var(--muted-foreground);
 }
 
-/* Painel de superfície. No claro: card sólido, borda `border` e sombra suave. No escuro (.dark): vidro translúcido. */
+/* Superfície padrão: plana, borda de 1px, sem vidro nem brilho. */
 .glass-panel {
   background: var(--card);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-}
-
-.dark .glass-panel {
-  background: color-mix(in srgb, var(--card) 65%, transparent);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
 }
 
 .glass-panel-interactive {
-  transition: background-color 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), transform 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 150ms ease-out, background-color 150ms ease-out;
 }
 
 .glass-panel-interactive:hover {
-  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
-}
-
-.dark .glass-panel-interactive:hover {
-  background: color-mix(in srgb, var(--card) 82%, transparent);
-  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
-  box-shadow: 0 14px 44px 0 rgba(0, 0, 0, 0.45), 0 0 20px 0 color-mix(in srgb, var(--primary) 15%, transparent), inset 0 1px 0 0 rgba(255, 255, 255, 0.20);
+  border-color: color-mix(in srgb, var(--foreground) 22%, var(--border));
 }
 
 @media (prefers-reduced-motion: reduce) {
   .glass-panel-interactive,
   .glass-panel-interactive:hover {
     transition: none;
-    transform: none;
   }
 }
 

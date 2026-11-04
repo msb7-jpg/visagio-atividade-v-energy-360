@@ -27,7 +27,7 @@ export function ThoughtInspector({ thought, className }: ThoughtInspectorProps) 
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-xl border border-border bg-card/60 shadow-md backdrop-blur-sm transition',
+        'group relative overflow-hidden rounded-lg border border-border bg-card shadow-sm transition',
         className
       )}
     >
@@ -38,7 +38,7 @@ export function ThoughtInspector({ thought, className }: ThoughtInspectorProps) 
         aria-expanded={isOpen}
         onClick={() => setIsOpen(prev => !prev)}
         onKeyDown={event => handleKeyboardClick(event, () => setIsOpen(prev => !prev))}
-        className="flex cursor-pointer select-none items-center justify-between border-b border-border bg-card/80 px-3 py-2 transition-colors hover:bg-muted/50"
+        className="flex cursor-pointer select-none items-center justify-between border-b border-border bg-card px-3 py-2 transition-colors hover:bg-muted/50"
       >
         <div className="flex items-center gap-2">
           <ChevronRight
@@ -47,7 +47,7 @@ export function ThoughtInspector({ thought, className }: ThoughtInspectorProps) 
               isOpen ? 'rotate-90' : null
             )}
           />
-          <Brain className="size-3.5 text-primary" />
+          <Brain className="size-3.5 text-muted-foreground" />
           <span className="text-xs font-semibold text-foreground">
             Raciocínio do Agente
           </span>

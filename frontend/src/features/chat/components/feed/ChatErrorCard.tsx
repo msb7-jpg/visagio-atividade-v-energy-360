@@ -30,7 +30,7 @@ export function ChatErrorCard({
   return (
     <div
       data-testid="chat-error-card"
-      className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4"
+      className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4"
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-destructive/20 text-destructive">

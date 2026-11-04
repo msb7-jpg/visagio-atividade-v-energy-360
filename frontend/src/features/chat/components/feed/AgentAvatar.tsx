@@ -25,7 +25,7 @@ export function AgentAvatar({ isStreaming = false, className }: AgentAvatarProps
   return (
     <div
       className={cn(
-        'relative flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-gradient-to-b from-card to-secondary shadow-sm',
+        'relative flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-gradient-to-b from-card to-secondary shadow-sm',
         isStreaming ? 'border-primary/50 shadow-sm shadow-primary/25' : null,
         className
       )}

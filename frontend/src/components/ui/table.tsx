@@ -25,7 +25,7 @@ function Table({ className, ...props }: React.ComponentProps<'table'>) {
  * @returns Elemento TableHeader renderizado.
  */
 function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
-  return <thead className={cn('bg-muted/30 border-b border-border [&_tr]:border-b-0', className)} {...props} />
+  return <thead className={cn('bg-muted/60 border-b border-border [&_tr]:border-b-0', className)} {...props} />
 }
 
 /**
@@ -89,7 +89,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
   return (
     <th
       className={cn(
-        'h-10 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider text-muted-foreground [&:has([role=checkbox])]:pr-0',
+        'h-9 px-4 text-left align-middle text-xs font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0',
         className
       )}
       {...props}
@@ -107,7 +107,7 @@ function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
   return (
     <td
       className={cn(
-        'px-4 py-3 align-middle text-sm text-foreground/90 [&:has([role=checkbox])]:pr-0',
+        'px-4 py-2.5 align-middle text-sm text-foreground [&:has([role=checkbox])]:pr-0',
         className
       )}
       {...props}

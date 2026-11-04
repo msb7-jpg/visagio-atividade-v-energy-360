@@ -52,7 +52,7 @@ function UserChatMessage({ message, className }: { message: ChatMessageType; cla
 
   return (
     <div className={cn('flex justify-end gap-3', className)}>
-      <div className="max-w-xl rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground shadow-sm">
+      <div className="max-w-xl rounded-lg bg-secondary px-4 py-2.5 text-sm text-foreground">
         {command ? (
           <div className="flex flex-col items-start gap-1.5">
             <CommandBadge command={command} />
@@ -62,7 +62,7 @@ function UserChatMessage({ message, className }: { message: ChatMessageType; cla
           message.content
         )}
       </div>
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
         <User className="size-4" />
       </div>
     </div>

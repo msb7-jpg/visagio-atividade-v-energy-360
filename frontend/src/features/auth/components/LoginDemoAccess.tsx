@@ -15,30 +15,31 @@ export function LoginDemoAccess({ onSelect }: { onSelect: (account: DemoAccount)
   return (
     <section
       aria-labelledby="login-demo-title"
-      className="border-input flex flex-col gap-2 rounded-lg border border-dashed p-4"
+      className="border-border flex flex-col gap-3 border-t pt-5"
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 id="login-demo-title" className="text-sm font-semibold">Acesso de demonstração</h3>
-        <Badge variant="warning">Modo demo</Badge>
+        <h3 id="login-demo-title" className="text-sm font-medium">Acesso de demonstração</h3>
+        <Badge variant="muted">Sem senha</Badge>
       </div>
-      <p className="text-muted-foreground text-xs">
-        Só para a apresentação: entra sem digitar a senha, com uma conta de exemplo.
-      </p>
-      <div className="flex flex-col gap-1.5">
+      <p className="text-muted-foreground text-sm">Entra com uma conta de exemplo de cada cargo.</p>
+      <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
         {DEMO_ACCOUNTS.map((account) => (
           <Button
             key={account.email}
             type="button"
             variant="outline"
+            size="touch"
             fullWidth
             className="justify-start"
             onClick={() => onSelect(account)}
           >
-            <span className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-full text-xs font-bold">
+            <span className="bg-secondary text-foreground flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
               {initialsOf(account.nome)}
             </span>
-            <span>{account.nome}</span>
-            <span className="text-muted-foreground text-xs">{roleLabel(account.role)}</span>
+            <span className="flex min-w-0 flex-col items-start leading-tight">
+              <span className="truncate">{account.nome}</span>
+              <span className="text-muted-foreground truncate text-xs font-normal">{roleLabel(account.role)}</span>
+            </span>
           </Button>
         ))}
       </div>

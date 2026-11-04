@@ -3,9 +3,9 @@ export type Theme = 'claro' | 'escuro'
 /** Chave do `localStorage` com a escolha de tema (a mesma lida pelo script de `index.html`). */
 export const THEME_KEY = 'grid360.tema'
 
-const DEFAULT_THEME: Theme = 'escuro'
-/** Valores gravados por versões anteriores (`light`/`dark`); só o `light` precisa ser reconhecido. */
-const LEGACY_LIGHT = 'light'
+const DEFAULT_THEME: Theme = 'claro'
+/** Valor gravado por versões anteriores (`light`/`dark`); só o `dark` precisa ser reconhecido. */
+const LEGACY_DARK = 'dark'
 const TRANSITION_CLASS = 'theme-transition'
 const TRANSITION_MS = 200
 
@@ -14,13 +14,13 @@ const themeListeners = new Set<() => void>()
 /**
  * Tema salvo no navegador.
  *
- * @returns `'claro'` só se foi escolhido (ou gravado como `light` por versão antiga); qualquer outro valor,
- * ou armazenamento indisponível (janela privada), cai no padrão escuro.
+ * @returns `'escuro'` só se foi escolhido (ou gravado como `dark` por versão antiga); qualquer outro valor,
+ * ou armazenamento indisponível (janela privada), cai no padrão claro.
  */
 export function getStoredTheme(): Theme {
   try {
     const stored = localStorage.getItem(THEME_KEY)
-    return stored === 'claro' || stored === LEGACY_LIGHT ? 'claro' : DEFAULT_THEME
+    return stored === 'escuro' || stored === LEGACY_DARK ? 'escuro' : DEFAULT_THEME
   } catch {
     return DEFAULT_THEME
   }

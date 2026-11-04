@@ -57,7 +57,7 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-xl border border-border bg-card/60 shadow-md backdrop-blur-sm transition',
+        'group relative overflow-hidden rounded-lg border border-border bg-card shadow-sm transition',
         className
       )}
     >
@@ -68,7 +68,7 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
         aria-expanded={isExpanded}
         onClick={() => setIsExpanded(prev => !prev)}
         onKeyDown={event => handleKeyboardClick(event, () => setIsExpanded(prev => !prev))}
-        className="flex cursor-pointer select-none items-center justify-between border-b border-border bg-card/80 px-3 py-1.5 transition-colors hover:bg-muted/50"
+        className="flex cursor-pointer select-none items-center justify-between border-b border-border bg-card px-3 py-1.5 transition-colors hover:bg-muted/50"
       >
         <div className="flex items-center gap-2">
           <ChevronRight
@@ -77,7 +77,7 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
               isExpanded ? 'rotate-90' : null
             )}
           />
-          <Database className="size-3.5 text-primary" />
+          <Database className="size-3.5 text-muted-foreground" />
           <span className="text-xs font-semibold text-foreground">Consulta SQL</span>
 
           <span className="text-xs text-muted-foreground">

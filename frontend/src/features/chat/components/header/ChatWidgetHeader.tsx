@@ -46,7 +46,7 @@ export function ChatWidgetHeader({
         }
         onPointerDownDrag?.(event)
       }}
-      className={`flex items-center justify-between border-b border-border bg-card/90 px-4 py-3 backdrop-blur-md ${
+      className={`flex items-center justify-between border-b border-border bg-card px-4 py-3 ${
         isFullscreen ? '' : 'cursor-grab active:cursor-grabbing select-none'
       }`}
     >
@@ -54,7 +54,7 @@ export function ChatWidgetHeader({
         {!isFullscreen ? (
           <GripHorizontal className="size-4 text-muted-foreground/60 transition-colors hover:text-foreground" />
         ) : null}
-        <div className="relative flex size-8 items-center justify-center rounded-lg border border-border bg-primary/10 text-primary">
+        <div className="relative flex size-8 items-center justify-center rounded-md border border-border bg-muted text-foreground">
           <Bot className="size-4" />
           {isStreaming ? (
             <span className="absolute -top-0.5 -right-0.5 flex size-2">

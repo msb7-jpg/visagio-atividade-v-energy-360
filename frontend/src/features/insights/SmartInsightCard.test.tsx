@@ -37,12 +37,11 @@ describe('SmartInsightCard', () => {
     })
 
     render(<SmartInsightCard context="revenue" />)
-    expect(screen.getByText('Smart Insights IA')).toBeInTheDocument()
-    expect(screen.getByText('REVENUE')).toBeInTheDocument()
-    expect(screen.getByText('Gerando síntese executiva...')).toBeInTheDocument()
+    expect(screen.getByText('Resumo da IA')).toBeInTheDocument()
+    expect(screen.getByText('Gerando resumo…')).toBeInTheDocument()
   })
 
-  it('deve iniciar recolhido exibindo o resumo em uma linha e botão Expandir', () => {
+  it('deve iniciar recolhido exibindo o resumo em uma linha e botão Ver detalhes', () => {
     mockUseProactiveInsights.mockReturnValue({
       data: {
         resumo_executivo: 'Retração identificada de 3,8% no volume faturado.',
@@ -58,9 +57,9 @@ describe('SmartInsightCard', () => {
     })
 
     render(<SmartInsightCard context="revenue" />)
-    expect(screen.getByText('Smart Insights IA')).toBeInTheDocument()
+    expect(screen.getByText('Resumo da IA')).toBeInTheDocument()
     expect(screen.getByText('Retração identificada de 3,8% no volume faturado.')).toBeInTheDocument()
-    expect(screen.getByText('Expandir')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ver detalhes' })).toBeInTheDocument()
     expect(screen.queryByText('Canibalização de receita concentrada no subgrupo B1.')).not.toBeInTheDocument()
   })
 
@@ -80,17 +79,17 @@ describe('SmartInsightCard', () => {
     })
 
     render(<SmartInsightCard context="revenue" />)
-    const expandButton = screen.getByText('Expandir')
+    const expandButton = screen.getByRole('button', { name: 'Ver detalhes' })
     fireEvent.click(expandButton)
 
-    expect(screen.getByText('Minimizar')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ocultar' })).toBeInTheDocument()
     expect(screen.getByText('Canibalização de receita concentrada no subgrupo B1.')).toBeInTheDocument()
     expect(localStorage.getItem('venergy_insight_collapsed_revenue')).toBe('false')
 
-    const minimizeButton = screen.getByText('Minimizar')
+    const minimizeButton = screen.getByRole('button', { name: 'Ocultar' })
     fireEvent.click(minimizeButton)
 
-    expect(screen.getByText('Expandir')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ver detalhes' })).toBeInTheDocument()
     expect(screen.queryByText('Canibalização de receita concentrada no subgrupo B1.')).not.toBeInTheDocument()
     expect(localStorage.getItem('venergy_insight_collapsed_revenue')).toBe('true')
   })
@@ -109,7 +108,7 @@ describe('SmartInsightCard', () => {
     })
 
     render(<SmartInsightCard context="executive" />)
-    expect(screen.getByText('Minimizar')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ocultar' })).toBeInTheDocument()
     expect(screen.getByText('Eficiência de arrecadação em 98%.')).toBeInTheDocument()
   })
 })

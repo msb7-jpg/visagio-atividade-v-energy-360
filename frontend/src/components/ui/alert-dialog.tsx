@@ -18,13 +18,13 @@ function AlertDialogPortal({ ...props }: AlertDialogPrimitive.Portal.Props): Rea
   return <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
 }
 
-/** Camada de sobreposição (backdrop) com desfoque de fundo (design.md). */
+/** Camada de sobreposição (backdrop) que escurece o fundo (design.md). */
 function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.Backdrop.Props): React.JSX.Element {
   return (
     <AlertDialogPrimitive.Backdrop
       data-slot="alert-dialog-overlay"
       className={cn(
-        'fixed inset-0 isolate z-50 bg-background/80 backdrop-blur-md duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
+        'fixed inset-0 isolate z-50 bg-background/70 duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
         className
       )}
       {...props}

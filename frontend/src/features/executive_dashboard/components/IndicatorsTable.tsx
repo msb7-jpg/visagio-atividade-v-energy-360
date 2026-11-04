@@ -23,16 +23,16 @@ interface IndicatorsTableProps {
  */
 export function IndicatorsTable({ groups }: IndicatorsTableProps) {
   return (
-    <div className="glass-panel overflow-hidden rounded-lg shadow-xl">
+    <div className="glass-panel overflow-hidden rounded-lg">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-1/4">Indicador</TableHead>
             <TableHead className="w-28">Área</TableHead>
-            <TableHead className="w-36 text-right whitespace-nowrap">Período Base</TableHead>
-            <TableHead className="w-36 text-right whitespace-nowrap">Período Atual</TableHead>
+            <TableHead className="w-36 text-right whitespace-nowrap">Período base</TableHead>
+            <TableHead className="w-36 text-right whitespace-nowrap">Período atual</TableHead>
             <TableHead className="w-32 text-right whitespace-nowrap">Variação</TableHead>
-            <TableHead className="min-w-48">Detalhamento & Avisos</TableHead>
+            <TableHead className="min-w-48">Observação</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -47,9 +47,9 @@ export function IndicatorsTable({ groups }: IndicatorsTableProps) {
                 >
                   <TableCell>
                     <Tooltip content={indicator.explicacao}>
-                      <span className="cursor-help text-foreground hover:text-primary transition-colors flex items-center gap-1.5 font-medium">
+                      <span className="text-foreground flex cursor-help items-center gap-1.5 font-medium">
                         {indicator.titulo}
-                        <HelpCircle className="size-3 text-muted-foreground/60" aria-hidden="true" />
+                        <HelpCircle className="text-muted-foreground size-3.5" aria-hidden="true" />
                       </span>
                     </Tooltip>
                   </TableCell>
@@ -57,28 +57,26 @@ export function IndicatorsTable({ groups }: IndicatorsTableProps) {
                   <TableCell>
                     <div className="flex items-center gap-1.5">
                       {index === 0 ? <h2 className="sr-only">{group.titulo}</h2> : null}
-                      <Badge variant="secondary">
-                        {group.titulo}
-                      </Badge>
+                      <span className="text-muted-foreground text-sm">{group.titulo}</span>
                     </div>
                   </TableCell>
 
                   <TableCell className="text-right whitespace-nowrap">
-                    <span className="font-mono tabular-nums text-muted-foreground text-xs">
+                    <span className="tabular-nums text-muted-foreground">
                       <span className="sr-only">Antes: </span>
                       {formatIndicatorValue(indicator.base, indicator.unidade)}
                     </span>
                   </TableCell>
 
                   <TableCell className="text-right whitespace-nowrap">
-                    <span className="font-mono tabular-nums font-bold text-foreground">
+                    <span className="tabular-nums font-semibold text-foreground">
                       {formatIndicatorValue(indicator.atual, indicator.unidade)}
                     </span>
                   </TableCell>
 
                   <TableCell className="text-right whitespace-nowrap">
                     <div className="flex flex-col items-end gap-1">
-                      <span className={cn('font-mono tabular-nums font-semibold text-xs', evaluation.textColor)}>
+                      <span className={cn('tabular-nums font-medium text-xs', evaluation.textColor)}>
                         {arrow ? <span aria-hidden="true">{arrow}</span> : null}
                         <span title={indicator.variacao_pp !== null ? 'Pontos percentuais' : undefined}>
                           {formatIndicatorChange(indicator.variacao_pct, indicator.variacao_pp)}
@@ -92,7 +90,7 @@ export function IndicatorsTable({ groups }: IndicatorsTableProps) {
                     <div className="flex flex-wrap items-center gap-2">
                       {indicator.aviso ? (
                         <Tooltip content={indicator.aviso}>
-                          <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-2 py-0.5 text-xs text-warning border border-warning/30 hover:bg-warning/25 transition-colors cursor-help shrink-0">
+                          <span className="bg-warning/15 text-warning inline-flex shrink-0 cursor-help items-center gap-1 rounded-sm px-1.5 py-0.5 text-xs font-medium">
                             <AlertTriangle className="size-3" aria-hidden="true" />
                             <span>Aviso climático</span>
                             <span className="sr-only">{indicator.aviso}</span>
@@ -100,7 +98,7 @@ export function IndicatorsTable({ groups }: IndicatorsTableProps) {
                         </Tooltip>
                       ) : null}
                       {indicator.detalhe ? (
-                        <span className="text-xs text-muted-foreground truncate max-w-xs">
+                        <span className="text-muted-foreground text-sm">
                           {indicator.detalhe.titulo}: {formatIndicatorValue(indicator.detalhe.atual, indicator.detalhe.unidade)}{' '}
                           (antes {formatIndicatorValue(indicator.detalhe.base, indicator.detalhe.unidade)})
                         </span>

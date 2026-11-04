@@ -83,7 +83,7 @@ export function ChatContainer({
         </div>
       </div>
 
-      <div className="bg-background/80 p-4 backdrop-blur-md sm:px-6">
+      <div className="bg-background p-4 sm:px-6">
         <div className="mx-auto max-w-4xl">
           <ChatInput
             onSendMessage={handleSend}

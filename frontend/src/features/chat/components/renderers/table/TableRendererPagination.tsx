@@ -25,7 +25,7 @@ export function TableRendererPagination({
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-between border-t border-border bg-card/60 px-4 py-2 text-xs text-muted-foreground">
+    <div className="flex items-center justify-between border-t border-border bg-card px-4 py-2 text-xs text-muted-foreground">
       <span>
         Página {currentPage} de {totalPages} ({totalRows} registros)
       </span>

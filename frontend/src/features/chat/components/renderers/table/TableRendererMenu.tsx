@@ -40,7 +40,7 @@ export function TableRendererMenu({
       </div>
 
       {isMenuOpen ? (
-        <div className="absolute right-0 mt-1 min-w-40 space-y-1 rounded-xl border border-border bg-card p-1 shadow-2xl backdrop-blur-md">
+        <div className="absolute right-0 mt-1 min-w-40 space-y-1 rounded-lg border border-border bg-card p-1 shadow-2xl">
           <Button
             type="button"
             variant="ghost"

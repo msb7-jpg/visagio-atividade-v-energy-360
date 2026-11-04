@@ -102,10 +102,10 @@ export function ChatWidget({
                 } as unknown as MotionStyle)
             }
             className={cn(
-              'fixed z-50 flex flex-col overflow-hidden bg-card/95 shadow-2xl backdrop-blur-2xl transition-shadow duration-300',
+              'fixed z-50 flex flex-col overflow-hidden bg-card shadow-2xl transition-shadow duration-300',
               isFullscreen
                 ? 'inset-0 h-screen min-h-dvh w-screen rounded-none border-0'
-                : cn('chat-widget-resizable rounded-2xl border border-border', positionClass)
+                : cn('chat-widget-resizable rounded-lg border border-border', positionClass)
             )}
           >
             {!isFullscreen ? <ResizeHandles onResizeStart={onResizeStart} /> : null}

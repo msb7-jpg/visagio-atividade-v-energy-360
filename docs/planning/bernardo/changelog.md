@@ -328,3 +328,19 @@
   - Fila de Inspeção (ADR-031): de 4,6 a 5,8 s para 0,74 s na competência 2025-09 e 0,17 s em tempo real, com a fila idêntica à anterior.
   - Insight de IA na Receita (issue #11), com as métricas calculadas no servidor e acesso só do diretor.
   - `CHECKLIST.md`: desempenho marcado e seção da apresentação removida.
+
+### [2026-11-04] - Nova identidade visual do portal
+- **Autor:** Bernardo H
+- **Branch:** `style/redesign-identidade-visual`
+- **O que foi feito:**
+  - Tokens novos no `index.css`: base neutra quente, um azul de marca (`#1B4D89`), âmbar só no símbolo, tema claro por padrão e escuro em grafite. Todos os pares passam no AA nos dois temas.
+  - IBM Plex Sans e Plex Mono no lugar de Inter e JetBrains Mono; números com algarismos tabulares e mono só para código e identificadores.
+  - Superfícies planas: saíram vidro, `backdrop-blur`, gradientes, sombras grandes, cartões que sobem no hover e ícones em caixinha colorida.
+  - Componentes base (botão, cartão, selo, campo, abas, tabela, aviso, tooltip) mais compactos; cabeçalhos de tabela sem caixa alta; variante `inline` para termos com tooltip.
+  - Shell: menu lateral agrupado (Diretoria, Operação, Atendimento), trilha da tela no cabeçalho, `BrandMark` e `PageHeader` compartilhados; botão "Assistente" com rótulo.
+  - Textos: subtítulos das telas em uma frase, "Resumo da IA" no lugar de "Smart Insights IA EXECUTIVE", chamados sem caixa alta, rótulos como "Restaurar períodos padrão" e "Selecionar as 10 primeiras". Nenhum dado, coluna, filtro ou ação foi removido.
+  - Correção: `CardHeader`/`CardContent` tinham ~40 px de vão a partir de 640 px porque `sm:p-5` vencia `pb-2`/`pt-0`.
+  - `design.md` atualizado para a nova identidade (versão 2.0.0).
+- **Validação de Testes:**
+  - Frontend: ESLint, Fallow, `tsc`, build e Vitest (762 testes) aprovados. Backend sem alteração.
+  - Telas conferidas com o backend real: login, Painel, Receita, Fila de Inspeção, Qualidade da Rede (Visão atual e Continuidade), Visão 360 (UC100094, claro e escuro) e chat.
