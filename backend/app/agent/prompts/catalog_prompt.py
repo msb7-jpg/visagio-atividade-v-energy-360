@@ -13,7 +13,8 @@ SCHEMA DAS TABELAS ANALÍTICAS (CAMADA GOLD NO SQLITE):
    - classe_consumo (TEXT): 'RESIDENCIAL', 'COMERCIAL', 'INDUSTRIAL', 'RURAL', 'PODER PUBLICO'.
    - subgrupo_tarifario (TEXT): 'B1', 'B2', 'B3', 'A4'.
    - alimentador (TEXT): Código do circuito (ex: 'ALM-REC-001').
-   - subestacao (TEXT): Campo ausente na origem; mantido no schema Gold por compatibilidade e sempre NULL. Não use para filtrar, agrupar ou inferir subestações.
+   - subestacao (TEXT): Campo ausente na origem; mantido no schema Gold por compatibilidade e sempre NULL.
+     Não use para filtrar, agrupar ou inferir subestações.
    - numero_medidor_ativo (TEXT): Medidor ativo instalado.
    - possui_gd (BOOLEAN / INTEGER): 1 se possui Geração Distribuída solar, 0 caso contrário.
    - potencia_gd_kw (REAL): Potência instalada de GD em kW.

@@ -1,7 +1,7 @@
 # 🧠 Fatia 07: Agente Text-to-SQL, IA Embutida & Avaliação (Fullstack IA)
 
 > **Dono Único:** Miguel  
-> **Status:** Parcialmente Implementado (Grafo FSM base já estruturado em `backend/app/agent/`)  
+> **Status:** Concluído e Validado (100%)  
 > **Documento de Referência:** [`docs/STATE_MACHINE.md`](docs/STATE_MACHINE.md)  
 > **Log Individual:** [`changelog.md`](changelog.md)
 
@@ -82,6 +82,8 @@
 - [x] Implementar avaliação real de Execution Accuracy (`result_comparator.py`), suíte de recusa ("não sei") e perguntas canônicas do case no `golden_dataset.json`, conferência de fidelidade numérica (`faithfulness_checker.py`) no Agente e no Quadro de IA (`insights_service.py`), testes de integração (`test_agent_integration.py`) e benchmark real com modelo local (`Qwen3.5-4B-Q4_K_M` via `lcpp`).
 - [x] Garantir 100% verde em `make lint-all` e `make test-all`.
 - [x] Atendimento às issues de design #65 (resposta executiva com auditoria recolhida e termos de negócio) e #69 (SmartInsightCard recolhível com persistência em localStorage).
+- [x] Validação completa e resolução dos 6 critérios de avaliação do `docs/CHECKLIST.md` (modelo `.env`, perguntas ao vivo dos 4 temas de negócio, gabaritos das perguntas canônicas #26 a #28, jargões, suíte de recusa estrita com script corrigido e follow-up multi-turno).
+- [x] Fechamento da Issue #19 no GitHub com relatório oficial consolidado.
 
 ---
 
