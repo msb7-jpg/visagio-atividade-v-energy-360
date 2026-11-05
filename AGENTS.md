@@ -54,7 +54,7 @@ Para manter este documento conciso, detalhes arquiteturais aprofundados e padrõ
 
 | Referência / Skill | Localização | Quando Utilizar |
 |---|---|---|
-| **`design.md`** | [`design.md`](design.md) | **Especificação canônica da interface visual** (SaaS Enterprise Analytics): paleta Corporate Blue, tokens semânticos, escala de 12px, contratos de componentes (`<Button fullWidth>`, `<Card variant="...">`), tipografia e receitas prontas de UI. |
+| **`design.md`** | [`design.md`](design.md) | **Especificação canônica da interface visual** (identidade do Grid 360, versão 2.0.0): base neutra, um azul de marca, tema claro por padrão, IBM Plex, superfícies planas, tokens semânticos, raio de 6px, contratos de componentes (`<Button fullWidth>`, `<Card variant="...">`), tipografia e receitas prontas de UI. |
 | **`backend-coding-standards`** | [`.agents/skills/backend-coding-standards/SKILL.md`](.agents/skills/backend-coding-standards/SKILL.md) | Criar ou refatorar rotas FastAPI, serviços Pure Python, repositórios, injeção de dependências (`Annotated[T, Depends()]`), schemas Pydantic, handlers de exceção e testes com fixtures assíncronas. |
 | **`frontend-coding-standards`** | [`.agents/skills/frontend-coding-standards/SKILL.md`](.agents/skills/frontend-coding-standards/SKILL.md) | Arquitetar componentes React 19 em fatias verticais, aplicar o padrão Headless Controller, decompor componentes $>150$ LOC, estruturar fluxos JSX planos e animações via `motion/react`. |
 | **`shadcn`** | [`.agents/skills/shadcn/SKILL.md`](.agents/skills/shadcn/SKILL.md) | Descobrir, compor, instalar e debugar componentes de UI (botões, diálogos, tabelas, cards). Consultar boas práticas contra o anti-padrão `shadcn/no-restyle` e acessibilidade Radix UI. |
@@ -93,7 +93,7 @@ Definidos em [`frontend/.fallowrc.jsonc`](frontend/.fallowrc.jsonc) e validados 
 - **Duplicação de Código (Clones):** Tolerância máxima de **5.0%** (`threshold`).
 
 ### 2.2 Governança do Design System e Conformidade Visual
-1. **Conformidade Obrigatória com [`design.md`](design.md):** Todas as telas e componentes visuais devem seguir os tokens semânticos, a escala de arredondamento de 12px, o uso da prop `fullWidth` no `Button` e variantes de `Card` (`variant="glass"`, `variant="interactive"`).
+1. **Conformidade Obrigatória com [`design.md`](design.md):** Todas as telas e componentes visuais devem seguir os tokens semânticos, o raio de 6px (`--radius`), o uso da prop `fullWidth` no `Button` e as variantes de `Card` (`variant="glass"`, hoje o card padrão com sombra mínima, e `variant="interactive"`).
 2. **Tags HTML Nativas Proibidas:** Nunca use `<button>`, `<input>`, `<select>` ou `<textarea>` fora de `src/components/ui/`.
 3. **Respeito aos Estilos Base (`shadcn/no-restyle`):** Não tente sobrescrever cores, larguras ou espaçamentos de botões via `className` (`deny: ["w-*", "h-*", "p-*", "bg-*"]`). Use a prop `fullWidth` no Button e variantes no Card.
 4. **Sem Cores Brutas ou Valores Arbitrários:** Nunca use cores Tailwind arbitrárias (`bg-slate-900`) ou colchetes (`text-[11px]`, `min-h-[100dvh]`). Use tokens semânticos (`bg-background`, `text-foreground`, `min-h-dvh`).

@@ -417,4 +417,4 @@ Para manter a codebase limpa, sustentável e livre de "God Files", regras estrit
 
 > Consulte o arquivo [`AGENTS.md`](AGENTS.md) para as diretrizes detalhadas de desenvolvimento.
 
-> Design system: https://designmd.app/library/saas-enterprise-analytics
+> Design system: [`design.md`](design.md) (identidade visual do Grid 360, versão 2.0.0).

@@ -341,6 +341,7 @@
   - Textos: subtítulos das telas em uma frase, "Resumo da IA" no lugar de "Smart Insights IA EXECUTIVE", chamados sem caixa alta, rótulos como "Restaurar períodos padrão" e "Selecionar as 10 primeiras". Nenhum dado, coluna, filtro ou ação foi removido.
   - Correção: `CardHeader`/`CardContent` tinham ~40 px de vão a partir de 640 px porque `sm:p-5` vencia `pb-2`/`pt-0`.
   - `design.md` atualizado para a nova identidade (versão 2.0.0).
+  - `AGENTS.md` e README alinhados ao novo `design.md` (raio de 6px, superfícies planas e o `variant="glass"` como card padrão); removido o `components/ui/separator.tsx`, que ficou sem uso.
 - **Validação de Testes:**
   - Frontend: ESLint, Fallow, `tsc`, build e Vitest (762 testes) aprovados. Backend sem alteração.
   - Telas conferidas com o backend real: login, Painel, Receita, Fila de Inspeção, Qualidade da Rede (Visão atual e Continuidade), Visão 360 (UC100094, claro e escuro) e chat.
