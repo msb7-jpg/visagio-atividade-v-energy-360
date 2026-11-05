@@ -1,4 +1,5 @@
-import { CalendarCheck, FileSearch, Wallet } from 'lucide-react'
+import { FileSearch } from 'lucide-react'
+import { StatTile } from '@/components/data/StatTile'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/ui/status-badge'
@@ -23,37 +24,31 @@ function PaymentStatusBadge({ status }: { status: string | null }) {
     : <Badge variant="outline">{status ?? '—'}</Badge>
 }
 
-function OpenInvoicesSummary({ openInvoices, openAmount }: { openInvoices: Invoice[], openAmount: number }) {
+function OpenInvoicesTile({ openInvoices, openAmount }: { openInvoices: Invoice[], openAmount: number }) {
   const hasOpenInvoices = openInvoices.length > 0
   return (
-    <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
-      <Wallet className="text-muted-foreground size-5" />
-      <span className="text-foreground text-sm">
-        {hasOpenInvoices
-          ? `${formatCount(openInvoices.length, 'fatura', 'faturas')} em aberto, total de ${formatMoney(openAmount)}.`
-          : 'Nenhuma fatura em aberto.'}
-      </span>
-    </div>
+    <StatTile
+      label="Em aberto"
+      value={hasOpenInvoices ? formatMoney(openAmount) : formatMoney(0)}
+      footnote={hasOpenInvoices ? `${formatCount(openInvoices.length, 'fatura', 'faturas')} sem pagamento` : 'Nenhuma fatura em aberto'}
+    />
   )
 }
 
-function describePunctuality(punctuality: PaymentPunctuality): string {
-  const lateDetail = punctuality.atraso_medio_dias === null
-    ? ''
-    : ` (atraso médio de ${formatCount(punctuality.atraso_medio_dias, 'dia', 'dias')})`
-  const overdueDetail = punctuality.vencidas_em_aberto > 0
-    ? ` e ${formatCount(punctuality.vencidas_em_aberto, 'vencida', 'vencidas')} em aberto`
-    : ''
-  return `Últimas ${punctuality.faturas_avaliadas} contas: ${punctuality.pagas_em_dia} pagas em dia, `
-    + `${punctuality.pagas_com_atraso} com atraso${lateDetail}${overdueDetail}.`
+function describeLateness(punctuality: PaymentPunctuality): string {
+  const parts = [`${punctuality.pagas_com_atraso} com atraso`]
+  if (punctuality.atraso_medio_dias !== null) parts.push(`atraso médio de ${formatCount(punctuality.atraso_medio_dias, 'dia', 'dias')}`)
+  if (punctuality.vencidas_em_aberto > 0) parts.push(`${formatCount(punctuality.vencidas_em_aberto, 'vencida', 'vencidas')} em aberto`)
+  return parts.join(' · ')
 }
 
-function PunctualitySummary({ punctuality }: { punctuality: PaymentPunctuality }) {
+function PunctualityTile({ punctuality }: { punctuality: PaymentPunctuality }) {
   return (
-    <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
-      <CalendarCheck className="text-muted-foreground size-5" />
-      <span className="text-foreground text-sm">{describePunctuality(punctuality)}</span>
-    </div>
+    <StatTile
+      label={`Pagas em dia (últimas ${punctuality.faturas_avaliadas})`}
+      value={`${punctuality.pagas_em_dia} de ${punctuality.faturas_avaliadas}`}
+      footnote={describeLateness(punctuality)}
+    />
   )
 }
 
@@ -79,8 +74,10 @@ export function InvoicesTab({ history }: InvoicesTabProps) {
   }
   return (
     <div className="flex flex-col gap-3">
-      <OpenInvoicesSummary openInvoices={history.faturas_em_aberto} openAmount={history.valor_em_aberto_rs} />
-      {history.pontualidade ? <PunctualitySummary punctuality={history.pontualidade} /> : null}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <OpenInvoicesTile openInvoices={history.faturas_em_aberto} openAmount={history.valor_em_aberto_rs} />
+        {history.pontualidade ? <PunctualityTile punctuality={history.pontualidade} /> : null}
+      </div>
       <div className="max-h-96 min-w-0 overflow-auto">
         <Table aria-label="Faturas da unidade consumidora">
           <TableColumns columns={COLUMNS} />

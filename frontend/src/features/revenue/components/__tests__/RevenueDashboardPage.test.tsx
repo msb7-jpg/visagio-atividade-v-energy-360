@@ -145,7 +145,6 @@ describe('RevenueDashboardPage', () => {
     mockHappyPath()
     renderPage()
 
-    fireEvent.click(await screen.findByRole('tab', { name: /Ranking territorial/ }))
     fireEvent.click(await screen.findByRole('button', { name: 'BOA VIAGEM' }))
 
     expect(await screen.findByText(/RECIFE · últimos 24 meses/)).toBeInTheDocument()
@@ -179,7 +178,7 @@ describe('RevenueDashboardPage', () => {
 
     expect(await screen.findByText('Nenhum dado de faturamento encontrado.')).toBeInTheDocument()
     expect(screen.getByText('Não foi possível carregar os indicadores')).toBeInTheDocument()
-    expect(screen.queryByRole('tab', { name: /Decomposição/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('Da receita base à receita atual')).not.toBeInTheDocument()
   })
 
   it('mostra texto genérico quando o erro não vem da API', async () => {

@@ -24,7 +24,7 @@ export function QueueWarnings({ warnings }: QueueWarningsProps) {
   return warnings.map((warning) => (
     <Alert key={warning.codigo} variant="warning">
       <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-      <div>
+      <div className="flex flex-wrap gap-x-1.5">
         <AlertTitle>{WARNING_TITLES[warning.codigo] ?? FALLBACK_TITLE}</AlertTitle>
         <AlertDescription>{warning.mensagem}</AlertDescription>
       </div>

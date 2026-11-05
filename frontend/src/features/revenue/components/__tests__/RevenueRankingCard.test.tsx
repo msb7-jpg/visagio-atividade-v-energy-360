@@ -39,7 +39,8 @@ describe('RevenueRankingCard', () => {
 
     expect(screen.getByRole('button', { name: 'BOA VIAGEM' })).toBeInTheDocument()
     expect(screen.getAllByText('RECIFE')).toHaveLength(2)
-    expect(screen.getByText(/-R\$.3\.300,00/)).toBeInTheDocument()
+    expect(screen.getByText(/-R\$.3,3.mil/)).toBeInTheDocument()
+    expect(screen.getByTitle(/-R\$.3\.300,00/)).toBeInTheDocument()
     expect(screen.getAllByText('24 MWh')).toHaveLength(2)
   })
 

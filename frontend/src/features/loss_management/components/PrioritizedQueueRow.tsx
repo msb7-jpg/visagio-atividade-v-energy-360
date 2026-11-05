@@ -66,14 +66,14 @@ export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onTo
           {unit.id_uc}
         </Link>
       </TableCell>
-      <TableCell>
+      <TableCell className="whitespace-nowrap">
         <div className="flex flex-col">
           <span>{unit.bairro ?? '—'}</span>
           <span className="text-muted-foreground text-xs">{unit.municipio ? formatPlaceName(unit.municipio) : '—'}</span>
         </div>
       </TableCell>
       <TableCell>{unit.classe_consumo ? formatPlaceName(unit.classe_consumo) : '—'}</TableCell>
-      <TableCell>
+      <TableCell className="whitespace-nowrap">
         <div className="flex flex-col">
           <span className="font-medium">{formatConsumptionDrop(unit.consumo_base_kwh, unit.consumo_recente_kwh)}</span>
           <span className="text-muted-foreground text-xs">

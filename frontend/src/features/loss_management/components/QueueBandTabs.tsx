@@ -54,20 +54,8 @@ export function QueueBandTabs({ units, total, selection, onOpenDetail, onLoadMor
   ] as const
 
   return (
-    <div className="flex flex-col gap-2">
-      {total > units.length ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="text-muted-foreground text-xs">
-            Carregadas as {formatInteger(units.length)} primeiras UCs de {formatInteger(total)} na fila.
-          </p>
-          {onLoadMore ? (
-            <Button type="button" variant="outline" size="sm" onClick={onLoadMore} disabled={isLoadingMore}>
-              Carregar mais UCs
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-      <Tabs variant="line" value={band} onValueChange={(nextBand) => setBand(nextBand as BandKey)}>
+    <Tabs variant="line" value={band} onValueChange={(nextBand) => setBand(nextBand as BandKey)}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <TabsList aria-label="Faixa da fila por chance de acerto">
           {bands.map((item) => (
             <TabsTrigger key={item.key} value={item.key} disabled={item.units.length === 0}>
@@ -75,20 +63,32 @@ export function QueueBandTabs({ units, total, selection, onOpenDetail, onLoadMor
             </TabsTrigger>
           ))}
         </TabsList>
-        {bands.map((item) => (
-          <TabsContent key={item.key} value={item.key}>
-            <div className="flex flex-col gap-2">
-              <p className="text-muted-foreground text-xs">{item.hint}</p>
-              <PrioritizedQueueTable
-                units={item.units}
-                label={`Fila: ${item.label.toLowerCase()}`}
-                selection={selection}
-                onOpenDetail={onOpenDetail}
-              />
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
+        {total > units.length ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-muted-foreground text-xs">
+              Carregadas as {formatInteger(units.length)} primeiras UCs de {formatInteger(total)} na fila.
+            </p>
+            {onLoadMore ? (
+              <Button type="button" variant="outline" size="sm" onClick={onLoadMore} disabled={isLoadingMore}>
+                Carregar mais UCs
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      {bands.map((item) => (
+        <TabsContent key={item.key} value={item.key}>
+          <div className="flex flex-col gap-2">
+            <p className="text-muted-foreground text-xs">{item.hint}</p>
+            <PrioritizedQueueTable
+              units={item.units}
+              label={`Fila: ${item.label.toLowerCase()}`}
+              selection={selection}
+              onOpenDetail={onOpenDetail}
+            />
+          </div>
+        </TabsContent>
+      ))}
+    </Tabs>
   )
 }

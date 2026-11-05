@@ -6,9 +6,23 @@ export interface ProactiveInsightsPayload {
   metricas?: Record<string, string | number>
 }
 
+export type InsightTone = 'positivo' | 'neutro' | 'atencao' | 'critico'
+
+/** Número de destaque: a IA escolhe a métrica e o rótulo; o valor vem das métricas calculadas pelo servidor. */
+export interface InsightHighlight {
+  rotulo: string
+  metrica: string
+  valor: number | string
+  unidade: string | null
+}
+
 export interface ProactiveInsightsData {
   resumo_executivo: string
   insights: string[]
+  manchete?: string | null
+  tom?: InsightTone
+  destaques?: InsightHighlight[]
+  acao_recomendada?: string | null
 }
 
 /**

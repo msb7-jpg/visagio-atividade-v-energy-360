@@ -8,7 +8,7 @@ type TabsVariant = 'segmented' | 'line'
 const TabsVariantContext = React.createContext<TabsVariant>('segmented')
 
 const LIST_CLASSES: Record<TabsVariant, string> = {
-  segmented: 'inline-flex h-9 items-center justify-start gap-0.5 rounded-md border border-border bg-muted p-0.5 text-muted-foreground',
+  segmented: 'inline-flex h-9 w-fit items-center justify-start gap-0.5 rounded-md border border-border bg-muted p-0.5 text-muted-foreground',
   line: 'inline-flex w-full items-center justify-start gap-5 border-b border-border text-muted-foreground'
 }
 

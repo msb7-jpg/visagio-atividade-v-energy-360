@@ -121,7 +121,7 @@ describe('GridQualityPage', () => {
     expect(screen.getAllByText('1 de 2 circuitos.')).toHaveLength(2)
     expect(screen.getByText('0 de 2 circuitos.')).toBeInTheDocument()
     expect(screen.getAllByText(/Média do acumulado no ano até 03\/2000/)).toHaveLength(2)
-    expect(screen.getAllByText(/comparado ao limite de referência/)).toHaveLength(2)
+    expect(screen.getByText('Situação dos 2 circuitos')).toBeInTheDocument()
   })
 
   it('mostra o acumulado no ano ao lado do limite anual e o status de cada alimentador', async () => {

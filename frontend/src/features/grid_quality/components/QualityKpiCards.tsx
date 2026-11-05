@@ -1,115 +1,92 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import type { CSSProperties } from 'react'
+import { StatTile } from '@/components/data/StatTile'
 import { QualityStatusBadge } from '@/features/grid_quality/components/QualityStatusBadge'
-import { Tooltip } from '@/components/ui/tooltip-card'
 import { formatCompetencia, formatDecimal } from '@/features/grid_quality/utils/qualityFormatters'
 import type { QualityIndicators, QualityStatus } from '@/features/grid_quality/types/qualityTypes'
+import { cn } from '@/lib/utils'
 
-interface KpiCardProps {
-  title: string
-  formula: string
-  value: string
-  detail: string
-}
-
-function KpiCard({ title, formula, value, detail }: KpiCardProps) {
-  return (
-    <Card variant="glass">
-      <CardHeader className="pb-2">
-        <Tooltip content={formula}>
-          <CardTitle className="cursor-help">{title}</CardTitle>
-        </Tooltip>
-      </CardHeader>
-      <CardContent>
-        <div className="text-foreground text-2xl font-bold tracking-tight">{value}</div>
-        <CardDescription className="mt-1">{detail}</CardDescription>
-      </CardContent>
-    </Card>
-  )
-}
-
-interface StatusCardProps {
-  status: QualityStatus
-  formula: string
-  percent: number
-  count: number
-  total: number
-}
-
-function StatusCard({ status, formula, percent, count, total }: StatusCardProps) {
-  return (
-    <Card variant="glass">
-      <CardHeader className="pb-2">
-        <Tooltip content={formula}>
-          <span className="w-fit cursor-help"><QualityStatusBadge status={status} /></span>
-        </Tooltip>
-      </CardHeader>
-      <CardContent>
-        <div className="text-foreground text-2xl font-bold tracking-tight">{formatDecimal(percent)}%</div>
-        <CardDescription className="mt-1">{count} de {total} circuitos.</CardDescription>
-      </CardContent>
-    </Card>
-  )
-}
-
-const STATUS_CARDS = [
+const STATUS_ROWS = [
   {
     status: 'violacao',
-    formula: 'Acima do limite: DEC ou FEC acumulado no ano maior que o limite anual de referência.',
+    bar: 'bg-destructive',
     count: (indicators: QualityIndicators) => indicators.alimentadores_em_violacao,
     percent: (indicators: QualityIndicators) => indicators.percentual_violacao
   },
   {
     status: 'alerta',
-    formula: 'Alerta: DEC ou FEC acumulado no ano entre 85% e 100% do limite anual de referência.',
+    bar: 'bg-warning',
     count: (indicators: QualityIndicators) => indicators.alimentadores_em_alerta,
     percent: (indicators: QualityIndicators) => indicators.percentual_alerta
   },
   {
     status: 'conforme',
-    formula: 'Conforme: DEC e FEC acumulados no ano abaixo de 85% do limite anual de referência.',
+    bar: 'bg-success',
     count: (indicators: QualityIndicators) => indicators.alimentadores_conformes,
     percent: (indicators: QualityIndicators) => indicators.percentual_conforme
   }
-] as const
+] as const satisfies readonly { status: QualityStatus; bar: string; count: (indicators: QualityIndicators) => number; percent: (indicators: QualityIndicators) => number }[]
 
-const LIMIT_NOTE = 'limite de referência'
+const STATUS_HINT =
+  'Acima do limite: DEC ou FEC acumulado no ano maior que o limite anual de referência. Alerta: entre 85% e 100% do limite. Conforme: abaixo de 85%.'
+
+function StatusDistribution({ indicators }: { indicators: QualityIndicators }) {
+  return (
+    <StatTile
+      className="sm:col-span-2"
+      label={`Situação dos ${indicators.total_alimentadores} circuitos`}
+      hint={STATUS_HINT}
+      value={(
+        <div className="bg-muted flex h-2.5 w-full overflow-hidden rounded-sm" aria-hidden="true">
+          {STATUS_ROWS.map(({ status, bar, percent }) => (
+            <div
+              key={status}
+              className={cn('w-(--segment-width)', bar)}
+              style={{ '--segment-width': `${percent(indicators)}%` } as CSSProperties}
+            />
+          ))}
+        </div>
+      )}
+      footnote={(
+        <ul className="flex flex-col gap-1.5 pt-1">
+          {STATUS_ROWS.map(({ status, count, percent }) => (
+            <li key={status} className="flex items-center justify-between gap-3">
+              <QualityStatusBadge status={status} />
+              <span className="text-foreground flex gap-3 tabular-nums">
+                <span>{count(indicators)} de {indicators.total_alimentadores} circuitos.</span>
+                <span className="w-14 text-right font-medium">{formatDecimal(percent(indicators))}%</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    />
+  )
+}
 
 /**
- * Cards de DEC e FEC médios e da distribuição dos alimentadores por situação (acima do limite, alerta, conforme) na competência mais recente.
+ * Resumo da Visão atual em uma faixa: DEC e FEC médios acumulados no ano e a distribuição dos circuitos
+ * por situação em relação ao limite de referência, na competência mais recente.
  *
  * @param props - Indicadores consolidados devolvidos pela API.
- * @returns Duas linhas: DEC/FEC médios e os três cards de situação.
+ * @returns Faixa com dois indicadores e o bloco de situação.
  */
 export function QualityKpiCards({ indicators }: { indicators: QualityIndicators }) {
   const period = indicators.competencia ? formatCompetencia(indicators.competencia) : 'sem dados'
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <KpiCard
-          title="DEC médio acumulado (horas)"
-          formula="DEC acumulado: soma das durações das interrupções (horas) de janeiro até a competência, dividida pelas UCs atendidas do alimentador."
-          value={formatDecimal(indicators.dec_medio_horas)}
-          detail={`Média do acumulado no ano até ${period}; comparado ao ${LIMIT_NOTE}.`}
-        />
-        <KpiCard
-          title="FEC médio acumulado (vezes)"
-          formula="FEC acumulado: UCs interrompidas de janeiro até a competência, divididas pelas UCs atendidas do alimentador."
-          value={formatDecimal(indicators.fec_medio_vezes)}
-          detail={`Média do acumulado no ano até ${period}; comparado ao ${LIMIT_NOTE}.`}
-        />
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {STATUS_CARDS.map(({ status, formula, count, percent }) => (
-          <StatusCard
-            key={status}
-            status={status}
-            formula={formula}
-            percent={percent(indicators)}
-            count={count(indicators)}
-            total={indicators.total_alimentadores}
-          />
-        ))}
-      </div>
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatTile
+        label="DEC médio no ano (h)"
+        hint="DEC acumulado: soma das durações das interrupções (horas) de janeiro até a competência, dividida pelas UCs atendidas do alimentador. Comparado ao limite de referência."
+        value={formatDecimal(indicators.dec_medio_horas)}
+        footnote={`Média do acumulado no ano até ${period}.`}
+      />
+      <StatTile
+        label="FEC médio no ano (vezes)"
+        hint="FEC acumulado: UCs interrompidas de janeiro até a competência, divididas pelas UCs atendidas do alimentador. Comparado ao limite de referência."
+        value={formatDecimal(indicators.fec_medio_vezes)}
+        footnote={`Média do acumulado no ano até ${period}.`}
+      />
+      <StatusDistribution indicators={indicators} />
     </div>
   )
 }

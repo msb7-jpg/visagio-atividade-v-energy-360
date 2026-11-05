@@ -111,4 +111,34 @@ describe('SmartInsightCard', () => {
     expect(screen.getByRole('button', { name: 'Ocultar' })).toBeInTheDocument()
     expect(screen.getByText('Eficiência de arrecadação em 98%.')).toBeInTheDocument()
   })
+
+  it('destaca a manchete, o próximo passo, o tom e os números lidos do servidor', () => {
+    mockUseProactiveInsights.mockReturnValue({
+      data: {
+        manchete: 'Receita subiu puxada pelo preço',
+        tom: 'positivo',
+        resumo_executivo: 'O reajuste compensou a queda de volume.',
+        acao_recomendada: 'Acompanhar o volume nos bairros com maior queda.',
+        destaques: [
+          { rotulo: 'Faturamento', metrica: 'faturamento_atual', valor: 172232176.56, unidade: 'rs' },
+          { rotulo: 'Variação', metrica: 'faturamento_var_pct', valor: 7.98, unidade: 'pct' },
+          { rotulo: 'Horas sem energia', metrica: 'dec_area_atual', valor: 1.7, unidade: 'horas' }
+        ],
+        insights: ['Efeito preço maior que o efeito volume.']
+      },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+      isFetching: false
+    })
+
+    render(<SmartInsightCard context="executive" />)
+    expect(screen.getByText('Receita subiu puxada pelo preço')).toBeInTheDocument()
+    expect(screen.getByText('O reajuste compensou a queda de volume.')).toBeInTheDocument()
+    expect(screen.getByText('Acompanhar o volume nos bairros com maior queda.')).toBeInTheDocument()
+    expect(screen.getByText('Positivo')).toBeInTheDocument()
+    expect(screen.getByText('R$ 172,2 mi')).toBeInTheDocument()
+    expect(screen.getByText('+8,0%')).toBeInTheDocument()
+    expect(screen.getByText('1,7 h')).toBeInTheDocument()
+  })
 })

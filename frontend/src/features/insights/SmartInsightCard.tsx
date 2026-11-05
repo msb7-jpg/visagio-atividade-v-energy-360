@@ -1,9 +1,8 @@
-import { ChevronDown, RotateCw, Sparkles } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { useState } from 'react'
+import { InsightActions } from '@/features/insights/components/InsightActions'
+import { InsightBody } from '@/features/insights/components/InsightBody'
+import { InsightShell } from '@/features/insights/components/InsightShell'
 import { useProactiveInsights } from '@/features/insights/queries/useProactiveInsights'
-import { cn } from '@/lib/utils'
 
 interface SmartInsightCardProps {
   context: 'customer360' | 'revenue' | 'losses' | 'quality' | 'executive'
@@ -18,7 +17,7 @@ function getInitialCollapsed(storageKey: string): boolean {
       return saved === 'true'
     }
   } catch {
-    // Falha silenciosa para ambientes restritos ou sem acesso a storage
+    return true
   }
   return true
 }
@@ -27,33 +26,16 @@ function setStoredCollapsed(storageKey: string, collapsed: boolean): void {
   try {
     localStorage.setItem(storageKey, String(collapsed))
   } catch {
-    // Falha silenciosa
+    return
   }
 }
 
-function InsightLabel() {
-  return (
-    <span className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-xs font-medium">
-      <Sparkles aria-hidden="true" className="size-3.5" />
-      Resumo da IA
-    </span>
-  )
-}
-
-function InsightShell({ children, className }: { children: ReactNode, className?: string }) {
-  return (
-    <Card role="region" aria-label="Resumo da IA" className={cn('px-4 py-3', className)}>
-      {children}
-    </Card>
-  )
-}
-
 /**
- * Resumo gerado pela IA a partir das métricas da tela, sem o usuário precisar perguntar.
- * Começa recolhido em uma linha; "Ver detalhes" mostra os pontos de apoio.
+ * Resumo da IA no topo da tela: a resposta em uma frase, o próximo passo e os números que a sustentam, para o
+ * usuário não precisar percorrer a tela. "Ver detalhes" mostra os pontos de apoio.
  *
  * @param props - Contexto da tela, filtros e métricas ativas.
- * @returns Cartão com o resumo e os pontos de apoio, ou nada se o resumo não estiver disponível.
+ * @returns Bloco em destaque com o resumo, ou nada se o resumo não estiver disponível.
  */
 export function SmartInsightCard({ context, filters, metrics }: SmartInsightCardProps) {
   const storageKey = `venergy_insight_collapsed_${context}`
@@ -75,9 +57,8 @@ export function SmartInsightCard({ context, filters, metrics }: SmartInsightCard
 
   if (isLoading) {
     return (
-      <InsightShell className="flex items-center gap-3">
-        <InsightLabel />
-        <span className="text-muted-foreground animate-pulse text-sm">Gerando resumo…</span>
+      <InsightShell>
+        <p className="text-muted-foreground animate-pulse text-sm">Gerando resumo…</p>
       </InsightShell>
     )
   }
@@ -87,36 +68,21 @@ export function SmartInsightCard({ context, filters, metrics }: SmartInsightCard
   const hasDetails = data.insights.length > 0
 
   return (
-    <InsightShell>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-3">
-          <InsightLabel />
-          <p className={cn('text-foreground text-sm', isCollapsed ? 'truncate' : null)}>{data.resumo_executivo}</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {hasDetails ? (
-            <Button variant="ghost" size="sm" onClick={toggleCollapsed} aria-expanded={!isCollapsed}>
-              {isCollapsed ? 'Ver detalhes' : 'Ocultar'}
-              <ChevronDown aria-hidden="true" className={cn('transition-transform', isCollapsed ? null : 'rotate-180')} />
-            </Button>
-          ) : null}
-          <Button
-            variant="ghost"
-            size="icon"
-            disabled={isFetching}
-            title="Gerar o resumo de novo"
-            aria-label="Gerar o resumo de novo"
-            onClick={() => {
-              void refetch()
-            }}
-          >
-            <RotateCw className={cn(isFetching ? 'animate-spin' : null)} />
-          </Button>
-        </div>
-      </div>
-
+    <InsightShell
+      tone={data.tom}
+      actions={(
+        <InsightActions
+          hasDetails={hasDetails}
+          isCollapsed={isCollapsed}
+          isFetching={isFetching}
+          onToggle={toggleCollapsed}
+          onRefresh={() => void refetch()}
+        />
+      )}
+    >
+      <InsightBody data={data} />
       {!isCollapsed && hasDetails ? (
-        <ul className="text-muted-foreground mt-2 flex list-disc flex-col gap-1 pl-5 text-sm">
+        <ul className="border-primary/15 text-foreground flex list-disc flex-col gap-1.5 border-t pt-3 pl-5 text-sm">
           {data.insights.map(insightText => (
             <li key={insightText}>{insightText}</li>
           ))}

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { AsyncState } from '@/components/feedback/AsyncState'
-import { IndicatorsTable } from '@/features/executive_dashboard/components/IndicatorsTable'
+import { IndicatorGroups } from '@/features/executive_dashboard/components/IndicatorGroups'
 import { LossesSnapshotCard } from '@/features/executive_dashboard/components/LossesSnapshotCard'
 import { PeriodSelector } from '@/features/executive_dashboard/components/PeriodSelector'
 import { useExecutiveDashboardController } from '@/features/executive_dashboard/hooks/useExecutiveDashboardController'
@@ -86,21 +86,23 @@ export function ExecutiveDashboardPage() {
           emptyTitle="Nenhum indicador para os períodos escolhidos"
           skeletonCount={6}
         >
-          <IndicatorsTable groups={groups} />
+          <IndicatorGroups groups={groups} />
         </AsyncState>
       ) : null}
 
-      <section aria-labelledby="grupo-perdas" className="flex flex-col gap-3">
-        <h2 id="grupo-perdas" className="text-foreground text-lg font-semibold">Perdas</h2>
-        <AsyncState
-          isLoading={losses.isLoading}
-          isError={losses.isError}
-          errorTitle="Não foi possível carregar a Fila de Perdas"
-          onRetry={() => void losses.refetch()}
-          skeletonCount={2}
-        >
-          {losses.data ? <LossesSnapshotCard snapshot={losses.data} /> : null}
-        </AsyncState>
+      <section aria-labelledby="grupo-perdas" className="flex flex-col gap-2">
+        <h2 id="grupo-perdas" className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Perdas</h2>
+        <div className="min-w-0">
+          <AsyncState
+            isLoading={losses.isLoading}
+            isError={losses.isError}
+            errorTitle="Não foi possível carregar a Fila de Perdas"
+            onRetry={() => void losses.refetch()}
+            skeletonCount={2}
+          >
+            {losses.data ? <LossesSnapshotCard snapshot={losses.data} /> : null}
+          </AsyncState>
+        </div>
       </section>
     </main>
   )
