@@ -62,7 +62,7 @@ export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onTo
       </TableCell>
       <TableCell><span className="text-muted-foreground">{rank}</span></TableCell>
       <TableCell>
-        <Link className="text-primary font-mono underline" to={`/customers?uc=${encodeURIComponent(unit.id_uc)}`}>
+        <Link className="text-primary font-mono font-medium underline-offset-4 hover:underline" to={`/customers?uc=${encodeURIComponent(unit.id_uc)}`}>
           {unit.id_uc}
         </Link>
       </TableCell>
@@ -75,7 +75,7 @@ export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onTo
       <TableCell>{unit.classe_consumo ? formatPlaceName(unit.classe_consumo) : '—'}</TableCell>
       <TableCell>
         <div className="flex flex-col">
-          <span className="font-mono">{formatConsumptionDrop(unit.consumo_base_kwh, unit.consumo_recente_kwh)}</span>
+          <span className="font-medium">{formatConsumptionDrop(unit.consumo_base_kwh, unit.consumo_recente_kwh)}</span>
           <span className="text-muted-foreground text-xs">
             {formatInteger(unit.consumo_base_kwh)} → {formatInteger(unit.consumo_recente_kwh)} kWh/mês
           </span>
@@ -83,8 +83,8 @@ export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onTo
         </div>
       </TableCell>
       <TableCell><ChanceBadge probability={unit.probabilidade_acerto} /></TableCell>
-      <TableCell><span className="font-mono">{formatInteger(unit.kwh_mes_recuperavel)}</span></TableCell>
-      <TableCell><span className="font-mono">{formatCompactCurrency(unit.valor_ano_rs)}</span></TableCell>
+      <TableCell>{formatInteger(unit.kwh_mes_recuperavel)}</TableCell>
+      <TableCell className="whitespace-nowrap">{formatCompactCurrency(unit.valor_ano_rs)}</TableCell>
       <TableCell><ScoreBar score={unit.score} /></TableCell>
       <TableCell><QueueSituationBadge situation={unit.situacao} /></TableCell>
     </TableRow>

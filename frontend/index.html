@@ -1,23 +1,23 @@
 <!doctype html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>V-Energy Grid 360 | Plataforma de Inteligência & Operações</title>
+    <title>V-Energy Grid 360</title>
     <script>
-      // Aplica o tema salvo antes da primeira pintura, para não piscar o tema errado. Padrão: escuro.
+      // Aplica o tema salvo antes da primeira pintura, para não piscar o tema errado. Padrão: claro.
       try {
         var tema = localStorage.getItem('grid360.tema')
-        document.documentElement.classList.toggle('dark', tema !== 'claro' && tema !== 'light')
+        document.documentElement.classList.toggle('dark', tema === 'escuro' || tema === 'dark')
       } catch (error) {
-        document.documentElement.classList.add('dark')
+        document.documentElement.classList.remove('dark')
       }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
   </head>

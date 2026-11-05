@@ -134,7 +134,7 @@ describe('ExecutiveDashboardPage', () => {
       expect.anything()
     )
     expect(screen.getByText(/Compara jul\/2025 a jun\/2026 com jul\/2022 a jun\/2023/)).toBeTruthy()
-    expect((screen.getByRole('button', { name: /Voltar ao padrão/ }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: /Restaurar períodos padrão/ }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('troca o período e volta ao padrão', async () => {
@@ -150,7 +150,7 @@ describe('ExecutiveDashboardPage', () => {
       { base: indicators.base, atual: { competencia_inicio: '2025-08', competencia_fim: '2026-06' } },
       expect.anything()
     )
-    fireEvent.click(screen.getByRole('button', { name: /Voltar ao padrão/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Restaurar períodos padrão/ }))
     expect(await screen.findByText(/Compara jul\/2025 a jun\/2026/)).toBeTruthy()
   })
 
@@ -165,7 +165,7 @@ describe('ExecutiveDashboardPage', () => {
     renderPage()
 
     const snapshot = await screen.findByTestId('losses-snapshot')
-    expect(within(snapshot).getByText('Retrato atual, sem histórico para comparar')).toBeTruthy()
+    expect(within(snapshot).getByText('Retrato atual, sem comparação')).toBeTruthy()
     expect(within(snapshot).getByText('12 UCs')).toBeTruthy()
     expect(within(snapshot).getByText('de 40 UCs na fila')).toBeTruthy()
     expect(within(snapshot).getByText(/R\$\s11 mil/)).toBeTruthy()

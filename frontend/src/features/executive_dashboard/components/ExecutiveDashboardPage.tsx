@@ -7,6 +7,7 @@ import { useExecutiveDashboardController } from '@/features/executive_dashboard/
 import type { Indicator, IndicatorGroup } from '@/features/executive_dashboard/types/executiveDashboardTypes'
 import { competenciasOf, describeWindow } from '@/features/executive_dashboard/utils/dashboardPeriods'
 import { SmartInsightCard } from '@/features/insights/SmartInsightCard'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 const FALLBACK_AVAILABLE_PERIOD = { competencia_inicio: '2022-07', competencia_fim: '2026-06' }
 
@@ -51,13 +52,10 @@ export function ExecutiveDashboardPage() {
 
   return (
     <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-foreground text-xl font-bold tracking-tight">Painel do Diretor</h1>
-        <p className="text-muted-foreground text-sm">
-          Compara {describeWindow(periods.atual)} com {describeWindow(periods.base)}. Passe o mouse no nome de
-          cada indicador para ver como ele é calculado.
-        </p>
-      </div>
+      <PageHeader
+        title="Painel do Diretor"
+        description={`Compara ${describeWindow(periods.atual)} com ${describeWindow(periods.base)}.`}
+      />
 
       <PeriodSelector
         periods={periods}

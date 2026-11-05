@@ -19,7 +19,7 @@ function OrderBoardSkeleton() {
     <div className="overflow-x-auto">
       <div className={BOARD_LAYOUT_CLASSES} aria-busy="true" aria-label="Carregando ordens de inspeção">
         {BOARD_COLUMNS.map((column) => (
-          <div key={column.status} className="bg-muted/40 border-border rounded-xl border p-3">
+          <div key={column.status} className="bg-muted/40 border-border rounded-lg border p-3">
             <LoadingSkeleton count={3} className="h-20" />
           </div>
         ))}

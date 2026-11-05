@@ -13,7 +13,7 @@ function CalculationLine({ label, children, isResult = false }: CalculationLineP
   return (
     <div className={cn('flex items-baseline justify-between gap-4', isResult ? 'border-border border-t pt-2' : '')}>
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className={isResult ? 'text-foreground text-xl font-bold whitespace-nowrap' : 'font-mono whitespace-nowrap'}>
+      <dd className={isResult ? 'text-foreground text-xl font-semibold whitespace-nowrap' : 'whitespace-nowrap'}>
         {children}
       </dd>
     </div>

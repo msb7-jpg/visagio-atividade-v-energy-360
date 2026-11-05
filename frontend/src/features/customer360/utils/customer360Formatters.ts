@@ -34,6 +34,17 @@ export const INVOICE_STATUS: Record<string, StatusOf<'fatura'>> = {
 }
 
 /**
+ * Texto que vem em caixa alta dos sistemas de origem (ex.: `FALTA DE ENERGIA`) em caixa de frase.
+ *
+ * @param text - Texto original.
+ * @returns Primeira letra maiúscula e o resto minúsculo.
+ */
+export function formatSentenceCase(text: string): string {
+  const lowered = text.toLocaleLowerCase('pt-BR')
+  return lowered.charAt(0).toLocaleUpperCase('pt-BR') + lowered.slice(1)
+}
+
+/**
  * Formata energia em kWh no padrão brasileiro.
  *
  * @param kwh - Energia em kWh, ou null quando não há leitura.

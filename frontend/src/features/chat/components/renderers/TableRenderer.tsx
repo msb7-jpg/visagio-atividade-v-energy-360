@@ -76,7 +76,7 @@ export function TableRenderer({
       ref={containerRef}
       data-testid="table-renderer-container"
       className={cn(
-        'group relative my-4 overflow-hidden rounded-xl border border-border bg-card/60 shadow-md backdrop-blur-sm',
+        'group relative my-4 overflow-hidden rounded-lg border border-border bg-card shadow-sm',
         className
       )}
     >

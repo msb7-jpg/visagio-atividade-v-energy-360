@@ -8,17 +8,17 @@ type TabsVariant = 'segmented' | 'line'
 const TabsVariantContext = React.createContext<TabsVariant>('segmented')
 
 const LIST_CLASSES: Record<TabsVariant, string> = {
-  segmented: 'inline-flex h-10 items-center justify-start rounded-lg bg-muted p-1 text-muted-foreground',
-  line: 'inline-flex w-full items-center justify-start gap-4 border-b border-border text-muted-foreground'
+  segmented: 'inline-flex h-9 items-center justify-start gap-0.5 rounded-md border border-border bg-muted p-0.5 text-muted-foreground',
+  line: 'inline-flex w-full items-center justify-start gap-5 border-b border-border text-muted-foreground'
 }
 
 const TRIGGER_BASE_CLASSES =
-  'inline-flex items-center justify-center whitespace-nowrap font-semibold ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer'
+  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer'
 
 const TRIGGER_CLASSES: Record<TabsVariant, string> = {
   segmented:
-    'rounded-md px-3.5 py-1.5 text-xs data-[active]:bg-primary data-[active]:text-primary-foreground data-[active]:shadow-sm',
-  line: '-mb-px border-b-2 border-transparent px-1 pb-2 pt-1 text-sm hover:text-foreground data-[active]:border-primary data-[active]:text-foreground'
+    'h-full rounded-sm px-3 text-sm hover:text-foreground data-[active]:bg-card data-[active]:text-foreground data-[active]:shadow-sm',
+  line: '-mb-px border-b-2 border-transparent px-0.5 pb-2.5 pt-1 text-sm hover:text-foreground data-[active]:border-foreground data-[active]:text-foreground'
 }
 
 interface TabsProps extends TabsPrimitive.Root.Props {

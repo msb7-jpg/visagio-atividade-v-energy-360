@@ -44,8 +44,8 @@ export function ConsumptionSection({ summary, history, events }: ConsumptionSect
     <Customer360Section
       id="bloco-cliente-consumo"
       title="Cliente e consumo"
-      description="Quem é o cliente, quanto consumiu nos últimos 12 meses contra o ano anterior e as inspeções de perdas."
-      icon={<User className="size-5" />}
+      description="Cadastro, consumo de 12 meses contra o ano anterior e inspeções de perdas."
+      icon={<User className="size-4" />}
     >
       <CustomerOverviewCard summary={summary} />
       <AsyncState
@@ -61,7 +61,7 @@ export function ConsumptionSection({ summary, history, events }: ConsumptionSect
       >
         {history.data ? <ConsumptionYoYChart months={history.data.meses} totals={history.data.resumo_12_meses} /> : null}
       </AsyncState>
-      <h3 className="text-foreground text-lg font-bold">Inspeções de perdas</h3>
+      <h3 className="text-foreground text-base font-semibold">Inspeções de perdas</h3>
       <AsyncState
         isLoading={isLoading(events)}
         isError={events.isError}
@@ -87,8 +87,8 @@ export function FinancialSection({ history, solar }: { history: SectionQuery<Cus
     <Customer360Section
       id="bloco-financeiro"
       title="Histórico financeiro"
-      description="Por que a conta veio alta, faturas em aberto e como o cliente costuma pagar."
-      icon={<Receipt className="size-5" />}
+      description="Por que a conta veio alta, faturas em aberto e pontualidade."
+      icon={<Receipt className="size-4" />}
     >
       {diagnosis ? <HighBillDiagnosisBanner diagnosis={diagnosis} solar={solar} /> : null}
       <AsyncState
@@ -115,8 +115,8 @@ export function TechnicalSection({ events }: { events: SectionQuery<CustomerEven
     <Customer360Section
       id="bloco-tecnico"
       title="Problemas técnicos"
-      description="Se o cliente ficou sem luz, se a região teve mais falta de luz que o normal e os chamados que ele abriu."
-      icon={<Zap className="size-5" />}
+      description="Falta de luz na unidade e na região, e chamados do cliente."
+      icon={<Zap className="size-4" />}
     >
       <AsyncState
         isLoading={isLoading(events)}

@@ -18,7 +18,7 @@ interface OverviewFieldProps {
 function OverviewField({ icon, label, primary, secondary }: OverviewFieldProps) {
   return (
     <div className="flex gap-3">
-      <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
+      <div className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-md">
         {icon}
       </div>
       <div className="flex min-w-0 flex-col">

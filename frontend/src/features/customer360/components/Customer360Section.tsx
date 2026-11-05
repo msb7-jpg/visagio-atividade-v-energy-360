@@ -18,12 +18,12 @@ interface Customer360SectionProps {
 export function Customer360Section({ id, title, description, icon, children }: Customer360SectionProps) {
   return (
     <section aria-labelledby={id} className="flex min-w-0 flex-col gap-4">
-      <div className="border-border flex items-start gap-3 border-b pb-3">
-        <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">{icon}</div>
-        <div className="flex flex-col">
-          <h2 id={id} className="text-foreground text-lg font-bold tracking-tight">{title}</h2>
-          <p className="text-muted-foreground text-sm">{description}</p>
-        </div>
+      <div className="border-border flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-2.5">
+        <h2 id={id} className="text-foreground flex items-center gap-2 text-lg font-semibold">
+          <span aria-hidden="true" className="text-muted-foreground">{icon}</span>
+          {title}
+        </h2>
+        <p className="text-muted-foreground text-sm">{description}</p>
       </div>
       {children}
     </section>

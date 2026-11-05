@@ -23,7 +23,7 @@ function openMenu() {
 describe('UserMenu', () => {
   beforeEach(() => {
     localStorage.clear()
-    document.documentElement.className = 'dark'
+    document.documentElement.className = ''
     logout.mockReset()
   })
 
@@ -36,7 +36,7 @@ describe('UserMenu', () => {
     expect(await screen.findByRole('menu')).toBeInTheDocument()
     expect(screen.getAllByText('Henrique Duarte').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Diretor Comercial · perfil Diretoria').length).toBeGreaterThan(0)
-    expect(screen.getByRole('menuitem', { name: 'Usar modo claro' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Usar modo escuro' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Sair' })).toBeInTheDocument()
   })
 
@@ -75,16 +75,16 @@ describe('UserMenu', () => {
     render(<UserMenu />)
     openMenu()
 
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Usar modo claro' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Usar modo escuro' }))
 
-    expect(localStorage.getItem('grid360.tema')).toBe('claro')
-    expect(document.documentElement).not.toHaveClass('dark')
-    expect(screen.getByRole('status')).toHaveTextContent('Modo claro ativado')
+    expect(localStorage.getItem('grid360.tema')).toBe('escuro')
+    expect(document.documentElement).toHaveClass('dark')
+    expect(screen.getByRole('status')).toHaveTextContent('Modo escuro ativado')
     await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
 
     openMenu()
 
-    expect(await screen.findByRole('menuitem', { name: 'Usar modo escuro' })).toBeInTheDocument()
+    expect(await screen.findByRole('menuitem', { name: 'Usar modo claro' })).toBeInTheDocument()
   })
 
   it('chama o logout ao escolher Sair', async () => {

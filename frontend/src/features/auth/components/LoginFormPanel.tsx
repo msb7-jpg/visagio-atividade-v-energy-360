@@ -32,9 +32,9 @@ export function LoginFormPanel({ controller, reduced }: LoginFormPanelProps) {
   return (
     <div className={cn('flex flex-col gap-4', motionClass(reduced, 'login-anim-swap'))}>
       <div>
-        <h2 id="login-title" className="text-2xl font-bold">Entrar</h2>
+        <h2 id="login-title" className="text-2xl font-semibold">Entrar</h2>
         <p className="text-muted-foreground mt-1">
-          Entre com o e-mail e a senha da sua conta. As telas liberadas dependem do seu perfil.
+          Use o e-mail e a senha da sua conta. As telas mostradas dependem do seu cargo.
         </p>
       </div>
 

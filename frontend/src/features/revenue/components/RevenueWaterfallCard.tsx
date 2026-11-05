@@ -31,7 +31,7 @@ export function RevenueWaterfallCard({ decomposition, isLoading, isError, error,
             {decomposition ? buildInsight(decomposition) : 'Quanto da variação veio de preço, de volume e de mix.'}
           </CardDescription>
         </div>
-        <div className="bg-primary/10 text-primary rounded-lg p-1.5">
+        <div className="text-muted-foreground">
           <Scale className="size-4" />
         </div>
       </CardHeader>

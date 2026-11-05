@@ -35,7 +35,7 @@ export function SlashCommandMenu({
   return (
     <div
       data-testid="slash-command-menu"
-      className="absolute bottom-full left-0 z-50 mb-2 w-72 overflow-hidden rounded-xl border border-border bg-card/95 p-1 shadow-2xl backdrop-blur-xl sm:w-80"
+      className="absolute bottom-full left-0 z-50 mb-2 w-72 overflow-hidden rounded-lg border border-border bg-card p-1 shadow-2xl sm:w-80"
     >
       <div className="border-b border-border px-2 py-1.5 font-semibold text-xs text-muted-foreground uppercase tracking-wider">
         Comandos Rápidos

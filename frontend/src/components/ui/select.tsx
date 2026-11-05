@@ -33,7 +33,7 @@ export function Select({
       <select
         ref={ref}
         className={cn(
-          'flex h-10 w-full cursor-pointer appearance-none rounded-md border bg-background py-2 pr-10 pl-3 text-base text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+          'flex h-9 w-full cursor-pointer appearance-none rounded-md border bg-card py-1.5 pr-9 pl-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
           error ? 'border-destructive focus-visible:ring-destructive' : 'border-input',
           className
         )}

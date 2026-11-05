@@ -27,7 +27,7 @@ function OpenInvoicesSummary({ openInvoices, openAmount }: { openInvoices: Invoi
   const hasOpenInvoices = openInvoices.length > 0
   return (
     <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
-      <Wallet className="text-primary size-5" />
+      <Wallet className="text-muted-foreground size-5" />
       <span className="text-foreground text-sm">
         {hasOpenInvoices
           ? `${formatCount(openInvoices.length, 'fatura', 'faturas')} em aberto, total de ${formatMoney(openAmount)}.`
@@ -51,7 +51,7 @@ function describePunctuality(punctuality: PaymentPunctuality): string {
 function PunctualitySummary({ punctuality }: { punctuality: PaymentPunctuality }) {
   return (
     <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
-      <CalendarCheck className="text-primary size-5" />
+      <CalendarCheck className="text-muted-foreground size-5" />
       <span className="text-foreground text-sm">{describePunctuality(punctuality)}</span>
     </div>
   )

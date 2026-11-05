@@ -40,7 +40,7 @@ function OrderFlowLegend() {
 export function OrderFlowBar({ canExport, onImport, onRegister }: OrderFlowBarProps) {
   const canWrite = useCanWriteLosses()
   return (
-    <div className="bg-muted/40 border-border flex flex-wrap items-start justify-between gap-3 rounded-xl border p-3">
+    <div className="bg-muted/40 border-border flex flex-wrap items-start justify-between gap-3 rounded-lg border p-3">
       <OrderFlowLegend />
       <div className="flex flex-wrap items-start justify-end gap-3">
         <ExportOrdersButton disabled={!canExport} label="Exportar para o campo (CSV)" />

@@ -5,6 +5,7 @@ import { SuspiciousQueueTab } from '@/features/loss_management/components/Suspic
 import { useInspectionsQuery } from '@/features/loss_management/hooks/useLossQueries'
 import { useSuspiciousQueueController } from '@/features/loss_management/hooks/useSuspiciousQueueController'
 import { formatInteger } from '@/features/loss_management/utils/lossFormatters'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 const withCount = (label: string, count: number | undefined) =>
   count === undefined ? label : `${label} (${formatInteger(count)})`
@@ -21,24 +22,18 @@ export function LossManagementPage() {
   return (
     <div className="bg-background min-h-dvh">
       <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-foreground text-xl font-bold tracking-tight">Fila de Inspeção</h1>
-          <p className="text-muted-foreground text-sm">
-            Quais UCs mandar a campo primeiro · score = chance de irregularidade × energia recuperável
-          </p>
-        </div>
+        <PageHeader
+          title="Fila de Inspeção"
+          description="UCs suspeitas na ordem de retorno esperado: chance de irregularidade × energia recuperável."
+        />
 
         <Tabs defaultValue="suspects">
           <TabsList>
             <TabsTrigger value="suspects">
-              <span className="flex items-center gap-1.5">
-                <ListOrdered className="size-4" /> {withCount('Fila priorizada', queue.total)}
-              </span>
+              <ListOrdered aria-hidden="true" className="size-4" /> {withCount('Fila priorizada', queue.total)}
             </TabsTrigger>
             <TabsTrigger value="orders">
-              <span className="flex items-center gap-1.5">
-                <ClipboardList className="size-4" /> {withCount('Ordens de inspeção', orders?.length)}
-              </span>
+              <ClipboardList aria-hidden="true" className="size-4" /> {withCount('Ordens de inspeção', orders?.length)}
             </TabsTrigger>
           </TabsList>
           <TabsContent value="suspects" className="mt-4">

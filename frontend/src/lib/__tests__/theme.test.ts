@@ -13,35 +13,35 @@ function runHeadScript() {
 describe('theme', () => {
   beforeEach(() => {
     localStorage.clear()
-    document.documentElement.className = 'dark'
+    document.documentElement.className = ''
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('usa o escuro quando nada foi salvo', () => {
-    expect(getStoredTheme()).toBe('escuro')
+  it('usa o claro quando nada foi salvo', () => {
+    expect(getStoredTheme()).toBe('claro')
   })
 
-  it('usa o escuro quando o valor salvo é desconhecido', () => {
+  it('usa o claro quando o valor salvo é desconhecido', () => {
     localStorage.setItem(THEME_KEY, 'sistema')
-
-    expect(getStoredTheme()).toBe('escuro')
-  })
-
-  it('reconhece o valor antigo `light` como claro', () => {
-    localStorage.setItem(THEME_KEY, 'light')
 
     expect(getStoredTheme()).toBe('claro')
   })
 
-  it('usa o escuro quando o armazenamento está indisponível para leitura', () => {
+  it('reconhece o valor antigo `dark` como escuro', () => {
+    localStorage.setItem(THEME_KEY, 'dark')
+
+    expect(getStoredTheme()).toBe('escuro')
+  })
+
+  it('usa o claro quando o armazenamento está indisponível para leitura', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('bloqueado')
     })
 
-    expect(getStoredTheme()).toBe('escuro')
+    expect(getStoredTheme()).toBe('claro')
   })
 
   it('aplica o tema mesmo quando o armazenamento está indisponível para gravação', () => {
@@ -50,9 +50,9 @@ describe('theme', () => {
     })
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
-    setTheme('claro')
+    setTheme('escuro')
 
-    expect(document.documentElement).not.toHaveClass('dark')
+    expect(document.documentElement).toHaveClass('dark')
   })
 
   it('grava claro/escuro em grid360.tema, aplica a classe e avisa quem ouve', () => {
@@ -82,34 +82,34 @@ describe('theme', () => {
   })
 
   describe('script do <head> (sem piscar ao recarregar)', () => {
-    it('recarregar no claro não deixa a classe dark', () => {
-      localStorage.setItem(THEME_KEY, 'claro')
+    it('recarregar no escuro mantém a classe dark', () => {
+      localStorage.setItem(THEME_KEY, 'escuro')
+
+      runHeadScript()
+
+      expect(document.documentElement).toHaveClass('dark')
+    })
+
+    it('sem escolha, ou com valor desconhecido, fica no claro', () => {
+      document.documentElement.className = 'dark'
+      runHeadScript()
+      expect(document.documentElement).not.toHaveClass('dark')
+
+      localStorage.setItem(THEME_KEY, 'sistema')
+      document.documentElement.className = 'dark'
+      runHeadScript()
+      expect(document.documentElement).not.toHaveClass('dark')
+    })
+
+    it('com o armazenamento bloqueado, fica no claro', () => {
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('bloqueado')
+      })
+      document.documentElement.className = 'dark'
 
       runHeadScript()
 
       expect(document.documentElement).not.toHaveClass('dark')
-    })
-
-    it('sem escolha, ou com valor desconhecido, fica no escuro', () => {
-      document.documentElement.className = ''
-      runHeadScript()
-      expect(document.documentElement).toHaveClass('dark')
-
-      localStorage.setItem(THEME_KEY, 'sistema')
-      document.documentElement.className = ''
-      runHeadScript()
-      expect(document.documentElement).toHaveClass('dark')
-    })
-
-    it('com o armazenamento bloqueado, fica no escuro', () => {
-      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-        throw new Error('bloqueado')
-      })
-      document.documentElement.className = ''
-
-      runHeadScript()
-
-      expect(document.documentElement).toHaveClass('dark')
     })
   })
 })

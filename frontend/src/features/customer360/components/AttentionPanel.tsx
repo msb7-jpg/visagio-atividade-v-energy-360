@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { LoadingSkeleton } from '@/components/feedback/LoadingSkeleton'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AttentionItem } from '@/features/customer360/utils/attentionItems'
 
 interface AttentionPanelProps {
@@ -54,7 +54,6 @@ export function AttentionPanel({ items, isLoading }: AttentionPanelProps) {
         {items.length > 0 ? <Badge variant={hasUrgent ? 'destructive' : 'warning'}>{items.length}</Badge> : null}
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
-        <CardDescription>O que tratar com o cliente antes do resto da ficha.</CardDescription>
         <AttentionBody items={items} isLoading={isLoading} />
       </CardContent>
     </Card>

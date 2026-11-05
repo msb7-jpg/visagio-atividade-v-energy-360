@@ -6,13 +6,13 @@ import { cn } from '@/lib/utils'
  * Variantes de estilo para o componente Alert do Design System.
  */
 const alertVariants = cva(
-  'relative flex w-full items-start gap-3 rounded-lg border p-4 text-sm',
+  'relative flex w-full items-start gap-2.5 rounded-md border px-3.5 py-3 text-sm',
   {
     variants: {
       variant: {
-        default: 'border-border bg-accent text-accent-foreground',
-        warning: 'border-warning/50 bg-warning/10 text-warning',
-        destructive: 'border-destructive/50 bg-destructive/10 text-destructive'
+        default: 'border-border bg-muted text-foreground',
+        warning: 'border-warning/30 bg-warning/10 text-warning',
+        destructive: 'border-destructive/30 bg-destructive/10 text-destructive'
       }
     },
     defaultVariants: {
@@ -47,7 +47,7 @@ function Alert({ className, variant, ...props }: AlertProps) {
  * @returns Elemento AlertTitle renderizado.
  */
 function AlertTitle({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('font-semibold leading-none', className)} {...props} />
+  return <div className={cn('font-medium leading-tight', className)} {...props} />
 }
 
 /**
@@ -57,7 +57,7 @@ function AlertTitle({ className, ...props }: React.ComponentProps<'div'>) {
  * @returns Elemento AlertDescription renderizado.
  */
 function AlertDescription({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('mt-1 text-sm opacity-90', className)} {...props} />
+  return <div className={cn('mt-0.5 text-sm', className)} {...props} />
 }
 
 export { Alert, AlertTitle, AlertDescription, alertVariants }

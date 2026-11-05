@@ -42,11 +42,11 @@ export function UserMenu() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="touch" className="group" aria-label={`Menu do usuário ${name}`}>
-            <span className="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-full text-xs font-bold">
+            <span className="bg-secondary text-foreground ring-border flex size-7 items-center justify-center rounded-full text-xs font-semibold ring-1">
               {initialsOf(user.nome)}
             </span>
             <span className="hidden flex-col text-left sm:flex">
-              <span className="text-foreground text-sm leading-tight font-semibold">{name}</span>
+              <span className="text-foreground text-sm leading-tight font-medium">{name}</span>
               <span className="text-muted-foreground text-xs font-medium">{profileLine}</span>
             </span>
             <ChevronDown

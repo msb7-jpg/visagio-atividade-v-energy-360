@@ -1,9 +1,9 @@
-import { ChevronDown, ChevronUp, RotateCw, Sparkles } from 'lucide-react'
-import { useState } from 'react'
-import { Badge } from '@/components/ui/badge'
+import { ChevronDown, RotateCw, Sparkles } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { useProactiveInsights } from '@/features/insights/queries/useProactiveInsights'
+import { cn } from '@/lib/utils'
 
 interface SmartInsightCardProps {
   context: 'customer360' | 'revenue' | 'losses' | 'quality' | 'executive'
@@ -31,12 +31,29 @@ function setStoredCollapsed(storageKey: string, collapsed: boolean): void {
   }
 }
 
+function InsightLabel() {
+  return (
+    <span className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-xs font-medium">
+      <Sparkles aria-hidden="true" className="size-3.5" />
+      Resumo da IA
+    </span>
+  )
+}
+
+function InsightShell({ children, className }: { children: ReactNode, className?: string }) {
+  return (
+    <Card role="region" aria-label="Resumo da IA" className={cn('px-4 py-3', className)}>
+      {children}
+    </Card>
+  )
+}
+
 /**
- * Card de IA contextual e proativo ("thought you might wanna know this...").
- * Inicia recolhido por padrão com resumo em linha para preservar espaço visual.
+ * Resumo gerado pela IA a partir das métricas da tela, sem o usuário precisar perguntar.
+ * Começa recolhido em uma linha; "Ver detalhes" mostra os pontos de apoio.
  *
  * @param props - Contexto da tela, filtros e métricas ativas.
- * @returns Componente Card exibindo síntese e lista de insights, ou null se indisponível.
+ * @returns Cartão com o resumo e os pontos de apoio, ou nada se o resumo não estiver disponível.
  */
 export function SmartInsightCard({ context, filters, metrics }: SmartInsightCardProps) {
   const storageKey = `venergy_insight_collapsed_${context}`
@@ -58,115 +75,53 @@ export function SmartInsightCard({ context, filters, metrics }: SmartInsightCard
 
   if (isLoading) {
     return (
-      <Card variant="glass" className="my-3 py-2 px-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="size-4 animate-pulse text-primary" />
-            <span className="text-xs font-semibold text-foreground">Smart Insights IA</span>
-            <Badge variant="secondary">{context.toUpperCase()}</Badge>
-            <span className="text-xs text-muted-foreground animate-pulse">
-              Gerando síntese executiva...
-            </span>
-          </div>
-        </div>
-      </Card>
+      <InsightShell className="flex items-center gap-3">
+        <InsightLabel />
+        <span className="text-muted-foreground animate-pulse text-sm">Gerando resumo…</span>
+      </InsightShell>
     )
   }
 
-  if (!data || !data.resumo_executivo) return null
+  if (!data?.resumo_executivo) return null
 
-  if (isCollapsed) {
-    return (
-      <Card variant="glass" className="my-3 py-2 px-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Sparkles className="size-3.5" />
-            </div>
-            <span className="shrink-0 text-xs font-semibold text-foreground">Smart Insights IA</span>
-            <Badge variant="secondary" className="shrink-0">{context.toUpperCase()}</Badge>
-            <p className="truncate text-xs text-foreground/90">
-              {data.resumo_executivo}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleCollapsed}
-              title="Expandir síntese de IA"
-            >
-              <span className="flex items-center gap-1 text-xs">
-                <span>Expandir</span>
-                <ChevronDown className="size-3.5" />
-              </span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={isFetching}
-              title="Atualizar análise da IA"
-              onClick={() => {
-                void refetch()
-              }}
-            >
-              <RotateCw className={`size-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
-        </div>
-      </Card>
-    )
-  }
+  const hasDetails = data.insights.length > 0
 
   return (
-    <Card variant="glass" className="my-3">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Sparkles className="size-4" />
-          </div>
-          <CardTitle>Smart Insights IA</CardTitle>
-          <Badge variant="secondary">{context.toUpperCase()}</Badge>
+    <InsightShell>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-3">
+          <InsightLabel />
+          <p className={cn('text-foreground text-sm', isCollapsed ? 'truncate' : null)}>{data.resumo_executivo}</p>
         </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleCollapsed}
-            title="Minimizar síntese de IA"
-          >
-            <span className="flex items-center gap-1 text-xs">
-              <span>Minimizar</span>
-              <ChevronUp className="size-3.5" />
-            </span>
-          </Button>
+        <div className="flex shrink-0 items-center gap-1">
+          {hasDetails ? (
+            <Button variant="ghost" size="sm" onClick={toggleCollapsed} aria-expanded={!isCollapsed}>
+              {isCollapsed ? 'Ver detalhes' : 'Ocultar'}
+              <ChevronDown aria-hidden="true" className={cn('transition-transform', isCollapsed ? null : 'rotate-180')} />
+            </Button>
+          ) : null}
           <Button
             variant="ghost"
             size="icon"
             disabled={isFetching}
-            title="Atualizar análise da IA"
+            title="Gerar o resumo de novo"
+            aria-label="Gerar o resumo de novo"
             onClick={() => {
               void refetch()
             }}
           >
-            <RotateCw className={`size-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+            <RotateCw className={cn(isFetching ? 'animate-spin' : null)} />
           </Button>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent>
-        <p className="mb-2 text-xs font-medium text-foreground">
-          {data.resumo_executivo}
-        </p>
-
-        {data.insights.length > 0 ? (
-          <ul className="flex list-disc flex-col gap-1 pl-4 text-xs text-muted-foreground">
-            {data.insights.map(item => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        ) : null}
-      </CardContent>
-    </Card>
+      {!isCollapsed && hasDetails ? (
+        <ul className="text-muted-foreground mt-2 flex list-disc flex-col gap-1 pl-5 text-sm">
+          {data.insights.map(insightText => (
+            <li key={insightText}>{insightText}</li>
+          ))}
+        </ul>
+      ) : null}
+    </InsightShell>
   )
 }

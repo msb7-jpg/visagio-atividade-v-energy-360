@@ -15,8 +15,8 @@ import {
 
 const TREND_ICONS: Record<ConsumptionTrend, ReactNode> = {
   SUBIU: <ArrowUpRight className="text-destructive size-5" />,
-  ESTAVEL: <Minus className="text-primary size-5" />,
-  CAIU: <ArrowDownRight className="text-primary size-5" />,
+  ESTAVEL: <Minus className="text-muted-foreground size-5" />,
+  CAIU: <ArrowDownRight className="text-muted-foreground size-5" />,
   SEM_COMPARACAO: <Scale className="text-muted-foreground size-5" />
 }
 

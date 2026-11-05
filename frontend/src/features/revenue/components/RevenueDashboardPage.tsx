@@ -5,6 +5,7 @@ import { RevenueFiltersBar } from '@/features/revenue/components/RevenueFiltersB
 import { RevenueResults } from '@/features/revenue/components/RevenueResults'
 import { useRevenueDashboardController } from '@/features/revenue/hooks/useRevenueDashboardController'
 import { distinctValues } from '@/features/revenue/utils/revenueOptions'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 /**
  * Dashboard executivo de receita (perfil diretor): filtros, indicadores, ponte Preço-Volume-Mix e ranking.
@@ -17,12 +18,10 @@ export function RevenueDashboardPage() {
 
   return (
     <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-foreground text-xl font-bold tracking-tight">Inteligência Comercial</h1>
-        <p className="text-muted-foreground text-sm">
-          Por que a receita variou: quanto veio de preço, de volume e de mix, e onde a perda de volume se concentra.
-        </p>
-      </div>
+      <PageHeader
+        title="Inteligência Comercial"
+        description="Quanto da variação da receita veio de preço, volume e mix, e onde o volume caiu."
+      />
 
       <RevenueFiltersBar
         query={query}

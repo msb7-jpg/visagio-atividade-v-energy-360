@@ -25,14 +25,14 @@ export function LoginSuccessPanel({ profile, reduced, onSwitchAccount }: LoginSu
         <span
           aria-hidden="true"
           className={cn(
-            'bg-primary text-primary-foreground flex size-12 shrink-0 items-center justify-center rounded-full text-lg font-bold',
+            'bg-secondary text-foreground flex size-12 shrink-0 items-center justify-center rounded-full text-lg font-semibold',
             motionClass(reduced, 'login-anim-avatar')
           )}
         >
           {profile.initials}
         </span>
         <div className="flex flex-col gap-1">
-          <h2 className="text-2xl font-bold">Olá, {profile.firstName}</h2>
+          <h2 className="text-2xl font-semibold">Olá, {profile.firstName}</h2>
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="success">Sessão iniciada</Badge>
             <span className="text-muted-foreground text-xs">Perfil {profile.roleLabel}</span>

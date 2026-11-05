@@ -34,7 +34,7 @@ export function FeederCustomersTable({ customers }: { customers: AffectedCustome
             <TableCell><strong>{formatDecimal(customer.horas_sem_energia)} h</strong></TableCell>
             <TableCell>{formatInteger(customer.ocorrencias)}</TableCell>
             <TableCell>
-              <Link className="text-primary whitespace-nowrap underline" to={`/customers?uc=${encodeURIComponent(customer.id_uc)}`}>
+              <Link className="text-primary font-mono font-medium whitespace-nowrap underline-offset-4 hover:underline" to={`/customers?uc=${encodeURIComponent(customer.id_uc)}`}>
                 Ver ficha
               </Link>
             </TableCell>

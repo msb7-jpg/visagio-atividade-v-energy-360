@@ -10,7 +10,7 @@ function SnapshotFigure({ label, value, detail }: { label: string, value: string
   return (
     <div className="flex flex-col gap-1">
       <CardDescription>{label}</CardDescription>
-      <div className="text-foreground font-mono tabular-nums text-2xl font-bold tracking-tight">{value}</div>
+      <div className="text-foreground tabular-nums text-2xl font-semibold">{value}</div>
       {detail ? <CardDescription>{detail}</CardDescription> : null}
     </div>
   )
@@ -45,7 +45,7 @@ export function LossesSnapshotCard({ snapshot }: { snapshot: LossesSnapshot }) {
     <Card variant="interactive" data-testid="losses-snapshot">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 pb-2">
         <CardTitle>Fila de Perdas em {reference}</CardTitle>
-        <Badge variant="muted">Retrato atual, sem histórico para comparar</Badge>
+        <Badge variant="muted">Retrato atual, sem comparação</Badge>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {notes.length > 0 ? <CardDescription>{notes.join(' ')}</CardDescription> : null}

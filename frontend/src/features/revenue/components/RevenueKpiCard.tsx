@@ -36,7 +36,7 @@ export function RevenueKpiCard({ title, formula, icon: Icon, kpi, format, detail
           </div>
           <span id={formulaId} className="sr-only">{formula}</span>
         </Tooltip>
-        <div className="bg-primary/10 text-primary rounded-lg p-1.5">
+        <div className="text-muted-foreground">
           <Icon className="size-4" />
         </div>
       </CardHeader>

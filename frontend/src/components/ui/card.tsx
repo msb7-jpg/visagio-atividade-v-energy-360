@@ -3,12 +3,12 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const cardVariants = cva(
-  'rounded-lg glass-panel text-card-foreground transition duration-200',
+  'rounded-lg glass-panel text-card-foreground',
   {
     variants: {
       variant: {
         default: '',
-        glass: 'bg-card/40 backdrop-blur-2xl border-border shadow-2xl',
+        glass: 'shadow-sm',
         interactive: 'glass-panel-interactive'
       }
     },
@@ -27,7 +27,7 @@ export interface CardProps
 
 /**
  * Container Card padronizado conforme design.md (SaaS Enterprise Analytics).
- * Aplica raio de 12px (rounded-lg), borda sutil e fundo de superfície.
+ * Superfície plana: raio de 8px, borda de 1px e fundo `card`.
  *
  * @param props - Propriedades de div nativas, variantes e classes de layout.
  * @returns Elemento Card renderizado.
@@ -50,7 +50,7 @@ function Card({ className, variant, ...props }: CardProps) {
 function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex flex-col gap-1.5 p-4 sm:p-5', className)}
+      className={cn('flex flex-col gap-1 px-4 pt-4 pb-3 sm:px-5 sm:pt-5', className)}
       {...props}
     />
   )
@@ -65,7 +65,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
 function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('text-base font-semibold leading-none tracking-tight text-foreground', className)}
+      className={cn('text-base font-semibold leading-tight text-foreground', className)}
       {...props}
     />
   )
@@ -80,7 +80,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
 function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('text-sm text-muted-foreground leading-relaxed', className)}
+      className={cn('text-sm text-muted-foreground', className)}
       {...props}
     />
   )
@@ -93,7 +93,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
  * @returns Elemento CardContent renderizado.
  */
 function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('p-4 sm:p-5 pt-0', className)} {...props} />
+  return <div className={cn('px-4 pb-4 first:pt-4 sm:px-5 sm:pb-5 sm:first:pt-5', className)} {...props} />
 }
 
 /**
@@ -105,7 +105,7 @@ function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
 function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex items-center p-4 sm:p-5 pt-0', className)}
+      className={cn('flex items-center px-4 pb-4 sm:px-5 sm:pb-5', className)}
       {...props}
     />
   )

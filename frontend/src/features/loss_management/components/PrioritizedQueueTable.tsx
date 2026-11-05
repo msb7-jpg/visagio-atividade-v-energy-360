@@ -76,8 +76,7 @@ export function PrioritizedQueueTable({
     <div className="flex flex-col gap-2">
       <p className="text-muted-foreground text-xs">
         Mostrando {firstRank + 1}–{firstRank + pageUnits.length} de {formatInteger(units.length)} UCs carregadas
-        {total === undefined ? '' : ` (${formatInteger(total)} na fila)`} · clique na linha da UC para ver por que
-        ela está na fila
+        {total === undefined ? '' : ` (${formatInteger(total)} na fila)`}. Clique na linha para ver o motivo da suspeita.
       </p>
       <Table aria-label={label}>
         <TableHeader>
@@ -94,7 +93,7 @@ export function PrioritizedQueueTable({
               <TableHead key={column} aria-sort={column === SORTED_COLUMN ? 'descending' : undefined}>
                 {COLUMN_HELP[column] ? (
                   <Tooltip content={COLUMN_HELP[column]}>
-                    <Button type="button" variant="link" size="sm">
+                    <Button type="button" variant="inline" size="inline">
                       {column}
                       {column === SORTED_COLUMN ? <span aria-hidden="true"> ↓</span> : null}
                     </Button>

@@ -22,7 +22,7 @@ interface PeriodSelectorProps {
 }
 
 /**
- * Seletor dos dois períodos comparados, com o retorno ao padrão do case.
+ * Seletor dos dois períodos comparados, com o retorno aos períodos padrão.
  *
  * @param props - Janelas em uso, competências disponíveis, problema de validação e ações.
  * @returns Card com o início e o fim de cada período.
@@ -34,11 +34,11 @@ export function PeriodSelector({ periods, months, isDefault, problem, onChange, 
 
   return (
     <Card>
-      <CardContent className="flex flex-col gap-4 pt-6">
+      <CardContent className="flex flex-col gap-4 pt-4 sm:pt-5">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((period) => (
             <fieldset key={period} className="flex flex-col gap-2">
-              <legend className="text-foreground mb-2 text-sm font-semibold">{PERIOD_LABELS[period]}</legend>
+              <legend className="text-foreground mb-2 text-sm font-medium">{PERIOD_LABELS[period]}</legend>
               <div className="grid grid-cols-2 gap-3">
                 {(Object.keys(LIMIT_LABELS) as LimitKey[]).map((limit) => {
                   const fieldId = `periodo-${period}-${limit}`
@@ -66,7 +66,7 @@ export function PeriodSelector({ periods, months, isDefault, problem, onChange, 
           {problem ? <p role="alert" className="text-destructive text-sm">{problem}</p> : <span />}
           <Button variant="outline" size="sm" disabled={isDefault} onClick={onReset}>
             <RotateCcw aria-hidden="true" />
-            Voltar ao padrão do case
+            Restaurar períodos padrão
           </Button>
         </div>
       </CardContent>

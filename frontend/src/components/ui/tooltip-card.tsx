@@ -144,12 +144,12 @@ export function Tooltip({
           <AnimatePresence>
             {isVisible ? (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                initial={{ opacity: 0, y: 2 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.12, ease: 'easeOut' }}
                 className={cn(
-                  'pointer-events-none fixed z-50 w-auto max-w-sm overflow-hidden rounded-lg border border-border bg-card/95 p-3 shadow-xl backdrop-blur-md',
+                  'pointer-events-none fixed z-50 w-auto max-w-sm overflow-hidden rounded-md border border-border bg-card px-3 py-2 text-sm shadow-xl',
                   tooltipClassName
                 )}
                 style={{ top: `${position.y}px`, left: `${position.x}px` }}

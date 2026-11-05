@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ContinuityView } from '@/features/grid_quality/components/ContinuityView'
 import { CurrentQualityView } from '@/features/grid_quality/components/CurrentQualityView'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 /**
  * Página de Qualidade da Rede, com a visão atual (padrão) e a visão de Continuidade.
@@ -10,12 +11,10 @@ import { CurrentQualityView } from '@/features/grid_quality/components/CurrentQu
 export function GridQualityPage() {
   return (
     <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-foreground text-xl font-bold tracking-tight">Qualidade da Rede</h1>
-        <p className="text-muted-foreground text-sm">
-          DEC e FEC por alimentador, dos piores para os melhores, para direcionar a manutenção preventiva.
-        </p>
-      </div>
+      <PageHeader
+        title="Qualidade da Rede"
+        description="DEC e FEC por alimentador, do pior para o melhor, para priorizar a manutenção preventiva."
+      />
 
       <Tabs defaultValue="atual">
         <TabsList>
