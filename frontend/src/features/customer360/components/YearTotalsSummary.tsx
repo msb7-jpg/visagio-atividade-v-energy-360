@@ -31,11 +31,11 @@ interface YearTotalsSummaryProps {
  * @returns Faixa com o total de kWh e R$ e suas variações.
  */
 export function YearTotalsSummary({ totals }: YearTotalsSummaryProps) {
-  const monthsLabel = totals.meses_comparados === 12 ? 'Últimos 12 meses' : `Últimos ${totals.meses_comparados} meses comparáveis`
+  const monthsLabel = `${totals.meses_comparados} meses`
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <TotalItem
-        label={`${monthsLabel} · consumo`}
+        label={`Consumo (${monthsLabel})`}
         current={formatKwh(totals.consumo_kwh)}
         previous={formatKwh(totals.consumo_kwh_ano_anterior)}
         variation={formatPercent(totals.variacao_consumo_pct)}
@@ -44,7 +44,7 @@ export function YearTotalsSummary({ totals }: YearTotalsSummaryProps) {
         ? null
         : (
           <TotalItem
-            label={`${monthsLabel} · valor faturado`}
+            label={`Valor faturado (${monthsLabel})`}
             current={formatMoney(totals.valor_total_rs)}
             previous={formatMoney(totals.valor_total_rs_ano_anterior)}
             variation={formatPercent(totals.variacao_valor_pct)}

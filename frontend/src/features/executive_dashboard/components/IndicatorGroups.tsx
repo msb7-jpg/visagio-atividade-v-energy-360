@@ -1,5 +1,6 @@
 import { StatTile } from '@/components/data/StatTile'
 import { Badge } from '@/components/ui/badge'
+import { GroupHeading } from '@/features/executive_dashboard/components/GroupHeading'
 import type { Indicator, IndicatorGroup } from '@/features/executive_dashboard/types/executiveDashboardTypes'
 import { formatIndicatorChange, formatIndicatorValue } from '@/features/executive_dashboard/utils/indicatorFormatters'
 import { EVALUATIONS, variationArrow } from '@/features/executive_dashboard/utils/indicatorTrend'
@@ -61,9 +62,7 @@ export function IndicatorGroups({ groups }: { groups: IndicatorGroup[] }) {
         const span = spanOf(group.indicadores.length)
         return (
           <section key={group.id} aria-labelledby={`grupo-${group.id}`} className={cn('flex min-w-0 flex-col gap-2', GROUP_SPAN[span])}>
-            <h2 id={`grupo-${group.id}`} className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-              {group.titulo}
-            </h2>
+            <GroupHeading id={group.id} title={group.titulo} />
             <div className={cn('grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2', GROUP_COLUMNS[span])}>
               {group.indicadores.map((indicator) => <IndicatorTile key={indicator.id} indicator={indicator} />)}
             </div>

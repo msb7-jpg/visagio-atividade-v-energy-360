@@ -6,6 +6,7 @@ import { QueueActionsBar } from '@/features/loss_management/components/QueueActi
 import { QueueBandTabs } from '@/features/loss_management/components/QueueBandTabs'
 import { QueueFilters } from '@/features/loss_management/components/QueueFilters'
 import { QueueReferencePills } from '@/features/loss_management/components/QueueReferencePills'
+import { QueueTerritoryCard } from '@/features/loss_management/components/QueueTerritoryCard'
 import { QueueWarnings } from '@/features/loss_management/components/QueueWarnings'
 import { SelectionStrip } from '@/features/loss_management/components/SelectionStrip'
 import { UnitDetailSheet } from '@/features/loss_management/components/UnitDetailSheet'
@@ -43,6 +44,13 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
           onGenerate={queue.openDialog}
         />
       </div>
+      {queue.filterOptions?.contagens ? (
+        <QueueTerritoryCard
+          counts={queue.filterOptions.contagens.municipios}
+          selected={queue.filters.municipio}
+          onSelect={(municipio) => queue.setFilters({ ...queue.filters, municipio })}
+        />
+      ) : null}
       <SelectionStrip
         units={queue.selectedUnits}
         summary={summary}

@@ -6,6 +6,7 @@ import { PeriodSelector } from '@/features/executive_dashboard/components/Period
 import { useExecutiveDashboardController } from '@/features/executive_dashboard/hooks/useExecutiveDashboardController'
 import type { Indicator, IndicatorGroup } from '@/features/executive_dashboard/types/executiveDashboardTypes'
 import { competenciasOf, describeWindow } from '@/features/executive_dashboard/utils/dashboardPeriods'
+import { GroupHeading } from '@/features/executive_dashboard/components/GroupHeading'
 import { SmartInsightCard } from '@/features/insights/SmartInsightCard'
 import { PageHeader } from '@/components/layout/PageHeader'
 
@@ -51,7 +52,7 @@ export function ExecutiveDashboardPage() {
   )
 
   return (
-    <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-6">
       <PageHeader
         title="Painel do Diretor"
         description={`Compara ${describeWindow(periods.atual)} com ${describeWindow(periods.base)}.`}
@@ -91,7 +92,7 @@ export function ExecutiveDashboardPage() {
       ) : null}
 
       <section aria-labelledby="grupo-perdas" className="flex flex-col gap-2">
-        <h2 id="grupo-perdas" className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Perdas</h2>
+        <GroupHeading id="perdas" title="Perdas" />
         <div className="min-w-0">
           <AsyncState
             isLoading={losses.isLoading}

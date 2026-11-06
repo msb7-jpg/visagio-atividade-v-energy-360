@@ -53,9 +53,9 @@ export function Customer360Page() {
 
   return (
     <div className="bg-background min-h-dvh">
-      <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
+      <main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-6">
         <PageHeader
-          title="Visão 360 da Unidade Consumidora"
+          title="UC 360"
           description="Cliente, consumo, faturas, rede e atendimento de uma UC numa tela só."
         />
         <div className="flex flex-col gap-3">

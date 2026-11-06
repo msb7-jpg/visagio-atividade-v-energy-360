@@ -1,4 +1,4 @@
-import { ShareBar } from '@/features/grid_quality/components/ShareBar'
+import { ShareBar } from '@/components/data/ShareBar'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip-card'
 import { Table, TableBody, TableCell, TableColumns, TableRow } from '@/components/ui/table'

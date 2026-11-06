@@ -1,6 +1,8 @@
 import { RevenueKpiCards } from '@/features/revenue/components/RevenueKpiCards'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { getRevenueErrorMessage } from '@/features/revenue/utils/revenueErrorMessage'
+import { AreaRevenueCard } from '@/features/revenue/components/AreaRevenueCard'
+import { RevenueTerritoryCard } from '@/features/revenue/components/RevenueTerritoryCard'
 import { RevenueRankingCard } from '@/features/revenue/components/RevenueRankingCard'
 import { RevenueWaterfallCard } from '@/features/revenue/components/RevenueWaterfallCard'
 import { revenueInsightFilters } from '@/features/revenue/utils/revenueFilters'
@@ -35,12 +37,22 @@ export function RevenueResults({ dashboard }: { dashboard: Dashboard }) {
 
       {kpisQuery.isError ? null : (
         <div className="flex flex-col gap-6">
+          <AreaRevenueCard
+            neighborhoodsQuery={dashboard.neighborhoodRevenueQuery}
+            municipalitiesQuery={dashboard.territoryQuery}
+            onOpenNeighborhood={ranking.openNeighborhood}
+          />
           <RevenueWaterfallCard
             decomposition={decompositionQuery.data}
             isLoading={decompositionQuery.isLoading}
             isError={decompositionQuery.isError}
             error={decompositionQuery.error}
             onRetry={() => void decompositionQuery.refetch()}
+          />
+          <RevenueTerritoryCard
+            municipalQuery={dashboard.territoryQuery}
+            selected={query.filters.municipio}
+            onSelect={(municipio) => dashboard.changeFilter('municipio', municipio)}
           />
           <RevenueRankingCard breakdownQuery={breakdownQuery} ranking={ranking} />
         </div>

@@ -17,17 +17,21 @@ export function EventsTab({ events }: EventsTabProps) {
   return (
     <div className="flex flex-col gap-6">
       <section className="flex min-w-0 flex-col gap-3">
-        <h3 className="text-foreground text-lg font-bold">Falta de luz nesta unidade</h3>
+        <h3 className="text-foreground text-sm font-semibold">Falta de luz nesta unidade</h3>
         <UnitOutagesList outages={events.interrupcoes_uc} summary={events.resumo_interrupcoes_uc} />
       </section>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="flex min-w-0 flex-col gap-3">
-          <h3 className="text-foreground text-lg font-bold">Falta de luz na região</h3>
-          <FeederOutagesList feeder={events.alimentador} months={events.qualidade_alimentador} />
+          <h3 className="text-foreground text-sm font-semibold">Falta de luz na região</h3>
+          <div className="max-h-96 overflow-auto">
+            <FeederOutagesList feeder={events.alimentador} months={events.qualidade_alimentador} />
+          </div>
         </section>
         <section className="flex min-w-0 flex-col gap-3">
-          <h3 className="text-foreground text-lg font-bold">Chamados do cliente</h3>
-          <ServiceTicketsList tickets={events.chamados} />
+          <h3 className="text-foreground text-sm font-semibold">Chamados do cliente</h3>
+          <div className="max-h-96 overflow-auto">
+            <ServiceTicketsList tickets={events.chamados} />
+          </div>
         </section>
       </div>
     </div>

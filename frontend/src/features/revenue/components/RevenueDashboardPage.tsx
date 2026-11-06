@@ -17,7 +17,7 @@ export function RevenueDashboardPage() {
   const { query, windowError, historyQuery, ranking } = dashboard
 
   return (
-    <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-6">
       <PageHeader
         title="Inteligência Comercial"
         description="Quanto da variação da receita veio de preço, volume e mix, e onde o volume caiu."
@@ -29,7 +29,7 @@ export function RevenueDashboardPage() {
         municipalities={distinctValues(dashboard.municipalitiesQuery.data, 'municipio')}
         neighborhoods={distinctValues(dashboard.neighborhoodsQuery.data, 'bairro')}
         classes={distinctValues(dashboard.classesQuery.data, 'classe_consumo')}
-        onMonthChange={dashboard.changeMonth}
+        onWindowsChange={dashboard.changeWindows}
         onFilterChange={dashboard.changeFilter}
         onReset={dashboard.reset}
       />

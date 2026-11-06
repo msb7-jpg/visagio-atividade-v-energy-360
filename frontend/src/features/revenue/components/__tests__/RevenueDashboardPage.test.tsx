@@ -163,7 +163,12 @@ describe('RevenueDashboardPage', () => {
     await screen.findByText('Faturamento')
     const callsBefore = mockedApi.getKpis.mock.calls.length
 
-    fireEvent.change(document.getElementById('base-fim') as HTMLInputElement, { target: { value: '2026-01-31' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Personalizar datas' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fim: comparado com: jun/2023' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Próximo ano' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Próximo ano' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Próximo ano' }))
+    fireEvent.click(screen.getByRole('button', { name: 'jan/2026' }))
 
     expect(await screen.findByText('Ajuste os períodos para ver os resultados')).toBeInTheDocument()
     expect(mockedApi.getKpis.mock.calls).toHaveLength(callsBefore)

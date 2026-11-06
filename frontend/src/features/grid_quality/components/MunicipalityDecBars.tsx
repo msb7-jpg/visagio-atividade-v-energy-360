@@ -1,4 +1,4 @@
-import { ShareBar } from '@/features/grid_quality/components/ShareBar'
+import { ShareBar } from '@/components/data/ShareBar'
 import { bandOf } from '@/features/grid_quality/utils/continuityBands'
 import { formatDecimal } from '@/features/grid_quality/utils/qualityFormatters'
 import type { MunicipalityDec } from '@/features/grid_quality/types/continuityTypes'

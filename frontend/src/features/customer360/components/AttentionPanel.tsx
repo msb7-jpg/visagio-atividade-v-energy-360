@@ -1,7 +1,6 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { LoadingSkeleton } from '@/components/feedback/LoadingSkeleton'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AttentionItem } from '@/features/customer360/utils/attentionItems'
 
 interface AttentionPanelProps {
@@ -11,11 +10,11 @@ interface AttentionPanelProps {
 
 function AttentionList({ items }: { items: AttentionItem[] }) {
   return (
-    <ul aria-label="Pontos de atenção da UC" className="flex flex-col gap-2">
+    <ul aria-label="Pontos de atenção da UC" className="flex flex-col gap-3">
       {items.map((item) => (
-        <li key={item.key} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <li key={item.key} className="flex flex-col items-start gap-1">
           <Badge variant={item.tone}>{item.label}</Badge>
-          <span className="text-muted-foreground text-sm">{item.detail}</span>
+          <span className="text-muted-foreground text-xs">{item.detail}</span>
         </li>
       ))}
     </ul>
@@ -42,20 +41,18 @@ function AttentionBody({ items, isLoading }: AttentionPanelProps) {
  * (vermelho para atrasado, laranja para pedir atenção).
  *
  * @param props - Alertas já ordenados (urgentes primeiro) e se os dados ainda estão carregando.
- * @returns Card "Precisa de atenção" com os alertas ou a confirmação de que não há pendências.
+ * @returns Bloco "Precisa de atenção" com os alertas ou a confirmação de que não há pendências.
  */
 export function AttentionPanel({ items, isLoading }: AttentionPanelProps) {
   const hasUrgent = items.some((item) => item.tone === 'destructive')
   return (
-    <Card variant="glass" role="region" aria-labelledby="atencao-titulo">
-      <CardHeader className="flex flex-row items-center gap-2 pb-2">
-        <AlertTriangle className={hasUrgent ? 'text-destructive size-5' : 'text-warning size-5'} aria-hidden="true" />
-        <CardTitle id="atencao-titulo">Precisa de atenção</CardTitle>
+    <section role="region" aria-labelledby="atencao-titulo" className="flex min-w-0 flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className={hasUrgent ? 'text-destructive size-4' : 'text-warning size-4'} aria-hidden="true" />
+        <h2 id="atencao-titulo" className="text-foreground text-sm font-semibold">Precisa de atenção</h2>
         {items.length > 0 ? <Badge variant={hasUrgent ? 'destructive' : 'warning'}>{items.length}</Badge> : null}
-      </CardHeader>
-      <CardContent className="flex flex-col gap-2">
-        <AttentionBody items={items} isLoading={isLoading} />
-      </CardContent>
-    </Card>
+      </div>
+      <AttentionBody items={items} isLoading={isLoading} />
+    </section>
   )
 }

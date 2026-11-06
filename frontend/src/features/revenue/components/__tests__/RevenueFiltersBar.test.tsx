@@ -5,7 +5,7 @@ import type { RevenueFilters } from '@/features/revenue/types/revenueTypes'
 import { DEFAULT_REVENUE_QUERY } from '@/features/revenue/utils/revenueFilters'
 
 function setup(windowError: string | null = null, filters: RevenueFilters = {}) {
-  const handlers = { onMonthChange: vi.fn(), onFilterChange: vi.fn(), onReset: vi.fn() }
+  const handlers = { onWindowsChange: vi.fn(), onFilterChange: vi.fn(), onReset: vi.fn() }
   render(
     <RevenueFiltersBar
       query={{ ...DEFAULT_REVENUE_QUERY, filters }}
@@ -24,20 +24,42 @@ function openFilters() {
 }
 
 describe('RevenueFiltersBar', () => {
-  it('mostra o primeiro dia do mês inicial e o último dia do mês final', () => {
+  it('abre na pergunta do case e diz quais meses estão sendo comparados', () => {
     setup()
 
-    const [baseStart, baseEnd] = screen.getAllByLabelText(/^(De|Até)$/)
-    expect(baseStart).toHaveValue('2022-07-01')
-    expect(baseEnd).toHaveValue('2023-06-30')
+    expect(screen.getByLabelText('Período')).toHaveValue('last12')
+    expect(screen.getByLabelText('Comparar com')).toHaveValue('case')
+    expect(screen.getByText('jul/2025 a jun/2026')).toBeInTheDocument()
+    expect(screen.getByText('jul/2022 a jun/2023')).toBeInTheDocument()
   })
 
-  it('avisa qual janela foi alterada e reduz a data escolhida ao mês', () => {
+  it('calcula a base sozinha ao trocar o período e a comparação', () => {
     const handlers = setup()
 
-    fireEvent.change(document.getElementById('atual-fim') as HTMLInputElement, { target: { value: '2026-05-15' } })
+    fireEvent.change(screen.getByLabelText('Período'), { target: { value: 'year-2025' } })
+    expect(handlers.onWindowsChange).toHaveBeenLastCalledWith({
+      atual: { inicio: '2025-01', fim: '2025-12' },
+      base: { inicio: '2022-07', fim: '2023-06' }
+    })
 
-    expect(handlers.onMonthChange).toHaveBeenCalledWith('atual', 'fim', '2026-05')
+    fireEvent.change(screen.getByLabelText('Comparar com'), { target: { value: 'yoy' } })
+    expect(handlers.onWindowsChange).toHaveBeenLastCalledWith({
+      atual: { inicio: '2025-07', fim: '2026-06' },
+      base: { inicio: '2024-07', fim: '2025-06' }
+    })
+  })
+
+  it('escolhe o mês exato no calendário de meses', async () => {
+    const handlers = setup()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Personalizar datas' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fim: período analisado: jun/2026' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'mai/2026' }))
+
+    expect(handlers.onWindowsChange).toHaveBeenLastCalledWith({
+      atual: { inicio: '2025-07', fim: '2026-05' },
+      base: { inicio: '2022-07', fim: '2023-06' }
+    })
   })
 
   it('lista os municípios e classes recebidos e avisa a escolha', () => {
@@ -83,8 +105,13 @@ describe('RevenueFiltersBar', () => {
     expect(handlers.onFilterChange).toHaveBeenCalledWith('municipio', '')
   })
 
-  it('restaura o padrão', () => {
-    const handlers = setup()
+  it('restaura o padrão só quando algo mudou', () => {
+    setup()
+    expect(screen.getByRole('button', { name: /Restaurar padrão/ })).toBeDisabled()
+  })
+
+  it('restaura o padrão com um filtro ativo', () => {
+    const handlers = setup(null, { municipio: 'RECIFE' })
 
     fireEvent.click(screen.getByRole('button', { name: /Restaurar padrão/ }))
 

@@ -18,6 +18,37 @@ interface StatTileProps {
   className?: string
 }
 
+const DIGIT = /\d/
+const SIGNS = new Set(['+', '-', '−'])
+
+function splitNumber(text: string): [string, string, string] | null {
+  const first = text.search(DIGIT)
+  if (first < 0) return null
+  let last = text.length - 1
+  while (last > first && !DIGIT.test(text.charAt(last))) last -= 1
+  const start = first > 0 && SIGNS.has(text.charAt(first - 1)) ? first - 1 : first
+  return [text.slice(0, start), text.slice(start, last + 1), text.slice(last + 1)]
+}
+
+/**
+ * Valor com o número em destaque e o prefixo e o sufixo (R$, %, kWh, mi) menores e em cinza.
+ *
+ * @param props - Valor já formatado.
+ * @returns O valor dividido em partes, ou o texto como veio quando não há número ou unidade.
+ */
+function StatValue({ text }: { text: string }) {
+  const parts = splitNumber(text)
+  if (!parts || (!parts[0] && !parts[2])) return text
+  const affix = 'text-muted-foreground text-base font-medium whitespace-pre'
+  return (
+    <>
+      {parts[0] ? <span className={affix}>{parts[0]}</span> : null}
+      {parts[1]}
+      {parts[2] ? <span className={affix}>{parts[2]}</span> : null}
+    </>
+  )
+}
+
 /**
  * Bloco de indicador compartilhado pelas telas: rótulo, valor em destaque, variação e uma nota curta.
  *
@@ -47,7 +78,9 @@ export function StatTile({ label, value, hint, change, footnote, warning, testId
           </Tooltip>
         ) : null}
       </div>
-      <div className="text-foreground text-2xl font-semibold tabular-nums">{value}</div>
+      <div className="text-foreground text-2xl font-semibold tabular-nums">
+        {typeof value === 'string' ? <StatValue text={value} /> : value}
+      </div>
       {change ? <div className="flex flex-wrap items-center gap-2 text-xs">{change}</div> : null}
       {footnote ? <div className="text-muted-foreground mt-auto text-xs">{footnote}</div> : null}
     </div>

@@ -7,7 +7,7 @@ import {
   useRevenueOptionsQuery
 } from '@/features/revenue/hooks/useRevenueQueries'
 import { useRevenueRankingControls } from '@/features/revenue/hooks/useRevenueRankingControls'
-import type { RevenueFilters } from '@/features/revenue/types/revenueTypes'
+import type { RevenueFilters, RevenueQuery } from '@/features/revenue/types/revenueTypes'
 import type { WindowEdge, WindowName } from '@/features/revenue/hooks/useRevenueFilters'
 
 /**
@@ -31,10 +31,18 @@ export function useRevenueDashboardController() {
   const { municipio } = query.filters
   const neighborhoodsQuery = useRevenueOptionsQuery(query, 'bairro', enabled && Boolean(municipio), { municipio })
   const historyQuery = useRevenueHistoryQuery(query, ranking.selected)
+  const classScope = query.filters.classe_consumo ? { classe_consumo: query.filters.classe_consumo } : {}
+  const territoryQuery = useRevenueOptionsQuery(query, 'municipio', enabled, classScope)
+  const areaScope = { ...classScope, ...(municipio ? { municipio } : {}) }
+  const neighborhoodRevenueQuery = useRevenueOptionsQuery(query, 'bairro', enabled, areaScope)
 
   // Qualquer mudança de recorte volta o ranking para a primeira página.
   const changeMonth = (window: WindowName, edge: WindowEdge, month: string) => {
     filters.changeMonth(window, edge, month)
+    ranking.resetPage()
+  }
+  const changeWindows = (windows: Pick<RevenueQuery, 'base' | 'atual'>) => {
+    filters.changeWindows(windows)
     ranking.resetPage()
   }
   const changeFilter = (name: keyof RevenueFilters, filterValue: string) => {
@@ -50,6 +58,7 @@ export function useRevenueDashboardController() {
     query,
     windowError,
     changeMonth,
+    changeWindows,
     changeFilter,
     reset,
     ranking,
@@ -57,6 +66,8 @@ export function useRevenueDashboardController() {
     decompositionQuery,
     breakdownQuery,
     municipalitiesQuery,
+    territoryQuery,
+    neighborhoodRevenueQuery,
     classesQuery,
     neighborhoodsQuery,
     historyQuery

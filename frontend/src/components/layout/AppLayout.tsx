@@ -10,7 +10,7 @@ import { ChatDrawer } from '@/features/chat/ChatDrawer'
 
 function PageLoading() {
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 sm:px-6">
+    <div className="flex w-full flex-col gap-4 px-4 py-8 sm:px-6">
       <LoadingSkeleton count={4} className="h-24" />
     </div>
   )
@@ -41,8 +41,8 @@ function HeaderTrail() {
 export function AppLayout() {
   return (
     <div className="bg-background flex min-h-dvh">
-      <aside className="border-border bg-sidebar sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-6 self-start overflow-y-auto border-r px-3 py-4 md:flex">
-        <BrandMark className="px-2.5" />
+      <aside className="border-border bg-sidebar sticky top-0 hidden h-dvh w-72 shrink-0 flex-col gap-8 self-start overflow-y-auto border-r px-4 py-5 md:flex">
+        <BrandMark className="px-3" />
         <SidebarNav />
       </aside>
 

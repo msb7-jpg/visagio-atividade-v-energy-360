@@ -13,6 +13,7 @@ import type {
   Invoice
 } from '@/features/customer360/types/customer360Types'
 import { fetchProactiveInsights } from '@/features/insights/api/insightsApi'
+import { fullText } from '@/test/fullText'
 
 vi.mock('@/features/insights/api/insightsApi', () => ({ fetchProactiveInsights: vi.fn() }))
 
@@ -272,8 +273,8 @@ describe('Customer360Page', () => {
 
     expect(await screen.findByText(/O preço médio do kWh subiu 21,3%/)).toBeInTheDocument()
     expect(screen.getByText(/R\$\s0,97\/kWh vs R\$\s0,80\/kWh/)).toBeInTheDocument()
-    expect(screen.getByText('Últimos 12 meses · consumo')).toBeInTheDocument()
-    expect(screen.getByText('R$ 2.150,50')).toBeInTheDocument()
+    expect(screen.getByText('Consumo (12 meses)')).toBeInTheDocument()
+    expect(screen.getByText(fullText('R$ 2.150,50'))).toBeInTheDocument()
   })
 
   it('aponta aumento real de consumo', async () => {
@@ -296,7 +297,7 @@ describe('Customer360Page', () => {
     searchFor('UC100004')
 
     expect(await screen.findByText('2 faturas sem pagamento')).toBeInTheDocument()
-    expect(screen.getByText('R$ 380,00', { normalizer: (text) => text.replace(/\s/g, ' ') })).toBeInTheDocument()
+    expect(screen.getByText(fullText('R$ 380,00'))).toBeInTheDocument()
     expect(screen.getByText('8 de 11')).toBeInTheDocument()
     expect(screen.getByText('2 com atraso · atraso médio de 6 dias · 1 vencida em aberto')).toBeInTheDocument()
     const table = screen.getByRole('table', { name: 'Faturas da unidade consumidora' })
@@ -369,11 +370,11 @@ describe('Customer360Page', () => {
     renderPage()
     searchFor('UC100004')
 
-    for (const block of ['Cliente e consumo', 'Histórico financeiro', 'Problemas técnicos']) {
+    for (const block of ['Consumo', 'Contas', 'Falta de luz e chamados', 'Inspeções de perdas']) {
       expect(await screen.findByRole('region', { name: block })).toBeInTheDocument()
     }
     expect(screen.queryByRole('tab')).not.toBeInTheDocument()
-    expect(within(screen.getByRole('region', { name: 'Histórico financeiro' })).getByText('Conta alta?')).toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: 'Contas' })).getByText('Conta alta?')).toBeInTheDocument()
   })
 
   it('aceita só os dígitos do número da conta e guarda a UC no endereço da página', async () => {
@@ -447,7 +448,7 @@ describe('Customer360Page', () => {
     searchFor('UC100004')
 
     expect(await screen.findByText('Não foi possível carregar o consumo', {}, { timeout: 5000 })).toBeInTheDocument()
-    const consumptionBlock = screen.getByRole('region', { name: 'Cliente e consumo' })
+    const consumptionBlock = screen.getByRole('region', { name: 'Consumo' })
     fireEvent.click(within(consumptionBlock).getByRole('button', { name: 'Tentar novamente' }))
 
     await waitFor(() => expect(screen.queryByText('Não foi possível carregar o consumo')).not.toBeInTheDocument())

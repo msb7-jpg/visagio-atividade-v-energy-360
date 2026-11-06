@@ -1,11 +1,12 @@
-import { AlertTriangle, RotateCcw } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { PeriodPicker } from '@/components/data/PeriodPicker'
 import { FilterPopover, type ActiveFilterChip } from '@/components/filters/FilterPopover'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
 import { FilterSelect } from '@/features/revenue/components/FilterSelect'
-import { PeriodFieldset } from '@/features/revenue/components/PeriodFieldset'
-import type { WindowEdge, WindowName } from '@/features/revenue/hooks/useRevenueFilters'
 import type { RevenueFilters, RevenueQuery } from '@/features/revenue/types/revenueTypes'
+import { DEFAULT_REVENUE_QUERY, REVENUE_AVAILABLE_MONTHS } from '@/features/revenue/utils/revenueFilters'
+
+const isDefaultQuery = (query: RevenueQuery) => JSON.stringify(query) === JSON.stringify(DEFAULT_REVENUE_QUERY)
 
 const FILTER_LABELS: Record<keyof RevenueFilters, string> = {
   municipio: 'Município',
@@ -25,13 +26,13 @@ interface RevenueFiltersBarProps {
   municipalities: string[]
   neighborhoods: string[]
   classes: string[]
-  onMonthChange: (window: WindowName, edge: WindowEdge, month: string) => void
+  onWindowsChange: (windows: Pick<RevenueQuery, 'base' | 'atual'>) => void
   onFilterChange: (name: keyof RevenueFilters, value: string) => void
   onReset: () => void
 }
 
 /**
- * Barra de filtros: os dois períodos ficam visíveis, porque são a comparação da tela; município, bairro e classe
+ * Barra de filtros: o seletor de período (o que analisar e com o que comparar) fica visível; município, bairro e classe
  * ficam no botão "Filtros" (`FilterPopover`), com um chip por filtro ativo.
  * O bairro só pode ser escolhido depois do município, e a lista mostra apenas os bairros dele.
  * Janelas inválidas mostram um aviso e suspendem as consultas (sem erro 400 da API).
@@ -40,61 +41,53 @@ interface RevenueFiltersBarProps {
  * @returns Card de filtros com aviso opcional.
  */
 export function RevenueFiltersBar(props: RevenueFiltersBarProps) {
-  const { query, windowError, municipalities, neighborhoods, classes, onMonthChange, onFilterChange, onReset } = props
+  const { query, windowError, municipalities, neighborhoods, classes, onWindowsChange, onFilterChange, onReset } = props
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-        <PeriodFieldset
-          idPrefix="base"
-          legend="Período base"
-          window={query.base}
-          onChange={(edge, month) => onMonthChange('base', edge, month)}
-        />
-        <PeriodFieldset
-          idPrefix="atual"
-          legend="Período de comparação"
-          window={query.atual}
-          onChange={(edge, month) => onMonthChange('atual', edge, month)}
-        />
-        <FilterPopover
-          activeFilters={activeChips(query.filters, onFilterChange)}
-          onClear={() => {
-            onFilterChange('classe_consumo', '')
-            onFilterChange('municipio', '')
-          }}
-        >
-          <FilterSelect
-            id="filtro-municipio"
-            label="Município"
-            allLabel="Todos os municípios"
-            value={query.filters.municipio ?? ''}
-            options={municipalities}
-            onChange={(value) => onFilterChange('municipio', value)}
-          />
-          <FilterSelect
-            id="filtro-bairro"
-            label="Bairro"
-            allLabel={query.filters.municipio ? 'Todos os bairros' : 'Escolha um município'}
-            value={query.filters.bairro ?? ''}
-            options={neighborhoods}
-            disabled={!query.filters.municipio}
-            onChange={(value) => onFilterChange('bairro', value)}
-          />
-          <FilterSelect
-            id="filtro-classe"
-            label="Classe de consumo"
-            allLabel="Todas as classes"
-            value={query.filters.classe_consumo ?? ''}
-            options={classes}
-            onChange={(value) => onFilterChange('classe_consumo', value)}
-          />
-        </FilterPopover>
-        <Button variant="ghost" size="sm" onClick={onReset}>
-          <span className="flex items-center gap-1.5">
-            <RotateCcw className="size-3.5" /> Restaurar padrão
-          </span>
-        </Button>
-      </div>
+      <PeriodPicker
+        idPrefix="receita"
+        windows={{ base: query.base, atual: query.atual }}
+        available={REVENUE_AVAILABLE_MONTHS}
+        isDefault={isDefaultQuery(query)}
+        resetLabel="Restaurar padrão"
+        onChange={onWindowsChange}
+        onReset={onReset}
+        extra={(
+          <FilterPopover
+            activeFilters={activeChips(query.filters, onFilterChange)}
+            onClear={() => {
+              onFilterChange('classe_consumo', '')
+              onFilterChange('municipio', '')
+            }}
+          >
+            <FilterSelect
+              id="filtro-municipio"
+              label="Município"
+              allLabel="Todos os municípios"
+              value={query.filters.municipio ?? ''}
+              options={municipalities}
+              onChange={(value) => onFilterChange('municipio', value)}
+            />
+            <FilterSelect
+              id="filtro-bairro"
+              label="Bairro"
+              allLabel={query.filters.municipio ? 'Todos os bairros' : 'Escolha um município'}
+              value={query.filters.bairro ?? ''}
+              options={neighborhoods}
+              disabled={!query.filters.municipio}
+              onChange={(value) => onFilterChange('bairro', value)}
+            />
+            <FilterSelect
+              id="filtro-classe"
+              label="Classe de consumo"
+              allLabel="Todas as classes"
+              value={query.filters.classe_consumo ?? ''}
+              options={classes}
+              onChange={(value) => onFilterChange('classe_consumo', value)}
+            />
+          </FilterPopover>
+        )}
+      />
       {windowError ? (
         <Alert variant="warning">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />

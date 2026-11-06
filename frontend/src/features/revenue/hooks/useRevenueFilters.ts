@@ -29,7 +29,9 @@ export function useRevenueFilters() {
     })
   }
 
+  const changeWindows = (windows: Pick<RevenueQuery, 'base' | 'atual'>) => setQuery((current) => ({ ...current, ...windows }))
+
   const reset = () => setQuery(DEFAULT_REVENUE_QUERY)
 
-  return { query, windowError: validateRevenueQuery(query), changeMonth, changeFilter, reset }
+  return { query, windowError: validateRevenueQuery(query), changeMonth, changeWindows, changeFilter, reset }
 }

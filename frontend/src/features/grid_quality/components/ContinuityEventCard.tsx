@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { ShareBar } from '@/features/grid_quality/components/ShareBar'
+import { ShareBar } from '@/components/data/ShareBar'
 import { formatCompetencia, formatDecimal } from '@/features/grid_quality/utils/qualityFormatters'
 import { formatInteger, labelOccurrence } from '@/features/grid_quality/utils/continuityFormatters'
 import type { ContinuityEvent } from '@/features/grid_quality/types/continuityTypes'

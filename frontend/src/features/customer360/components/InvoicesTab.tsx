@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { FileSearch } from 'lucide-react'
 import { StatTile } from '@/components/data/StatTile'
 import { EmptyState } from '@/components/feedback/EmptyState'
@@ -54,6 +55,8 @@ function PunctualityTile({ punctuality }: { punctuality: PaymentPunctuality }) {
 
 interface InvoicesTabProps {
   history: CustomerHistory
+  /** Resposta a "conta alta?", ao lado dos totais em aberto e da pontualidade. */
+  diagnosis?: ReactNode
 }
 
 /**
@@ -62,7 +65,7 @@ interface InvoicesTabProps {
  * @param props - Histórico retornado por `/history`.
  * @returns Resumo das faturas em aberto e tabela de faturas.
  */
-export function InvoicesTab({ history }: InvoicesTabProps) {
+export function InvoicesTab({ history, diagnosis }: InvoicesTabProps) {
   if (history.faturas.length === 0) {
     return (
       <EmptyState
@@ -74,9 +77,12 @@ export function InvoicesTab({ history }: InvoicesTabProps) {
   }
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <OpenInvoicesTile openInvoices={history.faturas_em_aberto} openAmount={history.valor_em_aberto_rs} />
-        {history.pontualidade ? <PunctualityTile punctuality={history.pontualidade} /> : null}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        {diagnosis ? <div className="lg:col-span-2">{diagnosis}</div> : null}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+          <OpenInvoicesTile openInvoices={history.faturas_em_aberto} openAmount={history.valor_em_aberto_rs} />
+          {history.pontualidade ? <PunctualityTile punctuality={history.pontualidade} /> : null}
+        </div>
       </div>
       <div className="max-h-96 min-w-0 overflow-auto">
         <Table aria-label="Faturas da unidade consumidora">

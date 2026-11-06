@@ -1,7 +1,7 @@
 import type { DashboardPeriods, PeriodWindow } from '@/features/executive_dashboard/types/executiveDashboardTypes'
+import { formatMonth } from '@/lib/periods/periodPresets'
 
 const COMPETENCIA_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/
-const MONTH_NAMES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 const MONTHS_PER_YEAR = 12
 
 /** Pergunta do diretor no case: primeiro ano da base contra os últimos 12 meses (mesmo padrão da API). */
@@ -81,17 +81,6 @@ export function competenciasOf(window: PeriodWindow): string[] {
     const year = startYear + Math.floor(monthIndex / MONTHS_PER_YEAR)
     return `${year}-${String((monthIndex % MONTHS_PER_YEAR) + 1).padStart(2, '0')}`
   })
-}
-
-/**
- * Formata a competência como mês abreviado e ano.
- *
- * @param competencia - Competência `YYYY-MM`.
- * @returns Texto como "jul/2025".
- */
-export function formatMonth(competencia: string): string {
-  const [year, month] = competencia.split('-')
-  return `${MONTH_NAMES[Number(month) - 1]}/${year}`
 }
 
 /**
