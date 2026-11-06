@@ -15,7 +15,7 @@ export function SectionNav() {
   return (
     <nav
       aria-label="Blocos da ficha"
-      className="bg-background/95 border-border sticky top-14 z-30 -mx-1 flex flex-wrap gap-1 border-b px-1 py-2 backdrop-blur"
+      className="bg-background border-border sticky top-14 z-30 -mx-1 flex flex-wrap gap-1 border-b px-1 py-2"
     >
       {CUSTOMER360_SECTIONS.map((section) => (
         <a

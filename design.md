@@ -1,5 +1,5 @@
 ---
-version: "2.0.0"
+version: "2.1.0"
 name: "Grid 360 (V-Energy Grid 360)"
 description: "Design System oficial do V-Energy Grid 360: ferramenta interna de operação, medição, faturamento e IA de uma distribuidora de energia. Visual corporativo e sóbrio: base neutra quente, um azul de marca, âmbar só no símbolo, tema claro por padrão, IBM Plex Sans e IBM Plex Mono, raio de 6px e superfícies planas."
 colors:
@@ -82,7 +82,8 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 - **Cores:** base neutra quente (off-white e tinta quase preta), **um** azul de marca (`--primary`) para ações, links e item ativo, e o âmbar (`--brand`) só no símbolo da marca. Cor de estado (verde, âmbar, vermelho) só quando informa algo.
 - **Profundidade:** superfícies planas com borda de 1px (`--border`). Sem vidro, sem `backdrop-blur`, sem brilho, sem cartões que sobem no hover. Sombra só em menus, diálogos e no botão do assistente.
 - **Movimento:** curto e discreto (100–200ms, *ease-out*), via `motion/react`. Nada de molas, pulsos ou escala.
-- **Texto:** frases curtas e objetivas. O subtítulo da tela diz o que ela responde em uma linha; explicação longa vai para tooltip. Sem CAIXA ALTA em títulos, cabeçalhos de tabela ou selos (dados que chegam em caixa alta são convertidos com `formatSentenceCase`).
+- **Texto:** frases curtas e objetivas. O subtítulo da tela diz o que ela responde em uma linha; explicação longa (fórmula, critério) vai para o ícone de ajuda ou tooltip. Sem CAIXA ALTA em títulos, selos e dados (dados que chegam em caixa alta são convertidos com `formatSentenceCase` ou `displayName`). A única exceção é o **rótulo de seção** e o **cabeçalho de tabela**, que usam caixa alta pequena e espaçada (`text-xs font-medium tracking-wide uppercase text-muted-foreground`) para separar a estrutura do conteúdo.
+- **O dado primeiro:** cada tela abre pelo que responde a pergunta do usuário (resumo da IA e indicadores), depois o detalhe (tabela, mapa, histórico). Informação que o usuário procura com frequência não fica atrás de cliques: lista completa com busca vale mais que abrir item por item.
 - **Temas:** claro por padrão (`:root`); escuro opcional pelo menu do usuário (`<html class="dark">`), em grafite neutro.
 
 ---
@@ -129,9 +130,12 @@ A tipografia usa duas fontes carregadas via Google Fonts em `frontend/index.html
    - **Título de tela (`PageHeader`):** `text-2xl font-semibold` (24/32)
    - **Título de seção:** `text-lg font-semibold` (16/24)
    - **Título de card:** `text-base font-semibold` (14/20)
-   - **Valor de KPI:** `text-2xl font-semibold`
+   - **Valor de KPI:** `text-2xl font-semibold`; prefixo e sufixo da unidade (`R$`, `mi`, `%`, `kWh`) em `text-base font-medium text-muted-foreground`, com o número sozinho em destaque (o `StatTile` faz isso sozinho quando o valor é texto)
+   - **Manchete do resumo da IA:** `text-xl font-semibold text-balance`
    - **Body, botões e células:** `text-sm` (13/18)
-   - **Rótulos, cabeçalhos de tabela e selos:** `text-xs font-medium` (12/16; nada abaixo de 12px), sem caixa alta
+   - **Rótulos e selos:** `text-xs font-medium` (12/16; nada abaixo de 12px), sem caixa alta
+   - **Rótulo de seção e cabeçalho de tabela:** `text-xs font-medium tracking-wide uppercase text-muted-foreground` (o `TableHead` já aplica; em cabeçalho ordenável ou com ajuda, aplique no `<span>` dentro do `Button variant="inline"`)
+   - **Menu lateral:** `text-base font-medium`, ícone `size-5`
    - Pesos: 400, 500 e 600. Evite `font-bold`.
 2. **IBM Plex Mono (`font-mono`):** só código e identificadores — SQL do agente, número da UC, protocolo, inspetor. Nunca para valores numéricos.
 
@@ -149,6 +153,8 @@ A tipografia usa duas fontes carregadas via Google Fonts em `frontend/index.html
   - **Proibição de `space-x-*` e `space-y-*`:** Use sempre `flex flex-col gap-*` ou `flex items-center gap-*`.
   - **Proibição de `h-screen` e `min-h-[100dvh]`:** Use sempre `min-h-dvh`.
   - **Dimensões Iguais:** Use `size-*` (ex: `size-9`, `size-4`) em vez de `w-9 h-9`.
+- **Largura das telas:** o conteúdo ocupa a largura disponível ao lado do menu (`<main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-6">`), sem `max-w-7xl` nem `mx-auto`. O layout reserva `pb-16` no fim para o botão do assistente não cobrir a paginação.
+- **Menu lateral:** `w-72`, lista única de telas (sem grupos), item com `px-3 py-2.5`. O grupo de cada tela continua nos dados (`navItems.ts`) porque o caminho do topo ("Diretoria › Painel") usa o nome dele.
 
 ---
 
@@ -212,7 +218,7 @@ A tipografia usa duas fontes carregadas via Google Fonts em `frontend/index.html
   ```
 
 ### 5.4 `Badge` (`@/components/ui/badge`)
-- Variantes permitidas: `default`, `secondary`, `destructive`, `warning`, `success`, `outline`.
+- Variantes permitidas: `default`, `secondary`, `destructive`, `warning`, `success`, `accent`, `muted`, `outline`.
 - `warning` marca atenção ou etapa pendente; `success` marca etapa concluída ou resultado confirmado.
 - Exemplo: `<Badge variant="secondary">DIRETOR</Badge>`.
 
@@ -223,6 +229,17 @@ A tipografia usa duas fontes carregadas via Google Fonts em `frontend/index.html
   - Use `<EmptyState title="Nenhuma fatura encontrada" description="Não constam débitos em aberto para esta UC." icon={<FileSearch className="size-10" />} action={<Button size="sm">Emitir Segunda Via</Button>} />`.
 - **Tratamento de Erros de Interface (`ErrorBoundary`):**
   - Encapsule módulos de dados e visualizações com `<ErrorBoundary>`.
+
+### 5.6 Componentes de dados compartilhados (`src/components/data/`)
+Use estes componentes antes de criar um novo; eles mantêm as telas com a mesma linguagem visual.
+
+| Componente | Para que serve | Regras |
+|---|---|---|
+| `StatTile` | Bloco de indicador: rótulo, valor, variação (`change`), nota (`footnote`), ajuda (`hint`) e aviso (`warning`) | É o KPI padrão de todas as telas. A fórmula vai em `hint` (ícone de ajuda), nunca em texto corrido. Valor em texto ganha a unidade menor e cinza automaticamente. |
+| `ShareBar` | Barra proporcional de 0 a 100% | Cor por token (`tone="bg-warning"`); largura via variável CSS, sem `style` com valor solto. |
+| `RegionMap` | Mapa dos 14 municípios da RMR, pintado por valor | Cada município é um botão acessível (nome e valor no `aria-label`). Clicar aplica o filtro de município que a tela já tem; clicar de novo remove. Escala divergente (`fill-success/*` e `fill-destructive/*`) para ganho e perda; sequencial (um só token em 4 tons) para contagem. Sempre acompanhado de uma lista ou barras com os mesmos dados e o mesmo destaque ao passar o mouse. Contornos em `lib/geo/rmrMunicipalityShapes.ts` (malha pública do IBGE). |
+| `PeriodPicker` | Filtro de período: "Período" + "Comparar com" + frase de confirmação | Nunca peça quatro datas como caminho padrão. A base é calculada (`lib/periods/periodPresets.ts`); só aparecem comparações cuja base cabe nos dados e termina antes do período analisado. "Personalizar datas" abre o `CustomWindowsEditor`. |
+| `MonthPicker` | Campo de mês com calendário próprio (ano com setas, 12 meses em grade) | Substitui `<Input type="date">` e o calendário nativo: a API trabalha por competência. Mês escolhido em `default`, trecho em `secondary`, meses sem dados desabilitados. |
 
 ---
 
@@ -243,63 +260,92 @@ A tipografia usa duas fontes carregadas via Google Fonts em `frontend/index.html
 
 ## 7. Receitas Prontas de UI (*Ready-to-Use Recipes*)
 
-### Receita 1: Card de Métrica KPI com Tendência
+### Receita 1: Indicador (KPI) com variação
+Use o `StatTile`; não monte card de KPI à mão.
 ```tsx
-import { ArrowUpRight, TrendingUp } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { StatTile } from '@/components/data/StatTile'
+import { VariationBadge } from '@/features/revenue/components/VariationBadge'
 
-export function KpiMetricCard() {
-  return (
-    <Card variant="interactive">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle>Receita Total Faturada</CardTitle>
-        <div className="text-muted-foreground">
-          <TrendingUp className="size-4" />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-foreground text-2xl font-semibold">R$ 48.250.120</div>
-        <div className="mt-2 flex items-center gap-2">
-          <Badge variant="secondary">
-            <span className="text-success flex items-center gap-1">
-              <ArrowUpRight className="size-3" /> +4.2%
-            </span>
-          </Badge>
-          <CardDescription>em relação ao mês anterior</CardDescription>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
+<StatTile
+  label="Faturamento"
+  hint="Soma do valor das faturas da janela, em reais."
+  value="R$ 169,7 mi"
+  change={<VariationBadge variation={8.0} />}
+  footnote="Base: R$ 157,1 mi"
+/>
 ```
 
-### Receita 2: Header de Página
+### Receita 2: Página
 ```tsx
-import { Zap } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/layout/PageHeader'
 
-export function PageHeader() {
-  return (
-    <header className="border-border bg-card/90 backdrop-blur-md border-b sticky top-0 z-40">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-lg shadow-sm">
-            <Zap className="size-5" />
-          </div>
-          <div>
-            <h1 className="text-foreground text-lg font-bold">V-Energy Grid 360</h1>
-            <p className="text-muted-foreground text-xs">Visão Integrada de Concessionária</p>
-          </div>
-        </div>
-        <Button variant="default" size="sm">
-          <span>Nova Consulta</span>
-        </Button>
-      </div>
-    </header>
-  )
-}
+<main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-6">
+  <PageHeader title="Inteligência Comercial" description="Quanto da variação da receita veio de preço, volume e mix." />
+  {/* filtro de período, resumo da IA, indicadores, detalhe */}
+</main>
 ```
+Ordem do conteúdo: filtro → resumo da IA → indicadores gerais → detalhe (tabelas, mapa, histórico).
+
+### Receita 3: Rótulo de seção com atalho
+```tsx
+<div className="flex items-baseline justify-between gap-2">
+  <h2 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Comercial</h2>
+  <Link to="/revenue" className="text-primary inline-flex items-center gap-1 text-xs font-medium hover:underline">
+    Ver na Inteligência Comercial <ArrowRight aria-hidden="true" className="size-3" />
+  </Link>
+</div>
+```
+Cada área do Painel com tela própria leva ao detalhe (`GroupHeading`).
+
+### Receita 4: Filtro de período
+```tsx
+import { PeriodPicker } from '@/components/data/PeriodPicker'
+
+<PeriodPicker
+  idPrefix="receita"
+  windows={{ base, atual }}
+  available={{ inicio: '2022-07', fim: '2026-06' }}
+  isDefault={isDefault}
+  resetLabel="Restaurar padrão"
+  extra={<FilterPopover>{/* município, bairro, classe */}</FilterPopover>}
+  onChange={setWindows}
+  onReset={reset}
+/>
+```
+Abre na pergunta do case (últimos 12 meses contra o primeiro ano da base). Recortes extras entram em `extra`, na mesma linha.
+
+### Receita 5: Mapa territorial com lista ligada
+```tsx
+const [hovered, setHovered] = useState<string | null>(null)
+
+<div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
+  <div className="mx-auto w-full max-w-64 lg:col-span-2">
+    <RegionMap
+      label="Mapa da variação de receita"
+      values={valuesByMunicipality}
+      fillOf={(value) => fillFor(value, maximum)}
+      describe={(municipio, value) => `${displayName(municipio)}: ${format(value)}`}
+      selected={filters.municipio}
+      hovered={hovered}
+      onHover={setHovered}
+      onSelect={toggleMunicipality}
+    />
+  </div>
+  <div className="lg:col-span-3">{/* barras ou lista com o mesmo hovered/selected */}</div>
+</div>
+```
+
+### Receita 6: Ficha em blocos numerados
+Para telas longas de consulta (UC 360): faixa do topo com identificação e alertas, navegação fixa com atalhos numerados e um painel por bloco. Tudo visível, sem abas.
+```tsx
+<Customer360Section id="bloco-financeiro" step="2" title="Contas" description="Por que a conta veio assim e o que está em aberto." icon={<Receipt className="size-4" />}>
+  {/* conteúdo do bloco */}
+</Customer360Section>
+```
+Listas longas dentro de um bloco ganham altura máxima com rolagem própria (`max-h-96 overflow-auto`) para não esticar a página.
+
+### Receita 7: Resumo da IA
+O `SmartInsightCard` fica no topo da tela, na largura toda: fundo `bg-accent` com borda `border-primary/20`, selo "Resumo da IA" com o tom (positivo, estável, atenção, crítico), manchete em `text-xl`, frase de apoio, "Próximo passo" e até três números ao lado. Os números vêm das métricas do servidor, nunca do texto da IA.
 
 ---
 
@@ -313,4 +359,9 @@ Antes de submeter qualquer tela ou componente:
 - [ ] Os cards usam variantes (`variant="glass"` ou `variant="interactive"`) em vez de classes arbitrárias de hover/sombra?
 - [ ] As renderizações condicionais utilizam ternários explícitos (`? : null`)?
 - [ ] Todos os métodos e funções exportadas possuem documentação JSDoc?
+- [ ] Indicadores usam `StatTile`, com a fórmula no `hint` e não em texto corrido?
+- [ ] Caixa alta só aparece em rótulo de seção e cabeçalho de tabela?
+- [ ] Período é escolhido com o `PeriodPicker` (e mês com o `MonthPicker`), nunca com `<Input type="date">`?
+- [ ] A informação mais procurada da tela está visível sem precisar abrir item por item?
+- [ ] A tela ocupa a largura disponível, sem `max-w-7xl`?
 - [ ] O comando `make lint-frontend` e `cd frontend && bun run test` passaram com 100% de sucesso?
