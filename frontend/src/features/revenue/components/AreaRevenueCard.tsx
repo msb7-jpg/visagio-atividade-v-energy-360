@@ -6,19 +6,28 @@ import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/ui/pagination'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AreaRevenueTable } from '@/features/revenue/components/AreaRevenueTable'
-import type { BreakdownPage, NeighborhoodRef } from '@/features/revenue/types/revenueTypes'
+import { useNeighborhoodHistories } from '@/features/revenue/hooks/useRevenueQueries'
+import type { BreakdownPage, NeighborhoodRef, RevenueQuery } from '@/features/revenue/types/revenueTypes'
 import { searchAndSort, toAreaRevenue, type AreaSortField } from '@/features/revenue/utils/areaRevenue'
 import { getRevenueErrorMessage } from '@/features/revenue/utils/revenueErrorMessage'
 
 type AreaLevel = 'bairro' | 'municipio'
 
 const PAGE_SIZE = 10
+const MONTHS_PER_YEAR = 12
+
+const monthsBetween = (window: RevenueQuery['atual']) => {
+  const [startYear, startMonth] = window.inicio.split('-').map(Number)
+  const [endYear, endMonth] = window.fim.split('-').map(Number)
+  return Math.max(1, (endYear - startYear) * MONTHS_PER_YEAR + (endMonth - startMonth) + 1)
+}
 const LEVEL_LABELS: Record<AreaLevel, { tab: string; column: string; plural: string }> = {
   bairro: { tab: 'Bairros', column: 'Bairro', plural: 'bairros' },
   municipio: { tab: 'Municípios', column: 'Município', plural: 'municípios' }
 }
 
 interface AreaRevenueCardProps {
+  query: RevenueQuery
   neighborhoodsQuery: UseQueryResult<BreakdownPage>
   municipalitiesQuery: UseQueryResult<BreakdownPage>
   onOpenNeighborhood: (neighborhood: NeighborhoodRef) => void
@@ -26,12 +35,13 @@ interface AreaRevenueCardProps {
 
 /**
  * Receita, volume e tarifa média de todos os bairros (ou municípios) numa tabela só, com busca pelo nome.
- * Responde "quanto fatura este bairro?" sem abrir bairro por bairro; o nome abre os 24 meses.
+ * Responde "quanto fatura este bairro?" sem abrir bairro por bairro: total e média por mês, os 12 meses em barras e,
+ * em "Mês a mês", receita, volume e tarifa de cada mês na própria linha. O nome ainda abre os 24 meses.
  *
  * @param props - Consultas com todas as linhas de cada nível e o callback do histórico.
  * @returns Card com nível, busca, tabela ordenável e paginação.
  */
-export function AreaRevenueCard({ neighborhoodsQuery, municipalitiesQuery, onOpenNeighborhood }: AreaRevenueCardProps) {
+export function AreaRevenueCard({ query, neighborhoodsQuery, municipalitiesQuery, onOpenNeighborhood }: AreaRevenueCardProps) {
   const [level, setLevel] = useState<AreaLevel>('bairro')
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState<AreaSortField>('revenue')
@@ -41,6 +51,9 @@ export function AreaRevenueCard({ neighborhoodsQuery, municipalitiesQuery, onOpe
   const totalPages = Math.max(1, Math.ceil(areas.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
   const labels = LEVEL_LABELS[level]
+  const pageAreas = areas.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const histories = useNeighborhoodHistories(query, pageAreas.flatMap((area) => (area.neighborhood ? [area.neighborhood] : [])))
+  const monthsInWindow = monthsBetween(query.atual)
   const changeSearch = (text: string) => {
     setSearch(text)
     setPage(1)
@@ -59,7 +72,7 @@ export function AreaRevenueCard({ neighborhoodsQuery, municipalitiesQuery, onOpe
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <CardTitle>Receita por {labels.column.toLowerCase()}</CardTitle>
-          <CardDescription>Receita, volume e tarifa média de cada {labels.column.toLowerCase()} no período de comparação.</CardDescription>
+          <CardDescription>Receita, volume e tarifa média de cada {labels.column.toLowerCase()} no período analisado, com o mês a mês.</CardDescription>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="w-64">
@@ -90,7 +103,9 @@ export function AreaRevenueCard({ neighborhoodsQuery, municipalitiesQuery, onOpe
           emptyTitle={search ? `Nenhum ${labels.column.toLowerCase()} com esse nome` : 'Nada neste recorte'}
         >
           <AreaRevenueTable
-            areas={areas.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)}
+            areas={pageAreas}
+            histories={histories}
+            monthsInWindow={monthsInWindow}
             levelLabel={labels.column}
             sortField={sortField}
             onSort={changeSort}

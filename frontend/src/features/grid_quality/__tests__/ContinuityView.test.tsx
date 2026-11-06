@@ -123,7 +123,9 @@ describe('ContinuityView', () => {
   it('mostra o mapa e o DEC por município', async () => {
     renderView()
     expect(await screen.findByText('Onde estão as piores interrupções')).toBeInTheDocument()
-    expect(within(screen.getByRole('img', { name: 'Mapa do DEC por município' })).getByText('Olinda')).toBeInTheDocument()
+    const map = screen.getByRole('group', { name: 'Mapa do DEC por município' })
+    expect(within(map).getByRole('button', { name: /^Olinda: .* h sem energia por cliente$/ })).toBeInTheDocument()
+    expect(within(screen.getByRole('list', { name: 'DEC por município' })).getByText('Olinda')).toBeInTheDocument()
   })
 
   it('mostra os alimentadores por UC-horas e marca amostra pequena', async () => {

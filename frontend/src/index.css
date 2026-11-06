@@ -32,6 +32,10 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-map-1: var(--map-1);
+  --color-map-2: var(--map-2);
+  --color-map-3: var(--map-3);
+  --color-map-4: var(--map-4);
 
   --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -92,6 +96,10 @@
   --chart-3: #6B5CA5;
   --chart-4: #868C94;
   --chart-5: #2A8577;
+  --map-1: #5A88C4;
+  --map-2: #2F62A3;
+  --map-3: #1B4782;
+  --map-4: #0C2442;
   --radius: 6px;
   --shadow-xl: 0 4px 12px rgba(16, 17, 19, 0.08);
   --shadow-2xl: 0 8px 24px rgba(16, 17, 19, 0.1);
@@ -129,6 +137,10 @@
   --chart-3: #B3A6E8;
   --chart-4: #70767F;
   --chart-5: #5FC4B4;
+  --map-1: #B4CEF3;
+  --map-2: #7FA8E2;
+  --map-3: #5185D6;
+  --map-4: #2F63C9;
   --shadow-xl: 0 8px 20px rgba(0, 0, 0, 0.35);
   --shadow-2xl: 0 16px 40px rgba(0, 0, 0, 0.45);
 }

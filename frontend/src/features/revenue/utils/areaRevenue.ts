@@ -49,7 +49,7 @@ export function toAreaRevenue(row: BreakdownRow): AreaRevenue {
 }
 
 const normalize = (text: string) =>
-  text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 
 /**
  * Busca pelo nome (sem acento e sem diferenciar maiúsculas) e ordena do maior para o menor.

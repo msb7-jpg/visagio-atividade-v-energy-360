@@ -38,6 +38,7 @@ export function RevenueResults({ dashboard }: { dashboard: Dashboard }) {
       {kpisQuery.isError ? null : (
         <div className="flex flex-col gap-6">
           <AreaRevenueCard
+            query={query}
             neighborhoodsQuery={dashboard.neighborhoodRevenueQuery}
             municipalitiesQuery={dashboard.territoryQuery}
             onOpenNeighborhood={ranking.openNeighborhood}
