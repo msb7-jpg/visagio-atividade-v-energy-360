@@ -295,8 +295,10 @@ describe('Customer360Page', () => {
     renderPage()
     searchFor('UC100004')
 
-    expect(await screen.findByText(/2 faturas em aberto, total de R\$\s380,00/)).toBeInTheDocument()
-    expect(screen.getByText('Últimas 11 contas: 8 pagas em dia, 2 com atraso (atraso médio de 6 dias) e 1 vencida em aberto.')).toBeInTheDocument()
+    expect(await screen.findByText('2 faturas sem pagamento')).toBeInTheDocument()
+    expect(screen.getByText('R$ 380,00', { normalizer: (text) => text.replace(/\s/g, ' ') })).toBeInTheDocument()
+    expect(screen.getByText('8 de 11')).toBeInTheDocument()
+    expect(screen.getByText('2 com atraso · atraso médio de 6 dias · 1 vencida em aberto')).toBeInTheDocument()
     const table = screen.getByRole('table', { name: 'Faturas da unidade consumidora' })
     expect(within(table).getByText('Vencida')).toBeInTheDocument()
     expect(within(table).getByText('Em aberto')).toBeInTheDocument()

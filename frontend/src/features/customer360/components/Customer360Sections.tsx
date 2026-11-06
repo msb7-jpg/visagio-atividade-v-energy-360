@@ -1,8 +1,7 @@
-import { FileSearch, Receipt, User, Zap } from 'lucide-react'
+import { FileSearch, LineChart, Receipt, ShieldCheck, Zap } from 'lucide-react'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { ConsumptionYoYChart } from '@/features/customer360/components/ConsumptionYoYChart'
 import { Customer360Section } from '@/features/customer360/components/Customer360Section'
-import { CustomerOverviewCard } from '@/features/customer360/components/CustomerOverviewCard'
 import { EventsTab } from '@/features/customer360/components/EventsTab'
 import { HighBillDiagnosisBanner } from '@/features/customer360/components/HighBillDiagnosisBanner'
 import { InvoicesTab } from '@/features/customer360/components/InvoicesTab'
@@ -10,7 +9,6 @@ import { LossInspectionsList } from '@/features/customer360/components/LossInspe
 import type {
   CustomerEventTimeline,
   CustomerHistory,
-  CustomerSummary,
   SolarGeneration
 } from '@/features/customer360/types/customer360Types'
 
@@ -28,26 +26,22 @@ function isLoading<Data>(query: SectionQuery<Data>): boolean {
 }
 
 interface ConsumptionSectionProps {
-  summary: CustomerSummary
   history: SectionQuery<CustomerHistory>
-  events: SectionQuery<CustomerEventTimeline>
 }
 
 /**
- * Bloco "Cliente e consumo": quem é o cliente, consumo de 12 meses contra o ano anterior e inspeções de perdas.
+ * Bloco "Cliente e consumo": consumo de 12 meses contra o ano anterior.
  *
- * @param props - Cadastro da UC e as consultas de histórico e eventos.
- * @returns Seção com o cadastro, o gráfico de consumo e as inspeções.
+ * @param props - Consulta de histórico da UC.
+ * @returns Seção com os totais e o gráfico de consumo.
  */
-export function ConsumptionSection({ summary, history, events }: ConsumptionSectionProps) {
+export function ConsumptionSection({ history }: ConsumptionSectionProps) {
   return (
     <Customer360Section
       id="bloco-cliente-consumo"
       title="Cliente e consumo"
-      description="Cadastro, consumo de 12 meses contra o ano anterior e inspeções de perdas."
-      icon={<User className="size-4" />}
+      icon={<LineChart className="size-4" />}
     >
-      <CustomerOverviewCard summary={summary} />
       <AsyncState
         isLoading={isLoading(history)}
         isError={history.isError}
@@ -61,7 +55,19 @@ export function ConsumptionSection({ summary, history, events }: ConsumptionSect
       >
         {history.data ? <ConsumptionYoYChart months={history.data.meses} totals={history.data.resumo_12_meses} /> : null}
       </AsyncState>
-      <h3 className="text-foreground text-base font-semibold">Inspeções de perdas</h3>
+    </Customer360Section>
+  )
+}
+
+/**
+ * Bloco "Inspeções de perdas": inspeções de campo feitas na UC e o resultado de cada uma.
+ *
+ * @param props - Consulta de eventos da UC.
+ * @returns Seção com a lista de inspeções.
+ */
+export function InspectionsSection({ events }: { events: SectionQuery<CustomerEventTimeline> }) {
+  return (
+    <Customer360Section id="bloco-inspecoes" title="Inspeções de perdas" icon={<ShieldCheck className="size-4" />}>
       <AsyncState
         isLoading={isLoading(events)}
         isError={events.isError}
@@ -87,7 +93,6 @@ export function FinancialSection({ history, solar }: { history: SectionQuery<Cus
     <Customer360Section
       id="bloco-financeiro"
       title="Histórico financeiro"
-      description="Por que a conta veio alta, faturas em aberto e pontualidade."
       icon={<Receipt className="size-4" />}
     >
       {diagnosis ? <HighBillDiagnosisBanner diagnosis={diagnosis} solar={solar} /> : null}
@@ -115,7 +120,6 @@ export function TechnicalSection({ events }: { events: SectionQuery<CustomerEven
     <Customer360Section
       id="bloco-tecnico"
       title="Problemas técnicos"
-      description="Falta de luz na unidade e na região, e chamados do cliente."
       icon={<Zap className="size-4" />}
     >
       <AsyncState

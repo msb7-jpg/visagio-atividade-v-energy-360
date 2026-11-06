@@ -345,3 +345,29 @@
 - **Validação de Testes:**
   - Frontend: ESLint, Fallow, `tsc`, build e Vitest (762 testes) aprovados. Backend sem alteração.
   - Telas conferidas com o backend real: login, Painel, Receita, Fila de Inspeção, Qualidade da Rede (Visão atual e Continuidade), Visão 360 (UC100094, claro e escuro) e chat.
+
+### [2026-11-05] - Reestruturação do layout do frontend (sem mudança de lógica)
+- **Autor:** Bernardo H
+- **Branch:** `style/redesign-estrutura-frontend`
+- **O que foi feito:**
+  - Novo bloco compartilhado `components/data/StatTile.tsx` (rótulo, valor, variação e nota curta; a fórmula vai para o ícone de ajuda) usado no Painel, na Receita, na Qualidade e na Visão 360.
+  - Painel do Diretor: a tabela de indicadores virou grade de blocos agrupados por área; o retrato da Fila de Perdas usa os mesmos blocos; o seletor de períodos ficou numa linha só, sem card.
+  - Inteligência Comercial: filtros numa linha, sem card; decomposição e ranking empilhados (sem abas); valores compactos na tabela, com o valor completo no `title`.
+  - Qualidade da Rede: resumo numa faixa (DEC, FEC e barra empilhada da situação dos circuitos); barra de DEC contra o limite em cada linha; "Limite aproximado" virou `≈` com tooltip; filtro ao lado do título da tabela.
+  - Fila de Inspeção: sem card em volta da fila; tarifa na linha dos filtros; aviso em uma linha; contagem "Mostrando" no rodapé, junto da paginação; bairro e queda sem quebra de linha.
+  - Visão 360: cadastro no topo; consumo, inspeções e faturas na coluna principal; "Precisa de atenção" e insight de IA na lateral fixa; totais de 12 meses como blocos; títulos de bloco sem descrição.
+  - `AppLayout`: folga no fim da página para o botão do Assistente não cobrir a paginação.
+- **Validação de Testes:**
+  - `bun run lint`, `bun run lint:fallow`, `bun run test` (762 testes) e `bun run build` aprovados.
+
+### [2026-11-05] - Resumo da IA em destaque e refinamento dos componentes base
+- **Autor:** Bernardo H
+- **Branch:** `style/redesign-estrutura-frontend`
+- **O que foi feito:**
+  - Backend (`/ai/insights`, compatível com o contrato anterior): a resposta ganhou `manchete`, `tom`, `destaques` e `acao_recomendada`. Nos destaques, a IA só escolhe a métrica e o rótulo; o valor e a unidade são copiados das métricas calculadas pelo servidor (`insight_highlights.py`). Manchete e ação passam pela mesma verificação de fidelidade numérica. Prompt com limites de tamanho por campo; o modo simulado devolve o formato novo com métricas reais da tela.
+  - Frontend: `SmartInsightCard` reescrito como bloco em destaque no topo do Painel, da Receita e da Visão 360 (manchete grande, tom, próximo passo e até três números ao lado); os pontos de apoio continuam em "Ver detalhes".
+  - Componentes base: cabeçalho de tabela sem fundo, em caixa alta, linhas mais altas e números tabulares; abas principais na largura do conteúdo; `PageHeader` sem linha divisória.
+  - Visão 360: faixas de texto de faturas em aberto e pontualidade viraram dois blocos de indicador.
+  - Receita: cabeçalhos ordenáveis compactos e nome de bairro truncado; a tabela cabe sem rolagem horizontal.
+- **Validação de Testes:**
+  - Frontend: `lint`, `lint:fallow`, `test` e `build` aprovados. Backend: `ruff`, `pylint` (10/10), `lint-imports` e `pytest` (800 testes) aprovados.

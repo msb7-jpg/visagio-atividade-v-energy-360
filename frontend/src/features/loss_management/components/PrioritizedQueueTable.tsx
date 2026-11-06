@@ -74,10 +74,6 @@ export function PrioritizedQueueTable({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-muted-foreground text-xs">
-        Mostrando {firstRank + 1}–{firstRank + pageUnits.length} de {formatInteger(units.length)} UCs carregadas
-        {total === undefined ? '' : ` (${formatInteger(total)} na fila)`}. Clique na linha para ver o motivo da suspeita.
-      </p>
       <Table aria-label={label}>
         <TableHeader>
           <TableRow>
@@ -117,14 +113,20 @@ export function PrioritizedQueueTable({
           ))}
         </TableBody>
       </Table>
-      {pageCount > 1 ? (
-        <Pagination
-          page={page + 1}
-          totalPages={pageCount}
-          onPageChange={(nextPage) => setRequestedPage(nextPage - 1)}
-          label="Paginação da fila"
-        />
-      ) : null}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-muted-foreground text-xs">
+          Mostrando {firstRank + 1}–{firstRank + pageUnits.length} de {formatInteger(units.length)} UCs carregadas
+          {total === undefined ? '' : ` (${formatInteger(total)} na fila)`}. Clique na linha para ver o detalhe.
+        </p>
+        {pageCount > 1 ? (
+          <Pagination
+            page={page + 1}
+            totalPages={pageCount}
+            onPageChange={(nextPage) => setRequestedPage(nextPage - 1)}
+            label="Paginação da fila"
+          />
+        ) : null}
+      </div>
     </div>
   )
 }

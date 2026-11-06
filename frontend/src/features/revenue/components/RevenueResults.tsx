@@ -1,5 +1,3 @@
-import { BarChart3, MapPinned } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RevenueKpiCards } from '@/features/revenue/components/RevenueKpiCards'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { getRevenueErrorMessage } from '@/features/revenue/utils/revenueErrorMessage'
@@ -12,7 +10,7 @@ import type { useRevenueDashboardController } from '@/features/revenue/hooks/use
 type Dashboard = ReturnType<typeof useRevenueDashboardController>
 
 /**
- * Resultados do dashboard: indicadores, insight de IA e as abas de decomposição e ranking territorial.
+ * Resultados do dashboard: indicadores, insight de IA, a ponte preço-volume e o ranking territorial, um abaixo do outro.
  * Se os indicadores falham (ex.: recorte sem faturamento), mostra só esse erro, já que todas as consultas
  * dependem das mesmas janelas e filtros.
  *
@@ -23,6 +21,7 @@ export function RevenueResults({ dashboard }: { dashboard: Dashboard }) {
   const { query, kpisQuery, decompositionQuery, breakdownQuery, ranking } = dashboard
   return (
     <>
+      {kpisQuery.data ? <SmartInsightCard context="revenue" filters={revenueInsightFilters(query)} /> : null}
       <AsyncState
         isLoading={kpisQuery.isLoading}
         isError={kpisQuery.isError}
@@ -34,35 +33,17 @@ export function RevenueResults({ dashboard }: { dashboard: Dashboard }) {
         {kpisQuery.data ? <RevenueKpiCards kpis={kpisQuery.data} /> : null}
       </AsyncState>
 
-      {kpisQuery.data ? <SmartInsightCard context="revenue" filters={revenueInsightFilters(query)} /> : null}
-
       {kpisQuery.isError ? null : (
-        <Tabs defaultValue="decomposition">
-          <TabsList>
-            <TabsTrigger value="decomposition">
-              <span className="flex items-center gap-1.5">
-                <BarChart3 className="size-4" /> Decomposição
-              </span>
-            </TabsTrigger>
-            <TabsTrigger value="ranking">
-              <span className="flex items-center gap-1.5">
-                <MapPinned className="size-4" /> Ranking territorial
-              </span>
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="decomposition" className="mt-4">
-            <RevenueWaterfallCard
-              decomposition={decompositionQuery.data}
-              isLoading={decompositionQuery.isLoading}
-              isError={decompositionQuery.isError}
-              error={decompositionQuery.error}
-              onRetry={() => void decompositionQuery.refetch()}
-            />
-          </TabsContent>
-          <TabsContent value="ranking" className="mt-4">
-            <RevenueRankingCard breakdownQuery={breakdownQuery} ranking={ranking} />
-          </TabsContent>
-        </Tabs>
+        <div className="flex flex-col gap-6">
+          <RevenueWaterfallCard
+            decomposition={decompositionQuery.data}
+            isLoading={decompositionQuery.isLoading}
+            isError={decompositionQuery.isError}
+            error={decompositionQuery.error}
+            onRetry={() => void decompositionQuery.refetch()}
+          />
+          <RevenueRankingCard breakdownQuery={breakdownQuery} ranking={ranking} />
+        </div>
       )}
     </>
   )

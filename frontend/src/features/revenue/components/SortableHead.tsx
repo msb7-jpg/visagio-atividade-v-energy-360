@@ -29,8 +29,8 @@ export function SortableHead({ field, label, controls, onSort }: SortableHeadPro
   const { ariaSort, icon } = sortIndicator(controls.ordenar_por === field, controls.ordem)
   return (
     <TableHead className="text-right" aria-sort={ariaSort}>
-      <Button variant="ghost" size="sm" onClick={() => onSort(field)}>
-        <span className="flex items-center gap-1">
+      <Button variant="inline" size="inline" onClick={() => onSort(field)}>
+        <span className="text-muted-foreground flex items-center gap-1 text-xs font-medium tracking-wide uppercase">
           {label} {icon}
         </span>
       </Button>

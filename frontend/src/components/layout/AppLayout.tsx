@@ -54,7 +54,7 @@ export function AppLayout() {
             <UserMenu />
           </div>
         </header>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 pb-16">
           <Suspense fallback={<PageLoading />}>
             <Outlet />
           </Suspense>

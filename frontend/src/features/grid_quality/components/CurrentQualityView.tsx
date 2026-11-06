@@ -11,8 +11,8 @@ import { useGridQualityController } from '@/features/grid_quality/hooks/useGridQ
 import type { QualityStatus } from '@/features/grid_quality/types/qualityTypes'
 
 const STATUS_FILTERS: { value: QualityStatus | ''; label: string }[] = [
-  { value: '', label: 'Todos' },
-  { value: 'violacao', label: 'Somente acima do limite de referência' },
+  { value: '', label: 'Todas as situações' },
+  { value: 'violacao', label: 'Acima do limite de referência' },
   { value: 'alerta', label: 'Em alerta' },
   { value: 'conforme', label: 'Conformes' }
 ]
@@ -33,17 +33,20 @@ export function CurrentQualityView() {
         <ErrorState title="Não foi possível carregar os indicadores" onRetry={() => void indicators.refetch()} />
       ) : null}
 
-      <div className="flex max-w-sm flex-col gap-1.5">
-        <Label htmlFor="filtro-status">Situação em relação ao limite de referência</Label>
-        <Select
-          id="filtro-status"
-          value={status ?? ''}
-          onChange={(event) => setStatus(event.target.value === '' ? undefined : (event.target.value as QualityStatus))}
-        >
-          {STATUS_FILTERS.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </Select>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-foreground text-sm font-semibold">Circuitos por excesso de DEC</h2>
+        <div className="flex w-72 items-center gap-2">
+          <Label htmlFor="filtro-status" className="sr-only">Situação em relação ao limite de referência</Label>
+          <Select
+            id="filtro-status"
+            value={status ?? ''}
+            onChange={(event) => setStatus(event.target.value === '' ? undefined : (event.target.value as QualityStatus))}
+          >
+            {STATUS_FILTERS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       <AsyncState

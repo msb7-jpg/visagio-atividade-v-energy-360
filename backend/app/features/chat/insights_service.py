@@ -12,6 +12,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from app.agent.utils.faithfulness_checker import check_numerical_faithfulness
 from app.core.llm_factory import get_chat_model
 from app.core.llm_factory.availability import resolve_configured_provider
+from app.features.chat.insight_highlights import faithful_or_none, parse_highlights, parse_tone
 from app.features.chat.schemas import ProactiveInsightsRequest, ProactiveInsightsResponse
 from app.shared.exceptions import ServiceUnavailableError
 
@@ -19,15 +20,20 @@ logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
     "Você é um especialista sênior em regulação e economia do Setor Elétrico Brasileiro (V-Energy).\n"
-    "Sua missão é analisar proativamente métricas operacionais e comerciais de um painel "
-    "e gerar diagnósticos executivos relevantes de alto impacto acionável.\n\n"
+    "Sua missão é ler as métricas de uma tela e dizer, de forma direta, o que o usuário precisa saber.\n\n"
     "DIRETRIZES MANDATÓRIAS:\n"
-    '1. Responda estritamente em JSON puro com as chaves "resumo_executivo" e "insights".\n'
-    '2. "resumo_executivo": Uma frase direta sintetizando o achado principal.\n'
-    '3. "insights": Lista de 2 a 3 pontos acionáveis abordando elasticidade, GD solar, perdas ou DEC/FEC.\n'
-    "4. FIDELIDADE ABSOLUTA AOS DADOS (ZERO ALUCINAÇÃO): É terminantemente proibido inventar números. "
+    '1. Responda estritamente em JSON puro com as chaves "manchete", "tom", "destaques", '
+    '"resumo_executivo", "insights" e "acao_recomendada".\n'
+    '2. "manchete": a resposta principal em no máximo 12 palavras, sem jargão.\n'
+    '3. "tom": "positivo", "neutro", "atencao" ou "critico", conforme a situação.\n'
+    '4. "destaques": de 1 a 3 objetos {"metrica": <nome exato de uma chave de metricas_observadas>, '
+    '"rotulo": <até 4 palavras>}. Não escreva valores: o sistema lê o número da métrica.\n'
+    '5. "resumo_executivo": uma frase de até 25 palavras que explica a manchete.\n'
+    '6. "insights": 2 pontos de até 18 palavras cada, abordando elasticidade, GD solar, perdas ou DEC/FEC.\n'
+    '7. "acao_recomendada": o próximo passo em até 15 palavras, começando por um verbo.\n'
+    "8. FIDELIDADE ABSOLUTA AOS DADOS (ZERO ALUCINAÇÃO): É terminantemente proibido inventar números. "
     "Todo valor percentual ou monetário citado deve existir exatamente em 'metricas_observadas'.\n"
-    "5. Sem preâmbulos, sem blocos adicionais."
+    "9. Sem preâmbulos, sem blocos adicionais."
 )
 
 
@@ -142,6 +148,10 @@ async def generate_proactive_insights_service(
         return ProactiveInsightsResponse(
             insights=validated_bullets,
             resumo_executivo=validated_summary,
+            manchete=faithful_or_none(parsed_data.get("manchete"), request.metricas),
+            tom=parse_tone(parsed_data.get("tom")),
+            destaques=parse_highlights(parsed_data.get("destaques"), request.metricas),
+            acao_recomendada=faithful_or_none(parsed_data.get("acao_recomendada"), request.metricas),
         )
     except json.JSONDecodeError as decode_err:
         logger.error("JSON malformado retornado pelo LLM para insights: %s", decode_err)

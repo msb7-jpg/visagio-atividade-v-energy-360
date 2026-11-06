@@ -10,7 +10,9 @@ import type {
   NeighborhoodRef
 } from '@/features/revenue/types/revenueTypes'
 import {
+  formatCompactCurrency,
   formatMwh,
+  formatSignedCompactCurrency,
   formatSignedCurrency,
   formatCurrency,
   formatVariation
@@ -34,16 +36,20 @@ function rowKey(row: BreakdownRow): string {
   return [row.municipio, row.bairro, row.classe_consumo].join('|')
 }
 
-function NumberCell({ children, tone = 'text-foreground' }: { children: ReactNode; tone?: string }) {
+function NumberCell({ children, tone = 'text-foreground', title }: { children: ReactNode; tone?: string; title?: string }) {
   return (
     <TableCell>
-      <div className={cn('text-right tabular-nums', tone)}>{children}</div>
+      <div title={title} className={cn('text-right whitespace-nowrap tabular-nums', tone)}>{children}</div>
     </TableCell>
   )
 }
 
 function SignedCell({ value }: { value: number }) {
-  return <NumberCell tone={value < 0 ? 'text-destructive' : 'text-foreground'}>{formatSignedCurrency(value)}</NumberCell>
+  return (
+    <NumberCell tone={value < 0 ? 'text-destructive' : 'text-success'} title={formatSignedCurrency(value)}>
+      {formatSignedCompactCurrency(value)}
+    </NumberCell>
+  )
 }
 
 function NameCell({ row, level, onSelect }: { row: BreakdownRow; level: BreakdownLevel; onSelect: BreakdownTableProps['onSelect'] }) {
@@ -51,11 +57,11 @@ function NameCell({ row, level, onSelect }: { row: BreakdownRow; level: Breakdow
     const neighborhood = { municipio: row.municipio, bairro: row.bairro }
     return (
       <TableCell>
-        <div className="flex flex-col items-start">
-          <Button variant="ghost" size="sm" onClick={() => onSelect(neighborhood)}>
-            {row.bairro}
+        <div className="flex max-w-56 flex-col items-start">
+          <Button variant="inline" size="inline" title={row.bairro} onClick={() => onSelect(neighborhood)}>
+            <span className="block max-w-52 truncate">{row.bairro}</span>
           </Button>
-          <span className="text-muted-foreground px-3 text-xs">{row.municipio}</span>
+          <span className="text-muted-foreground w-full truncate text-xs" title={row.municipio}>{row.municipio}</span>
         </div>
       </TableCell>
     )
@@ -96,9 +102,11 @@ export function BreakdownTable({ rows, controls, onSort, onSelect }: BreakdownTa
             <NameCell row={row} level={controls.nivel} onSelect={onSelect} />
             <NumberCell>
               {formatMwh(row.volume_atual_kwh)}
-              <span className="text-muted-foreground block text-xs">{formatVariation(row.variacao_volume_pct)}</span>
+              <span className={cn('ml-1.5 text-xs', (row.variacao_volume_pct ?? 0) < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                {formatVariation(row.variacao_volume_pct)}
+              </span>
             </NumberCell>
-            <NumberCell>{formatCurrency(row.receita_atual_rs)}</NumberCell>
+            <NumberCell title={formatCurrency(row.receita_atual_rs)}>{formatCompactCurrency(row.receita_atual_rs)}</NumberCell>
             <SignedCell value={row.efeito_preco_rs} />
             <SignedCell value={row.efeito_volume_rs} />
             <SignedCell value={row.efeito_cruzado_rs} />

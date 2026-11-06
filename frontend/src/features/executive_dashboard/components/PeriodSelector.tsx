@@ -1,6 +1,5 @@
 import { RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import type { DashboardPeriods, PeriodWindow } from '@/features/executive_dashboard/types/executiveDashboardTypes'
@@ -25,7 +24,7 @@ interface PeriodSelectorProps {
  * Seletor dos dois períodos comparados, com o retorno aos períodos padrão.
  *
  * @param props - Janelas em uso, competências disponíveis, problema de validação e ações.
- * @returns Card com o início e o fim de cada período.
+ * @returns Barra com o início e o fim de cada período, em uma linha.
  */
 export function PeriodSelector({ periods, months, isDefault, problem, onChange, onReset }: PeriodSelectorProps) {
   const changeLimit = (period: PeriodKey, limit: LimitKey, competencia: string) => {
@@ -33,18 +32,18 @@ export function PeriodSelector({ periods, months, isDefault, problem, onChange, 
   }
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-4 pt-4 sm:pt-5">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((period) => (
-            <fieldset key={period} className="flex flex-col gap-2">
-              <legend className="text-foreground mb-2 text-sm font-medium">{PERIOD_LABELS[period]}</legend>
-              <div className="grid grid-cols-2 gap-3">
-                {(Object.keys(LIMIT_LABELS) as LimitKey[]).map((limit) => {
-                  const fieldId = `periodo-${period}-${limit}`
-                  return (
-                    <div key={limit} className="flex flex-col gap-1.5">
-                      <Label htmlFor={fieldId}>{LIMIT_LABELS[limit]}</Label>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+        {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((period) => (
+          <fieldset key={period} className="flex flex-col gap-1.5">
+            <legend className="text-muted-foreground mb-1.5 text-xs font-medium">{PERIOD_LABELS[period]}</legend>
+            <div className="flex items-center gap-2">
+              {(Object.keys(LIMIT_LABELS) as LimitKey[]).map((limit) => {
+                const fieldId = `periodo-${period}-${limit}`
+                return (
+                  <div key={limit} className="flex items-center gap-1.5">
+                    <Label htmlFor={fieldId}>{LIMIT_LABELS[limit]}</Label>
+                    <div className="w-32">
                       <Select
                         id={fieldId}
                         value={periods[period][limit]}
@@ -56,20 +55,18 @@ export function PeriodSelector({ periods, months, isDefault, problem, onChange, 
                         ))}
                       </Select>
                     </div>
-                  )
-                })}
-              </div>
-            </fieldset>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {problem ? <p role="alert" className="text-destructive text-sm">{problem}</p> : <span />}
-          <Button variant="outline" size="sm" disabled={isDefault} onClick={onReset}>
-            <RotateCcw aria-hidden="true" />
-            Restaurar períodos padrão
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+                  </div>
+                )
+              })}
+            </div>
+          </fieldset>
+        ))}
+        <Button variant="ghost" size="sm" disabled={isDefault} onClick={onReset}>
+          <RotateCcw aria-hidden="true" />
+          Restaurar períodos padrão
+        </Button>
+      </div>
+      {problem ? <p role="alert" className="text-destructive text-sm">{problem}</p> : null}
+    </div>
   )
 }

@@ -1,6 +1,10 @@
 """Schemas DTO para integração web do Agente Analítico."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+InsightTone = Literal["positivo", "neutro", "atencao", "critico"]
 
 
 class ChatQueryRequest(BaseModel):
@@ -35,9 +39,22 @@ class ProactiveInsightsRequest(BaseModel):
     )
 
 
+class InsightHighlight(BaseModel):
+    """Número de destaque do insight: a IA escolhe a métrica e o rótulo; o valor vem das métricas do servidor."""
+
+    rotulo: str = Field(..., description="Rótulo curto do número (até 40 caracteres)")
+    metrica: str = Field(..., description="Nome da métrica do servidor de onde o valor foi copiado")
+    valor: float | int | str = Field(..., description="Valor da métrica, copiado sem alteração")
+    unidade: str | None = Field(default=None, description="rs, rs_kwh, kwh, pct, pp, horas, vezes, ucs, nota ou nulo")
+
+
 class ProactiveInsightsResponse(BaseModel):
     """Resposta com lista de insights analíticos e resumo executivo."""
 
     insights: list[str] = Field(..., description="Lista de achados proativos detectados")
     resumo_executivo: str = Field(..., description="Síntese executiva contextualizada")
+    manchete: str | None = Field(default=None, description="Resposta direta em uma frase curta")
+    tom: InsightTone = Field(default="neutro", description="Leitura geral: positivo, neutro, atenção ou crítico")
+    destaques: list[InsightHighlight] = Field(default_factory=list, description="Até três números de destaque")
+    acao_recomendada: str | None = Field(default=None, description="Próximo passo sugerido, em uma frase")
 

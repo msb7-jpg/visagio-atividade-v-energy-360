@@ -21,10 +21,10 @@ interface PeriodFieldsetProps {
  */
 export function PeriodFieldset({ idPrefix, legend, window, onChange }: PeriodFieldsetProps) {
   return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="text-foreground mb-2 text-sm font-semibold">{legend}</legend>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1.5">
+    <fieldset className="flex flex-col">
+      <legend className="text-muted-foreground mb-1.5 text-xs font-medium">{legend}</legend>
+      <div className="flex items-center gap-2">
+        <div className="flex w-44 items-center gap-1.5">
           <Label htmlFor={`${idPrefix}-inicio`}>De</Label>
           <Input
             id={`${idPrefix}-inicio`}
@@ -34,7 +34,7 @@ export function PeriodFieldset({ idPrefix, legend, window, onChange }: PeriodFie
             onChange={(event) => onChange('inicio', dateToMonth(event.target.value))}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex w-44 items-center gap-1.5">
           <Label htmlFor={`${idPrefix}-fim`}>Até</Label>
           <Input
             id={`${idPrefix}-fim`}

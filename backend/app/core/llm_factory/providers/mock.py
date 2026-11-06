@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Any
 
@@ -7,6 +8,31 @@ from langchain_core.messages import BaseMessage
 from app.core.llm_factory.base import LLMProviderStrategy
 
 logger = logging.getLogger(__name__)
+
+DEMO_HIGHLIGHTS = 3
+
+
+def _demo_insight(user_text: str) -> str:
+    """Insight de demonstração: textos fixos e, como destaques, as primeiras métricas numéricas da tela."""
+    metrics: dict[str, Any] = {}
+    if "{" in user_text:
+        try:
+            metrics = json.loads(user_text[user_text.index("{"):]).get("metricas_observadas") or {}
+        except (json.JSONDecodeError, AttributeError):
+            metrics = {}
+    numeric_keys = [key for key, value in metrics.items() if isinstance(value, int | float)][:DEMO_HIGHLIGHTS]
+    payload = {
+        "manchete": "Modo demonstração: leitura simulada, sem IA real",
+        "tom": "neutro",
+        "destaques": [{"metrica": key, "rotulo": key.replace("_", " ").capitalize()[:40]} for key in numeric_keys],
+        "resumo_executivo": "Modo demonstração: insight simulado, sem IA real e sem análise dos dados.",
+        "insights": [
+            "Configure GEMINI_API_KEY ou AI_PROVIDER no backend/.env para gerar insights reais.",
+            "Este texto é fixo e não descreve os indicadores da tela.",
+        ],
+        "acao_recomendada": "Configure um provedor de IA para gerar a leitura real da tela.",
+    }
+    return "```json\n" + json.dumps(payload, ensure_ascii=False) + "\n```"
 
 
 class GroundedMockChatModel(SimpleChatModel):
@@ -71,17 +97,7 @@ class GroundedMockChatModel(SimpleChatModel):
             "diagnóstico em json",
         )
         if any(trigger in all_text for trigger in insight_triggers):
-            return (
-                "```json\n"
-                "{\n"
-                '  "resumo_executivo": "Modo demonstração: insight simulado, sem IA real e sem análise dos dados.",\n'
-                '  "insights": [\n'
-                '    "Configure GEMINI_API_KEY ou AI_PROVIDER no backend/.env para gerar insights reais.",\n'
-                '    "Este texto é fixo e não descreve os indicadores da tela."\n'
-                "  ]\n"
-                "}\n"
-                "```"
-            )
+            return _demo_insight(str(messages[-1].content) if messages else "")
 
         return (
             "**Modo demonstração:** esta resposta é simulada, sem IA real. A consulta e a tabela acima são fixas "
