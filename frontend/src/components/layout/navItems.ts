@@ -25,7 +25,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Fila de Inspeção', path: '/losses', roles: ['diretor', 'gerente_perdas'], group: 'Operação', icon: ShieldAlert },
   { label: 'Qualidade da Rede', path: '/quality', roles: ['diretor', 'gerente_operacao'], group: 'Operação', icon: Activity },
   {
-    label: 'Visão 360 da UC',
+    label: 'UC 360',
     path: '/customers',
     roles: ['diretor', 'gerente_atendimento', 'atendente', 'gerente_perdas', 'gerente_operacao'],
     group: 'Atendimento',

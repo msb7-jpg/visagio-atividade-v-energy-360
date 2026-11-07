@@ -39,7 +39,9 @@ export function ConsumptionSection({ history }: ConsumptionSectionProps) {
   return (
     <Customer360Section
       id="bloco-cliente-consumo"
-      title="Cliente e consumo"
+      step="1"
+      title="Consumo"
+      description="12 meses contra os mesmos meses do ano anterior."
       icon={<LineChart className="size-4" />}
     >
       <AsyncState
@@ -67,7 +69,7 @@ export function ConsumptionSection({ history }: ConsumptionSectionProps) {
  */
 export function InspectionsSection({ events }: { events: SectionQuery<CustomerEventTimeline> }) {
   return (
-    <Customer360Section id="bloco-inspecoes" title="Inspeções de perdas" icon={<ShieldCheck className="size-4" />}>
+    <Customer360Section id="bloco-inspecoes" step="4" title="Inspeções de perdas" icon={<ShieldCheck className="size-4" />}>
       <AsyncState
         isLoading={isLoading(events)}
         isError={events.isError}
@@ -92,10 +94,11 @@ export function FinancialSection({ history, solar }: { history: SectionQuery<Cus
   return (
     <Customer360Section
       id="bloco-financeiro"
-      title="Histórico financeiro"
+      step="2"
+      title="Contas"
+      description="Por que a conta veio assim e o que está em aberto."
       icon={<Receipt className="size-4" />}
     >
-      {diagnosis ? <HighBillDiagnosisBanner diagnosis={diagnosis} solar={solar} /> : null}
       <AsyncState
         isLoading={isLoading(history)}
         isError={history.isError}
@@ -103,7 +106,12 @@ export function FinancialSection({ history, solar }: { history: SectionQuery<Cus
         errorDescription={RETRY_HINT}
         onRetry={history.retry}
       >
-        {history.data ? <InvoicesTab history={history.data} /> : null}
+        {history.data ? (
+          <InvoicesTab
+            history={history.data}
+            diagnosis={diagnosis ? <HighBillDiagnosisBanner diagnosis={diagnosis} solar={solar} /> : null}
+          />
+        ) : null}
       </AsyncState>
     </Customer360Section>
   )
@@ -119,7 +127,8 @@ export function TechnicalSection({ events }: { events: SectionQuery<CustomerEven
   return (
     <Customer360Section
       id="bloco-tecnico"
-      title="Problemas técnicos"
+      step="3"
+      title="Falta de luz e chamados"
       icon={<Zap className="size-4" />}
     >
       <AsyncState

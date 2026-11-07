@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import {
   revenueBreakdownQueryOptions,
   revenueDecompositionQueryOptions,
@@ -75,4 +75,24 @@ export function useRevenueOptionsQuery(
  */
 export function useRevenueHistoryQuery(query: RevenueQuery, neighborhood: NeighborhoodRef | null) {
   return useQuery(revenueHistoryQueryOptions(query, neighborhood))
+}
+
+/**
+ * Séries mensais de vários bairros de uma vez (os da página visível da tabela de receita por bairro).
+ * Cada bairro tem a própria consulta em cache, a mesma da gaveta de histórico.
+ *
+ * @param query - Janelas e recortes escolhidos.
+ * @param neighborhoods - Bairros visíveis.
+ * @returns Mapa `município|bairro` para os pontos mensais já carregados.
+ */
+export function useNeighborhoodHistories(query: RevenueQuery, neighborhoods: NeighborhoodRef[]) {
+  return useQueries({
+    queries: neighborhoods.map((neighborhood) => revenueHistoryQueryOptions(query, neighborhood)),
+    combine: (results) =>
+      new Map(
+        results.flatMap((result, index) =>
+          result.data ? [[`${neighborhoods[index].municipio}|${neighborhoods[index].bairro}`, result.data.pontos] as const] : []
+        )
+      )
+  })
 }

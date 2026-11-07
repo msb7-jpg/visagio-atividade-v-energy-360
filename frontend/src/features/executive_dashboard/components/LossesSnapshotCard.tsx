@@ -1,7 +1,7 @@
 import { StatTile } from '@/components/data/StatTile'
 import { Badge } from '@/components/ui/badge'
 import type { LossesSnapshot } from '@/features/executive_dashboard/types/executiveDashboardTypes'
-import { formatMonth } from '@/features/executive_dashboard/utils/dashboardPeriods'
+import { formatMonth } from '@/lib/periods/periodPresets'
 import { formatIndicatorValue, formatMonthlyKwh } from '@/features/executive_dashboard/utils/indicatorFormatters'
 
 const countFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })

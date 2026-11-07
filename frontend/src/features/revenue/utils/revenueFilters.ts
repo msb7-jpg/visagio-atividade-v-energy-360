@@ -15,6 +15,9 @@ export const DEFAULT_REVENUE_QUERY: RevenueQuery = {
   filters: {}
 }
 
+/** Meses com faturamento na base (o seletor de período não oferece meses fora daqui). */
+export const REVENUE_AVAILABLE_MONTHS = { inicio: '2022-07', fim: '2026-06' }
+
 /** Ranking inicial: bairros, maior perda por efeito-volume primeiro. */
 export const DEFAULT_BREAKDOWN_CONTROLS: BreakdownControls = {
   nivel: 'bairro',

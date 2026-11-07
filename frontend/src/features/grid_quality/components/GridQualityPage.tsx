@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
  */
 export function GridQualityPage() {
   return (
-    <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-6">
       <PageHeader
         title="Qualidade da Rede"
         description="DEC e FEC por alimentador, do pior para o melhor, para priorizar a manutenção preventiva."

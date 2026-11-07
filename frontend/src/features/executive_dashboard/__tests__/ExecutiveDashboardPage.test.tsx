@@ -9,6 +9,7 @@ import type {
   Indicator,
   LossesSnapshot
 } from '@/features/executive_dashboard/types/executiveDashboardTypes'
+import { fullText } from '@/test/fullText'
 
 vi.mock('@/features/executive_dashboard/api/executiveDashboardApi', () => ({
   executiveDashboardApi: {
@@ -141,9 +142,9 @@ describe('ExecutiveDashboardPage', () => {
     renderPage()
     await screen.findByTestId('indicator-faturamento')
 
-    fireEvent.change(screen.getByLabelText('De', { selector: '#periodo-atual-competencia_inicio' }), {
-      target: { value: '2025-08' }
-    })
+    fireEvent.click(screen.getByRole('button', { name: 'Personalizar datas' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Início: período analisado: jul/2025' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'ago/2025' }))
 
     await screen.findByText(/Compara ago\/2025 a jun\/2026/)
     expect(mockedApi.getIndicators).toHaveBeenLastCalledWith(
@@ -166,9 +167,9 @@ describe('ExecutiveDashboardPage', () => {
 
     const snapshot = await screen.findByTestId('losses-snapshot')
     expect(within(snapshot).getByText('Retrato atual, sem comparação')).toBeTruthy()
-    expect(within(snapshot).getByText('12 UCs')).toBeTruthy()
+    expect(within(snapshot).getByText(fullText('12 UCs'))).toBeTruthy()
     expect(within(snapshot).getByText('de 40 UCs na fila')).toBeTruthy()
-    expect(within(snapshot).getByText(/R\$\s11 mil/)).toBeTruthy()
+    expect(within(snapshot).getByText(fullText(/^R\$\s11 mil$/))).toBeTruthy()
     expect(within(snapshot).getByText(/até R\$\s12 mil se todas confirmarem/)).toBeTruthy()
     expect(within(snapshot).getByText('20 inspeções avaliadas')).toBeTruthy()
     expect(within(snapshot).queryByText(/fixada para a demonstração/)).toBeNull()

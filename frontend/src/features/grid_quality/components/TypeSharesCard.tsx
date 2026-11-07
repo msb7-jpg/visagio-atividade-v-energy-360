@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ShareBar } from '@/features/grid_quality/components/ShareBar'
+import { ShareBar } from '@/components/data/ShareBar'
 import { formatPercent, labelOccurrence } from '@/features/grid_quality/utils/continuityFormatters'
 import type { TypeShare } from '@/features/grid_quality/types/continuityTypes'
 import type { PeriodLabels } from '@/features/grid_quality/utils/periodLabels'

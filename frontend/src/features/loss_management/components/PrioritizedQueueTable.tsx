@@ -90,8 +90,10 @@ export function PrioritizedQueueTable({
                 {COLUMN_HELP[column] ? (
                   <Tooltip content={COLUMN_HELP[column]}>
                     <Button type="button" variant="inline" size="inline">
-                      {column}
-                      {column === SORTED_COLUMN ? <span aria-hidden="true"> ↓</span> : null}
+                      <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                        {column}
+                        {column === SORTED_COLUMN ? <span aria-hidden="true"> ↓</span> : null}
+                      </span>
                     </Button>
                   </Tooltip>
                 ) : column}

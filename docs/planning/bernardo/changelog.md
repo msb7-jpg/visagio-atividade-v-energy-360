@@ -371,3 +371,40 @@
   - Receita: cabeçalhos ordenáveis compactos e nome de bairro truncado; a tabela cabe sem rolagem horizontal.
 - **Validação de Testes:**
   - Frontend: `lint`, `lint:fallow`, `test` e `build` aprovados. Backend: `ruff`, `pylint` (10/10), `lint-imports` e `pytest` (800 testes) aprovados.
+
+### [2026-11-06] - Mapas da RMR, ficha da Visão 360 e atalhos do Painel (só frontend)
+- **Autor:** Bernardo H
+- **Branch:** `style/refino-interface-telas`
+- **O que foi feito:**
+  - `lib/geo/rmrMunicipalityShapes.ts`: contornos dos 14 municípios da RMR, gerados da malha pública do IBGE e projetados para SVG (sem biblioteca de mapa). `components/data/RegionMap.tsx`: mapa acessível (cada município é um botão com nome e valor).
+  - Inteligência Comercial: card "Onde a receita mudou" com o mapa e barras divergentes por município, pintados pela variação, efeito-preço ou efeito-volume; clicar num município aplica o filtro de município que a tela já tinha. Usa o mesmo endpoint de ranking (`nivel=municipio`), sem mudança no backend.
+  - Fila de Inspeção: bloco "Onde estão as suspeitas" com o mapa e os municípios com mais UCs suspeitas (contagens do `/losses/queue-filters`); o clique aplica o filtro de município da fila.
+  - Inteligência Comercial: card "Receita por bairro" logo abaixo dos indicadores gerais, com receita atual, variação contra a base, volume e tarifa média (receita ÷ volume) de todos os bairros ou municípios do recorte numa tabela só, busca pelo nome (sem acento) e ordenação por coluna; o nome do bairro continua abrindo os 24 meses. Usa as linhas do ranking que a tela já consulta, sem mudança no backend.
+  - Filtro de período do Painel e da Inteligência Comercial (`components/data/PeriodPicker.tsx`, mesmo componente nas duas telas): em vez de quatro datas, duas escolhas — "Período" (últimos 12, 6 ou 3 meses, ou um ano completo) e "Comparar com" (primeiro ano da base do case, mesmo período do ano anterior ou período imediatamente anterior); a base é calculada (`lib/periods/periodPresets.ts`). Uma frase confirma os meses comparados. "Personalizar datas" abre um calendário de meses próprio (`MonthPicker`), no lugar do campo de data nativo: ano com setas, meses em grade, trecho escolhido destacado e meses sem dados desabilitados. A abertura continua na pergunta do case (jul/2022 a jun/2023 contra jul/2025 a jun/2026), e a API recebe as mesmas quatro competências.
+  - O seletor só oferece comparações cuja base cabe nos meses com dados e termina antes do período analisado (`validComparisons`), e esconde atalhos sem comparação possível ("Ano 2023" compararia com meses sem faturamento ou se sobreporia à base do case).
+  - Painel: cada área com tela própria ganhou o atalho "Ver na …" (Comercial, Rede, Perdas).
+  - `StatTile`: prefixo e sufixo do valor (R$, mi, %, kWh) menores e em cinza, com o número em destaque.
+  - Visão 360 reorganizada como ficha: faixa do topo com a identificação da UC (número, titular, localização, classe, circuito e medidor) e o "Precisa de atenção" ao lado; resumo da IA; navegação fixa com atalhos numerados para os blocos; blocos em painéis numerados ("1 Consumo", "2 Contas", "3 Falta de luz e chamados", "4 Inspeções de perdas"). Em "Contas", a resposta a "Conta alta?" fica ao lado dos totais em aberto e da pontualidade. Listas longas (meses da região e chamados) com altura limitada e rolagem própria.
+  - `ShareBar` movido para `components/data` (usado pela Qualidade e pela Fila); cabeçalhos com ajuda da Fila em caixa alta, como as demais tabelas.
+  - `design.md` 2.1.0: regra de caixa alta restrita a rótulo de seção e cabeçalho de tabela, tipografia do valor com unidade, largura das telas e menu lateral, tabela dos componentes de `src/components/data/` (`StatTile`, `ShareBar`, `RegionMap`, `PeriodPicker`, `MonthPicker`), receitas novas (indicador, página, rótulo com atalho, filtro de período, mapa com lista ligada, ficha em blocos, resumo da IA) e itens novos no checklist; as receitas antigas, que usavam `max-w-7xl`, `backdrop-blur` e `font-bold`, foram substituídas. A navegação fixa da UC 360 deixou de usar `backdrop-blur`.
+- **Validação de Testes:**
+  - `bun run lint`, `bun run lint:fallow`, `bun run test` e `bun run build` aprovados. Backend sem alteração.
+
+### [2026-11-06] - Receita, volume e tarifa mês a mês por bairro sem abrir bairro por bairro
+- **Autor:** Bernardo H
+- **Branch:** `style/refino-interface-telas`
+- **O que foi feito:**
+  - Tabela "Receita por bairro" (Inteligência Comercial): cada bairro mostra a receita média por mês, os últimos 12 meses de receita em barras (valor de cada mês ao passar o mouse) e o botão "Mês a mês", que abre na própria linha receita, volume e tarifa média de cada um dos 12 meses (dois blocos de seis meses). A gaveta de 24 meses continua no nome do bairro.
+  - As séries são buscadas só para os bairros da página visível (`useNeighborhoodHistories`, uma consulta em cache por bairro, a mesma da gaveta), sem mudança no backend.
+- **Validação de Testes:**
+  - `bun run lint`, `bun run lint:fallow`, `bun run test` (775 testes) e `bun run build` aprovados.
+
+### [2026-11-06] - Mapa da Continuidade no mesmo formato da Inteligência Comercial
+- **Autor:** Bernardo H
+- **Branch:** `style/refino-interface-telas`
+- **O que foi feito:**
+  - Qualidade da Rede › Continuidade, bloco "Onde estão as piores interrupções": o mapa passou a usar o `RegionMap` compartilhado (contornos do IBGE), pintado pelas quatro faixas de DEC numa escala de azul que escurece conforme o DEC piora (tokens novos `--map-1…4` no `index.css`, temas claro e escuro, todos com 3:1 sobre fundo e card; sem verde e vermelho, para não confundir com ganho e perda da Receita), com a legenda abaixo e a lista de municípios ao lado; passar o mouse destaca o município nos dois, clicar fixa o destaque.
+  - Removidos o desenho antigo do mapa (`municipalityShapes.ts`, `mapLabelLayout.ts` e os testes deles), que ficaram sem uso. O campo `fill` das faixas continua, porque o teste de contraste usa.
+- **Validação de Testes:**
+  - `bun run lint`, `bun run lint:fallow`, `bun run test` e `bun run build` aprovados.
+

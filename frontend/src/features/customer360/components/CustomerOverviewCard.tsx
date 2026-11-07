@@ -1,34 +1,11 @@
-import type { ReactNode } from 'react'
-import { Gauge, MapPin, Sun, User, Zap } from 'lucide-react'
+import { Sun } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tooltip } from '@/components/ui/tooltip-card'
 import type { CustomerSummary } from '@/features/customer360/types/customer360Types'
 import { formatMonthOfDate, formatPower } from '@/features/customer360/utils/customer360Formatters'
+import { displayName } from '@/lib/geo/placeName'
 
 const NOT_INFORMED = 'Não informado'
-
-interface OverviewFieldProps {
-  icon: ReactNode
-  label: string
-  primary: string
-  secondary?: string | null
-}
-
-function OverviewField({ icon, label, primary, secondary }: OverviewFieldProps) {
-  return (
-    <div className="flex gap-3">
-      <div className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-md">
-        {icon}
-      </div>
-      <div className="flex min-w-0 flex-col">
-        <span className="text-muted-foreground text-xs font-semibold">{label}</span>
-        <span className="text-foreground truncate text-sm font-semibold">{primary}</span>
-        {secondary ? <span className="text-muted-foreground truncate text-xs">{secondary}</span> : null}
-      </div>
-    </div>
-  )
-}
 
 function SolarBadge({ summary }: { summary: CustomerSummary }) {
   if (!summary.possui_gd) {
@@ -46,50 +23,41 @@ function SolarBadge({ summary }: { summary: CustomerSummary }) {
   )
 }
 
-interface CustomerOverviewCardProps {
-  summary: CustomerSummary
+function Fact({ label, children }: { label: string; children: string }) {
+  return (
+    <div className="flex min-w-0 flex-col">
+      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dd className="text-foreground text-sm font-medium">{children}</dd>
+    </div>
+  )
 }
 
 /**
- * Card com quem é o cliente: cadastro, circuito elétrico, medidor e geração solar.
+ * Identificação da UC no topo da ficha: número em destaque, titular e os dados de cadastro numa linha.
  *
  * @param props - Cadastro da UC retornado por `/summary`.
- * @returns Card de resumo da UC.
+ * @returns Bloco de identificação sem moldura própria (fica dentro da faixa do topo).
  */
-export function CustomerOverviewCard({ summary }: CustomerOverviewCardProps) {
+export function CustomerOverviewCard({ summary }: { summary: CustomerSummary }) {
+  const place = [summary.bairro, summary.municipio].filter(Boolean).map((name) => displayName(String(name))).join(', ') || NOT_INFORMED
+  const consumerClass = summary.classe_consumo ? displayName(summary.classe_consumo) : null
+  const tariffClass = [consumerClass, summary.subgrupo_tarifario].filter(Boolean).join(' · ') || NOT_INFORMED
   return (
-    <Card variant="glass">
-      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 pb-2">
-        <CardTitle>
-          <span className="font-mono">{summary.id_uc}</span>
-        </CardTitle>
+    <section aria-label="Identificação da UC" className="flex min-w-0 flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-foreground font-mono text-2xl font-semibold">{summary.id_uc}</span>
         <SolarBadge summary={summary} />
-      </CardHeader>
-      <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <OverviewField
-          icon={<User className="size-4" />}
-          label="Titular"
-          primary={summary.nome_titular ?? NOT_INFORMED}
-          secondary={summary.codigo_cliente ? `Cliente ${summary.codigo_cliente}` : null}
-        />
-        <OverviewField
-          icon={<MapPin className="size-4" />}
-          label="Localização"
-          primary={summary.bairro ?? NOT_INFORMED}
-          secondary={summary.municipio}
-        />
-        <OverviewField
-          icon={<Zap className="size-4" />}
-          label="Classe e circuito"
-          primary={[summary.classe_consumo, summary.subgrupo_tarifario].filter(Boolean).join(' · ') || NOT_INFORMED}
-          secondary={summary.alimentador ? `Alimentador ${summary.alimentador}` : null}
-        />
-        <OverviewField
-          icon={<Gauge className="size-4" />}
-          label="Medidor instalado"
-          primary={summary.numero_medidor_ativo ?? NOT_INFORMED}
-        />
-      </CardContent>
-    </Card>
+      </div>
+      <p className="text-foreground text-base font-medium">
+        {summary.nome_titular ?? NOT_INFORMED}
+        {summary.codigo_cliente ? <span className="text-muted-foreground font-normal"> · Cliente {summary.codigo_cliente}</span> : null}
+      </p>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+        <Fact label="Localização">{place}</Fact>
+        <Fact label="Classe">{tariffClass}</Fact>
+        <Fact label="Circuito">{summary.alimentador ? `Alimentador ${summary.alimentador}` : NOT_INFORMED}</Fact>
+        <Fact label="Medidor">{summary.numero_medidor_ativo ?? NOT_INFORMED}</Fact>
+      </dl>
+    </section>
   )
 }

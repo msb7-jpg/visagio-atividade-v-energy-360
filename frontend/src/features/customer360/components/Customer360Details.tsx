@@ -1,4 +1,5 @@
 import { AttentionPanel } from '@/features/customer360/components/AttentionPanel'
+import { SectionNav } from '@/features/customer360/components/SectionNav'
 import { CustomerOverviewCard } from '@/features/customer360/components/CustomerOverviewCard'
 import {
   ConsumptionSection,
@@ -13,8 +14,8 @@ import { buildCustomerInsightMetrics } from '@/features/customer360/utils/insigh
 import { SmartInsightCard } from '@/features/insights/SmartInsightCard'
 
 /**
- * Ficha da UC: cadastro e resumo da IA no topo; consumo, inspeções e faturas na coluna principal; o que precisa de
- * atenção na lateral fixa; falta de luz e chamados embaixo, na largura toda (issue #66).
+ * Ficha da UC: faixa do topo com a identificação e o que precisa de atenção, resumo da IA, atalhos para os blocos e
+ * os blocos numerados (consumo, contas, falta de luz e chamados, inspeções), todos visíveis (issue #66).
  *
  * @param props - Cadastro da UC já encontrada.
  * @returns Blocos da Visão 360, todos visíveis sem trocar de aba.
@@ -28,8 +29,15 @@ export function Customer360Details({ summary }: { summary: CustomerSummary }) {
   const isAttentionLoading = (!history.data && !history.isError) || (!events.data && !events.isError)
 
   return (
-    <div className="flex flex-col gap-8">
-      <CustomerOverviewCard summary={summary} />
+    <div className="flex flex-col gap-6">
+      <div className="bg-card border-border grid grid-cols-1 gap-6 rounded-md border p-5 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <CustomerOverviewCard summary={summary} />
+        </div>
+        <div className="border-border lg:border-l lg:pl-6">
+          <AttentionPanel items={buildAttentionItems(history.data, events.data)} isLoading={isAttentionLoading} />
+        </div>
+      </div>
       {history.data && events.data ? (
         <SmartInsightCard
           context="customer360"
@@ -37,17 +45,11 @@ export function Customer360Details({ summary }: { summary: CustomerSummary }) {
           metrics={buildCustomerInsightMetrics(history.data, events.data, solar)}
         />
       ) : null}
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
-        <div className="flex min-w-0 flex-col gap-8 xl:col-span-2">
-          <ConsumptionSection history={history} />
-          <InspectionsSection events={events} />
-          <FinancialSection history={history} solar={solar} />
-        </div>
-        <div className="flex min-w-0 flex-col gap-6 xl:sticky xl:top-20 xl:self-start">
-          <AttentionPanel items={buildAttentionItems(history.data, events.data)} isLoading={isAttentionLoading} />
-        </div>
-      </div>
+      <SectionNav />
+      <ConsumptionSection history={history} />
+      <FinancialSection history={history} solar={solar} />
       <TechnicalSection events={events} />
+      <InspectionsSection events={events} />
     </div>
   )
 }
