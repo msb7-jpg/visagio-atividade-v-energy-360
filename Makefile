@@ -2,7 +2,7 @@
 # V-Energy Grid 360 -- Monorepo Management Makefile
 # ==============================================================================
 
-.PHONY: help setup-all data-unzip pipeline-local db-upgrade db-backup db-restore run-backend run-frontend run-llm run-all expose-ngrok expose-cloudflared test-all lint-all lint-backend lint-frontend
+.PHONY: help setup-all data-unzip pipeline-local db-upgrade db-backup db-restore run-backend run-frontend run-llm run-all run-all-ngrok expose-ngrok expose-cloudflared test-all lint-all lint-backend lint-frontend
 
 help:
 	@echo "======================================================================"
@@ -18,6 +18,7 @@ help:
 	@echo "  make run-frontend   - Inicia Portal Web React 19 com Vite (:5173)"
 	@echo "  make run-llm        - Inicia servidor llama-server local com modelo Qwen3.5-4B (:1234)"
 	@echo "  make run-all        - Inicia a stack completa: llama-server + backend + frontend"
+	@echo "  make run-all-ngrok  - Inicia a stack completa + túneis públicos Ngrok (Frontend e Backend)"
 	@echo "  make expose-ngrok   - Expõe Frontend e Backend via Ngrok com URLs públicas"
 	@echo "  make expose-cloudflared - Expõe Frontend e Backend via Cloudflare Tunnels"
 	@echo "  make test-all       - Executa testes no backend (pytest) e frontend (vitest)"
@@ -78,6 +79,9 @@ run-llm:
 
 run-all:
 	@bash scripts/dev_local.sh
+
+run-all-ngrok:
+	@bash scripts/dev_local.sh --ngrok
 
 expose-ngrok:
 	@bash scripts/expose_ngrok.sh
