@@ -1,12 +1,16 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
+  backtestSeriesQueryOptions,
+  excludedUnitsQueryOptions,
   inspectionsQueryOptions,
   inspectorsQueryOptions,
+  orderEventsQueryOptions,
   queueFiltersQueryOptions,
   queueSummaryQueryOptions,
   suspiciousUnitsQueryOptions,
   unitDetailQueryOptions
 } from '@/features/loss_management/queries/lossQueries'
+import type { ExcludedUnitsFilter } from '@/features/loss_management/types/excludedTypes'
 import type { SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
 
 /**
@@ -69,4 +73,33 @@ export function useQueueSummaryQuery(selectedIds: string[]) {
  */
 export function useQueueFiltersQuery() {
   return useQuery(queueFiltersQueryOptions())
+}
+
+/**
+ * UCs com queda de consumo que ficaram fora da fila, com motivo e data de reavaliação.
+ *
+ * @param filters - Motivo de exclusão opcional.
+ * @returns Estado da query paginada (`fetchNextPage` traz as UCs seguintes).
+ */
+export function useExcludedUnitsQuery(filters: ExcludedUnitsFilter) {
+  return useInfiniteQuery(excludedUnitsQueryOptions(filters))
+}
+
+/**
+ * Backtest da fila em todos os cortes: a seleção refeita em cada mês, medida nas inspeções dos meses seguintes.
+ *
+ * @returns Estado da query da série, com um resultado por corte, do mais antigo ao mais recente.
+ */
+export function useBacktestSeriesQuery() {
+  return useQuery(backtestSeriesQueryOptions())
+}
+
+/**
+ * Trilha de auditoria de uma ordem: quem mudou o quê e quando.
+ *
+ * @param idInspecao - Ordem aberta no histórico.
+ * @returns Estado da query dos eventos, do primeiro ao mais recente.
+ */
+export function useOrderEventsQuery(idInspecao: number) {
+  return useQuery(orderEventsQueryOptions(idInspecao))
 }

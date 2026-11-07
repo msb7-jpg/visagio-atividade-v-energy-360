@@ -1,3 +1,4 @@
+import { History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
 import { ACTION_LABELS, formatOrderCode, type OrderActionKind } from '@/features/loss_management/utils/orderBoard'
@@ -13,11 +14,10 @@ interface OrderCardActionsProps {
  * (o cancelamento sempre abre um diálogo com motivo, então o clique acidental não cancela nada).
  *
  * @param props - Ordem, ações que a etapa e o perfil permitem e callback da ação escolhida.
- * @returns Linha com os botões; nada quando não há ação.
+ * @returns Linha com os botões da etapa e o histórico, que qualquer perfil pode abrir.
  */
 export function OrderCardActions({ order, actions, onAction }: OrderCardActionsProps) {
   const orderCode = formatOrderCode(order)
-  if (actions.length === 0) return null
 
   return (
     <div className="flex items-center gap-2 pt-1">
@@ -33,6 +33,16 @@ export function OrderCardActions({ order, actions, onAction }: OrderCardActionsP
           {ACTION_LABELS[kind]}
         </Button>
       ))}
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        className="ml-auto"
+        aria-label={`${ACTION_LABELS.history} ${orderCode}`}
+        onClick={() => onAction('history', order)}
+      >
+        <History aria-hidden="true" />
+      </Button>
     </div>
   )
 }

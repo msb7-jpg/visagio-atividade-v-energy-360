@@ -4,8 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PrioritizedQueueTable } from '@/features/loss_management/components/PrioritizedQueueTable'
 import type { useQueueSelection } from '@/features/loss_management/hooks/useQueueSelection'
 import type { SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
-import { formatInteger, formatPercent } from '@/features/loss_management/utils/lossFormatters'
-import { PRIORITY_MIN_HIT_PROBABILITY, splitQueueBands } from '@/features/loss_management/utils/queueBands'
+import { formatInteger } from '@/features/loss_management/utils/lossFormatters'
+import { splitQueueBands } from '@/features/loss_management/utils/queueBands'
 
 type BandKey = 'priority' | 'lowChance' | 'all'
 
@@ -26,9 +26,9 @@ function firstBandWithUnits(priorityCount: number, lowChanceCount: number): Band
 }
 
 /**
- * Fila dividida em abas pela chance de acerto: prioritárias, baixa chance e todas, cada uma com sua contagem.
+ * Fila dividida em abas por prioridade: prioritárias, demais e todas, cada uma com sua contagem.
  *
- * A ordem dentro de cada aba é a do backend (kWh esperado), então a posição (#) vale dentro da aba.
+ * A ordem dentro de cada aba é a do backend (maior prioridade primeiro), então a posição (#) vale dentro da aba.
  *
  * @param props - UCs carregadas, total da fila e controle de seleção.
  * @returns Abas acima da tabela; abre nas prioritárias, ou na primeira aba com UCs quando elas não existem, e
@@ -46,17 +46,16 @@ export function QueueBandTabs({ units, total, selection, onOpenDetail, onLoadMor
     setHadPriority(hasPriority)
     setBand(firstBandWithUnits(priority.length, lowChance.length))
   }
-  const minHitLabel = formatPercent(PRIORITY_MIN_HIT_PROBABILITY)
   const bands = [
-    { key: 'priority', label: 'Prioritárias', units: priority, hint: `Chance de acerto de ${minHitLabel} ou mais` },
-    { key: 'lowChance', label: 'Baixa chance', units: lowChance, hint: `Chance de acerto abaixo de ${minHitLabel}` },
-    { key: 'all', label: 'Todas', units, hint: 'Todas as UCs, na ordem do kWh esperado' }
+    { key: 'priority', label: 'Prioritárias', units: priority, hint: 'Queda abrupta, leitura zerada ou queda além da variação da carteira' },
+    { key: 'lowChance', label: 'Demais', units: lowChance, hint: 'UCs fora da faixa prioritária' },
+    { key: 'all', label: 'Todas', units, hint: 'Todas as UCs, na ordem de prioridade' }
   ] as const
 
   return (
     <Tabs variant="line" value={band} onValueChange={(nextBand) => setBand(nextBand as BandKey)}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <TabsList aria-label="Faixa da fila por chance de acerto">
+        <TabsList aria-label="Faixa da fila por prioridade">
           {bands.map((item) => (
             <TabsTrigger key={item.key} value={item.key} disabled={item.units.length === 0}>
               {item.label} · {formatInteger(item.units.length)}

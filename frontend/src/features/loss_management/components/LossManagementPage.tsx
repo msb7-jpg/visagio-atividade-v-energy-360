@@ -1,5 +1,7 @@
-import { ClipboardList, ListOrdered } from 'lucide-react'
+import { BarChart3, ClipboardList, EyeOff, ListOrdered } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { EffectivenessTab } from '@/features/loss_management/components/EffectivenessTab'
+import { ExcludedQueueTab } from '@/features/loss_management/components/ExcludedQueueTab'
 import { InspectionOrdersTab } from '@/features/loss_management/components/InspectionOrdersTab'
 import { SuspiciousQueueTab } from '@/features/loss_management/components/SuspiciousQueueTab'
 import { useInspectionsQuery } from '@/features/loss_management/hooks/useLossQueries'
@@ -13,7 +15,7 @@ const withCount = (label: string, count: number | undefined) =>
 /**
  * Página da Fila de Inspeção: fila priorizada de UCs suspeitas e ordens de inspeção em campo.
  *
- * @returns Página com as abas "Fila priorizada" e "Ordens de inspeção", ambas com contador.
+ * @returns Página com as abas "Fila priorizada", "Fora da fila", "Ordens de inspeção" e "Efetividade".
  */
 export function LossManagementPage() {
   const queue = useSuspiciousQueueController()
@@ -24,7 +26,7 @@ export function LossManagementPage() {
       <main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-6">
         <PageHeader
           title="Fila de Inspeção"
-          description="UCs suspeitas na ordem de retorno esperado: chance de irregularidade × energia recuperável."
+          description="UCs suspeitas ordenadas por prioridade: maior energia a recuperar por visita primeiro."
         />
 
         <Tabs defaultValue="suspects">
@@ -32,15 +34,27 @@ export function LossManagementPage() {
             <TabsTrigger value="suspects">
               <ListOrdered aria-hidden="true" className="size-4" /> {withCount('Fila priorizada', queue.total)}
             </TabsTrigger>
+            <TabsTrigger value="excluded">
+              <EyeOff aria-hidden="true" className="size-4" /> Fora da fila
+            </TabsTrigger>
             <TabsTrigger value="orders">
               <ClipboardList aria-hidden="true" className="size-4" /> {withCount('Ordens de inspeção', orders?.length)}
+            </TabsTrigger>
+            <TabsTrigger value="effectiveness">
+              <BarChart3 aria-hidden="true" className="size-4" /> Efetividade
             </TabsTrigger>
           </TabsList>
           <TabsContent value="suspects" className="mt-4">
             <SuspiciousQueueTab queue={queue} />
           </TabsContent>
+          <TabsContent value="excluded" className="mt-4">
+            <ExcludedQueueTab />
+          </TabsContent>
           <TabsContent value="orders" className="mt-4">
             <InspectionOrdersTab />
+          </TabsContent>
+          <TabsContent value="effectiveness" className="mt-4">
+            <EffectivenessTab />
           </TabsContent>
         </Tabs>
       </main>

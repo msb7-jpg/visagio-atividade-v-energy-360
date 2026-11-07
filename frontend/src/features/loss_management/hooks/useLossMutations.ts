@@ -18,14 +18,23 @@ interface UpdateInspectionVariables {
   payload: InspectionOrderUpdate
 }
 
+// O backtest e a lista de inspetores não dependem das ordens que se mudam hoje: o servidor só considera ordens
+// anteriores ao último corte do backtest, e os inspetores vêm do histórico de campo. Continuam valendo depois de
+// gerar, concluir ou cancelar uma ordem, e refazê-los só custaria uma chamada à toa.
+const UNAFFECTED_BY_ORDERS = new Set<unknown>([lossKeys.backtestSeries()[1], lossKeys.inspectors()[1]])
+
 /**
- * Invalida fila e ordens: gerar, concluir ou cancelar uma ordem muda ambas as listas.
+ * Invalida fila, ordens e tudo o que depende delas: gerar, concluir ou cancelar uma ordem muda essas listas.
  *
- * @returns Callback de invalidação do domínio de perdas.
+ * @returns Callback de invalidação do domínio de perdas, que poupa o backtest e a lista de inspetores.
  */
 function useInvalidateLosses() {
   const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: lossKeys.all })
+  return () =>
+    queryClient.invalidateQueries({
+      queryKey: lossKeys.all,
+      predicate: (query) => !UNAFFECTED_BY_ORDERS.has(query.queryKey[1])
+    })
 }
 
 const EMPTY_BATCH: BatchResult = { created: [], failed: [] }
@@ -121,6 +130,16 @@ export function useUpdateInspectionMutation() {
     mutationFn: ({ idInspecao, payload }: UpdateInspectionVariables) => lossApi.updateInspection(idInspecao, payload),
     onSuccess: invalidateLosses
   })
+}
+
+/**
+ * Pré-visualiza a planilha de campo: valida cada linha no servidor e resume o que seria importado.
+ *
+ * @returns Mutação de pré-visualização; não grava nada.
+ */
+export function usePreviewFieldResultsMutation() {
+  // Pré-visualização não grava nada: não invalida a fila nem as ordens.
+  return useMutation({ mutationFn: (file: File) => lossApi.uploadFieldResults(file, true) })
 }
 
 /**

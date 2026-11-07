@@ -1,10 +1,14 @@
 import { infiniteQueryOptions, keepPreviousData, queryOptions } from '@tanstack/react-query'
 import { lossApi } from '@/features/loss_management/api/lossApi'
+import type { ExcludedQueue, ExcludedUnitsFilter } from '@/features/loss_management/types/excludedTypes'
 import type { SuspiciousQueue, SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
 
 export const lossKeys = {
   all: ['losses'] as const,
   suspiciousUnits: (filters: SuspiciousUnitsFilter) => [...lossKeys.all, 'suspicious-units', filters] as const,
+  orderEvents: (idInspecao: number) => [...lossKeys.all, 'order-events', idInspecao] as const,
+  backtestSeries: () => [...lossKeys.all, 'backtest-series'] as const,
+  excludedUnits: (filters: ExcludedUnitsFilter) => [...lossKeys.all, 'excluded-units', filters] as const,
   unitDetail: (idUc: string, fullHistory: boolean) => [...lossKeys.all, 'unit-detail', idUc, fullHistory] as const,
   inspections: () => [...lossKeys.all, 'inspections'] as const,
   queueSummary: (selectedIds: string[]) => [...lossKeys.all, 'queue-summary', selectedIds] as const,
@@ -29,12 +33,12 @@ function compactFilters(filters: SuspiciousUnitsFilter): SuspiciousUnitsFilter {
 }
 
 /**
- * Próximo `offset` da fila: quantas UCs já vieram, ou nada quando a fila inteira está carregada.
+ * Próximo `offset` da fila (ou da aba "Fora da fila"): quantas UCs já vieram, ou nada quando a fila inteira está carregada.
  *
  * @param pages - Páginas já carregadas, da primeira à última.
  * @returns O `offset` da próxima página, ou undefined quando não há mais UCs.
  */
-function nextQueueOffset(pages: SuspiciousQueue[]): number | undefined {
+function nextQueueOffset(pages: Array<SuspiciousQueue | ExcludedQueue>): number | undefined {
   const lastPage = pages[pages.length - 1]
   const loadedCount = pages.reduce((count, page) => count + page.itens.length, 0)
   return lastPage.itens.length > 0 && loadedCount < lastPage.total ? loadedCount : undefined
@@ -128,5 +132,53 @@ export function queueFiltersQueryOptions() {
     queryKey: lossKeys.queueFilters(),
     queryFn: ({ signal }) => lossApi.getQueueFilters(signal),
     staleTime: FILTER_OPTIONS_STALE_TIME_MS
+  })
+}
+
+/**
+ * Opções da consulta da aba "Fora da fila", paginada pelo servidor e filtrada por motivo de exclusão.
+ *
+ * @param filters - Motivo de exclusão opcional.
+ * @returns Opções de query infinita com cancelamento via signal.
+ */
+export function excludedUnitsQueryOptions(filters: ExcludedUnitsFilter) {
+  return infiniteQueryOptions({
+    queryKey: lossKeys.excludedUnits(filters),
+    queryFn: ({ pageParam, signal }) =>
+      lossApi.listExcludedUnits(pageParam > 0 ? { ...filters, offset: pageParam } : filters, signal),
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => nextQueueOffset(allPages),
+    staleTime: LOSS_STALE_TIME_MS,
+    placeholderData: keepPreviousData
+  })
+}
+
+// O backtest só muda com a carga da Gold e com o código; o servidor guarda o resultado depois do primeiro cálculo.
+const BACKTEST_STALE_TIME_MS = 10 * 60 * 1000
+
+/**
+ * Opções da consulta do backtest da fila em todos os cortes disponíveis, com a capacidade mensal como tamanho.
+ *
+ * @returns Opções de query com cache longo e cancelamento via signal.
+ */
+export function backtestSeriesQueryOptions() {
+  return queryOptions({
+    queryKey: lossKeys.backtestSeries(),
+    queryFn: ({ signal }) => lossApi.getBacktestSeries(signal),
+    staleTime: BACKTEST_STALE_TIME_MS
+  })
+}
+
+/**
+ * Opções da consulta da trilha de auditoria de uma ordem.
+ *
+ * @param idInspecao - Ordem aberta no histórico.
+ * @returns Opções de query com cancelamento via signal.
+ */
+export function orderEventsQueryOptions(idInspecao: number) {
+  return queryOptions({
+    queryKey: lossKeys.orderEvents(idInspecao),
+    queryFn: ({ signal }) => lossApi.listOrderEvents(idInspecao, signal),
+    staleTime: LOSS_STALE_TIME_MS
   })
 }

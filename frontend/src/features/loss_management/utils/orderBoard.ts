@@ -21,7 +21,7 @@ export const BOARD_COLUMNS: readonly BoardColumn[] = [
   { status: 'cancelada', label: 'Cancelada', badge: 'cancelada' }
 ]
 
-export type OrderActionKind = 'dispatch' | 'result' | 'cancel'
+export type OrderActionKind = 'dispatch' | 'result' | 'cancel' | 'history'
 
 /** Ações de cada etapa (espelham as transições do servidor: gerada→pendente, pendente→concluida, gerada|pendente→cancelada). */
 export const ACTIONS_BY_STATUS: Record<InspectionStatus, readonly OrderActionKind[]> = {
@@ -34,7 +34,8 @@ export const ACTIONS_BY_STATUS: Record<InspectionStatus, readonly OrderActionKin
 export const ACTION_LABELS: Record<OrderActionKind, string> = {
   dispatch: 'Despachar',
   result: 'Registrar resultado',
-  cancel: 'Cancelar'
+  cancel: 'Cancelar',
+  history: 'Histórico'
 }
 
 const ORDER_NUMBER_DIGITS = 4

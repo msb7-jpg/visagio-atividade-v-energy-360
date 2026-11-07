@@ -197,4 +197,6 @@ export interface UploadResult {
   ignoradas: number
   rejeitadas: RejectedRow[]
   kwh_recuperado_total: number
+  /** Verdadeiro na pré-visualização: nada foi gravado. */
+  simulacao?: boolean
 }

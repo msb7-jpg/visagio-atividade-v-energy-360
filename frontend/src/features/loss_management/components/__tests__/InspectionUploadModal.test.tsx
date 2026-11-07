@@ -115,4 +115,52 @@ describe('InspectionUploadModal', () => {
 
     expect(onClose).toHaveBeenCalled()
   })
+
+  describe('pré-visualização', () => {
+    const PREVIEW: UploadResult = { ...RESULT, simulacao: true }
+
+    it('mantém a pré-visualização desabilitada até escolher um arquivo', () => {
+      renderModal()
+
+      expect(screen.getByRole('button', { name: 'Pré-visualizar' })).toBeDisabled()
+    })
+
+    it('mostra o que seria importado sem gravar e só importa depois da confirmação', async () => {
+      mockedApi.uploadFieldResults.mockResolvedValueOnce(PREVIEW).mockResolvedValueOnce(RESULT)
+      renderModal()
+      const file = makeFile()
+      chooseFile(file)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Pré-visualizar' }))
+
+      expect(await screen.findByText(/Pré-visualização: 2 ordens serão conciliadas/)).toBeInTheDocument()
+      expect(mockedApi.uploadFieldResults).toHaveBeenCalledTimes(1)
+      expect(mockedApi.uploadFieldResults).toHaveBeenLastCalledWith(file, true)
+      fireEvent.click(screen.getByRole('button', { name: 'Importar 2 linhas válidas' }))
+      expect(await screen.findByText(/2 ordens conciliadas com sucesso/)).toBeInTheDocument()
+      expect(mockedApi.uploadFieldResults).toHaveBeenLastCalledWith(file)
+    })
+
+    it('não deixa importar quando nenhuma linha é válida', async () => {
+      mockedApi.uploadFieldResults.mockResolvedValue({ ...PREVIEW, conciliadas: 0, kwh_recuperado_total: 0 })
+      renderModal()
+      chooseFile(makeFile())
+
+      fireEvent.click(screen.getByRole('button', { name: 'Pré-visualizar' }))
+
+      expect(await screen.findByRole('button', { name: 'Importar 0 linhas válidas' })).toBeDisabled()
+    })
+
+    it('volta para a escolha do arquivo ao cancelar a pré-visualização', async () => {
+      mockedApi.uploadFieldResults.mockResolvedValue(PREVIEW)
+      renderModal()
+      chooseFile(makeFile())
+      fireEvent.click(screen.getByRole('button', { name: 'Pré-visualizar' }))
+      await screen.findByText(/Pré-visualização/)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+      expect(await screen.findByRole('button', { name: /Enviar planilha/ })).toBeInTheDocument()
+    })
+  })
 })

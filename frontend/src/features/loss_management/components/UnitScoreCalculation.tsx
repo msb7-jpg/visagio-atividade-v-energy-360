@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { ScoreBreakdown } from '@/features/loss_management/types/unitDetailTypes'
-import { formatInteger, formatKwh, formatPercent } from '@/features/loss_management/utils/lossFormatters'
+import { formatInteger, formatKwh } from '@/features/loss_management/utils/lossFormatters'
 import { cn } from '@/lib/utils'
 
 interface CalculationLineProps {
@@ -25,11 +25,11 @@ interface UnitScoreCalculationProps {
 }
 
 /**
- * A conta do score com os números da UC: energia recuperável da janela x chance de acerto = kWh esperado,
- * e o kWh esperado relativo ao topo da fila vira o score de 0 a 100.
+ * O cartão do score com os números da UC: a energia recuperável da janela e o score de 0 a 100, que compara a UC
+ * com a primeira da fila. A chance de acerto continua no cálculo do backend, mas não é exibida aqui.
  *
  * @param props - Decomposição devolvida pelo backend.
- * @returns Quatro linhas de conta, a última com o score em destaque.
+ * @returns Duas linhas, a última com o score em destaque.
  */
 export function UnitScoreCalculation({ breakdown }: UnitScoreCalculationProps) {
   const monthsLabel = breakdown.meses_janela_recuperacao === 1 ? 'mês' : 'meses'
@@ -40,9 +40,7 @@ export function UnitScoreCalculation({ breakdown }: UnitScoreCalculationProps) {
       >
         {formatKwh(breakdown.kwh_janela_recuperavel)}
       </CalculationLine>
-      <CalculationLine label="Chance de acerto da inspeção">× {formatPercent(breakdown.probabilidade_acerto)}</CalculationLine>
-      <CalculationLine label="kWh esperado">= {formatKwh(breakdown.kwh_esperado)}</CalculationLine>
-      <CalculationLine label={`Relativo ao topo da fila (${formatKwh(breakdown.maior_kwh_esperado_fila)}) × 100`} isResult>
+      <CalculationLine label="Potencial de recuperação relativo à primeira da fila" isResult>
         Score {formatInteger(breakdown.score)} de 100
       </CalculationLine>
     </dl>
