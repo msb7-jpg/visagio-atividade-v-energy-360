@@ -5,15 +5,29 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Path, Query, Response, UploadFile, status
 from pydantic import StringConstraints
 
-from app.features.loss_management.dependencies import LossSvc, UnitDetailSvc
+from app.features.loss_management.backtest_schemas import BacktestDTO, BacktestFilterDTO, BacktestSeriesDTO
+from app.features.loss_management.dependencies import (
+    BacktestSeriesSvc,
+    BacktestSvc,
+    ExcludedSvc,
+    LossSvc,
+    OrderEventSvc,
+    UnitDetailSvc,
+)
 from app.features.loss_management.detail_schemas import UnitDetailDTO
 from app.features.loss_management.exceptions import UploadTooLargeError
+from app.features.loss_management.excluded_schemas import ExcludedQueueDTO, ExcludedUnitsFilterDTO
+from app.features.loss_management.order_events import OrderEventDTO
 from app.features.loss_management.router_metadata import (
+    backtest_doc,
+    backtest_series_doc,
     create_inspection_doc,
+    excluded_units_doc,
     export_inspections_doc,
     list_inspections_doc,
     list_inspectors_doc,
     list_suspicious_units_doc,
+    order_events_doc,
     queue_filters_doc,
     queue_summary_doc,
     unit_detail_doc,
@@ -60,6 +74,32 @@ async def list_suspicious_units(
 ) -> SuspiciousQueueDTO:
     """Devolve a fila de UCs suspeitas priorizada."""
     return await service.list_suspicious_units(queue_filter)
+
+
+@router.get("/inspections/{id_inspecao}/events", response_model=list[OrderEventDTO], **order_events_doc.to_dict())
+async def list_order_events(id_inspecao: int, service: OrderEventSvc) -> list[OrderEventDTO]:
+    """Devolve a trilha de auditoria da ordem: quem mudou o quê e quando."""
+    return await service.list_events(id_inspecao)
+
+
+@router.get("/backtest", response_model=BacktestDTO, **backtest_doc.to_dict())
+async def run_backtest(service: BacktestSvc, backtest_filter: Annotated[BacktestFilterDTO, Query()]) -> BacktestDTO:
+    """Mede o acerto da seleção top N da fila numa data de corte passada, com as inspeções dos meses seguintes."""
+    return await service.run(backtest_filter)
+
+
+@router.get("/backtest/series", response_model=BacktestSeriesDTO, **backtest_series_doc.to_dict())
+async def run_backtest_series(service: BacktestSeriesSvc) -> BacktestSeriesDTO:
+    """Mede o acerto da seleção da fila em todos os cortes disponíveis, com o resultado guardado entre as chamadas."""
+    return await service.run()
+
+
+@router.get("/excluded-units", response_model=ExcludedQueueDTO, **excluded_units_doc.to_dict())
+async def list_excluded_units(
+    service: ExcludedSvc, excluded_filter: Annotated[ExcludedUnitsFilterDTO, Query()]
+) -> ExcludedQueueDTO:
+    """Devolve as UCs com queda de consumo que ficaram fora da fila, com o motivo e a data de reavaliação."""
+    return await service.list_excluded_units(excluded_filter)
 
 
 @router.get("/suspicious-units/{id_uc}", response_model=UnitDetailDTO, **unit_detail_doc.to_dict())
@@ -145,10 +185,10 @@ async def create_inspection(
     **update_inspection_doc.to_dict(),
 )
 async def update_inspection(
-    id_inspecao: int, payload: InspectionOrderUpdateDTO, service: LossSvc
+    id_inspecao: int, payload: InspectionOrderUpdateDTO, service: LossSvc, user: CurrentUser
 ) -> InspectionOrderDTO:
     """Atualiza status, resultado de campo ou cancelamento de uma ordem."""
-    return await service.update_inspection(id_inspecao, payload)
+    return await service.update_inspection(id_inspecao, payload, autor=user.email)
 
 
 @router.post(
@@ -158,10 +198,13 @@ async def update_inspection(
     **upload_inspections_doc.to_dict(),
 )
 async def upload_inspections(
-    service: LossSvc, file: Annotated[UploadFile, File(description="Planilha .csv/.xlsx")]
+    service: LossSvc,
+    user: CurrentUser,
+    file: Annotated[UploadFile, File(description="Planilha .csv/.xlsx")],
+    dry_run: Annotated[bool, Query(description="Só valida e resume, sem gravar")] = False,
 ) -> UploadResultDTO:
     """Registra os resultados de campo a partir da planilha preenchida pela equipe."""
     content = await file.read(MAX_UPLOAD_BYTES + 1)
     if len(content) > MAX_UPLOAD_BYTES:
         raise UploadTooLargeError(MAX_UPLOAD_BYTES)
-    return await service.upload_field_results(content, file.filename or "")
+    return await service.upload_field_results(content, file.filename or "", dry_run=dry_run, autor=user.email)

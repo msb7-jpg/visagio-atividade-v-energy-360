@@ -13,6 +13,8 @@ dist/
 build/
 .pytest_cache/
 .ruff_cache/
+.cache/
+*.stackdump
 
 # Node & Frontend
 node_modules/

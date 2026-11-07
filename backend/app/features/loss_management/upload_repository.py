@@ -7,12 +7,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.loss_management.models import ACTIVE_STATUSES, InspectionOrder
+from app.features.loss_management.order_events import OrderEventRepositoryMixin, new_event, plain
 from app.features.loss_management.schemas import InspectionOrderUpdateDTO, InspectionStatus
 
 ID_BATCH_SIZE = 500  # abaixo do limite de 999 variáveis do SQLite antigo
 
 
-class FieldUploadRepositoryMixin:
+class FieldUploadRepositoryMixin(OrderEventRepositoryMixin):
     """Operações em lote sobre `ordem_inspecao` usadas na conciliação da planilha de campo."""
 
     session: AsyncSession
@@ -53,11 +54,14 @@ class FieldUploadRepositoryMixin:
             statuses.update({id_inspecao: InspectionStatus(status) for id_inspecao, status in result.all()})
         return statuses
 
-    async def apply_field_results(self, updates: Mapping[int, InspectionOrderUpdateDTO]) -> list[int]:
+    async def apply_field_results(
+        self, updates: Mapping[int, InspectionOrderUpdateDTO], autor: str | None = None
+    ) -> list[int]:
         """Conclui, num único commit, as ordens que ainda estão em campo.
 
         Args:
             updates: Resultado de campo já validado, por identificador de ordem.
+            autor: E-mail de quem importou a planilha, gravado na trilha de cada ordem concluída.
 
         Returns:
             Identificadores das ordens de fato atualizadas; as que deixaram o fluxo de campo entre a
@@ -69,8 +73,20 @@ class FieldUploadRepositoryMixin:
                 InspectionOrder.id_inspecao.in_(id_batch), InspectionOrder.status.in_(ACTIVE_STATUSES)
             )
             for order in (await self.session.scalars(query)).all():
+                previous_status, changes = order.status, {}
                 for field_name, field_value in updates[order.id_inspecao].model_dump(exclude_none=True).items():
+                    changes[field_name] = [plain(getattr(order, field_name, None)), plain(field_value)]
                     setattr(order, field_name, field_value)
+                self.session.add(
+                    new_event(
+                        order.id_inspecao,
+                        tipo="resultado_importado",
+                        status_anterior=previous_status,
+                        status_novo=order.status,
+                        autor=autor,
+                        alteracoes=changes,
+                    )
+                )
                 applied_ids.append(order.id_inspecao)
         await self.session.commit()
         return applied_ids

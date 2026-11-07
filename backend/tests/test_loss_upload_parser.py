@@ -349,7 +349,7 @@ class StubRepository:
     async def get_order_statuses(self, ids):
         return dict.fromkeys(ids, InspectionStatus.PENDENTE)
 
-    async def apply_field_results(self, updates):
+    async def apply_field_results(self, updates, autor=None):
         return []
 
 
@@ -363,7 +363,7 @@ class UnitLookupStubRepository(StubRepository):
         self.looked_up_units = set(unit_ids)
         return {"UC1": 5}
 
-    async def apply_field_results(self, updates):
+    async def apply_field_results(self, updates, autor=None):
         return list(updates)
 
 

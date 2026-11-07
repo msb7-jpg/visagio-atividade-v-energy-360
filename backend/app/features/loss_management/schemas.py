@@ -226,6 +226,7 @@ class UploadResultDTO(BaseModel):
     ignoradas: int = Field(description="Linhas sem resultado preenchido (ainda em campo)")
     rejeitadas: list[RejectedRowDTO]
     kwh_recuperado_total: float = Field(description="Soma do kWh recuperado das ordens conciliadas")
+    simulacao: bool = Field(default=False, description="Verdadeiro na pré-visualização: nada foi gravado")
 
 
 class HitRateDTO(BaseModel):

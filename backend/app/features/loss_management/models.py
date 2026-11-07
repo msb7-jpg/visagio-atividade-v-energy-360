@@ -2,7 +2,7 @@
 
 from datetime import UTC, date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, Index, Integer, String
+from sqlalchemy import Boolean, Date, DateTime, Float, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -35,6 +35,21 @@ class InspectionOrder(Base):
     criado_por: Mapped[str] = mapped_column(String(120))
     criado_em: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)
     atualizado_em: Mapped[datetime] = mapped_column(DateTime, default=_utc_now, onupdate=_utc_now)
+
+
+class InspectionOrderEvent(Base):
+    """Trilha de auditoria de uma ordem: quem mudou o quê e quando (só inserções, nunca alterada)."""
+
+    __tablename__ = "ordem_inspecao_evento"
+
+    id_evento: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id_inspecao: Mapped[int] = mapped_column(Integer, index=True)
+    tipo: Mapped[str] = mapped_column(String(20))
+    status_anterior: Mapped[str | None] = mapped_column(String(20))
+    status_novo: Mapped[str | None] = mapped_column(String(20))
+    autor: Mapped[str] = mapped_column(String(120))
+    alteracoes: Mapped[str] = mapped_column(Text, default="{}")  # JSON {campo: [antes, depois]}
+    criado_em: Mapped[datetime] = mapped_column(DateTime, default=_utc_now)
 
 
 # Garante no banco, inclusive sob requisições concorrentes, no máximo uma ordem ativa por UC.

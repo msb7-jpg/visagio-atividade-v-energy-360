@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # Gestão de perdas: fixa a competência ('YYYY-MM') em que a fila de suspeitas é calculada, para demonstrar a fila
     # como ela estava num mês passado. Ausente = competência mais recente dos dados (comportamento de produção).
     loss_reference_competencia: str | None = Field(default=None, pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+    # Gestão de perdas: arquivo (relativo à pasta de execução) em que o resultado do backtest fica guardado entre
+    # reinícios da API. Vazio desliga a persistência, e o resultado fica só em memória.
+    loss_backtest_cache_path: str | None = ".cache/backtest_series.json"
 
     jwt_secret_key: str = "v-energy-grid-360-jwt-secret-key-2026-visagio-super-secure"  # ruff: ignore[hardcoded-password-string]
     jwt_algorithm: str = "HS256"
@@ -76,10 +79,10 @@ class Settings(BaseSettings):
         },
     }
 
-    @field_validator("loss_reference_competencia", mode="before")
+    @field_validator("loss_reference_competencia", "loss_backtest_cache_path", mode="before")
     @classmethod
-    def blank_reference_means_none(cls, value: object) -> object:
-        """Trata `LOSS_REFERENCE_COMPETENCIA=""` como ausente, para uma variável opcional vazia não derrubar a app."""
+    def blank_means_none(cls, value: object) -> object:
+        """Trata uma variável opcional vazia (`LOSS_REFERENCE_COMPETENCIA=""`) como ausente, sem derrubar a app."""
         if isinstance(value, str) and not value.strip():
             return None
         return value
