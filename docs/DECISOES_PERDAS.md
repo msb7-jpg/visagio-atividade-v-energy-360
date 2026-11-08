@@ -355,6 +355,10 @@ fora (1.385 de 1.389 entram).
   (±1 a 3 UCs, kWh ±1%); a fila de 2025-07 cai de 34.193 para 956 UCs com as mesmas prioritárias. Os dois patamares
   vêm de 2 parâmetros e 1.354 inspeções, estáveis por mês (alto 90,3% a 94,3%, baixo 6,5% a 9,3%), então o
   leave-one-month-out não muda as taxas. AUC da queda: bruta 0,907, contra a carteira 0,909, contra os pares 0,914.
+- **Piso de entrada:** fica em 20% de queda relativa. Nas 1.354 inspeções, os pisos de 10% a 30% dão recall de 95,7%
+  a 96,0%; abaixo de 20% cada visita extra acerta 8% a 13%. A entrada antiga (queda bruta ≥ 20%) tinha recall de
+  98,7% e precisão de 69,7%: o modelo novo perde 25 irregularidades (2,9%), que custariam 330 inspeções a mais com
+  7,6% de acerto.
 - **Pendente:** medir a faixa de 20% a 30% no piloto fora da fila (D13); o detalhe da UC e a aba "Fora da fila" ainda
   usam a queda bruta e a chance por degraus, até o modelo novo virar o padrão.
 - **Limites:** o backtest cobre só jul–dez/2025, então o verão não é validado. Ele mede apenas UCs que o campo visitou. O

@@ -151,6 +151,31 @@ N=200, 129 contra 126 irregulares). Prioritárias (chance ≥ 30%) na fila:
 A rampa tira de "prioritária" as UCs cuja chance era suposição otimista (2025-11: 580 para 437). O portão da Fase 3
 (não ficar pior, ganhar em consistência) passa. Falta a Fase 4: escolher o piso de entrada.
 
+## Fase 4: piso de entrada (2026-11-08)
+
+Medido direto nas 1.354 inspeções sem GD (867 irregulares), com a queda relativa de cada UC no mês anterior à
+inspeção. O piso só mexe nas posições abaixo do topo, e as filas de 2025 têm de 577 a 956 UCs com queda relativa de
+20% ou mais, mais que os 200 do maior N testado; por isso o backtest de topo não distingue os pisos, e o dado de
+inspeção é que decide.
+
+| Piso (queda relativa) | Inspeções na fila | Irregulares | Precisão | Recall das irregulares |
+|---|---|---|---|---|
+| 5% | 957 | 838 | 87,6% | 96,7% |
+| 10% | 911 | 832 | 91,3% | 96,0% |
+| 15% | 903 | 831 | 92,0% | 95,8% |
+| **20%** | **899** | **831** | **92,4%** | **95,8%** |
+| 25% | 898 | 831 | 92,5% | 95,8% |
+| 30% | 897 | 830 | 92,5% | 95,7% |
+
+Contra a entrada antiga (queda bruta ≥ 20%): 1.229 inspeções, 856 irregulares, precisão de 69,7% e recall de 98,7%.
+O modelo novo perde 25 irregularidades (2,9%) que só a entrada antiga pegava: UCs com queda bruta de 30% a 44% em meses
+de inverno, quando a classe caiu de 26% a 39%. Pegá-las custa 330 inspeções a mais, com 7,6% de acerto (o mesmo
+patamar baixo de qualquer UC sem queda relativa).
+
+**Decisão: o piso fica em 20%.** Abaixo dele, cada visita extra rende cerca de 8% a 13% de acerto. Acima, sai a faixa
+de 20% a 30%, que concentra quase toda a fila de 2026 e tem chance desconhecida. A rampa da Fase 3 já ordena essas
+UCs, e a curva de retorno da Fase 5 deixa o gestor decidir onde parar. Nenhum código mudou nesta fase.
+
 ## Riscos
 
 - O backtest só cobre jul–dez/2025: o verão não é validado.
