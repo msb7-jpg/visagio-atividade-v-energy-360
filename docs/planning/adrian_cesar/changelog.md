@@ -1230,3 +1230,16 @@
   - Alimentar as faixas com os resultados das ordens concluídas no portal (mediria a faixa de 20% a 30%).
   - O cálculo da série na subida da API cresceu para cerca de 20 s, em segundo plano.
 - **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 946; frontend: tsc, ESLint, Fallow e vitest 843, sem falhas.
+
+### [2026-11-08] - Aviso de amostra pequena nos resultados reais de campo
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Por quê.** O banco local tinha 6 ordens concluídas, todas de teste (tipos `teste`, `testee` e `testeee`, TOI `123`, criadas no mesmo segundo), e a seção "Resultados reais de campo" as mostrava como resultado: 6 concluídas, 100% de acerto. Com poucas ordens a taxa não tem significado.
+  - **Regra.** Com 1 a 29 ordens concluídas, a seção mostra a frase "Só N ordens concluídas: com menos de 30, a taxa de acerto real ainda não tem significado e muda muito com uma ordem a mais" e o rodapé "n = N: amostra pequena" na taxa de acerto real. Com 30 ou mais não avisa. Sem nenhuma ordem concluída não há aviso: o rodapé "Nenhuma ordem concluída ainda" já diz isso. Os números continuam na tela.
+  - **Onde.** `fieldSampleWarning` e `MIN_FIELD_SAMPLE = 30` em `utils/fieldResultsSample.ts`; o `FieldResultsKpis` usa a função. O limite de 30 vem da margem de erro: com 30 ordens e acerto perto de 90%, ela ainda é de uns 10 pontos percentuais.
+- **Dificuldades / Desafios:**
+  - Só as ordens concluídas contam para o mínimo, e não as geradas, pendentes ou canceladas.
+- **Pendências:**
+  - O 30 é uma escolha prática, e não uma medida da base; vale rever quando o portal tiver dados reais.
+  - O aviso não distingue ordem de teste de ordem real: depende de o banco estar limpo.
+- **Validação de Testes:** frontend: tsc, ESLint, Fallow e vitest 853, sem falhas (backend não foi alterado: pytest 946).
