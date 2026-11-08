@@ -197,6 +197,19 @@ projeto não conhece; é por isso que o custo é uma entrada da tela e não uma 
 O `capacidade_total` fixo de 200 continua no resumo da seleção e sai junto com a tela (Fase 6), porque o frontend lê o
 campo e removê-lo antes quebraria a tela.
 
+## Fase 6: a tela (2026-11-08)
+
+- **Quantas inspecionar:** campo N (padrão 10, só no navegador) e botão "Marcar as N primeiras", que marca as N
+  primeiras UCs livres, sem exigir chance alta, e traz mais páginas da fila até haver N livres.
+- **Curva de retorno:** `QueueReturnCurve` desenha o retorno acumulado e, com o custo por inspeção digitado (aceita
+  "150", "150,50" e "1.240"), mostra o corte sugerido e o botão "Usar o corte sugerido (N)", que preenche o campo N.
+- **Capacidade:** `capacidade_total` (200 fixo) saiu da API, do tipo e do diálogo, que agora mostra "Ordens abertas
+  depois". Quebra de contrato intencional: só o frontend de perdas lia o campo.
+- **Vocabulário:** "Score" virou "Prioridade" na coluna, na barra, no detalhe e na mensagem de cancelamento.
+- **Efetividade:** aviso de que os cortes cobrem só jul–dez/2025, sem o verão.
+- **Fora desta fase:** as faixas "Prioritárias" e "Baixa chance" (corte de 30%) ficaram como estavam; a descrição
+  longa de `list_suspicious_units_doc` (OpenAPI) ainda cita os limiares do modelo antigo e vai para a Fase 7.
+
 ## Riscos
 
 - O backtest só cobre jul–dez/2025: o verão não é validado.

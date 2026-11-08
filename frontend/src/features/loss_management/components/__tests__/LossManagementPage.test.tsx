@@ -53,7 +53,6 @@ const suspiciousUnit: SuspiciousUnit = {
 }
 
 const summaryFixture: QueueSummary = {
-  capacidade_total: 200,
   capacidade_programada: 0,
   selecionadas: 0,
   kwh_mes_selecionadas: 0,

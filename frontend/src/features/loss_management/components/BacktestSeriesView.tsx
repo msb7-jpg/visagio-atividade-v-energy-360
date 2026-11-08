@@ -35,6 +35,10 @@ export function BacktestSeriesView({ results, selected, onSelectCutoff }: Backte
         Leia a precisão junto com o n: ela vale só para as UCs selecionadas que foram inspecionadas na janela, e o
         histórico de campo foi direcionado a UCs com queda de consumo.
       </p>
+      <p className="text-muted-foreground text-xs">
+        Os cortes cobrem só julho a dezembro de 2025, os meses com inspeções de campo registradas: o comportamento da
+        fila no verão (janeiro a março), quando o consumo sobe, não foi medido com inspeções reais.
+      </p>
       <div className="flex max-w-xs flex-col gap-1.5">
         <Label htmlFor="backtest-corte">Corte em detalhe</Label>
         <Select

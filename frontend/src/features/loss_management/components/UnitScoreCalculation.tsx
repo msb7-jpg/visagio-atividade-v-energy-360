@@ -41,7 +41,7 @@ export function UnitScoreCalculation({ breakdown }: UnitScoreCalculationProps) {
         {formatKwh(breakdown.kwh_janela_recuperavel)}
       </CalculationLine>
       <CalculationLine label="Potencial de recuperação relativo à primeira da fila" isResult>
-        Score {formatInteger(breakdown.score)} de 100
+        Prioridade {formatInteger(breakdown.score)} de 100
       </CalculationLine>
     </dl>
   )

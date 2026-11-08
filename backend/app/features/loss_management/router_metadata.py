@@ -127,7 +127,8 @@ unit_detail_doc = EndpointDoc(
 queue_summary_doc = EndpointDoc(
     summary="Cartões do topo da Fila de Inspeção",
     description=(
-        "Resume a capacidade do mês (ordens ativas contra as 200 inspeções que a equipe faz), a energia recuperável "
+        "Resume as ordens abertas (geradas ou em campo, sem teto: a equipe decide quantas UCs inspecionar), "
+        "a energia recuperável "
         "das UCs selecionadas (`ucs`, repetível), o retorno esperado (soma, por UC selecionada, de energia x chance "
         "de acerto da própria UC, em kWh/mês e R$/ano) e a taxa histórica de inspeções com irregularidade "
         "confirmada, que não entra no retorno. UCs que já têm ordem ativa ou que saíram da fila "

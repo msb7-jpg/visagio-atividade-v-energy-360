@@ -414,7 +414,7 @@ async def test_summary_reports_capacity_selected_energy_and_expected_return(clie
 
     assert response.status_code == 200
     summary = response.json()
-    assert summary["capacidade_total"] == 200
+    assert "capacidade_total" not in summary  # a equipe decide quantas UCs inspecionar; não há teto fixo na API
     assert summary["capacidade_programada"] == 1
     # UC_FRAUDE já tem ordem e não conta como selecionada; UC_INSPECAO_ANTIGA: déficit de 150 kWh/mês.
     assert summary["selecionadas"] == 1

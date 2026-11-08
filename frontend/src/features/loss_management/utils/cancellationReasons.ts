@@ -29,7 +29,7 @@ const QUEUE_BLOCKING_REASONS: readonly CancellationReason[] = ['cliente_regulari
  */
 export function describeQueueEffect(reason: CancellationReason, idUc: string): string {
   if (QUEUE_BLOCKING_REASONS.includes(reason)) return `A UC ${idUc} fica fora da fila por ${QUEUE_BLOCK_DAYS} dias.`
-  return `A UC ${idUc} volta para a fila e o score é recalculado no próximo processamento.`
+  return `A UC ${idUc} volta para a fila e a prioridade é recalculada no próximo processamento.`
 }
 
 const MS_PER_DAY = 86_400_000

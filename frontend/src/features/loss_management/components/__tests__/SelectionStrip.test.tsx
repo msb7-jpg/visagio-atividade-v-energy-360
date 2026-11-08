@@ -7,7 +7,6 @@ import type { QueueSummary, SuspiciousUnit } from '@/features/loss_management/ty
 vi.mock('@/features/loss_management/hooks/useCanWriteLosses', () => ({ useCanWriteLosses: vi.fn(() => true) }))
 
 const summary: QueueSummary = {
-  capacidade_total: 200,
   capacidade_programada: 58,
   selecionadas: 3,
   kwh_mes_selecionadas: 7228,

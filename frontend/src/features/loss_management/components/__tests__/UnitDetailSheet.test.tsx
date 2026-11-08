@@ -111,7 +111,6 @@ describe('Painel de detalhe da UC', () => {
     mockedApi.listSuspiciousUnits.mockResolvedValue({ itens: [UNIT], total: 1, avisos: [] })
     mockedApi.getUnitDetail.mockResolvedValue(buildDetail())
     mockedApi.getQueueSummary.mockResolvedValue({
-      capacidade_total: 200,
       capacidade_programada: 58,
       selecionadas: 0,
       kwh_mes_selecionadas: 0,
@@ -141,7 +140,7 @@ describe('Painel de detalhe da UC', () => {
     expect(within(panel).getByText('5.520 kWh')).toBeInTheDocument()
     expect(within(panel).queryByText('× 93%')).not.toBeInTheDocument()
     expect(within(panel).queryByText('= 5.133,6 kWh')).not.toBeInTheDocument()
-    expect(within(panel).getByText('Score 86 de 100')).toBeInTheDocument()
+    expect(within(panel).getByText('Prioridade 86 de 100')).toBeInTheDocument()
     expect(mockedApi.getUnitDetail).toHaveBeenCalledWith('UC100002', false, expect.anything())
   })
 
@@ -207,7 +206,7 @@ describe('Painel de detalhe da UC', () => {
     expect(await within(panel).findByText('Não foi possível carregar o detalhe da UC')).toBeInTheDocument()
     fireEvent.click(within(panel).getByRole('button', { name: 'Tentar novamente' }))
 
-    expect(await within(panel).findByText('Score 86 de 100')).toBeInTheDocument()
+    expect(await within(panel).findByText('Prioridade 86 de 100')).toBeInTheDocument()
     expect(mockedApi.getUnitDetail).toHaveBeenCalledTimes(2)
   })
 
@@ -233,12 +232,12 @@ describe('Painel de detalhe da UC', () => {
   it('reaproveita o detalhe em cache ao reabrir a mesma UC', async () => {
     renderPage()
     await openByClick()
-    await screen.findByText('Score 86 de 100')
+    await screen.findByText('Prioridade 86 de 100')
     fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'UC100002' })).not.toBeInTheDocument())
 
     await openByClick()
-    await screen.findByText('Score 86 de 100')
+    await screen.findByText('Prioridade 86 de 100')
 
     expect(mockedApi.getUnitDetail).toHaveBeenCalledTimes(1)
   })
@@ -287,7 +286,7 @@ describe('Painel de detalhe da UC', () => {
 
     const panel = await screen.findByRole('dialog', { name: 'UC100002' })
 
-    expect(await within(panel).findByText('Score 86 de 100')).toBeInTheDocument()
+    expect(await within(panel).findByText('Prioridade 86 de 100')).toBeInTheDocument()
     expect(within(panel).queryByRole('button', { name: 'Gerar ordem desta UC' })).not.toBeInTheDocument()
   })
 })

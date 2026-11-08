@@ -5,6 +5,7 @@ import {
   inspectionsQueryOptions,
   inspectorsQueryOptions,
   orderEventsQueryOptions,
+  queueCurveQueryOptions,
   queueFiltersQueryOptions,
   queueSummaryQueryOptions,
   suspiciousUnitsQueryOptions,
@@ -64,6 +65,16 @@ export function useInspectionsQuery() {
  */
 export function useQueueSummaryQuery(selectedIds: string[]) {
   return useQuery(queueSummaryQueryOptions(selectedIds))
+}
+
+/**
+ * Curva de retorno acumulado da fila e o corte sugerido para o custo de inspeção informado.
+ *
+ * @param inspectionCost - Custo de uma inspeção em R$; nulo pede só a curva.
+ * @returns Estado da query da curva.
+ */
+export function useQueueCurveQuery(inspectionCost: number | null) {
+  return useQuery(queueCurveQueryOptions(inspectionCost))
 }
 
 /**

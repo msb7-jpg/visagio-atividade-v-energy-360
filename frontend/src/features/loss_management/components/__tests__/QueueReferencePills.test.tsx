@@ -4,7 +4,6 @@ import { QueueReferencePills } from '@/features/loss_management/components/Queue
 import type { QueueSummary } from '@/features/loss_management/types/lossTypes'
 
 const summary: QueueSummary = {
-  capacidade_total: 200,
   capacidade_programada: 58,
   selecionadas: 0,
   kwh_mes_selecionadas: 0,
