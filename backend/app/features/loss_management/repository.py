@@ -149,7 +149,10 @@ class LossRepository(
             logger.exception("Falha ao consultar tabelas Gold para validar a UC %s.", id_uc)
             raise DatabaseReadError(GOLD_TABLES_ERROR_MESSAGE) from e
         row = result.mappings().first()
-        return to_registered_unit(row) if row else None
+        if row is None:
+            return None
+        unit = to_registered_unit(row)
+        return await self.attach_peer_ratio(unit, reference_competencia) if reference_competencia else unit
 
     async def list_orders(self, status: InspectionStatus | None) -> list[InspectionOrderDTO]:
         """Lista as ordens de inspeção da mais recente para a mais antiga, com o território da UC.

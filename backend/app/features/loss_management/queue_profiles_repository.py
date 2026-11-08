@@ -1,11 +1,14 @@
 """Leitura dos perfis de consumo candidatos à fila, na competência de referência e em cache."""
 
+from dataclasses import replace
+
 from app.features.loss_management.peers import fetch_peer_ratios, profile_builder
 from app.features.loss_management.portfolio_repository import NEUTRAL_PORTFOLIO_RATIO, PortfolioRepositoryMixin
 from app.features.loss_management.queries import SuspicionFilters, build_windows, latest_competencia_query
 from app.features.loss_management.queue_query import suspicious_profiles_query
 from app.features.loss_management.queue_rows_cache import QueueRows, cached_queue_rows
 from app.features.loss_management.reference import AnalysisReference, resolve_analysis_reference
+from app.features.loss_management.scoring import RegisteredUnit
 
 
 class QueueProfilesRepositoryMixin(PortfolioRepositoryMixin):
@@ -13,6 +16,23 @@ class QueueProfilesRepositoryMixin(PortfolioRepositoryMixin):
 
     reference_competencia: str | None
     use_peers: bool
+
+    async def attach_peer_ratio(self, unit: RegisteredUnit, reference_competencia: str) -> RegisteredUnit:
+        """Com `use_peers`, devolve a UC com a mediana da sua classe no perfil, igual à dos perfis da fila.
+
+        Args:
+            unit: UC do cadastro com o perfil de consumo.
+            reference_competencia: Competência em que as janelas de análise terminam ('YYYY-MM').
+
+        Returns:
+            A mesma UC, ou uma cópia com `peer_ratio` preenchido quando o modelo de pares está ligado.
+        """
+        if not self.use_peers:
+            return unit
+        portfolio_ratio = await self.fetch_portfolio_ratio(reference_competencia)
+        peers_by_class = await fetch_peer_ratios(self.session, reference_competencia, portfolio_ratio)
+        peer_ratio = peers_by_class.get(unit.profile.classe_consumo, portfolio_ratio)
+        return replace(unit, profile=replace(unit.profile, peer_ratio=peer_ratio))
 
     async def _read_queue_rows(
         self, filters: SuspicionFilters, field_history_applied: bool

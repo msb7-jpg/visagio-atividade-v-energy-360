@@ -10,10 +10,12 @@ from app.features.loss_management.backtest_schemas import BacktestFilterDTO
 from app.features.loss_management.hit_curve import curve_hit_rate
 from app.features.loss_management.models import InspectionOrder
 from app.features.loss_management.peers import median_ratio_by_class
-from app.features.loss_management.queries import SuspicionFilters
+from app.features.loss_management.queries import SuspicionFilters, build_windows
+from app.features.loss_management.queue_query import evaluated_profiles_query
 from app.features.loss_management.repository import LossRepository
 from app.features.loss_management.schemas import SuspicionReason
 from app.features.loss_management.scoring import ConsumptionProfile, build_suspicious_unit, detect_reasons
+from app.features.loss_management.unit_detail import explain_reasons
 
 TARIFF_RS_KWH = 0.7
 QUEUE_FILTERS = SuspicionFilters(limiar_queda=0.2)
@@ -90,8 +92,8 @@ async def profiles_by_class(use_peers: bool) -> dict[str, float | None]:
     return {profile.classe_consumo: profile.peer_ratio for profile in profiles}
 
 
-async def candidate_profiles(units: dict[str, list[float]], use_peers: bool) -> list[ConsumptionProfile]:
-    """Semeia UCs `{classe: [consumo recente de cada UC]}` (base 100) e devolve os perfis candidatos à fila."""
+async def run_seeded(units: dict[str, list[float]], use_peers: bool, action):
+    """Semeia UCs `{classe: [consumo recente de cada UC]}` (base 100) e devolve `await action(repositório)`."""
     engine = create_async_engine("sqlite+aiosqlite://", poolclass=StaticPool)
     try:
         async with engine.begin() as connection:
@@ -112,10 +114,16 @@ async def candidate_profiles(units: dict[str, list[float]], use_peers: bool) -> 
                         [{"id": row[0], "month": row[1], "kwh": row[2]} for row in rows],
                     )
         async with async_sessionmaker(engine, expire_on_commit=False)() as session:
-            candidates = await LossRepository(session, use_peers=use_peers).fetch_consumption_profiles(QUEUE_FILTERS)
-            return candidates.profiles
+            return await action(LossRepository(session, use_peers=use_peers))
     finally:
         await engine.dispose()
+
+
+async def candidate_profiles(units: dict[str, list[float]], use_peers: bool) -> list[ConsumptionProfile]:
+    async def fetch(repository: LossRepository) -> list[ConsumptionProfile]:
+        return (await repository.fetch_consumption_profiles(QUEUE_FILTERS)).profiles
+
+    return await run_seeded(units, use_peers, fetch)
 
 
 async def test_profiles_carry_the_median_of_their_own_class(monkeypatch):
@@ -180,6 +188,46 @@ async def test_entry_uses_the_drop_relative_to_the_pairs_of_the_class(monkeypatc
 
     assert {profile.id_uc for profile in with_peers} == {"IND0"}
     assert {profile.id_uc for profile in without_peers} == {"RES0", "RES1", "RES2", "IND0"}
+
+
+async def test_the_registered_unit_carries_the_peer_ratio_of_its_class(monkeypatch):
+    monkeypatch.setattr(peers, "MIN_PEER_UNITS", 3)
+    units = {"RESIDENCIAL": [40.0, 60.0, 70.0]}
+
+    async def fetch(repository: LossRepository):
+        return await repository.fetch_registered_unit("RES0")
+
+    with_peers = await run_seeded(units, True, fetch)
+    without_peers = await run_seeded(units, False, fetch)
+
+    assert with_peers.profile.peer_ratio == pytest.approx(0.6)
+    assert without_peers.profile.peer_ratio is None
+
+
+async def test_the_out_of_queue_evaluation_uses_the_same_pairs_as_the_queue():
+    units = {"RESIDENCIAL": [40.0, 60.0, 70.0]}  # com a mediana da classe em 0,6, só RES0 cai além dos pares
+
+    async def evaluated_ids(repository: LossRepository, **pairs) -> set[str]:
+        query = evaluated_profiles_query(build_windows("2026-03"), QUEUE_FILTERS, **pairs)
+        return {row["id_uc"] for row in (await repository.session.execute(query)).mappings().all()}
+
+    async def with_pairs(repository: LossRepository) -> set[str]:
+        return await evaluated_ids(repository, peer_ratios={"RESIDENCIAL": 0.6}, portfolio_ratio=0.7)
+
+    async def raw_drop(repository: LossRepository) -> set[str]:
+        return await evaluated_ids(repository)
+
+    assert await run_seeded(units, True, with_pairs) == {"RES0"}
+    assert await run_seeded(units, False, raw_drop) == {"RES0", "RES1", "RES2"}
+
+
+def test_the_unit_detail_explains_the_drop_against_the_pairs_and_the_curve():
+    profile = make_profile("RESIDENCIAL", 100.0, 75.0, peer_ratio=1.0)
+
+    sentence = explain_reasons(profile, detect_reasons(profile))
+
+    assert "classe" in sentence
+    assert "50%" in sentence  # queda relativa de 25%: no meio da rampa, chance de 50%
 
 
 def test_the_backtest_runs_the_current_model_unless_told_otherwise():

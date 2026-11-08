@@ -202,17 +202,30 @@ def _signal_conditions(
     return [consumo.c.consumo_base_kwh > 0, consumo.c.consumo_recente_kwh.is_not(None), has_drop | has_zero_reading]
 
 
-def evaluated_profiles_query(windows: ConsumptionWindows, filters: SuspicionFilters) -> Select:
+def evaluated_profiles_query(
+    windows: ConsumptionWindows,
+    filters: SuspicionFilters,
+    *,
+    peer_ratios: Mapping[str | None, float] | None = None,
+    portfolio_ratio: float = NEUTRAL_PORTFOLIO_RATIO,
+) -> Select:
     """UCs com sinal de suspeita (queda ou leitura zerada), com ou sem GD ou inspeção que as tire da fila.
+
+    Args:
+        windows: Janelas base e recente.
+        filters: Limiar de queda e filtros opcionais.
+        peer_ratios: Mediana de recente/base de cada classe; com ela o sinal é a queda além dos pares, como na fila.
+        portfolio_ratio: Razão da carteira, usada pela classe que não aparece em `peer_ratios`.
 
     Returns:
         SELECT dos perfis de consumo mais a coluna `possui_gd`; a aba "Fora da fila" subtrai a fila real dele.
     """
     consumo = consumption_subquery(windows)
+    expected_share = _expected_share(peer_ratios, portfolio_ratio)
     return (
         _candidate_select(consumo)
         .add_columns(dim_unidade_consumidora.c.possui_gd)
-        .where(*_signal_conditions(consumo, filters), *_optional_filters(filters))
+        .where(*_signal_conditions(consumo, filters, expected_share), *_optional_filters(filters))
     )
 
 

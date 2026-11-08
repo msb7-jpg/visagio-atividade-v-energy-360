@@ -8,7 +8,7 @@ from app.core.config import Settings, get_settings
 from app.features.executive_dashboard.cache import dashboard_cache
 from app.features.executive_dashboard.repository import ExecutiveDashboardRepository
 from app.features.executive_dashboard.service import ExecutiveDashboardService
-from app.features.loss_management.repository import LossRepository
+from app.features.loss_management.repository_factory import build_loss_repository
 from app.features.revenue.dependencies import CompetenciaQuery, build_window
 from app.features.revenue.repository import RevenueRepository
 from app.features.revenue.schemas import PeriodWindow
@@ -35,7 +35,7 @@ def get_executive_dashboard_service(
     return ExecutiveDashboardService(
         repository=ExecutiveDashboardRepository(db),
         revenue_repository=RevenueRepository(db),
-        loss_repository=LossRepository(db, reference_competencia=settings.loss_reference_competencia),
+        loss_repository=build_loss_repository(db, settings),
         cache=dashboard_cache,
     )
 

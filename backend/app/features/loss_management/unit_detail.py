@@ -8,6 +8,7 @@ from app.features.loss_management.detail_schemas import (
     ScoreBreakdownDTO,
 )
 from app.features.loss_management.hit_rate import MESES_BASE_MINIMO, reason_hit_rate
+from app.features.loss_management.peer_reference import pairs_ratio
 from app.features.loss_management.queries import MESES_JANELA_BASE, MESES_JANELA_RECENTE, shift_competencia
 from app.features.loss_management.schemas import SuspicionReason, SuspiciousUnitDTO
 from app.features.loss_management.scoring import (
@@ -72,9 +73,13 @@ def _portfolio_sentence(profile: ConsumptionProfile, reasons: list[SuspicionReas
 
     Ligação recente (menos de `MESES_BASE_MINIMO` meses de base) não tem taxa medida: a frase avisa e usa a taxa fraca.
     """
-    normalized_drop = normalized_drop_ratio(profile, portfolio_ratio)
+    reference_ratio = pairs_ratio(profile.peer_ratio, portfolio_ratio)
+    normalized_drop = normalized_drop_ratio(profile, reference_ratio)
     drop_reason = next(reason for reason in reasons if reason in DROP_REASONS)
-    hit_percent = round(reason_hit_rate(drop_reason, normalized_drop, profile.meses_base) * PERCENT)
+    measured_curve = profile.peer_ratio is not None
+    hit_percent = round(
+        reason_hit_rate(drop_reason, normalized_drop, profile.meses_base, measured_curve=measured_curve) * PERCENT
+    )
     if profile.meses_base < MESES_BASE_MINIMO:
         month_word = "mês" if profile.meses_base == 1 else "meses"
         return (
@@ -82,7 +87,8 @@ def _portfolio_sentence(profile: ConsumptionProfile, reasons: list[SuspicionReas
             f"UCs com histórico completo não se aplica, e a UC fica na taxa fraca de {hit_percent}%."
         )
     return (
-        f"Descontada a variação da carteira (mediana em {round(portfolio_ratio * PERCENT)}% do consumo base), "
+        f"Descontada a variação {'da classe' if measured_curve else 'da carteira'} "
+        f"(mediana em {round(reference_ratio * PERCENT)}% do consumo base), "
         f"a queda da UC é de {round(normalized_drop * PERCENT)}%; nessa situação, {hit_percent}% das inspeções "
         "históricas acharam irregularidade."
     )

@@ -359,8 +359,10 @@ fora (1.385 de 1.389 entram).
   a 96,0%; abaixo de 20% cada visita extra acerta 8% a 13%. A entrada antiga (queda bruta ≥ 20%) tinha recall de
   98,7% e precisão de 69,7%: o modelo novo perde 25 irregularidades (2,9%), que custariam 330 inspeções a mais com
   7,6% de acerto.
-- **Pendente:** medir a faixa de 20% a 30% no piloto fora da fila (D13); o detalhe da UC e a aba "Fora da fila" ainda
-  usam a queda bruta e a chance por degraus, até o modelo novo virar o padrão.
+- **Em produção:** o modelo com pares é o padrão (`LOSS_USE_PEERS=true`); `false` volta ao anterior. Fila, resumo,
+  filtros, "Fora da fila", detalhe da UC, `kwh_estimado` das ordens, backtest e painel executivo usam a mesma
+  referência.
+- **Pendente:** medir a faixa de 20% a 30% no piloto fora da fila (D13).
 - **Limites:** o backtest cobre só jul–dez/2025, então o verão não é validado. Ele mede apenas UCs que o campo visitou. O
   backtest atual avalia taxas medidas nas mesmas inspeções, e por isso é otimista. O plano está em
   `docs/planning/adrian_cesar/fila-inspecao-sazonalidade-plano.md`.
