@@ -74,7 +74,7 @@ Notebooks: `fatia01_bronze`, `fatia01_silver`, `fatia01_gold`, `fatia01_testes_q
 | `data_leitura` | TEXT | Data real em que o relógio foi aferido (`yyyy-MM-dd`). |
 | `leitura_anterior` | REAL | Índice anterior do medidor. |
 | `leitura_atual` | REAL | Índice atual medido. |
-| `consumo_kwh` | REAL | Consumo real faturável. Tratado para cenários de *rollover* de relógio (ADR-006). Sem valores negativos. |
+| `consumo_kwh` | REAL | Consumo real faturável. Tratado para cenários de *rollover* de relógio (ADR-006). No mês da troca de medidor, a leitura anterior é do medidor retirado e a atual do novo, que começa do zero; o consumo do mês é a leitura do medidor novo (ADR-032, 6.215 leituras). Sem valores negativos; 114 nulos, sem `leitura_anterior` na origem. |
 | `dias_faturamento` | INTEGER | `data_leitura` atual menos a `data_leitura` anterior. Padrão de 30 dias se nulo. |
 | `media_diaria_kwh` | REAL | Consumo / dias faturamento, útil para comparações independentemente de ciclos longos/curtos. |
 | `tipo_leitura` | TEXT | `REAL` (leiturista) ou `ESTIMADA` (fechado pela média por impossibilidade de acesso). |
@@ -125,7 +125,7 @@ Notebooks: `fatia02_bronze`, `fatia02_silver`, `fatia02_gold`, `fatia02_testes_q
 | `valor_energia_rs` | REAL | Valor da energia, em R$. |
 | `tributos_rs` | REAL | Tributos da fatura, em R$. |
 | `valor_total_rs` | REAL | Total da fatura, em R$. Sempre igual a `valor_energia_rs + tributos_rs` (testado). |
-| `consumo_faturado_kwh` | REAL | Consumo do mês, vindo da leitura da Fatia 01 com a mesma UC e competência. Nulo quando a leitura não tem consumo válido (6.329 faturas). |
+| `consumo_faturado_kwh` | REAL | Consumo do mês, vindo da leitura da Fatia 01 com a mesma UC e competência. Nulo quando a leitura não tem consumo válido (114 faturas). No mês da troca de medidor, é a leitura do medidor novo (ADR-032). |
 | `bandeira_tarifaria` | TEXT | `VERDE`, `AMARELA`, `VERMELHA_P1` ou `VERMELHA_P2` (grafias da origem padronizadas). |
 | `tarifa_aplicada_rs_kwh` | REAL | `valor_total_rs / consumo_faturado_kwh`. Só calculada quando o consumo é maior que zero; caso contrário, nula. |
 | `data_emissao` | TEXT | Data de emissão. A origem mistura 4 formatos; quando dia e mês são ambíguos, vale a leitura cujo mês bate com a competência. |

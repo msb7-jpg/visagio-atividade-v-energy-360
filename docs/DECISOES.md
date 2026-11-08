@@ -297,3 +297,12 @@ Documento mestre de decisões arquiteturais e técnicas de todas as fatias do **
 - **Resultado:** com o Painel já pré-calculado, a tela abre em 0,74 s na primeira vez e 0,58 s depois na competência 2025-09, e em 0,17 s em tempo real (165 UCs). A fila gerada é idêntica à anterior em 2025-09, 2025-12 e tempo real (todas as UCs, todos os campos e a mediana da carteira).
 - **Impacto:** nenhuma regra da fila muda. O cache continua sendo refeito quando uma ordem do portal muda (PR #75) e no dia seguinte.
 - **Conformidade:** testes da Fila e do Painel sem mudança de números, `test_loss_queue_rows_cache.py` e `test_loss_scored_queue_cache.py`.
+
+## ADR-032 — Consumo do mês da troca de medidor: leitura do medidor novo
+
+- **Data:** 2026-11-08 · **Fatia:** 01 (feito por Ryei Estevan, com autorização do Renan) · **Status:** Aceita
+- **Contexto:** entre ago/2025 e mar/2026 houve uma campanha de troca de medidores eletromecânicos por inteligentes. No mês da troca, `leitura_anterior` é do medidor retirado (exemplo: UC100073, 67.441) e `leitura_atual` é do novo, que começa do zero (186). A diferença dá um consumo negativo (−67.256 kWh), e a Silver deixava o mês sem consumo. Eram 6.329 faturas sem kWh, quase todas na janela atual (jul/25–jun/26) e só 11 na janela base. Assim, a receita do mês entrava, mas o volume não, e a queda de volume aparecia como −5,1% em vez do "quase 4%" do case.
+- **Decisão:** em `fatia01_silver`, quando há retirada de medidor na mesma UC e competência, o consumo é nulo e a leitura caiu, o consumo do mês passa a ser `leitura_atual` (o que o medidor novo registrou). A coluna `consumo_imputado_troca` marca essas leituras na Silver. O que o medidor velho contou entre a última leitura e a retirada não está na base e fica de fora.
+- **Resultado (pipeline local, 08/11/2026):** 6.215 leituras recuperadas, com média de 417 kWh (a média geral é 414 kWh). Restam 114 nulas, todas sem `leitura_anterior` na origem. Nos períodos padrão: receita +8,0% (igual), volume de −5,12% para −3,97% e tarifa média de +13,8% para +12,5%. Sem as UCs com GD, o volume passa de −0,2% para +1,0%. Nenhuma outra leitura nem fatura mudou.
+- **Impacto:** `fato_medicao.consumo_kwh` e `fato_faturamento.consumo_faturado_kwh` passam a ter consumo no mês da troca. Os números do diagnóstico da receita que dependem do volume precisam ser refeitos (`docs/CORRECOES.md`, seção 2).
+- **Conformidade:** `fatia01_testes_qualidade` e `fatia02_testes_qualidade` aprovados; 0 consumos negativos na Gold.

@@ -198,7 +198,7 @@ Responde à diretora de tecnologia: **um número só para cada coisa**, com a or
 | Nota de satisfação | escala 1 a 5 da origem; chamado sem nota fica nulo | ADR-001 |
 | Ocorrências antes da ligação da UC | continuam no DEC/FEC e ficam marcadas (`fl_anterior_ligacao`, 595 linhas) | ADR-005 |
 | Limite de DEC/FEC | tabela da ANEEL, usada só como referência, nunca como violação | ADR-003 |
-| Volume faturado | a Gold mostra queda de **5,1%** entre jul/2022–jun/2023 e jul/2025–jun/2026, e o case fala em "quase 4%"; a receita (+8,0%) bate. Sem as 3.510 UCs com painel solar, o volume fica praticamente estável (−0,2%) | [diagnóstico](docs/DIAGNOSTICO_RECEITA.md), seções 4 e 6.1 |
+| Volume faturado | a Gold mostra queda de **4,0%** entre jul/2022–jun/2023 e jul/2025–jun/2026, como o "quase 4%" do case, e a receita (+8,0%) bate. Antes de contar o consumo do mês da troca de medidor (ADR-032), a queda aparecia como 5,1%. Sem as 3.510 UCs com painel solar, o volume sobe 1,0% | [diagnóstico](docs/DIAGNOSTICO_RECEITA.md), seções 4 e 6.1 |
 
 ### 📊 Fatia 03: Painel do Diretor e Visão 360 da UC
 
@@ -210,7 +210,7 @@ Os usuários de teste estão em [Logins de demonstração](#logins-de-demonstra�
 
 **Como demonstrar**
 
-- **Painel:** entre como `diretor@venergy.com`. Os períodos padrão comparam jul/2022–jun/2023 com jul/2025–jun/2026: faturamento **+8,0%**, energia faturada **−5,1%** e tarifa média **+13,8%**. Troque os períodos no seletor; as janelas ficam no endereço da página. Passe o mouse no nome de cada indicador para ver como ele é calculado.
+- **Painel:** entre como `diretor@venergy.com`. Os períodos padrão comparam jul/2022–jun/2023 com jul/2025–jun/2026: faturamento **+8,0%**, energia faturada **−4,0%** e tarifa média **+12,5%**. Troque os períodos no seletor; as janelas ficam no endereço da página. Passe o mouse no nome de cada indicador para ver como ele é calculado.
 - **Retrato de perdas no Painel:** sem configurar nada, mostra **7 UCs prioritárias de 165 na fila** (2026-06). Com `LOSS_REFERENCE_COMPETENCIA="2025-09"` (ver Fatia 05), mostra **587 prioritárias de 39.243** e retorno esperado de **R$ 1,53 mi/ano**.
 - **Visão 360:** entre como `atendimento@venergy.com` e busque `UC100094` (ou só `100094`, ou parte do nome do titular). Essa UC tem faturas em aberto, interrupções, chamados e uma inspeção de perdas, então todos os blocos têm dados.
 
@@ -239,7 +239,7 @@ Responde ao diretor comercial: **quanto da variação da receita foi preço e qu
 
 **Como demonstrar**
 
-- Entre como `diretor@venergy.com` e abra "Inteligência Comercial". Nos períodos padrão: receita **+8,0%**, energia faturada **−5,1%** e tarifa média **+13,8%**, os mesmos números do Painel e do diagnóstico.
+- Entre como `diretor@venergy.com` e abra "Inteligência Comercial". Nos períodos padrão: receita **+8,0%**, energia faturada **−4,0%** e tarifa média **+12,5%**, os mesmos números do Painel e do diagnóstico.
 - No ranking por bairro, Jardim Jordão e Brasília Teimosa estão entre as maiores quedas; clique em um bairro para ver a série mensal.
 
 **Suposições**
