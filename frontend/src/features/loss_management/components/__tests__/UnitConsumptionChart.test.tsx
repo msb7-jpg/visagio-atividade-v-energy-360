@@ -22,6 +22,7 @@ vi.mock('recharts', () => ({
   XAxis: () => null,
   YAxis: () => null,
   Tooltip: () => null,
+  ReferenceLine: () => <i data-testid="average-line" />,
   ReferenceArea: ({ x1, x2 }: { x1: string; x2: string }) => <i data-testid="score-area" data-x1={x1} data-x2={x2} />
 }))
 
@@ -69,6 +70,14 @@ describe('UnitConsumptionChart', () => {
       ['2026-01', '2026-03'],
       ['2026-04', '2026-06']
     ])
-    expect(screen.getByText(/3 últimos meses \(consumo recente do score\)/)).toBeInTheDocument()
+    expect(screen.getByText('Base do score (12 meses)')).toBeInTheDocument()
+    expect(screen.getByText('Últimos 3 meses')).toBeInTheDocument()
+  })
+
+  it('traça a média da base e a dos 3 últimos meses quando recebe as médias', () => {
+    render(<UnitConsumptionChart months={buildMonths([1, 2, 3, 4, 5, 6])} averages={{ baseKwh: 2, recentKwh: 5 }} />)
+
+    expect(screen.getAllByTestId('average-line')).toHaveLength(2)
+    expect(screen.getByText('Média da faixa')).toBeInTheDocument()
   })
 })

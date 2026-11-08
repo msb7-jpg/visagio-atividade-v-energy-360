@@ -137,6 +137,9 @@ describe('Painel de detalhe da UC', () => {
 
     const panel = await screen.findByRole('dialog', { name: 'UC100002' })
     expect(await within(panel).findByText('Casa Caiada, Olinda · Residencial')).toBeInTheDocument()
+    expect(within(panel).getByText('Queda abrupta de consumo')).toBeInTheDocument()
+    expect(within(panel).getByText('−83%')).toBeInTheDocument()
+    expect(within(panel).getByText('Como a queda foi medida')).toBeInTheDocument()
     expect(within(panel).getByText(/O consumo caiu de 300 para 50/)).toBeInTheDocument()
     expect(within(panel).getByText('5.520 kWh')).toBeInTheDocument()
     expect(within(panel).queryByText('× 93%')).not.toBeInTheDocument()
@@ -153,7 +156,7 @@ describe('Painel de detalhe da UC', () => {
     fireEvent.click(await within(panel).findByRole('tab', { name: 'Tudo' }))
 
     await waitFor(() => expect(mockedApi.getUnitDetail).toHaveBeenCalledWith('UC100002', true, expect.anything()))
-    expect(await within(panel).findByText('Consumo no histórico da UC')).toBeInTheDocument()
+    expect(await within(panel).findByText('Consumo desde a 1ª leitura')).toBeInTheDocument()
   })
 
   it('abre por teclado com Enter na linha e mostra a data no formato brasileiro', async () => {
@@ -194,7 +197,7 @@ describe('Painel de detalhe da UC', () => {
 
     const panel = await screen.findByRole('dialog', { name: 'UC100002' })
 
-    expect(within(panel).queryByText('Como o score é calculado')).not.toBeInTheDocument()
+    expect(within(panel).queryByText('Score de prioridade')).not.toBeInTheDocument()
     expect(within(panel).getByText('Carregando os dados da UC')).toBeInTheDocument()
   })
 
@@ -227,7 +230,7 @@ describe('Painel de detalhe da UC', () => {
     renderPage()
     await openByClick()
 
-    expect(await screen.findByText('Nenhuma inspeção anterior para esta UC.')).toBeInTheDocument()
+    expect(await screen.findByText('Nenhuma inspeção anterior.')).toBeInTheDocument()
   })
 
   it('reaproveita o detalhe em cache ao reabrir a mesma UC', async () => {
