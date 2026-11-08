@@ -23,7 +23,7 @@ list_suspicious_units_doc = EndpointDoc(
         "dias; os demais motivos de cancelamento devolvem a UC à fila. UCs com ordem "
         "ativa seguem na lista, com `situacao` ordem_gerada ou em_campo. Cada UC traz `score` de 0 a 100 (kWh "
         "esperado relativo ao topo da fila). Filtros por município, bairro, classe e motivo; "
-        "limite padrão de 200 por página (a equipe decide quantas UCs inspecionar; veja /losses/queue-curve). "
+        "limite padrão de 200 por página (a equipe decide quantas UCs inspecionar). "
         "Ordenação decrescente por kWh esperado, isto é, kWh estimado a recuperar vezes a "
         "taxa histórica de acerto do sinal ('probabilidade_acerto'); o score de risco só desempata. "
         "Se a tabela de inspeções de campo (Fatia 02) ainda não existir, a fila é montada sem excluir esse "
@@ -137,21 +137,6 @@ queue_summary_doc = EndpointDoc(
         "não contam como selecionadas. A tarifa de referência vem em `tarifa_rs_kwh`."
     ),
     response_description="Capacidade, energia e valor das selecionadas, retorno esperado e taxa de acerto.",
-    responses={
-        **AUTH_ERROR_RESPONSES,
-        500: {"description": "Falha ao consultar tabelas Gold."},
-    },
-)
-
-queue_curve_doc = EndpointDoc(
-    summary="Curva de retorno acumulado da Fila de Inspeção",
-    description=(
-        "Soma, UC a UC e na ordem da fila, o retorno esperado (energia recuperável x chance de acerto) das UCs "
-        "livres, sem ordem ativa. Mostra onde cada inspeção a mais rende pouco. Com `custo` (R$ por inspeção), "
-        "`corte_sugerido` é quantas UCs inspecionar enquanto o retorno esperado em R$/ano de cada uma cobre o "
-        "custo; sem `custo` devolve só a curva. `pontos` limita o tamanho da resposta e sempre inclui a última UC."
-    ),
-    response_description="Curva reduzida, total de UCs livres e corte sugerido.",
     responses={
         **AUTH_ERROR_RESPONSES,
         500: {"description": "Falha ao consultar tabelas Gold."},

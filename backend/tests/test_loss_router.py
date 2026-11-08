@@ -175,7 +175,6 @@ async def test_role_without_permission_is_forbidden(client):
     [
         "/suspicious-units",
         "/queue-summary",
-        "/queue-curve",
         "/queue-filters",
         "/inspections",
         "/inspections/export",
@@ -188,29 +187,6 @@ async def test_director_can_read_every_loss_endpoint(client, path):
     response = await client.get(f"{BASE_URL}{path}", headers=headers)
 
     assert response.status_code == 200
-
-
-async def test_queue_curve_suggests_every_unit_when_an_inspection_costs_nothing(client):
-    headers = await auth_headers(client, "perdas@venergy.com")
-
-    response = await client.get(f"{BASE_URL}/queue-curve", headers=headers, params={"custo": 0, "pontos": 5})
-
-    body = response.json()
-    assert response.status_code == 200
-    assert {"total_ucs", "pontos", "corte_sugerido", "custo_inspecao_rs", "tarifa_rs_kwh"} <= set(body)
-    assert body["corte_sugerido"] == body["total_ucs"]
-    assert len(body["pontos"]) <= 5
-
-
-async def test_queue_curve_rejects_a_negative_cost_and_too_few_points(client):
-    headers = await auth_headers(client, "perdas@venergy.com")
-
-    negative_cost = await client.get(f"{BASE_URL}/queue-curve", headers=headers, params={"custo": -1})
-    infinite_cost = await client.get(f"{BASE_URL}/queue-curve", headers=headers, params={"custo": "inf"})
-    one_point = await client.get(f"{BASE_URL}/queue-curve", headers=headers, params={"pontos": 1})
-
-    statuses = (negative_cost.status_code, infinite_cost.status_code, one_point.status_code)
-    assert statuses == (422, 422, 422)
 
 
 async def test_inspectors_are_listed_by_code_from_the_field_history(client):

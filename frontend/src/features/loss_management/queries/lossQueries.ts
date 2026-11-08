@@ -13,7 +13,6 @@ export const lossKeys = {
   inspections: () => [...lossKeys.all, 'inspections'] as const,
   queueSummary: (selectedIds: string[]) => [...lossKeys.all, 'queue-summary', selectedIds] as const,
   queueFilters: () => [...lossKeys.all, 'queue-filters'] as const,
-  queueCurve: (inspectionCost: number | null) => [...lossKeys.all, 'queue-curve', inspectionCost] as const,
   inspectors: () => [...lossKeys.all, 'inspectors'] as const
 }
 
@@ -105,21 +104,6 @@ export function queueSummaryQueryOptions(selectedIds: string[]) {
   return queryOptions({
     queryKey: lossKeys.queueSummary(sortedIds),
     queryFn: ({ signal }) => lossApi.getQueueSummary(sortedIds, signal),
-    staleTime: LOSS_STALE_TIME_MS,
-    placeholderData: keepPreviousData
-  })
-}
-
-/**
- * Opções reutilizáveis da curva de retorno acumulado e do corte sugerido para um custo de inspeção.
- *
- * @param inspectionCost - Custo de uma inspeção em R$; nulo pede só a curva, sem corte.
- * @returns Opções de query que mantêm a curva anterior na tela enquanto o novo custo carrega.
- */
-export function queueCurveQueryOptions(inspectionCost: number | null) {
-  return queryOptions({
-    queryKey: lossKeys.queueCurve(inspectionCost),
-    queryFn: ({ signal }) => lossApi.getQueueCurve(inspectionCost, signal),
     staleTime: LOSS_STALE_TIME_MS,
     placeholderData: keepPreviousData
   })

@@ -20,7 +20,6 @@ vi.mock('@/features/loss_management/api/lossApi', () => ({
     listSuspiciousUnits: vi.fn(),
     getQueueSummary: vi.fn(),
     getQueueFilters: vi.fn(),
-    getQueueCurve: vi.fn(),
     listInspections: vi.fn(),
     createInspection: vi.fn(),
     exportInspections: vi.fn()
@@ -128,13 +127,6 @@ describe('Fila de Inspeção', () => {
     vi.clearAllMocks()
     signInAs('gerente_perdas')
     mockedApi.listSuspiciousUnits.mockResolvedValue(buildQueue(UNITS))
-    mockedApi.getQueueCurve.mockResolvedValue({
-      total_ucs: 3,
-      tarifa_rs_kwh: 0.7876,
-      custo_inspecao_rs: null,
-      corte_sugerido: null,
-      pontos: [{ posicao: 3, kwh_mes_acumulado: 120, valor_ano_acumulado_rs: 1130 }]
-    })
     mockedApi.getQueueSummary.mockImplementation(async (selectedIds) => ({
       ...baseSummary,
       selecionadas: selectedIds.length,

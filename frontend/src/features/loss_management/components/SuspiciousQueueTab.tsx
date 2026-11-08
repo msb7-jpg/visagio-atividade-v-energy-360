@@ -7,7 +7,6 @@ import { QueueActionsBar } from '@/features/loss_management/components/QueueActi
 import { QueueBandTabs } from '@/features/loss_management/components/QueueBandTabs'
 import { QueueFilters } from '@/features/loss_management/components/QueueFilters'
 import { QueueReferencePills } from '@/features/loss_management/components/QueueReferencePills'
-import { QueueReturnCurve } from '@/features/loss_management/components/QueueReturnCurve'
 import { QueueWarnings } from '@/features/loss_management/components/QueueWarnings'
 import { SelectionStrip } from '@/features/loss_management/components/SelectionStrip'
 import { UnitDetailSheet } from '@/features/loss_management/components/UnitDetailSheet'
@@ -48,15 +47,6 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
           onGenerate={queue.openDialog}
         />
       </Card>
-      <QueueReturnCurve
-        curve={queue.curve}
-        isError={queue.isCurveError}
-        costText={queue.costText}
-        isStale={queue.isCurveStale}
-        onCostChange={queue.setCostText}
-        onUseCut={(count) => queue.setTopCountText(String(count))}
-        onRetry={queue.retryCurve}
-      />
       <SelectionStrip
         units={queue.selectedUnits}
         summary={summary}

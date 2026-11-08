@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useCanWriteLosses } from '@/features/loss_management/hooks/useCanWriteLosses'
 import { ordersLabel } from '@/features/loss_management/utils/lossFormatters'
-import { MAX_SELECTION_COUNT, parsePositiveInt } from '@/features/loss_management/utils/queueCurve'
+import { MAX_SELECTION_COUNT, parsePositiveInt } from '@/features/loss_management/utils/queueSelection'
 
 const TOP_COUNT_INPUT_ID = 'queue-top-count'
 const TOP_COUNT_HINT_ID = 'queue-top-count-hint'
@@ -47,8 +47,10 @@ export function QueueActionsBar({
   return (
     <div className="ml-auto flex flex-wrap items-end gap-3">
       <div className="flex flex-col gap-1">
-        <Label htmlFor={TOP_COUNT_INPUT_ID}>Quantas UCs inspecionar</Label>
-        <div className="w-24">
+        <Label htmlFor={TOP_COUNT_INPUT_ID}>
+          Quantas UCs<span className="sr-only"> inspecionar</span>
+        </Label>
+        <div className="w-20">
           <Input
             id={TOP_COUNT_INPUT_ID}
             inputMode="numeric"

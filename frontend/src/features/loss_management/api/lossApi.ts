@@ -15,7 +15,6 @@ import type {
 import type { BacktestSeries } from '@/features/loss_management/types/backtestTypes'
 import type { ExcludedQueue, ExcludedUnitsFilter } from '@/features/loss_management/types/excludedTypes'
 import type { OrderEvent } from '@/features/loss_management/types/orderEventTypes'
-import type { ReturnCurve } from '@/features/loss_management/types/queueCurveTypes'
 import type { UnitDetail } from '@/features/loss_management/types/unitDetailTypes'
 
 export const lossApi = {
@@ -56,15 +55,6 @@ export const lossApi = {
     const { data } = await apiClient.get<QueueSummary>('/losses/queue-summary', {
       params: { ucs: selectedIds },
       paramsSerializer: { indexes: null },
-      signal
-    })
-    return data
-  },
-
-  async getQueueCurve(inspectionCost: number | null, signal?: AbortSignal): Promise<ReturnCurve> {
-    // Sem custo a API devolve só a curva, sem corte sugerido.
-    const { data } = await apiClient.get<ReturnCurve>('/losses/queue-curve', {
-      params: inspectionCost === null ? undefined : { custo: inspectionCost },
       signal
     })
     return data

@@ -4,7 +4,7 @@ import type { useSuspiciousUnitsQuery } from '@/features/loss_management/hooks/u
 import { suspiciousUnitsQueryOptions } from '@/features/loss_management/queries/lossQueries'
 import type { SuspiciousUnit, SuspiciousUnitsFilter } from '@/features/loss_management/types/lossTypes'
 import { TOP_SELECTION_COUNT } from '@/features/loss_management/utils/queueBands'
-import { MAX_SELECTION_COUNT, firstFreeUnitIds, parsePositiveInt } from '@/features/loss_management/utils/queueCurve'
+import { MAX_SELECTION_COUNT, firstFreeUnitIds, parsePositiveInt } from '@/features/loss_management/utils/queueSelection'
 
 interface TopUnitsSelectionArgs {
   queueQuery: ReturnType<typeof useSuspiciousUnitsQuery>
