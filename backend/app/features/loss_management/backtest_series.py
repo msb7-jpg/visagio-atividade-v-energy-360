@@ -60,12 +60,15 @@ class BacktestSeriesService:
         fingerprint = await self.fingerprint_cache.get_or_compute(
             session.get_bind(), cutoffs[-1], lambda: self.fingerprint(session, cutoffs[-1])
         )
+        # A série mede o modelo que a fila de produção usa; ligar ou desligar os pares não pode reaproveitar a gravada.
+        model = "novo" if self.repository.use_peers else "atual"
+        fingerprint = f"{fingerprint}|modelo={model}"
 
         async def load_or_compute() -> BacktestSeriesDTO:
             if (saved := self.store.load(fingerprint)) is not None:
                 return saved
             results = [
-                await self.backtest.run(BacktestFilterDTO(corte=cutoff, tamanho=FILA_CAPACIDADE_MENSAL))
+                await self.backtest.run(BacktestFilterDTO(corte=cutoff, tamanho=FILA_CAPACIDADE_MENSAL, modelo=model))
                 for cutoff in cutoffs
             ]
             series = BacktestSeriesDTO(tamanho=FILA_CAPACIDADE_MENSAL, cortes=results)

@@ -9,7 +9,7 @@ from app.features.loss_management import peers
 from app.features.loss_management.backtest_schemas import BacktestFilterDTO
 from app.features.loss_management.hit_curve import curve_hit_rate
 from app.features.loss_management.models import InspectionOrder
-from app.features.loss_management.peers import median_ratio_by_class
+from app.features.loss_management.peers import median_ratio_by_class, peers_cache_key
 from app.features.loss_management.queries import SuspicionFilters, build_windows
 from app.features.loss_management.queue_query import evaluated_profiles_query
 from app.features.loss_management.repository import LossRepository
@@ -219,6 +219,24 @@ async def test_the_out_of_queue_evaluation_uses_the_same_pairs_as_the_queue():
 
     assert await run_seeded(units, True, with_pairs) == {"RES0"}
     assert await run_seeded(units, False, raw_drop) == {"RES0", "RES1", "RES2"}
+
+
+def test_the_cache_key_tells_apart_no_pairs_from_pairs_with_no_class_measured():
+    assert peers_cache_key(None) is None
+    assert peers_cache_key({}) == ()
+    assert peers_cache_key({"RESIDENCIAL": 0.6, None: 0.7}) == peers_cache_key({None: 0.7, "RESIDENCIAL": 0.6})
+
+
+async def test_an_empty_pairs_map_makes_every_class_use_the_portfolio_median():
+    units = {"RESIDENCIAL": [40.0, 60.0, 70.0]}
+
+    async def evaluated_ids(repository: LossRepository) -> set[str]:
+        query = evaluated_profiles_query(
+            build_windows("2026-03"), QUEUE_FILTERS, peer_ratios={}, portfolio_ratio=0.6
+        )
+        return {row["id_uc"] for row in (await repository.session.execute(query)).mappings().all()}
+
+    assert await run_seeded(units, True, evaluated_ids) == {"RES0"}
 
 
 def test_the_unit_detail_explains_the_drop_against_the_pairs_and_the_curve():

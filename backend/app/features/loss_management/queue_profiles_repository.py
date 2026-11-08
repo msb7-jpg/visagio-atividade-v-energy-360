@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 
-from app.features.loss_management.peers import fetch_peer_ratios, profile_builder
+from app.features.loss_management.peers import fetch_peer_ratios, peers_cache_key, profile_builder
 from app.features.loss_management.portfolio_repository import NEUTRAL_PORTFOLIO_RATIO, PortfolioRepositoryMixin
 from app.features.loss_management.queries import SuspicionFilters, build_windows, latest_competencia_query
 from app.features.loss_management.queue_query import suspicious_profiles_query
@@ -61,7 +61,7 @@ class QueueProfilesRepositoryMixin(PortfolioRepositoryMixin):
             portfolio_ratio=portfolio_ratio,
             peer_ratios=peer_ratios,
         )
-        peers_key = tuple(sorted(peer_ratios.items(), key=lambda entry: str(entry[0]))) if peer_ratios else None
+        peers_key = peers_cache_key(peer_ratios)
         criteria = (filters, field_history_applied, reference.competencia, reference.history_until)
         key = (*criteria, portfolio_ratio, peers_key)
         profiles = await cached_queue_rows(self.session, key, query, profile_builder(peer_ratios, portfolio_ratio))

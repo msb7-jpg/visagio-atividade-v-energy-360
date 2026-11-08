@@ -40,6 +40,20 @@ def median_ratio_by_class(
     }
 
 
+def peers_cache_key(peer_ratios: PeerRatios | None) -> tuple | None:
+    """Chave de cache das medianas por classe: None sem pares, e tupla ordenada com pares (mesmo mapa vazio).
+
+    Args:
+        peer_ratios: Mediana por classe, ou None quando o modelo de pares está desligado.
+
+    Returns:
+        Valor comparável: o mapa vazio de um modelo com pares não pode colidir com a ausência de pares.
+    """
+    if peer_ratios is None:
+        return None
+    return tuple(sorted(peer_ratios.items(), key=lambda entry: str(entry[0])))
+
+
 def profile_builder(peer_ratios: PeerRatios | None, portfolio_ratio: float) -> Callable[[Mapping[str, Any]], Any]:
     """Cria o conversor de linha da fila em perfil, com a razão dos pares da classe da UC.
 

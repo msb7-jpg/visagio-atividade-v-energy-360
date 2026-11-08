@@ -20,6 +20,7 @@ function renderCurve(overrides: Partial<Parameters<typeof QueueReturnCurve>[0]> 
       curve={curve}
       isError={false}
       costText="150"
+      isStale={false}
       onCostChange={vi.fn()}
       onUseCut={vi.fn()}
       onRetry={vi.fn()}
@@ -43,6 +44,12 @@ describe('QueueReturnCurve', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Usar o corte sugerido (3)' }))
 
     expect(onUseCut).toHaveBeenCalledWith(3)
+  })
+
+  it('não deixa aplicar o corte enquanto a curva mostrada é a de um custo anterior', () => {
+    renderCurve({ isStale: true })
+
+    expect(screen.getByRole('button', { name: 'Usar o corte sugerido (3)' })).toBeDisabled()
   })
 
   it('avisa o custo digitado ao componente pai', () => {

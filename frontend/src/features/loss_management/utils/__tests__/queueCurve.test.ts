@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { ReturnCurve } from '@/features/loss_management/types/queueCurveTypes'
-import { describeCut, parseCostInput, parsePositiveInt } from '@/features/loss_management/utils/queueCurve'
+import {
+  MAX_SELECTION_COUNT,
+  describeCut,
+  parseCostInput,
+  parsePositiveInt
+} from '@/features/loss_management/utils/queueCurve'
 
 function makeCurve(overrides: Partial<ReturnCurve> = {}): ReturnCurve {
   return {
@@ -34,8 +39,12 @@ describe('parsePositiveInt', () => {
     expect(parsePositiveInt(' 200 ')).toBe(200)
   })
 
-  it.each([[''], ['0'], ['-3'], ['2,5'], ['abc']])('recusa "%s"', (text) => {
+  it.each([[''], ['0'], ['-3'], ['2,5'], ['abc'], ['9'.repeat(400)]])('recusa "%s"', (text) => {
     expect(parsePositiveInt(text)).toBeNull()
+  })
+
+  it('o máximo marcado por vez espelha o limite de UCs que o resumo da seleção aceita no servidor', () => {
+    expect(MAX_SELECTION_COUNT).toBe(400)
   })
 })
 

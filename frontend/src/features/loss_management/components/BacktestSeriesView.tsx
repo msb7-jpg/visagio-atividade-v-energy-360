@@ -37,7 +37,8 @@ export function BacktestSeriesView({ results, selected, onSelectCutoff }: Backte
       </p>
       <p className="text-muted-foreground text-xs">
         Os cortes cobrem só julho a dezembro de 2025, os meses com inspeções de campo registradas: o comportamento da
-        fila no verão (janeiro a março), quando o consumo sobe, não foi medido com inspeções reais.
+        fila no verão (janeiro a março), quando o consumo sobe, não foi medido com inspeções reais. As chances de
+        acerto da fila também foram medidas nessas inspeções, então a precisão tende a ser otimista.
       </p>
       <div className="flex max-w-xs flex-col gap-1.5">
         <Label htmlFor="backtest-corte">Corte em detalhe</Label>

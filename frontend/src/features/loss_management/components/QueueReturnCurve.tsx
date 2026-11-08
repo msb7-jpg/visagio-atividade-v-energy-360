@@ -13,11 +13,13 @@ const COST_INPUT_ID = 'queue-curve-cost'
 interface CurveBodyProps {
   curve: ReturnCurve | undefined
   isError: boolean
+  /** True enquanto a curva mostrada é a de um custo anterior: o corte dela não vale para o custo digitado. */
+  isStale: boolean
   onUseCut: (count: number) => void
   onRetry: () => void
 }
 
-function CurveBody({ curve, isError, onUseCut, onRetry }: CurveBodyProps) {
+function CurveBody({ curve, isError, isStale, onUseCut, onRetry }: CurveBodyProps) {
   if (!curve) {
     return isError ? (
       <ErrorState
@@ -42,7 +44,7 @@ function CurveBody({ curve, isError, onUseCut, onRetry }: CurveBodyProps) {
           </p>
         </div>
         {cut > 0 ? (
-          <Button type="button" variant="outline" size="sm" onClick={() => onUseCut(cut)}>
+          <Button type="button" variant="outline" size="sm" disabled={isStale} onClick={() => onUseCut(cut)}>
             Usar o corte sugerido ({cut})
           </Button>
         ) : null}
@@ -70,7 +72,8 @@ export function QueueReturnCurve({ costText, onCostChange, ...bodyProps }: Queue
         <div className="flex flex-col gap-1">
           <h2 className="text-sm font-medium">Quantas inspecionar</h2>
           <p className="text-muted-foreground text-xs">
-            Retorno esperado somado, da primeira UC livre da fila até cada posição.
+            Retorno esperado somado, da primeira UC livre da fila até cada posição. A curva considera a fila inteira, sem
+            os filtros.
           </p>
         </div>
         <div className="flex flex-col gap-1">

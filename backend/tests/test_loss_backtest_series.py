@@ -19,8 +19,11 @@ class FakeEngine:
 
 
 class FakeRepository:
-    def __init__(self, engine: FakeEngine, hit_rate: FieldHitRate | None = HIT_RATE) -> None:
+    def __init__(
+        self, engine: FakeEngine, hit_rate: FieldHitRate | None = HIT_RATE, *, use_peers: bool = False
+    ) -> None:
         self.session = SimpleNamespace(get_bind=lambda: engine)
+        self.use_peers = use_peers
         self._hit_rate = hit_rate
 
     async def fetch_field_hit_rate(self) -> FieldHitRate | None:
@@ -84,7 +87,7 @@ async def test_the_series_is_saved_for_the_next_start_of_the_api(tmp_path):
 
     series = await scenario.service().run()
 
-    assert scenario.store.load("chave-1") == series
+    assert scenario.store.load("chave-1|modelo=atual") == series  # a chave leva o modelo que a série mediu
 
 
 async def test_a_second_request_is_answered_from_memory(tmp_path):
@@ -117,7 +120,7 @@ async def test_a_new_fingerprint_recomputes_the_series(tmp_path):
     await scenario.service(fresh_memory=True).run()  # outro dia: a chave é conferida de novo
 
     assert len(scenario.backtest.calls) == calls_after_first + len(CUTOFFS)
-    assert scenario.store.load("chave-2") is not None
+    assert scenario.store.load("chave-2|modelo=atual") is not None
 
 
 async def test_the_fingerprint_is_computed_once_a_day_not_on_every_request(tmp_path):

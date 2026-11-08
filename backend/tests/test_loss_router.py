@@ -205,9 +205,11 @@ async def test_queue_curve_rejects_a_negative_cost_and_too_few_points(client):
     headers = await auth_headers(client, "perdas@venergy.com")
 
     negative_cost = await client.get(f"{BASE_URL}/queue-curve", headers=headers, params={"custo": -1})
+    infinite_cost = await client.get(f"{BASE_URL}/queue-curve", headers=headers, params={"custo": "inf"})
     one_point = await client.get(f"{BASE_URL}/queue-curve", headers=headers, params={"pontos": 1})
 
-    assert (negative_cost.status_code, one_point.status_code) == (422, 422)
+    statuses = (negative_cost.status_code, infinite_cost.status_code, one_point.status_code)
+    assert statuses == (422, 422, 422)
 
 
 async def test_inspectors_are_listed_by_code_from_the_field_history(client):

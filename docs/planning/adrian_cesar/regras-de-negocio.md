@@ -215,6 +215,13 @@ de carro ganha apóstrofo, para não virar fórmula.
 - A entrada por queda relativa perde 2,9% das irregularidades que a queda bruta pegava (25 de 867); pegá-las custaria
   330 inspeções a mais, com 7,6% de acerto. (D16)
 - Os testes de rota do backend rodam com `LOSS_USE_PEERS=false` (`conftest.py`); o modelo com pares tem testes próprios.
+- A regra de retorno antecipado da reincidência (seção 4) ainda mede a "nova queda súbita" contra a mediana da
+  **carteira**, e não contra os pares; a entrada e os sinais usam os pares. Uma UC pode voltar antes do prazo por um
+  critério e ser avaliada por outro. Decisão pendente da revisão de código de 2026-11-08.
+- Os patamares de 7,9% e 92,5% foram medidos nas mesmas inspeções que o backtest usa: a precisão da aba Efetividade
+  tende a ser otimista. A aba avisa.
+- A curva de retorno considera a fila inteira, sem os filtros da tela; o "Marcar as N primeiras" respeita os filtros.
+- "Marcar as N primeiras" vale no máximo 400 UCs por vez (o resumo da seleção não aceita mais).
 - Ordens antigas só com fiscal exportam `inspetor_selecionado` vazio.
 - A data da ordem usa `atualizado_em` do servidor, e o corte de reincidência parte da competência de referência; com
   referência fixada no passado os dois podem divergir.

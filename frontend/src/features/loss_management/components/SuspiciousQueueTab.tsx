@@ -42,6 +42,7 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
         <QueueActionsBar
           selectedCount={queue.selectedUnits.length}
           topCountText={queue.topCountText}
+          isSelecting={queue.isSelectingTop}
           onTopCountTextChange={queue.setTopCountText}
           onSelectTop={queue.selectTopUnits}
           onGenerate={queue.openDialog}
@@ -51,6 +52,7 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
         curve={queue.curve}
         isError={queue.isCurveError}
         costText={queue.costText}
+        isStale={queue.isCurveStale}
         onCostChange={queue.setCostText}
         onUseCut={(count) => queue.setTopCountText(String(count))}
         onRetry={queue.retryCurve}

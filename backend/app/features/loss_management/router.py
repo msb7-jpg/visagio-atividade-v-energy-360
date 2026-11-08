@@ -56,6 +56,7 @@ from app.shared.role_groups import PERDAS_ACCESS, PERDAS_WRITE
 EXPORT_FILENAME = "ordens_inspecao_campo.csv"
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 MAX_SELECTED_UNITS = FILA_CAPACIDADE_MENSAL * 2
+MAX_INSPECTION_COST_RS = 1_000_000
 DEFAULT_CURVE_POINTS = 200
 MAX_CURVE_POINTS = 500
 UnitId = Annotated[str, StringConstraints(min_length=1, max_length=20)]
@@ -133,7 +134,7 @@ async def queue_summary(
 async def queue_curve(
     service: QueueCurveSvc,
     inspection_cost: Annotated[
-        float | None, Query(alias="custo", ge=0, description="Custo de uma inspeção, em R$.")
+        float | None, Query(alias="custo", ge=0, le=MAX_INSPECTION_COST_RS, description="Custo de uma inspeção, em R$.")
     ] = None,
     max_points: Annotated[
         int, Query(alias="pontos", ge=2, le=MAX_CURVE_POINTS, description="Máximo de pontos da curva.")

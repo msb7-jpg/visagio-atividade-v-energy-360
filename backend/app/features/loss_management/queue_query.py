@@ -186,6 +186,8 @@ def _expected_share(
     """Fração do consumo base que a UC deveria manter: a mediana da classe (pares), ou 1.0 sem pares."""
     if peer_ratios is None:
         return 1.0
+    if not peer_ratios:
+        return portfolio_ratio  # modelo com pares, mas nenhuma classe medida: todas usam a mediana da carteira
     return case(dict(peer_ratios), value=dim_unidade_consumidora.c.classe_consumo, else_=portfolio_ratio)
 
 

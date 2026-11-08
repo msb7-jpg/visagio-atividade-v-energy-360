@@ -5,6 +5,9 @@ import { parseKwh } from '@/features/loss_management/utils/resultFormValidation'
 
 const POSITIVE_INTEGER = /^\d+$/
 
+/** UCs que se marcam por vez: espelha `MAX_SELECTED_UNITS` do backend, acima do qual o resumo da seleção dá 422. */
+export const MAX_SELECTION_COUNT = 400
+
 /**
  * Lê o custo por inspeção digitado em pt-BR ("150", "150,50", "1.240").
  *
@@ -26,7 +29,7 @@ export function parseCostInput(costText: string): number | null {
 export function parsePositiveInt(countText: string): number | null {
   const trimmedText = countText.trim()
   const count = POSITIVE_INTEGER.test(trimmedText) ? Number(trimmedText) : 0
-  return count >= 1 ? count : null
+  return Number.isSafeInteger(count) && count >= 1 ? count : null
 }
 
 /**

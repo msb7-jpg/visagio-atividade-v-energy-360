@@ -136,7 +136,7 @@ class ExcludedUnitsRepositoryMixin(QueueSummaryRepositoryMixin, PortfolioReposit
             closed_orders = tuple((await self.session.execute(orders_version_query())).one())
             # As UCs da fila entram na chave: se uma ordem fecha entre o cálculo da fila e o das exclusões, a lista
             # calculada para uma fila não pode servir a outra.
-            key = (reference.competencia, reference.history_until, closed_orders, frozenset(queue_ids))
+            key = (reference.competencia, reference.history_until, closed_orders, frozenset(queue_ids), self.use_peers)
             return await _excluded_units_cache.get_or_compute(
                 self.session.get_bind(), key, lambda: self._compute_excluded_units(reference, queue_ids)
             )

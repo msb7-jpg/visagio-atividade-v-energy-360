@@ -1156,3 +1156,23 @@
   - Não verificado no navegador; o custo real de uma inspeção é desconhecido, por isso o custo é um campo da tela.
   - As faixas "Prioritárias" e "Baixa chance" (corte de 30%) continuam como estavam.
 - **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 934; frontend: tsc, ESLint, Fallow e vitest 814, sem falhas.
+
+### [2026-11-08] - Revisão de código da Fase 19 (python-reviewer e react-reviewer)
+- **Autor:** Adrian Cesar
+- **O que foi feito:** duas revisões independentes sobre `git diff 9cc9396..HEAD`, sem CRITICAL. Corrigido:
+  - **A série do backtest (aba Efetividade) media o modelo antigo mesmo com os pares ligados.** O campo temporário `modelo` nunca era repassado. A série agora herda `use_peers` do repositório e a chave gravada em disco leva o modelo (`|modelo=novo`), então ligar ou desligar a flag não reaproveita a série errada.
+  - Chaves de cache: o "Fora da fila" passou a incluir `use_peers`; o mapa de pares vazio não colide mais com a ausência de pares (`peers_cache_key`), e `_expected_share` trata o mapa vazio com a mediana da carteira.
+  - `GET /losses/queue-curve`: `custo` aceitava `inf`; agora tem teto de R$ 1.000.000.
+  - Frontend: o laço de "Marcar as N primeiras" repetia a chamada sem fim quando uma página falhava (`fetchNextPage` não lança) e agora sai em erro ou quando a página não traz UCs novas; N tem teto de 400 UCs por vez (o resumo da seleção devolve 422 acima disso); o botão trava enquanto marca; o custo tem debounce de 400 ms e o botão "Usar o corte sugerido" fica desligado enquanto a curva é a de um custo anterior; a lógica de marcação foi para `useTopUnitsSelection` (a complexidade cognitiva do controlador passou de 15).
+  - Acessibilidade: o nome do botão passou a conter o texto visível, com singular para N = 1; o campo N ganhou `aria-invalid` e aviso do teto.
+  - A Efetividade avisa que as chances de acerto foram medidas nas mesmas inspeções, então a precisão tende a ser otimista.
+- **Dificuldades / Desafios:**
+  - O Fallow reprovou a complexidade do controlador depois da correção do laço; extrair o hook resolveu.
+  - Dois testes antigos da série esperavam a chave sem o modelo e um falso de repositório sem `use_peers`: ajustados para a chave nova.
+- **Pendências (não corrigidas, registradas):**
+  - A regra de retorno antecipado da reincidência ainda usa a mediana da carteira, não os pares.
+  - A mediana da carteira e as dos pares varrem `fato_medicao` duas vezes (cache frio), e o `GET /losses/backtest?corte=` de um corte avulso expulsa essas entradas do cache diário.
+  - `useDebouncedValue` existe também na Fatia 03 (`customer360`): promover para um local compartilhado (`src/hooks/`) é uma mudança transversal.
+  - Sem teste de integração de rota com `LOSS_USE_PEERS=true` e sem teste de propriedade da ordem da curva; o gráfico não tem teste de `ReferenceLine`; com uma única UC o `domain=[1,'dataMax']` pode não desenhar a linha.
+  - "Marcar as N primeiras" com a fila filtrada por outra situação só olha a primeira página.
+- **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 939; frontend: tsc, ESLint, Fallow e vitest 823, sem falhas.
