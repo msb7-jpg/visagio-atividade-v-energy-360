@@ -14,7 +14,12 @@ from app.features.loss_management.queries import SuspicionFilters, build_windows
 from app.features.loss_management.queue_query import evaluated_profiles_query
 from app.features.loss_management.repository import LossRepository
 from app.features.loss_management.schemas import SuspicionReason
-from app.features.loss_management.scoring import ConsumptionProfile, build_suspicious_unit, detect_reasons
+from app.features.loss_management.scoring import (
+    JANELA_RECUPERACAO_MESES,
+    ConsumptionProfile,
+    build_suspicious_unit,
+    detect_reasons,
+)
 from app.features.loss_management.unit_detail import explain_reasons
 
 TARIFF_RS_KWH = 0.7
@@ -169,7 +174,7 @@ def test_the_deficit_discounts_the_part_that_the_season_explains():
     )
 
     assert unit.kwh_mes_recuperavel == pytest.approx(20.0)  # esperado 70 kWh, consumiu 50
-    assert unit.kwh_estimado_recuperar == pytest.approx(60.0)
+    assert unit.kwh_estimado_recuperar == pytest.approx(20.0 * JANELA_RECUPERACAO_MESES)
     assert unit.valor_ano_rs == pytest.approx(20.0 * 12 * TARIFF_RS_KWH)
 
 

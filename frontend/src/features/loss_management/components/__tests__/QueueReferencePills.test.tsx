@@ -39,7 +39,7 @@ describe('QueueReferencePills', () => {
     fireEvent.focus(screen.getByRole('button', { name: 'como calculamos' }))
 
     expect(
-      await screen.findByText('Estimativa de 3 meses de déficit: em campo, o recuperado foi 1,87× o estimado (mediana)')
+      await screen.findByText('Estimativa de 10 meses de déficit, a mediana recuperada em campo (metade das inspeções, de 7,6 a 12,9 meses)')
     ).toBeInTheDocument()
   })
 

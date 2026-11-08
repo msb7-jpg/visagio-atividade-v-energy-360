@@ -1196,3 +1196,19 @@
   - Calibrar o multiplicador de 3 meses do déficit (D7) com o `kwh_recuperado` real, que ficou 2,7 a 3,4 vezes acima do esperado.
   - `por_motivo` continua no DTO, mas a tela não o usa mais.
 - **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 944; frontend: tsc, ESLint, Fallow e vitest 830, sem falhas.
+
+### [2026-11-08] - Multiplicador do déficit calibrado em campo: de 3 para 10 meses (D7)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Medida.** Em 849 inspeções com irregularidade e kWh recuperado (ago-dez/2025), o campo recuperou em mediana **10,3 meses** do déficit relativo aos pares (quartis 7,6 e 12,9; residencial 11,0, comercial 9,0; por mês de 8,4 a 11,7). Contra o déficit bruto do modelo antigo a mediana é 6,0 meses, que explicava a antiga nota "1,87× o estimado".
+  - **Mudança.** `JANELA_RECUPERACAO_MESES` passou de 3 (suposição, sem fonte) para 10, com a origem documentada na constante. O frontend espelha o valor e a nota passou a dizer "Estimativa de 10 meses de déficit, a mediana recuperada em campo (metade das inspeções, de 7,6 a 12,9 meses)". Tooltip da prioridade e texto do backtest atualizados.
+  - **Alcance.** A ordenação da fila não muda (multiplicar todas as UCs pela mesma constante não altera a ordem). O kWh/mês e o R$/ano também não mudam: o R$/ano já usa 12 meses de déficit. Mudam o kWh estimado a recuperar, o `kwh_estimado` das ordens e a energia esperada do backtest. Só 9 testes tinham o "×3" escrito à mão; agora derivam da constante.
+- **Resultado medido (Gold real, pares, N = 200):** recuperado ÷ esperado de **3,2 para 0,95**, por corte de 0,81 a 1,00 (julho 1,00; agosto 0,92; setembro 1,00; outubro 0,96; novembro 0,81).
+- **Correção de uma imprecisão anterior:** a entrada de Efetividade deste dia dizia que o R$/ano da curva de retorno também era conservador. Não é: ele usa 12 meses de déficit e não depende do multiplicador.
+- **Dificuldades / Desafios:**
+  - O multiplicador depende do modelo: com `LOSS_USE_PEERS=false` o déficit é o bruto, e o valor adequado seria ~6.
+  - A calibração e a verificação usam as mesmas inspeções (sem teste fora da amostra), e os meses finais recuperaram um pouco menos (dezembro 8,4; corte de novembro 0,81).
+- **Pendências:**
+  - Medir vários N (50, 100 e 200) no backtest e alimentar as faixas com os resultados das ordens concluídas no portal.
+  - Rever o multiplicador quando houver inspeções de 2026, para ver se a queda dos meses finais é tendência.
+- **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 944; frontend: tsc, ESLint, Fallow e vitest 830, sem falhas.

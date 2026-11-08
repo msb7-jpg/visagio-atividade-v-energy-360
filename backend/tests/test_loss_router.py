@@ -8,6 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db.session import get_db
 from app.features.loss_management.models import InspectionOrder
+from app.features.loss_management.scoring import JANELA_RECUPERACAO_MESES
 from app.main import app
 from tests.loss_tariff import BILLING_ROWS
 
@@ -137,7 +138,7 @@ async def test_suspicious_units_ranked_and_solar_excluded(client):
     assert [unit["id_uc"] for unit in units] == ["UC_FRAUDE", "UC_INSPECAO_ANTIGA", "UC_ZERADA"]
     assert units[0]["motivos"] == ["queda_subita"]
     assert units[0]["meses_base"] == 12
-    assert units[0]["kwh_estimado_recuperar"] == pytest.approx(750.0)
+    assert units[0]["kwh_estimado_recuperar"] == pytest.approx(250.0 * JANELA_RECUPERACAO_MESES)
 
 
 async def test_suspicious_units_offset_pages_through_the_queue_without_changing_the_total(client):
@@ -334,7 +335,7 @@ async def test_create_computes_estimated_kwh_on_server_like_the_queue(client):
     created = await client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_FRAUDE"})
 
     assert created.status_code == 201
-    assert created.json()["kwh_estimado"] == pytest.approx(750.0)
+    assert created.json()["kwh_estimado"] == pytest.approx(250.0 * JANELA_RECUPERACAO_MESES)
 
 
 async def test_create_rejects_client_supplied_estimated_kwh(client):

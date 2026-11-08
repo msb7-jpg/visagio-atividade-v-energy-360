@@ -6,6 +6,7 @@ from sqlalchemy import text
 
 from app.core.config import Settings, get_settings
 from app.features.loss_management.schemas import QueueWarningCode
+from app.features.loss_management.scoring import JANELA_RECUPERACAO_MESES
 from app.main import app
 from tests.loss_tariff import BILLING_ROWS
 from tests.test_loss_router import BASE_URL, auth_headers, open_client
@@ -100,7 +101,7 @@ async def test_fixed_reference_shows_the_queue_as_it_was_that_month(past_client)
     queue = await list_queue(past_client)
 
     assert sorted(unit["id_uc"] for unit in queue["itens"]) == ["UC_INSPECIONADA_DEPOIS", "UC_ONDA"]
-    assert queue["itens"][0]["kwh_estimado_recuperar"] == pytest.approx(600.0)
+    assert queue["itens"][0]["kwh_estimado_recuperar"] == pytest.approx(200.0 * JANELA_RECUPERACAO_MESES)
 
 
 async def test_fixed_reference_warns_which_competencia_the_queue_uses(past_client):
@@ -116,7 +117,7 @@ async def test_order_estimate_uses_the_same_reference_as_the_queue(past_client):
     created = await past_client.post(f"{BASE_URL}/inspections", headers=headers, json={"id_uc": "UC_ONDA"})
 
     assert created.status_code == 201
-    assert created.json()["kwh_estimado"] == pytest.approx(600.0)
+    assert created.json()["kwh_estimado"] == pytest.approx(200.0 * JANELA_RECUPERACAO_MESES)
 
 
 async def test_order_estimate_without_reference_follows_the_latest_competencia(live_client):

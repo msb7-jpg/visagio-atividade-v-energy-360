@@ -69,7 +69,9 @@ afrouxa a regra. Os 12 meses são suposição adotada pelo dono da fatia, sem va
 
 - **Déficit mensal:** consumo esperado menos consumo recente, mínimo 0 (`monthly_deficit_kwh`). O esperado é
   `consumo base × mediana dos pares`: a queda que a estação explica não conta como energia a recuperar. (D16)
-- **kWh a recuperar:** déficit mensal × **3 meses** (`JANELA_RECUPERACAO_MESES`). Suposição, sem fonte regulatória. (D7)
+- **kWh a recuperar:** déficit mensal × **10 meses** (`JANELA_RECUPERACAO_MESES`): a mediana de meses de déficit que o
+  campo recuperou em 849 inspeções irregulares (quartis 7,6 e 12,9). Era 3, sem fonte. Não altera a ordem da fila nem o
+  kWh/mês e o R$/ano. (D7)
 - **Tarifa média:** receita faturada ÷ energia faturada dos **últimos 12 meses** de `fato_faturamento`, ponderada
   pelo consumo, com 4 casas. Sem energia faturada o cálculo falha com erro explícito. (`tariff.py`, D8)
 - **Valor a recuperar (R$):** kWh a recuperar × tarifa. **Valor por ano:** déficit mensal × 12 × tarifa.
@@ -225,7 +227,8 @@ de carro ganha apóstrofo, para não virar fórmula.
 - **Efetividade.** A aba compara o previsto com o realizado: acerto previsto contra observado, energia esperada (energia a
   recuperar vezes a chance, só das UCs inspecionadas) contra a recuperada, calibração por faixa de chance e a cobertura da
   fila (irregularidades confirmadas pelo campo que a fila inteira do corte continha). Nos 5 cortes de 2025 a energia
-  recuperada foi de 2,7 a 3,4 vezes a esperada: a estimativa de 3 meses de déficit é conservadora (D7, D16). O backtest
+  recuperada era 2,7 a 3,4 vezes a esperada com 3 meses de déficit; com os 10 meses calibrados ficou em 0,95 (0,81 a 1,00),
+mas a calibração usa as mesmas inspeções, então a razão perto de 1 não prova a estimativa (D7, D16). O backtest
   mede N = 200 contra 3 meses de inspeções, o que subestima a cobertura do top N.
 - Ordens antigas só com fiscal exportam `inspetor_selecionado` vazio.
 - A data da ordem usa `atualizado_em` do servidor, e o corte de reincidência parte da competência de referência; com

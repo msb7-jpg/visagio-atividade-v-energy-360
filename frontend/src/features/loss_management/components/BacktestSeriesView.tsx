@@ -60,9 +60,10 @@ export function BacktestSeriesView({ results, selected, onSelectCutoff }: Backte
       <h3 className="text-sm font-medium">Previsto contra realizado, por faixa de chance</h3>
       <BandCalibrationTable bands={selected.por_faixa} />
       <p className="text-muted-foreground text-xs">
-        Energia esperada é a energia a recuperar (3 meses de déficit) vezes a chance de acerto, só das UCs inspecionadas.
-        Recuperada bem acima da esperada indica que a estimativa é conservadora. Faixa sem inspeções fica em branco: não
-        há dado para medir, e a rampa de 20% a 30% segue uma suposição.
+        Energia esperada é a energia a recuperar (10 meses de déficit, a mediana do que o campo recuperou) vezes a chance
+        de acerto, só das UCs inspecionadas. Como o multiplicador foi calibrado nestas mesmas inspeções, a razão entre
+        recuperada e esperada tende a ficar perto de 1. Faixa sem inspeções fica em branco: não há dado para medir, e a
+        rampa de 20% a 30% segue uma suposição.
       </p>
     </div>
   )

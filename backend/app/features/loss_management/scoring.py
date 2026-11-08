@@ -8,7 +8,9 @@ from app.features.loss_management.schemas import InspectionStatus, SuspicionReas
 
 LIMIAR_QUEDA_SUBITA = 0.5
 LIMIAR_QUEDA_MODERADA = 0.2  # piso da fila classificada: abaixo disso a UC não entra
-JANELA_RECUPERACAO_MESES = 3
+# Mediana de meses de déficit (relativo aos pares) que o campo recuperou em 849 inspeções irregulares, ago-dez/2025:
+# 10,3, com metade entre 7,6 e 12,9 (D7, D16). Era 3, sem fonte. Com LOSS_USE_PEERS=false o déficit é bruto: ~6.
+JANELA_RECUPERACAO_MESES = 10
 MESES_POR_ANO = 12
 PESO_QUEDA_CONSUMO = 80.0
 BONUS_LEITURA_ZERADA = 20.0

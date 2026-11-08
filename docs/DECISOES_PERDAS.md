@@ -79,7 +79,16 @@ fora (1.385 de 1.389 entram).
 
 ## 3. Energia a recuperar
 
-### D7. kWh estimado = déficit mensal x 3 meses (suposição)
+### D7. kWh estimado = déficit mensal x 10 meses, calibrado em campo (era 3, suposição)
+- **Atualização (2026-11-08):** o multiplicador passou de 3 para **10**. Nas 849 inspeções com irregularidade e kWh
+  recuperado (ago-dez/2025), medido contra o déficit relativo aos pares, o campo recuperou em mediana **10,3 meses** de
+  déficit (quartis 7,6 e 12,9; residencial 11,0 e comercial 9,0; por mês de 8,4 a 11,7). Contra o déficit bruto do modelo
+  antigo a mediana é 6,0 meses (a antiga nota "1,87× o estimado"). Com 3 meses, a energia recuperada era 2,7 a 3,4 vezes a
+  esperada no backtest; com 10, a razão ficou em 0,95 (0,81 a 1,00 por corte). A ordenação da fila não muda, e o
+  **R$/ano e o kWh/mês não dependem do multiplicador**: o R$/ano já usa 12 meses de déficit. Muda o kWh estimado a
+  recuperar, o `kwh_estimado` das ordens e a energia esperada do backtest. Limites: a medida é do mesmo histórico (ago-dez/2025),
+  sem teste fora da amostra, e os meses finais recuperaram um pouco menos (dezembro: 8,4). Com `LOSS_USE_PEERS=false` o
+  déficit é o bruto e o multiplicador adequado seria ~6. O texto abaixo é o registro original, com 3 meses.
 - **Decisão:** a energia a recuperar é `(consumo base - consumo recente) x 3`.
 - **O que os dados mostram** (188 ordens irregulares da demonstração de `2025-08`): o recuperado foi em mediana
   **1,87 vez** o estimado (quartis 1,32 e 2,25) e a estimativa ficou abaixo do recuperado em 176 das 188 UCs. A
@@ -368,7 +377,8 @@ fora (1.385 de 1.389 entram).
   calibração por faixa de chance e a cobertura da fila (irregularidades do campo que a fila continha). Medido com os
   pares, N = 200, 5 cortes: a chance prevista (92,5%) ficou perto da observada (90,8% a 96,2%); a cobertura da fila foi de
   95,2% a 96,0%; e a **energia recuperada foi de 2,7 a 3,4 vezes a esperada**, ou seja, a estimativa de 3 meses de
-  déficit (D7) é conservadora, e o R$/ano da curva de retorno também. As faixas de rampa e baixa quase não têm
+  déficit era conservadora. Isso levou à calibração do D7 para 10 meses (razão de 0,95 depois). A curva de retorno não
+  dependia dele: o R$/ano usa 12 meses de déficit. As faixas de rampa e baixa quase não têm
   inspeções nesses cortes, então a calibração ali segue em aberto. O N fixo em 200 não combina com a janela de 3 meses
   (o top 200 pega só 113 a 185 das 541 irregularidades da janela): medir vários N é a segunda etapa.
 - **Pendente:** medir a faixa de 20% a 30% no piloto fora da fila (D13).
