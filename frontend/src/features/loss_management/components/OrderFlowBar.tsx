@@ -1,12 +1,9 @@
-import { ArrowRight, ClipboardCheck, Upload } from 'lucide-react'
+import { ArrowRight, ClipboardCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/status-badge'
-import { ExportOrdersButton } from '@/features/loss_management/components/ExportOrdersButton'
 import { useCanWriteLosses } from '@/features/loss_management/hooks/useCanWriteLosses'
 
 interface OrderFlowBarProps {
-  canExport: boolean
-  onImport: () => void
   onRegister: () => void
 }
 
@@ -31,32 +28,23 @@ function OrderFlowLegend() {
 }
 
 /**
- * Barra acima do quadro: o ciclo da ordem à esquerda e as ações da planilha de campo à direita.
+ * Faixa acima do quadro: o ciclo da ordem à esquerda e, à direita, o único botão azul da aba, "Registrar achado".
+ * Exportar e importar ficam em `OrderSheetActions`, no topo.
  *
- * @param props - `canExport` liga o botão de exportar; `onImport` abre o envio da planilha preenchida;
- * `onRegister` abre o registro manual de um achado.
- * @returns Faixa com a legenda e os botões; registrar e importar só aparecem para quem pode editar perdas.
+ * @param props - `onRegister` abre o registro manual de um achado.
+ * @returns Faixa com a legenda; o botão só aparece para quem pode editar perdas.
  */
-export function OrderFlowBar({ canExport, onImport, onRegister }: OrderFlowBarProps) {
+export function OrderFlowBar({ onRegister }: OrderFlowBarProps) {
   const canWrite = useCanWriteLosses()
   return (
-    <div className="bg-muted/40 border-border flex flex-wrap items-start justify-between gap-3 rounded-lg border p-3">
+    <div className="bg-muted/40 border-border flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
       <OrderFlowLegend />
-      <div className="flex flex-wrap items-start justify-end gap-3">
-        <ExportOrdersButton disabled={!canExport} label="Exportar para o campo (CSV)" />
-        {canWrite ? (
-          <>
-            <Button type="button" variant="outline" onClick={onRegister}>
-              <ClipboardCheck aria-hidden="true" />
-              Registrar achado
-            </Button>
-            <Button type="button" onClick={onImport}>
-              <Upload aria-hidden="true" />
-              Importar resultados de campo
-            </Button>
-          </>
-        ) : null}
-      </div>
+      {canWrite ? (
+        <Button type="button" onClick={onRegister}>
+          <ClipboardCheck aria-hidden="true" />
+          Registrar achado
+        </Button>
+      ) : null}
     </div>
   )
 }
