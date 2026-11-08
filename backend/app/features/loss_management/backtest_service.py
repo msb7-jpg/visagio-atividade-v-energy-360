@@ -93,8 +93,8 @@ def _to_dto(filter_dto: BacktestFilterDTO, cutoff: str, cutoffs: list[str], outc
             for entry in outcome.by_reason
         ],
         amostra_minima_por_motivo=MIN_SAMPLE_PER_REASON,
-        kwh_esperado=outcome.expected_kwh,
-        chance_media_prevista=outcome.mean_chance,
+        kwh_esperado=outcome.prediction.expected_kwh,
+        chance_media_prevista=outcome.prediction.mean_chance,
         irregulares_janela=outcome.window_irregular_units,
         irregulares_na_fila=outcome.queue_irregular_units,
         por_faixa=[
@@ -108,7 +108,7 @@ def _to_dto(filter_dto: BacktestFilterDTO, cutoff: str, cutoffs: list[str], outc
                 kwh_esperado=band.expected_kwh,
                 kwh_recuperado=band.recovered_kwh,
             )
-            for band in outcome.by_band
+            for band in outcome.prediction.by_band
         ],
     )
 

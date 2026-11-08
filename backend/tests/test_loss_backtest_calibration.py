@@ -52,16 +52,16 @@ def outcome():
 
 
 def test_the_expected_energy_is_what_the_model_promised_for_the_inspected_units_only():
-    assert outcome().expected_kwh == pytest.approx(300.0 * 0.925 + 100.0 * 0.5 + 50.0 * 0.079)
+    assert outcome().prediction.expected_kwh == pytest.approx(300.0 * 0.925 + 100.0 * 0.5 + 50.0 * 0.079)
     assert outcome().kwh_recovered == pytest.approx(460.0)  # 400 + 0 + 60, sem as UCs fora da seleção
 
 
 def test_the_mean_predicted_chance_is_taken_over_the_inspected_selected_units():
-    assert outcome().mean_chance == pytest.approx((0.925 + 0.5 + 0.079) / 3)
+    assert outcome().prediction.mean_chance == pytest.approx((0.925 + 0.5 + 0.079) / 3)
 
 
 def test_each_chance_band_compares_what_was_predicted_with_what_the_field_found():
-    bands = {band.band: band for band in outcome().by_band}
+    bands = {band.band: band for band in outcome().prediction.by_band}
 
     high, ramp, low = bands[ChanceBand.ALTA], bands[ChanceBand.RAMPA], bands[ChanceBand.BAIXA]
     assert (high.selected, high.inspected, high.irregular) == (1, 1, 1)
@@ -83,6 +83,7 @@ def test_the_coverage_counts_the_irregular_units_the_whole_queue_contained():
 def test_without_the_units_the_new_measures_stay_empty_and_the_old_ones_do_not_change():
     result = evaluate_selection(SELECTION, INSPECTIONS)
 
-    assert (result.expected_kwh, result.mean_chance, result.by_band) == (0.0, None, [])
+    prediction = result.prediction
+    assert (prediction.expected_kwh, prediction.mean_chance, prediction.by_band) == (0.0, None, [])
     assert result.selected_inspected == 3
     assert result.selected_irregular == 2

@@ -84,6 +84,18 @@ class BandOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class PredictionOutcome:
+    """O que o modelo previu para as UCs selecionadas e inspecionadas: energia, chance média e calibração por faixa.
+
+    Vazio (zero, sem chance média e sem faixas) quando o backtest roda sem as UCs da seleção.
+    """
+
+    expected_kwh: float = 0.0
+    mean_chance: float | None = None
+    by_band: list[BandOutcome] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
 class BacktestOutcome:
     """Medidas do backtest de uma seleção."""
 
@@ -94,9 +106,7 @@ class BacktestOutcome:
     window_irregular: int
     kwh_recovered: float
     by_reason: list[ReasonOutcome]
-    expected_kwh: float = 0.0
-    mean_chance: float | None = None
-    by_band: list[BandOutcome] = field(default_factory=list)
+    prediction: PredictionOutcome = field(default_factory=PredictionOutcome)
     window_irregular_units: int = 0
     queue_irregular_units: int = 0
 
@@ -177,15 +187,19 @@ def _band_outcomes(
     return outcomes
 
 
-def _calibration(
+def _prediction(
     units: Mapping[str, SuspiciousUnitDTO] | None, first_by_unit: Mapping[str, FieldInspection]
-) -> tuple[float, float | None, list[BandOutcome]]:
+) -> PredictionOutcome:
     """Energia esperada, chance média prevista e a calibração por faixa; vazios sem as UCs da seleção."""
     if units is None:
-        return 0.0, None, []
+        return PredictionOutcome()
     by_band = _band_outcomes(units, first_by_unit)
     chances = [units[id_uc].probabilidade_acerto for id_uc in first_by_unit]
-    return sum(band.expected_kwh for band in by_band), sum(chances) / len(chances) if chances else None, by_band
+    return PredictionOutcome(
+        expected_kwh=sum(band.expected_kwh for band in by_band),
+        mean_chance=sum(chances) / len(chances) if chances else None,
+        by_band=by_band,
+    )
 
 
 def evaluate_selection(
@@ -213,7 +227,6 @@ def evaluate_selection(
     for inspection in sorted(selected_inspections, key=lambda item: item.inspected_on):
         first_by_unit.setdefault(inspection.id_uc, inspection)
     irregular_by_unit = {id_uc: inspection.irregular for id_uc, inspection in first_by_unit.items()}
-    expected_kwh, mean_chance, by_band = _calibration(units, first_by_unit)
     irregular_units = {inspection.id_uc for inspection in inspections if inspection.irregular}
     return BacktestOutcome(
         selected_total=len(selection),
@@ -223,9 +236,7 @@ def evaluate_selection(
         window_irregular=sum(inspection.irregular for inspection in inspections),
         kwh_recovered=sum(inspection.kwh_recovered or 0.0 for inspection in first_by_unit.values()),
         by_reason=_reason_outcomes(selection, irregular_by_unit),
-        expected_kwh=expected_kwh,
-        mean_chance=mean_chance,
-        by_band=by_band,
+        prediction=_prediction(units, first_by_unit),
         window_irregular_units=len(irregular_units),
         queue_irregular_units=len(irregular_units & queue_ids) if queue_ids is not None else 0,
     )
