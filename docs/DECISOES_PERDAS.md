@@ -358,7 +358,9 @@ fora (1.385 de 1.389 entram).
   curva suave ajustada prevista no plano não é identificável: a relação é um degrau, sem dado entre os patamares.
   Município e faixa de consumo só entram se o backtest provar ganho.
 - **Junto:** a fila deixa de ter teto de 200. A tela ganha o campo "quantas inspecionar" e a curva de retorno
-  acumulado, com custo por inspeção opcional que marca o corte sugerido.
+  acumulado, com custo por inspeção opcional que marca o corte sugerido. **Atualização de 2026-11-08:** a curva, o
+  corte sugerido e o endpoint `/losses/queue-curve` foram retirados (o gráfico não ajudava a decidir e o cartão tirava
+  espaço da fila); o gestor escolhe o N no campo da tela.
 - **Critério:** a lógica nova só substitui a atual se não ficar pior no backtest (kWh recuperado e precisão nas
   primeiras N UCs: 50, 100 e 200) e ganhar em consistência entre classes e estações. Resultado: backtest igual no topo
   (±1 a 3 UCs, kWh ±1%); a fila de 2025-07 cai de 34.193 para 956 UCs com as mesmas prioritárias. Os dois patamares

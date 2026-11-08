@@ -12,6 +12,8 @@ acerto, com a mediana global da carteira (`portfolio_ratio`). A entrada na fila 
 ainda usam a queda bruta. A mediana global é praticamente a do residencial (85% das UCs), e a sazonalidade depende da
 classe (o industrial varia muito menos que o residencial), então ela corrige demais as outras classes.
 
+> **Atualização de 2026-11-08:** a curva de retorno, o corte sugerido, o endpoint `/losses/queue-curve` e o cartão "Quantas inspecionar" foram retirados por decisão do dono da fatia (o gráfico não ajudava a decidir e o cartão tirava espaço da fila). O que o plano diz sobre isso (decisão 4, Fases 5 e 6 e a seção da Fase 5) fica como registro do que foi feito e medido. O campo N continua na tela. Ver D16 em `docs/DECISOES_PERDAS.md`.
+
 ## Decisões
 
 | # | Decisão |
@@ -174,9 +176,11 @@ patamar baixo de qualquer UC sem queda relativa).
 
 **Decisão: o piso fica em 20%.** Abaixo dele, cada visita extra rende cerca de 8% a 13% de acerto. Acima, sai a faixa
 de 20% a 30%, que concentra quase toda a fila de 2026 e tem chance desconhecida. A rampa da Fase 3 já ordena essas
-UCs, e a curva de retorno da Fase 5 deixa o gestor decidir onde parar. Nenhum código mudou nesta fase.
+UCs, e a curva de retorno da Fase 5 deixava o gestor decidir onde parar (a curva foi retirada depois). Nenhum código mudou nesta fase.
 
 ## Fase 5: curva de retorno e corte sugerido (2026-11-08)
+
+> **Superada em 2026-11-08.** A rota, o corte sugerido e a tela da curva foram retirados (ver a nota no início do plano e o D16). A seção abaixo fica como registro do que foi medido.
 
 Rota `GET /losses/queue-curve?custo=&pontos=`, só com UCs livres (sem ordem ativa). O retorno marginal nunca sobe (a
 fila é ordenada por kWh esperado e a tarifa é única), então o corte sugerido é um prefixo da fila. O corte para quando

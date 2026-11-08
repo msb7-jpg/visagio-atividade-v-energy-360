@@ -136,13 +136,11 @@ Calculado no servidor para as UCs selecionadas **que ainda estão na fila** (`qu
 - **Taxa histórica exibida:** inspeções com irregularidade ÷ inspeções feitas no histórico de campo; sem histórico
   usa 62,7%.
 
-### Curva de retorno e corte sugerido
+### Curva de retorno e corte sugerido (removidos em 2026-11-08)
 
-`GET /losses/queue-curve?custo=&pontos=` (`queue_curve.py`) soma, UC a UC e só entre as UCs **livres** (sem ordem
-ativa), o retorno esperado (energia recuperável × chance de acerto) em kWh/mês e R$/ano. O retorno marginal nunca sobe
-(a fila é ordenada por kWh esperado e a tarifa é única). Com `custo` (R$ por inspeção), `corte_sugerido` é quantas UCs
-seguidas ainda têm R$/ano esperado maior ou igual ao custo; sem custo, não há corte. `pontos` (2 a 500) limita a
-resposta e mantém sempre a última UC. A tela usa o corte para preencher o N. (D16)
+O endpoint `GET /losses/queue-curve`, o cartão "Quantas inspecionar" e o corte sugerido foram retirados. O gestor
+escolhe o N sozinho, no campo "Quantas UCs" da tela. O retorno esperado de uma seleção continua no resumo da seleção
+(seção 9). O histórico da decisão está em D16 e no changelog da fatia.
 
 ## 10. Ordens de inspeção
 
@@ -222,7 +220,6 @@ de carro ganha apóstrofo, para não virar fórmula.
   critério e ser avaliada por outro. Decisão pendente da revisão de código de 2026-11-08.
 - Os patamares de 7,9% e 92,5% foram medidos nas mesmas inspeções que o backtest usa: a precisão da aba Efetividade
   tende a ser otimista. A aba avisa.
-- A curva de retorno considera a fila inteira, sem os filtros da tela; o "Marcar as N primeiras" respeita os filtros.
 - "Marcar as N primeiras" vale no máximo 400 UCs por vez (o resumo da seleção não aceita mais).
 - **Efetividade.** A aba compara o previsto com o realizado: acerto previsto contra observado, energia esperada (energia a
   recuperar vezes a chance, só das UCs inspecionadas) contra a recuperada, calibração por faixa de chance e a cobertura da

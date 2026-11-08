@@ -28,16 +28,19 @@ _Avoid_: Score, score de risco (para o número exibido)
 Pedido de visita de campo a uma UC, que passa de gerada a em campo e termina concluída ou cancelada.
 _Avoid_: OS, tarefa
 
+**Resultado de campo**:
+O que a visita constatou numa ordem de inspeção: se encontrou irregularidade, a energia recuperada e quem inspecionou. Registrá-lo conclui a ordem.
+_Avoid_: Achado (para o ato de registrar)
+
+**Achado**:
+Irregularidade que a visita constatou numa UC. Uma ordem é concluída com achado ou sem achado.
+
 **Competência**:
 Mês de referência de uma medição ou da análise da fila.
 _Avoid_: Período, mês-base
 
 **Sazonalidade**:
 Variação normal do consumo ao longo do ano, que não indica irregularidade.
-
-**Corte sugerido**:
-Número de UCs a partir do qual uma inspeção a mais rende menos, em R$ por ano, do que a visita custa. Só existe quando o gestor informa o custo de uma inspeção.
-_Avoid_: Capacidade, teto da fila
 
 **Pares**:
 Grupo de UCs da mesma classe de consumo, usado como referência para separar a variação sazonal de uma queda anormal.
