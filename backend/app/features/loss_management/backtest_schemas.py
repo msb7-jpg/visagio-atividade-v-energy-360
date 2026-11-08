@@ -83,10 +83,21 @@ class BacktestDTO(BaseModel):
     por_faixa: list[BandBacktestDTO] = Field(default_factory=list, description="Previsto contra realizado por faixa")
 
 
-class BacktestSeriesDTO(BaseModel):
-    """O backtest de todos os cortes disponíveis, com o mesmo tamanho de seleção."""
+class BacktestSizeDTO(BaseModel):
+    """O backtest de todos os cortes disponíveis para um tamanho de seleção."""
 
     tamanho: int = Field(description="Tamanho da seleção (top N da fila) usado em todos os cortes")
+    cortes: list[BacktestDTO] = Field(description="Um resultado por corte, do mais antigo ao mais recente")
+
+
+class BacktestSeriesDTO(BaseModel):
+    """O backtest de todos os cortes disponíveis, no tamanho padrão e em outros tamanhos de seleção."""
+
+    tamanho: int = Field(description="Tamanho padrão da seleção (top N da fila), o de `cortes`")
     cortes: list[BacktestDTO] = Field(
-        description="Um resultado por corte, do mais antigo ao mais recente; vazio sem histórico de inspeções"
+        description="Um resultado por corte no tamanho padrão, do mais antigo ao mais recente; vazio sem histórico"
+    )
+    tamanhos: list[BacktestSizeDTO] = Field(
+        default_factory=list,
+        description="Todos os tamanhos medidos, incluindo o padrão: mostra como a cobertura e a precisão mudam com N",
     )

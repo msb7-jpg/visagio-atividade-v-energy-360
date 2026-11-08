@@ -84,8 +84,38 @@ const AUGUST: Backtest = {
   por_faixa: [{ ...JULY.por_faixa[0], inspecionadas: 158, irregulares: 152, taxa: 0.962, kwh_esperado: 186300 }]
 }
 
+const JULY_50: Backtest = {
+  ...JULY,
+  n_solicitado: 50,
+  n_selecionadas: 50,
+  n_inspecionadas: 33,
+  n_irregulares: 32,
+  precisao_selecao: 0.97
+}
+
+const AUGUST_50: Backtest = {
+  ...AUGUST,
+  n_solicitado: 50,
+  n_selecionadas: 50,
+  n_inspecionadas: 40,
+  n_irregulares: 39,
+  precisao_selecao: 0.975
+}
+
 function seriesOf(...cortes: Backtest[]): BacktestSeries {
-  return { tamanho: 200, cortes }
+  return { tamanho: 200, cortes, tamanhos: cortes.length > 0 ? [{ tamanho: 200, cortes }] : [] }
+}
+
+/** A série medida em dois tamanhos: N = 50 e o padrão, N = 200. */
+function seriesWithSizes(): BacktestSeries {
+  return {
+    tamanho: 200,
+    cortes: [JULY, AUGUST],
+    tamanhos: [
+      { tamanho: 50, cortes: [JULY_50, AUGUST_50] },
+      { tamanho: 200, cortes: [JULY, AUGUST] }
+    ]
+  }
 }
 
 let nextOrderId = 1
@@ -119,9 +149,10 @@ function renderTab() {
   )
 }
 
-/** A tabela dos cortes é a primeira da aba; a de calibração por faixa vem depois. */
+/** As tabelas da aba, em ordem: os cortes, a comparação entre tamanhos e a calibração por faixa. */
 const seriesTable = async () => (await screen.findAllByRole('table'))[0]
-const bandTable = async () => (await screen.findAllByRole('table'))[1]
+const sizeTable = () => screen.findByRole('table', { name: /medido em cada tamanho/ })
+const bandTable = () => screen.findByRole('table', { name: /Previsto contra realizado/ })
 
 describe('EffectivenessTab', () => {
   beforeEach(() => {
@@ -192,6 +223,51 @@ describe('EffectivenessTab', () => {
 
     await waitFor(() => expect(screen.getAllByRole('row')[2]).toHaveAttribute('aria-current', 'true'))
     expect(screen.getAllByRole('row')[1]).not.toHaveAttribute('aria-current')
+  })
+
+  it('oferece os tamanhos medidos, começa no padrão e troca os cortes ao escolher outro N', async () => {
+    mockedApi.getBacktestSeries.mockResolvedValue(seriesWithSizes())
+    renderTab()
+
+    const sizeSelect = await screen.findByLabelText('Tamanho da seleção (top N)')
+    expect(sizeSelect).toHaveValue('200')
+    expect(within(await seriesTable()).getByText('121 de 200')).toBeInTheDocument()
+
+    fireEvent.change(sizeSelect, { target: { value: '50' } })
+
+    await waitFor(async () => expect(within(await seriesTable()).getByText('33 de 50')).toBeInTheDocument())
+    expect(within(await seriesTable()).queryByText('121 de 200')).not.toBeInTheDocument()
+    expect(mockedApi.getBacktestSeries).toHaveBeenCalledTimes(1)
+  })
+
+  it('compara os tamanhos no corte em detalhe: quantas irregularidades cada N captura da janela', async () => {
+    mockedApi.getBacktestSeries.mockResolvedValue(seriesWithSizes())
+    renderTab()
+
+    const sizes = within(await sizeTable())
+    expect(sizes.getByText('Top 50')).toBeInTheDocument()
+    expect(sizes.getByText('Top 200')).toBeInTheDocument()
+    expect(sizes.getByText('32 de 541')).toBeInTheDocument()
+    expect(sizes.getByText('114 de 541')).toBeInTheDocument()
+  })
+
+  it('acompanha o corte escolhido na comparação entre tamanhos', async () => {
+    mockedApi.getBacktestSeries.mockResolvedValue(seriesWithSizes())
+    renderTab()
+    await sizeTable()
+
+    fireEvent.change(screen.getByLabelText('Corte em detalhe'), { target: { value: '2025-08' } })
+
+    await waitFor(async () => expect(within(await sizeTable()).getByText('39 de 544')).toBeInTheDocument())
+    expect(within(await sizeTable()).queryByText('32 de 541')).not.toBeInTheDocument()
+  })
+
+  it('explica que o N compara com 3 meses de inspeções, então a captura é um piso', async () => {
+    mockedApi.getBacktestSeries.mockResolvedValue(seriesWithSizes())
+
+    renderTab()
+
+    expect(await screen.findByText(/a captura é um piso/)).toBeInTheDocument()
   })
 
   it('não mostra zeros como se fossem resultado quando as ordens de campo falham', async () => {

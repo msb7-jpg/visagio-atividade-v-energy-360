@@ -1212,3 +1212,21 @@
   - Medir vários N (50, 100 e 200) no backtest e alimentar as faixas com os resultados das ordens concluídas no portal.
   - Rever o multiplicador quando houver inspeções de 2026, para ver se a queda dos meses finais é tendência.
 - **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 944; frontend: tsc, ESLint, Fallow e vitest 830, sem falhas.
+
+### [2026-11-08] - Backtest em vários N (50, 100, 200 e 400)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Por quê.** O backtest media só N = 200 contra 3 meses de inspeções, e o campo inspecionou bem mais UCs que 200 nesse período; o top 200 pegava só 113 a 185 das 541 irregularidades da janela. Com o N escolhido pela equipe, a aba precisava mostrar o efeito do tamanho.
+  - **Backend.** `BACKTEST_SIZES = (50, 100, 200, 400)`. A série mede um corte de cada vez em todos os tamanhos: a fila do corte fica em cache e os outros tamanhos só refazem a medição (série inteira: cerca de 20 s, guardada em disco). `BacktestSeriesDTO` ganhou `tamanhos` (todos os tamanhos medidos); `tamanho` e `cortes` continuam como o resultado do padrão, então nada existente quebra.
+  - **Tela.** Seletor "Tamanho da seleção (top N)" que troca a tabela dos cortes, tabela "Quantas UCs inspecionar: o que cada tamanho captura" (inspecionadas, precisão, irregulares capturadas da janela e energia recuperada) no corte em detalhe, e aviso de que a captura é um piso. A escolha de tamanho e de corte foi extraída para `effectivenessSelection.ts`.
+- **Resultado medido (Gold real, pares, 5 cortes):**
+  - A captura das irregularidades da janela sobe quase em linha reta com N: 2025-07, de 5,9% (N = 50) para 10,4%, 20,9% e 42,5% (N = 400); 2025-10, de 13,6% para 94,8%, porque a fila daquele corte tem só 330 UCs.
+  - A precisão cai pouco: 2025-07, de 97,0% para 94,3%. A cauda da fila ainda é de chance alta, e a razão recuperado ÷ esperado é estável entre os N (0,81 a 1,04).
+  - Conclusão para a decisão do gestor: aumentar N custa pouca precisão; o que limita é o custo da visita e a capacidade, não a qualidade da cauda.
+- **Dificuldades / Desafios:**
+  - O Fallow reprovou a complexidade ciclomática do controlador (18, limite 15); extrair funções puras resolveu.
+  - Com um único tamanho a tabela de comparação não aparece, então os testes localizam as tabelas pelo nome acessível, e não pelo índice.
+- **Pendências:**
+  - Alimentar as faixas com os resultados das ordens concluídas no portal (mediria a faixa de 20% a 30%).
+  - O cálculo da série na subida da API cresceu para cerca de 20 s, em segundo plano.
+- **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 946; frontend: tsc, ESLint, Fallow e vitest 843, sem falhas.

@@ -54,7 +54,22 @@ export interface Backtest {
   por_faixa: BandBacktest[]
 }
 
-export interface BacktestSeries {
+/** O backtest de todos os cortes para um tamanho de seleção (top N da fila). */
+export interface BacktestSize {
   tamanho: number
   cortes: Backtest[]
+}
+
+/** O resultado de um corte em um tamanho de seleção, para comparar os tamanhos no mesmo corte. */
+export interface BacktestAtSize {
+  tamanho: number
+  result: Backtest
+}
+
+export interface BacktestSeries {
+  /** Tamanho padrão da seleção, o de `cortes`. */
+  tamanho: number
+  cortes: Backtest[]
+  /** Todos os tamanhos medidos, incluindo o padrão; vazio sem histórico de inspeções. */
+  tamanhos: BacktestSize[]
 }

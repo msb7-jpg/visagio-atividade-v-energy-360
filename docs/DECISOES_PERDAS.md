@@ -380,7 +380,11 @@ fora (1.385 de 1.389 entram).
   déficit era conservadora. Isso levou à calibração do D7 para 10 meses (razão de 0,95 depois). A curva de retorno não
   dependia dele: o R$/ano usa 12 meses de déficit. As faixas de rampa e baixa quase não têm
   inspeções nesses cortes, então a calibração ali segue em aberto. O N fixo em 200 não combina com a janela de 3 meses
-  (o top 200 pega só 113 a 185 das 541 irregularidades da janela): medir vários N é a segunda etapa.
+  (o top 200 pega só 113 a 185 das 541 irregularidades da janela). Por isso a série passou a medir **vários N**
+  (50, 100, 200 e 400), um corte de cada vez. Resultado: a captura sobe quase em linha reta com N (em 2025-07, de 5,9% com
+  N = 50 para 42,5% com N = 400) e a precisão cai pouco (de 97,0% para 94,3%), porque a cauda da fila ainda tem
+  chance alta. A razão recuperado ÷ esperado é estável entre os N (0,81 a 1,04). A captura é um piso: o campo
+  inspecionou mais UCs que N nos 3 meses da janela.
 - **Pendente:** medir a faixa de 20% a 30% no piloto fora da fila (D13).
 - **Limites:** o backtest cobre só jul–dez/2025, então o verão não é validado. Ele mede apenas UCs que o campo visitou. O
   backtest atual avalia taxas medidas nas mesmas inspeções, e por isso é otimista. O plano está em
