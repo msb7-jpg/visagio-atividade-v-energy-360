@@ -1,6 +1,6 @@
 # Regras de negócio: Gestão de Perdas e Fila de Inspeção (Fatia 05)
 
-Dono: Adrian César. Este arquivo é o **índice único das regras** da fatia, no estado do código em 2026-11-03.
+Dono: Adrian César. Este arquivo é o **índice único das regras** da fatia, no estado do código em 2026-11-08.
 Cada regra aponta para onde ela vive no código. O **porquê** e as medições estão em
 [`docs/DECISOES_PERDAS.md`](../../DECISOES_PERDAS.md) (D1 a D15), citado entre parênteses. Se uma regra mudar,
 atualize aqui, na decisão e no `changelog.md`.
@@ -36,13 +36,17 @@ Uma UC é candidata se **todas** as condições valem (`queue_query.py`, `_candi
 
 1. Não tem geração distribuída (`possui_gd`). (D3)
 2. Tem consumo base maior que zero e consumo recente informado.
-3. Tem queda de 20% ou mais (`LIMIAR_QUEDA_MODERADA`) **ou** pelo menos uma leitura zerada na janela.
+3. Tem **queda relativa aos pares** de 20% ou mais (`LIMIAR_QUEDA_MODERADA`) **ou** pelo menos uma leitura zerada na
+   janela. A queda relativa é `1 − (recente ÷ base da UC) ÷ mediana de (recente ÷ base) da classe de consumo`: ela separa a
+   sazonalidade de uma queda anormal. Classe com menos de 100 UCs usa a mediana da carteira. (`peers.py`, D16) Com
+   `LOSS_USE_PEERS=false` a queda volta a ser a bruta.
 4. Não está na lista de exclusão (seção 4).
 5. Passa o prazo de reincidência (seção 4).
 6. Passa os filtros opcionais de município, bairro e classe.
 
 **Motivos** (`scoring.py`, `detect_reasons`): `queda_subita` (queda de 50% ou mais), `queda_moderada` (de 20% até
-menos de 50%; excludente com a súbita) e `leitura_zerada`. Uma UC pode ter a queda e a leitura zerada juntas. (D2)
+menos de 50%; excludente com a súbita) e `leitura_zerada`, com a queda medida contra os pares. Uma UC pode ter a
+queda e a leitura zerada juntas. (D2, D16)
 
 ## 4. Quem sai da fila e quando volta
 
@@ -63,7 +67,8 @@ afrouxa a regra. Os 12 meses são suposição adotada pelo dono da fatia, sem va
 
 ## 5. Quanto vale cada UC
 
-- **Déficit mensal:** `consumo base − consumo recente`, mínimo 0 (`monthly_deficit_kwh`).
+- **Déficit mensal:** consumo esperado menos consumo recente, mínimo 0 (`monthly_deficit_kwh`). O esperado é
+  `consumo base × mediana dos pares`: a queda que a estação explica não conta como energia a recuperar. (D16)
 - **kWh a recuperar:** déficit mensal × **3 meses** (`JANELA_RECUPERACAO_MESES`). Suposição, sem fonte regulatória. (D7)
 - **Tarifa média:** receita faturada ÷ energia faturada dos **últimos 12 meses** de `fato_faturamento`, ponderada
   pelo consumo, com 4 casas. Sem energia faturada o cálculo falha com erro explícito. (`tariff.py`, D8)
@@ -73,7 +78,21 @@ afrouxa a regra. Os 12 meses são suposição adotada pelo dono da fatia, sem va
 
 ## 6. Chance de acerto
 
-Taxas medidas em `fato_inspecoes_perdas` (`hit_rate.py`, D12):
+Com os pares (padrão, `hit_curve.py`, D16), medido em `fato_inspecoes_perdas` (1.354 inspeções sem GD) pela queda
+relativa aos pares:
+
+| Queda relativa | Chance |
+|---|---|
+| Até 20% | 7,9% |
+| De 20% a 30% | rampa linear de 7,9% a 92,5% (suposição: há 2 inspeções nessa faixa) |
+| 30% ou mais | 92,5% (plano até 70%) |
+| Leitura zerada isolada | 62,7% (taxa geral, nunca medida) |
+| Ligação recente (base com menos de 11 meses) | no máximo 7,6% |
+
+Queda súbita e moderada seguem a mesma curva, e a classe não entra na chance: os dados não as distinguem. Com mais de um
+sinal, vale a maior taxa.
+
+**Modelo anterior** (`LOSS_USE_PEERS=false`), taxas medidas em `fato_inspecoes_perdas` (`hit_rate.py`, D12):
 
 | Sinal | Chance |
 |---|---|
@@ -93,10 +112,11 @@ Taxas medidas em `fato_inspecoes_perdas` (`hit_rate.py`, D12):
 - **Score exibido (0 a 100):** kWh esperado da UC ÷ maior kWh esperado entre **todas** as candidatas × 100. É
   calculado antes dos filtros, então **não muda** quando um filtro de município, bairro ou classe esconde o topo. (D15)
 - **Faixas (frontend, `queueBands.ts`):** chance de 30% ou mais = **prioritária**; abaixo disso = **baixa chance**.
-- **Capacidade:** 200 inspeções por mês (`FILA_CAPACIDADE_MENSAL`), que também é o tamanho padrão da página. A fila
-  é paginada no servidor por `offset`, com `limit` de 1 a 500. (D6)
-- **Botão Top 10:** marca até 10 UCs **prioritárias** e **na fila**. Se a fila está filtrada por outra situação, troca
-  o filtro para "na fila" e marca o topo dessa fila. (`TOP_SELECTION_COUNT`)
+- **Sem teto de capacidade:** a equipe decide quantas UCs inspecionar. Os 200 (`FILA_CAPACIDADE_MENSAL`) são só o
+  tamanho padrão da página da fila, paginada no servidor por `offset`, com `limit` de 1 a 500. (D6, D16)
+- **Quantas inspecionar:** o campo N (padrão `TOP_SELECTION_COUNT`, 10) marca as N primeiras UCs **na fila**, em
+  qualquer chance, e traz mais páginas até haver N livres. Se a fila está filtrada por outra situação, troca o filtro
+  para "na fila". O N fica só no navegador.
 
 ## 8. Situação da UC na fila
 
@@ -110,9 +130,17 @@ Calculado no servidor para as UCs selecionadas **que ainda estão na fila** (`qu
 
 - **Selecionadas:** quantidade. **kWh/mês** e **R$/ano:** soma do recuperável de cada UC.
 - **Retorno esperado:** soma de (recuperável × chance de acerto) por UC, em kWh/mês e em R$/ano.
-- **Capacidade programada:** ordens ativas (geradas ou em campo) contra os 200 do mês.
+- **Ordens abertas:** ordens ativas (geradas ou em campo), sem comparar com um teto.
 - **Taxa histórica exibida:** inspeções com irregularidade ÷ inspeções feitas no histórico de campo; sem histórico
   usa 62,7%.
+
+### Curva de retorno e corte sugerido
+
+`GET /losses/queue-curve?custo=&pontos=` (`queue_curve.py`) soma, UC a UC e só entre as UCs **livres** (sem ordem
+ativa), o retorno esperado (energia recuperável × chance de acerto) em kWh/mês e R$/ano. O retorno marginal nunca sobe
+(a fila é ordenada por kWh esperado e a tarifa é única). Com `custo` (R$ por inspeção), `corte_sugerido` é quantas UCs
+seguidas ainda têm R$/ano esperado maior ou igual ao custo; sem custo, não há corte. `pontos` (2 a 500) limita a
+resposta e mantém sempre a última UC. A tela usa o corte para preencher o N. (D16)
 
 ## 10. Ordens de inspeção
 
@@ -181,6 +209,12 @@ de carro ganha apóstrofo, para não virar fórmula.
 - Os 12 meses de reincidência, a janela de 3 meses de recuperação e o corte de 30% das faixas são suposições
   declaradas, sem validação do gerente de perdas. (D7, D11)
 - As janelas de 3 e 12 meses e os 90 dias de bloqueio existem no backend e no frontend; ao mudar um lado, mude o outro.
+- A faixa de 20% a 30% de queda relativa não tem medição (2 inspeções); a rampa é suposição, e só o piloto fora da
+  fila (D13) a mede. Em 2026-06, 29 das 31 UCs da fila estão nela.
+- O backtest cobre só jul–dez/2025 (meses com inspeções de campo): o verão não foi validado com inspeções reais.
+- A entrada por queda relativa perde 2,9% das irregularidades que a queda bruta pegava (25 de 867); pegá-las custaria
+  330 inspeções a mais, com 7,6% de acerto. (D16)
+- Os testes de rota do backend rodam com `LOSS_USE_PEERS=false` (`conftest.py`); o modelo com pares tem testes próprios.
 - Ordens antigas só com fiscal exportam `inspetor_selecionado` vazio.
 - A data da ordem usa `atualizado_em` do servidor, e o corte de reincidência parte da competência de referência; com
   referência fixada no passado os dois podem divergir.

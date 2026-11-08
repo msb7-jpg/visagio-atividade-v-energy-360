@@ -1133,3 +1133,26 @@
   - Fuso: `atualizado_em` é gravado em UTC e `cancellation_block_start` usa o relógio local no tempo real (até 3 h de diferença em 90 dias).
   - Não verificado no navegador.
 - **Validação de Testes:** `make lint-all` (Ruff, Pylint 10/10, import-linter com 4 contratos, ESLint e Fallow) e `make test-all` (pytest 894, vitest 801) sem falhas.
+
+### [2026-11-08] - Sazonalidade, pares por classe, curva de retorno e "quantas inspecionar" (Fase 19)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Pares por classe (D16).** O consumo médio da base é 59% maior em janeiro (494 kWh) do que em julho (310 kWh); o residencial varia 2,37 vezes entre os dois meses e o industrial 1,13. A fila comparava a UC com a mediana da carteira inteira (na prática, a do residencial) e usava a queda bruta na entrada e no déficit. Agora cada UC é comparada com a mediana de recente÷base da própria classe (`peers.py`, mínimo de 100 UCs, reserva na carteira), na entrada (`queue_query.py`, `CASE` por classe), nos sinais, no déficit em kWh (`base × razão dos pares − recente`) e na chance de acerto.
+  - **Chance de acerto em dois patamares (`hit_curve.py`).** Nas 1.354 inspeções sem GD o acerto é de 7,9% abaixo de 20% de queda relativa e de 92,5% a partir de 30%, plano até 70%. Há 2 inspeções entre 20% e 30%: a rampa linear é suposição declarada. Queda súbita e moderada e a classe saíram da chance, porque os dados não as distinguem. O piso de entrada ficou em 20%.
+  - **Modelo novo como padrão** (`LOSS_USE_PEERS`, `repository_factory.py`): fila, resumo, filtros, "Fora da fila", detalhe, `kwh_estimado` das ordens, backtest, painel executivo e aquecimento da subida. `false` volta ao anterior.
+  - **`GET /losses/queue-curve?custo=&pontos=`:** retorno esperado acumulado das UCs livres e corte sugerido pelo custo de uma inspeção.
+  - **Tela:** campo "Quantas UCs inspecionar" (N), cartão da curva com custo por inspeção e "Usar o corte sugerido", "Ordens abertas depois" no lugar da capacidade de 200, "Prioridade" no lugar de "Score" e aviso do limite jul–dez/2025 na Efetividade. `capacidade_total` saiu da API.
+  - Documentação: D16 em `DECISOES_PERDAS.md`, plano `fila-inspecao-sazonalidade-plano.md`, `regras-de-negocio.md`, `GLOSSARY.md` e a descrição OpenAPI da fila.
+- **Resultado medido (Gold real):**
+  - Backtest igual no topo entre o modelo atual e o novo (±1 a 3 UCs inspecionadas, kWh ±1%). O efeito está no tamanho da fila: 2025-07, de 34.193 UCs para 956, com as mesmas prioritárias; 2026-03 (verão), de 2 UCs para 32; 2026-06, de 165 para 31.
+  - Entrada por queda relativa: recall de 95,8% e precisão de 92,4%, contra 98,7% e 69,7% da entrada antiga. Perde 25 irregularidades (2,9%), que custariam 330 inspeções a mais, com 7,6% de acerto.
+  - Curva de retorno da fila de produção (2026-06): 31 UCs livres, R$ 1.415/ano de retorno esperado; com custo de R$ 150 por inspeção o corte sugerido é 0.
+- **Dificuldades / Desafios:**
+  - A relação entre queda e acerto é um degrau, e não a curva suave combinada no início: o modelo foi simplificado de "ajustar uma curva" para "dois patamares e uma rampa declarada".
+  - O backtest não distingue os modelos nos meses que tem inspeções, e não cobre o verão, que é onde a sazonalidade mais pesa.
+  - O `conftest.py` define `LOSS_USE_PEERS=false`: os testes de rota legados medem a queda bruta em bancos pequenos.
+- **Pendências:**
+  - Medir a faixa de 20% a 30% de queda relativa no piloto fora da fila (D13); em 2026-06, 29 das 31 UCs da fila estão nela.
+  - Não verificado no navegador; o custo real de uma inspeção é desconhecido, por isso o custo é um campo da tela.
+  - As faixas "Prioritárias" e "Baixa chance" (corte de 30%) continuam como estavam.
+- **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 934; frontend: tsc, ESLint, Fallow e vitest 814, sem falhas.

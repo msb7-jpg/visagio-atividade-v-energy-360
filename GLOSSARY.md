@@ -35,6 +35,10 @@ _Avoid_: Período, mês-base
 **Sazonalidade**:
 Variação normal do consumo ao longo do ano, que não indica irregularidade.
 
+**Corte sugerido**:
+Número de UCs a partir do qual uma inspeção a mais rende menos, em R$ por ano, do que a visita custa. Só existe quando o gestor informa o custo de uma inspeção.
+_Avoid_: Capacidade, teto da fila
+
 **Pares**:
 Grupo de UCs da mesma classe de consumo, usado como referência para separar a variação sazonal de uma queda anormal.
 _Avoid_: Carteira, coorte, grupo de comparação
