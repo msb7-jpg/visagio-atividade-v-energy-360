@@ -2,19 +2,24 @@ import type { ReactNode } from 'react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PriorInspectionsList } from '@/features/loss_management/components/PriorInspectionsList'
 import { UnitConsumptionChart } from '@/features/loss_management/components/UnitConsumptionChart'
+import { UnitDropSummary } from '@/features/loss_management/components/UnitDropSummary'
 import { UnitScoreCalculation } from '@/features/loss_management/components/UnitScoreCalculation'
 import type { UnitDetail } from '@/features/loss_management/types/unitDetailTypes'
-import { describeReasons } from '@/features/loss_management/utils/lossFormatters'
 
 interface SectionProps {
   title: string
+  /** Controle à direita do rótulo, como o seletor de período do gráfico. */
+  action?: ReactNode
   children: ReactNode
 }
 
-function Section({ title, children }: SectionProps) {
+function Section({ title, action, children }: SectionProps) {
   return (
-    <section className="flex flex-col gap-2">
-      <h3 className="text-foreground text-sm font-semibold">{title}</h3>
+    <section className="flex flex-col gap-3 py-5 first:pt-0 last:pb-0">
+      <div className="flex min-h-8 items-center justify-between gap-3">
+        <h3 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">{title}</h3>
+        {action}
+      </div>
       {children}
     </section>
   )
@@ -28,7 +33,7 @@ interface UnitDetailBodyProps {
 }
 
 /**
- * Corpo do painel de detalhe: motivo, conta do score, consumo mensal e inspeções anteriores.
+ * Corpo do painel de detalhe: motivo, score, consumo mensal e inspeções anteriores, separados por linhas finas.
  *
  * A frase do motivo é montada por regra no backend a partir dos números da UC, por isso não leva o rótulo de IA.
  *
@@ -36,23 +41,28 @@ interface UnitDetailBodyProps {
  * @returns Seções empilhadas do painel.
  */
 export function UnitDetailBody({ detail, fullHistory, onFullHistoryChange }: UnitDetailBodyProps) {
+  const periodTabs = (
+    <Tabs value={fullHistory ? 'tudo' : '12m'} onValueChange={(value) => onFullHistoryChange(value === 'tudo')}>
+      <TabsList aria-label="Período do consumo">
+        <TabsTrigger value="12m">12 meses</TabsTrigger>
+        <TabsTrigger value="tudo">Tudo</TabsTrigger>
+      </TabsList>
+    </Tabs>
+  )
   return (
-    <div className="flex flex-col gap-6">
+    <div className="divide-border flex flex-col divide-y">
       <Section title="Por que está na fila">
-        <p className="text-foreground text-sm font-medium">{describeReasons(detail.motivos)}</p>
-        <p className="text-muted-foreground text-sm">{detail.motivo_resumo}</p>
+        <UnitDropSummary detail={detail} />
       </Section>
-      <Section title="Como o score é calculado">
+      <Section title="Score de prioridade">
         <UnitScoreCalculation breakdown={detail.decomposicao_score} />
       </Section>
-      <Section title={fullHistory ? 'Consumo no histórico da UC' : 'Consumo nos últimos 12 meses'}>
-        <Tabs value={fullHistory ? 'tudo' : '12m'} onValueChange={(value) => onFullHistoryChange(value === 'tudo')}>
-          <TabsList>
-            <TabsTrigger value="12m">12 meses</TabsTrigger>
-            <TabsTrigger value="tudo">Tudo</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <UnitConsumptionChart months={detail.consumo_mensal} fullHistory={fullHistory} />
+      <Section title={fullHistory ? 'Consumo desde a 1ª leitura' : 'Consumo mensal'} action={periodTabs}>
+        <UnitConsumptionChart
+          months={detail.consumo_mensal}
+          fullHistory={fullHistory}
+          averages={{ baseKwh: detail.consumo_base_kwh, recentKwh: detail.consumo_recente_kwh }}
+        />
       </Section>
       <Section title="Inspeções anteriores">
         <PriorInspectionsList inspections={detail.inspecoes_anteriores} />
