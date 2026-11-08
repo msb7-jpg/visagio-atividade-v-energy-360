@@ -297,3 +297,16 @@
 - **Fora desta entrega:** mudança de código ou de regra; só documentação.
 - **Validação de Testes:**
   - `make lint-all` e `make test-all` aprovados.
+
+### [2026-11-08] - Visão 360: listas de "Falta de luz e chamados" em sub-blocos (issue #98)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Cada lista do bloco 3 virou um sub-bloco (`EventGroup`) com contorno próprio, ícone, título e selo de contagem ("2 interrupções", "12 meses", "3 chamados").
+  - A linha de escopo deixa clara a diferença: "Interrupções que atingiram a própria UC" contra "Média por cliente do alimentador, mês a mês (não é da UC)". A nota de DEC/FEC passou para o tooltip do cabeçalho da região.
+  - Saiu a rolagem interna (`max-h-96`). Cada lista mostra as 5 mais recentes (6 meses no alimentador) e "Ver todos (mais N)" expande no próprio bloco, com "Mostrar menos" para recolher (`ShowMoreButton`, `useExpandableList`).
+  - Estados vazios viraram uma linha curta, sem `EmptyState` com ícone grande. Textos de resumo e números iguais aos de antes.
+  - Teste novo `EventsTab.test.tsx`: sub-blocos com título e contagem, estado vazio e expansão.
+- **Arquivos:** `customer360/components/` (`EventsTab`, `EventGroup`, `ShowMoreButton`, `UnitOutagesList`, `FeederOutagesList`, `ServiceTicketsList`), `customer360/hooks/useExpandableList.ts`, `customer360/__tests__/EventsTab.test.tsx`.
+- **Fora desta entrega:** backend, API e cálculos; conferência visual no navegador (feita por quem revisa).
+- **Validação de Testes:**
+  - `dev.ps1 check` aprovado (lint, TypeScript e build); 936 pytest e 849 vitest. Antes, commit separado ajustou o teste de `AreaRevenueTable` ao formato compacto do ICU novo.

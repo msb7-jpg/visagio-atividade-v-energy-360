@@ -1,11 +1,12 @@
-import { ZapOff } from 'lucide-react'
-import { EmptyState } from '@/components/feedback/EmptyState'
 import { Table, TableBody, TableCell, TableColumns, TableRow } from '@/components/ui/table'
+import { ShowMoreButton } from '@/features/customer360/components/ShowMoreButton'
+import { useExpandableList } from '@/features/customer360/hooks/useExpandableList'
 import type { UnitOutage, UnitOutageSummary } from '@/features/customer360/types/customer360Types'
 import { formatCount, formatDateTime, formatHours } from '@/features/customer360/utils/customer360Formatters'
 import { formatGoldCode } from '@/features/customer360/utils/gridEventLabels'
 
 const COLUMNS = ['Início', 'Duração', 'Tipo', 'Causa'] as const
+const VISIBLE_OUTAGES = 5
 
 function describeUnitOutages(outages: UnitOutage[], summary: UnitOutageSummary): string {
   const count = formatCount(summary.total_interrupcoes, 'interrupção registrada', 'interrupções registradas')
@@ -34,14 +35,9 @@ interface UnitOutagesListProps {
  * @returns Resumo com total de horas e a interrupção mais longa, e a tabela de interrupções.
  */
 export function UnitOutagesList({ outages, summary }: UnitOutagesListProps) {
+  const { visible, hiddenCount, expanded, toggle } = useExpandableList(outages, VISIBLE_OUTAGES)
   if (outages.length === 0) {
-    return (
-      <EmptyState
-        title="Nenhuma interrupção nesta unidade"
-        description="Não há registro de falta de energia que tenha atingido esta unidade consumidora."
-        icon={<ZapOff className="size-10" />}
-      />
-    )
+    return <p className="text-muted-foreground text-sm">Nenhuma interrupção registrada nesta unidade.</p>
   }
   return (
     <div className="flex flex-col gap-3">
@@ -49,7 +45,7 @@ export function UnitOutagesList({ outages, summary }: UnitOutagesListProps) {
       <Table aria-label="Interrupções na unidade consumidora">
         <TableColumns columns={COLUMNS} />
         <TableBody>
-          {outages.map((outage) => (
+          {visible.map((outage) => (
             <TableRow key={outage.id_ocorrencia}>
               <TableCell>{formatDateTime(outage.inicio_interrupcao)}</TableCell>
               <TableCell>{formatHours(outage.duracao_horas)}</TableCell>
@@ -59,6 +55,7 @@ export function UnitOutagesList({ outages, summary }: UnitOutagesListProps) {
           ))}
         </TableBody>
       </Table>
+      <ShowMoreButton hiddenCount={hiddenCount} expanded={expanded} onToggle={toggle} />
     </div>
   )
 }

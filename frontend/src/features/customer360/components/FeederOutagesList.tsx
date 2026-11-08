@@ -1,12 +1,13 @@
-import { ZapOff } from 'lucide-react'
-import { EmptyState } from '@/components/feedback/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableColumns, TableRow } from '@/components/ui/table'
+import { ShowMoreButton } from '@/features/customer360/components/ShowMoreButton'
+import { useExpandableList } from '@/features/customer360/hooks/useExpandableList'
 import type { FeederQualityMonth } from '@/features/customer360/types/customer360Types'
 import { formatCompetencia, formatCount, formatHours } from '@/features/customer360/utils/customer360Formatters'
 import { analyzeOutages, type OutageOverview } from '@/features/customer360/utils/outageAnalysis'
 
 const COLUMNS = ['Mês', 'Horas sem energia', 'Interrupções', 'Situação'] as const
+const VISIBLE_MONTHS = 6
 
 function describeOutages(feeder: string | null, overview: OutageOverview): string {
   const feederName = feeder ?? 'da região'
@@ -30,14 +31,9 @@ interface FeederOutagesListProps {
  * @returns Resumo da região e tabela mensal de interrupções.
  */
 export function FeederOutagesList({ feeder, months }: FeederOutagesListProps) {
+  const { visible, hiddenCount, expanded, toggle } = useExpandableList(months, VISIBLE_MONTHS)
   if (months.length === 0) {
-    return (
-      <EmptyState
-        title="Sem dados de interrupção"
-        description="Não há registros de continuidade para o alimentador desta unidade."
-        icon={<ZapOff className="size-10" />}
-      />
-    )
+    return <p className="text-muted-foreground text-sm">Sem registros de continuidade para o alimentador desta unidade.</p>
   }
   const overview = analyzeOutages(months)
   return (
@@ -46,7 +42,7 @@ export function FeederOutagesList({ feeder, months }: FeederOutagesListProps) {
       <Table aria-label="Interrupções no alimentador">
         <TableColumns columns={COLUMNS} />
         <TableBody>
-          {months.map((month) => (
+          {visible.map((month) => (
             <TableRow key={month.competencia}>
               <TableCell>{formatCompetencia(month.competencia)}</TableCell>
               <TableCell>{formatHours(month.dec_apurado_horas)}</TableCell>
@@ -60,9 +56,7 @@ export function FeederOutagesList({ feeder, months }: FeederOutagesListProps) {
           ))}
         </TableBody>
       </Table>
-      <span className="text-muted-foreground text-xs">
-        Valores médios por cliente do alimentador (DEC e FEC), comparados aos outros meses do mesmo circuito.
-      </span>
+      <ShowMoreButton hiddenCount={hiddenCount} expanded={expanded} onToggle={toggle} />
     </div>
   )
 }
