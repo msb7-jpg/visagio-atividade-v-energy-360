@@ -27,7 +27,7 @@ interface AreaRevenueTableProps {
 
 /**
  * Receita, variação, volume e tarifa média de cada área, lado a lado; a coluna escolhida ordena do maior para o menor.
- * No nível de bairro, cada linha mostra os 12 meses em barras e abre receita, volume e tarifa mês a mês.
+ * No nível de bairro, cada linha abre receita, volume e tarifa mês a mês; a comparação entre bairros fica no gráfico acima.
  *
  * @param props - Áreas da página, rótulo do nível, ordenação e callbacks.
  * @returns Tabela com cabeçalhos ordenáveis.
@@ -51,7 +51,7 @@ export function AreaRevenueTable({ areas, histories, monthsInWindow, levelLabel,
               </Button>
             </TableHead>
           ))}
-          {hasMonthly ? <TableHead className="text-right">12 meses</TableHead> : null}
+          {hasMonthly ? <TableHead className="text-right">Mês a mês</TableHead> : null}
         </TableRow>
       </TableHeader>
       <TableBody>

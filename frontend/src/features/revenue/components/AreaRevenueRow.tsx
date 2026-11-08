@@ -2,7 +2,6 @@ import { ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { MonthlyBreakdown } from '@/features/revenue/components/MonthlyBreakdown'
-import { MonthlySparkline } from '@/features/revenue/components/MonthlySparkline'
 import type { MonthlyPoint, NeighborhoodRef } from '@/features/revenue/types/revenueTypes'
 import type { AreaRevenue } from '@/features/revenue/utils/areaRevenue'
 import { formatCompactCurrency, formatCurrency, formatMwh, formatTariff, formatVariation } from '@/features/revenue/utils/revenueFormatters'
@@ -30,8 +29,8 @@ interface AreaRevenueRowProps {
 }
 
 /**
- * Linha de uma área: receita do período e média por mês, variação, volume, tarifa e, no bairro, os 12 meses em
- * barras com o botão "Mês a mês", que abre receita, volume e tarifa de cada mês logo abaixo da linha.
+ * Linha de uma área: receita do período e média por mês, variação, volume, tarifa e, no bairro, o
+ * botão "Mês a mês", que abre receita, volume e tarifa de cada mês logo abaixo da linha.
  *
  * @param props - Área, série mensal, meses da janela, estado da abertura e callbacks.
  * @returns A linha e, aberta, a linha extra com a grade mensal.
@@ -74,8 +73,7 @@ export function AreaRevenueRow({ area, points, monthsInWindow, columnCount, isEx
         </TableCell>
         {neighborhood ? (
           <TableCell>
-            <div className="flex items-center justify-end gap-2">
-              <MonthlySparkline points={points} />
+            <div className="flex items-center justify-end">
               <Button
                 variant="ghost"
                 size="icon"

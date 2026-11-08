@@ -336,3 +336,16 @@
 - **Fora desta entrega:** backend, API e cálculos; reordenar as áreas para fechar a linha da grade (a ordem vem da API); conferência visual no navegador (feita por quem revisa).
 - **Validação de Testes:**
   - `dev.ps1 check` aprovado (lint, TypeScript e build); 936 pytest e 854 vitest.
+
+### [2026-11-08] - Inteligência Comercial: gráfico único com métrica à escolha no lugar das minibarras (issue #101)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Removidos `MonthlySparkline` e as minibarras da tabela de receita por bairro. A última coluna virou "Mês a mês", só com o botão que abre receita, volume e tarifa de cada mês na linha.
+  - Novo `AreaComparisonChart`, acima da tabela no nível de bairro: o usuário escolhe a métrica (Receita, Volume ou Tarifa) e até 5 bairros da página. O título traz a métrica e a unidade ("Receita mensal por bairro · R$ por mês"); o gráfico (`ComparisonLineChart`) usa um eixo comum a partir de zero para todas as linhas, legenda por cor e tooltip com o valor de cada bairro no mês.
+  - Estado da escolha em `useAreaComparison`: sem escolha (ou com a escolha fora da página atual) compara os 3 primeiros bairros; sempre fica ao menos 1 e no máximo 5 (uma cor `--chart-*` por série).
+  - Os dados são os mesmos de antes: reaproveita `useNeighborhoodHistories` (mesma série da gaveta de 24 meses), sem endpoint novo nem cálculo novo. `MonthlyBarChart` não mudou.
+  - Testes: `AreaRevenueTable.test.tsx` agora confere que não há minibarras; `AreaComparisonChart.test.tsx` (novo, 4 testes) cobre título com métrica e unidade, troca de métrica, limite de 1 a 5 bairros e o estado de carregamento.
+- **Arquivos:** `revenue/components/` (`AreaComparisonChart`, `ComparisonLineChart`, `AreaRevenueCard`, `AreaRevenueRow`, `AreaRevenueTable`), `revenue/hooks/useAreaComparison.ts` e os dois testes.
+- **Fora desta entrega:** comparar bairros fora da página atual da tabela (a série só é consultada para os bairros visíveis); backend, API e cálculos; conferência visual no navegador (feita por quem revisa).
+- **Validação de Testes:**
+  - `dev.ps1 check` aprovado (lint, TypeScript e build); 936 pytest e 858 vitest.
