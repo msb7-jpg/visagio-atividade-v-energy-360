@@ -106,6 +106,51 @@ Leituras:
 - **Pendência de coerência:** o detalhe da UC (`fetch_registered_unit`) e a aba "Fora da fila" ainda usam a queda
   bruta. Só importam quando o modelo novo virar o padrão.
 
+## Fase 3: o que os dados dizem sobre a chance de acerto (2026-11-08)
+
+Conjunto de calibração: 1.354 inspeções sem GD (ago–dez/2025), cada uma com o perfil da UC no corte (mês anterior) e a
+queda relativa aos pares daquele mês. Nenhuma tem leitura zerada.
+
+| Queda relativa aos pares | Inspeções | Acerto |
+|---|---|---|
+| menos de 5% | 397 | 7,3% |
+| 5% a 20% | 58 | 12,1% |
+| 20% a 30% | **2** | (50%, sem significado) |
+| 30% a 40% | 91 | 93,4% |
+| 40% a 50% | 367 | 92,6% |
+| 50% a 70% | 439 | 92,3% |
+
+- **A relação é um degrau, não uma curva.** Abaixo de 20% o acerto é de cerca de 8%; a partir de 30% é de cerca de
+  92,5% e fica plano até 70%. A queda bruta, que o código usava, vai de 8% a 93% de forma gradual porque a
+  sazonalidade borra a fronteira; contra os pares ela some.
+- **Uma curva suave ajustada não é identificável:** não há inspeção entre 20% e 30%, e a taxa é plana acima disso.
+- **Súbita e moderada não se distinguem** em queda relativa (93,4%, 92,6% e 92,3%), e a classe quase não pesa dentro
+  de cada faixa (comercial 94% a 97%, residencial 92%; diferença de 1,7 desvios).
+- **AUC:** queda bruta 0,907; contra a carteira 0,909; contra os pares 0,914. Os pares são os melhores, por pouco.
+- **Estabilidade mês a mês (leave-one-month-out):** acerto "alto" (queda ≥ 30%) entre 90,3% e 94,3% e "baixo" (< 20%)
+  entre 6,5% e 9,3%. Com 2 parâmetros e 1.354 inspeções não há sobreajuste a corrigir.
+- **A faixa sem medição pesa na fila real.** UCs da fila com pares com queda relativa de 20% a 30%: 2025-07, 44 de
+  956; 2025-11, 319 de 581; 2026-01, 15 de 31; 2026-03, 22 de 32; 2026-06, 29 de 31. Hoje o código dá a elas 91,5%.
+
+## Fase 3: decisão e efeito da rampa (2026-11-08)
+
+Decisão do dono da fatia: **rampa linear de 7,9% (em 20% de queda relativa) a 92,5% (em 30%)**, implementada em
+`hit_curve.py` e usada só no modelo com pares. Súbita e moderada e a classe saem da chance, porque os dados não as
+distinguem. A faixa de 20% a 30% continua sem medição: o piloto fora da fila (D13) é o que a mede.
+
+Backtest do modelo novo com a curva contra o atual: igual no topo (±1 a 3 UCs inspecionadas, kWh ±1%; em 2025-11 com
+N=200, 129 contra 126 irregulares). Prioritárias (chance ≥ 30%) na fila:
+
+| Competência | Atual | Pares + degraus | Pares + rampa |
+|---|---|---|---|
+| 2025-07 | 930 | 931 | 926 |
+| 2025-11 | 500 | 580 | 437 |
+| 2026-03 | 2 | 22 | 18 |
+| 2026-06 | 7 | 7 | 5 |
+
+A rampa tira de "prioritária" as UCs cuja chance era suposição otimista (2025-11: 580 para 437). O portão da Fase 3
+(não ficar pior, ganhar em consistência) passa. Falta a Fase 4: escolher o piso de entrada.
+
 ## Riscos
 
 - O backtest só cobre jul–dez/2025: o verão não é validado.

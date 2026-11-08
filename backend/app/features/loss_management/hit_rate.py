@@ -1,5 +1,6 @@
 """Taxas históricas de acerto das inspeções por sinal, medidas em `fato_inspecoes_perdas`."""
 
+from app.features.loss_management.hit_curve import curve_hit_rate
 from app.features.loss_management.schemas import SuspicionReason
 
 LIMIAR_QUEDA_NORMALIZADA = 0.2  # queda além da da carteira a partir da qual a queda moderada tem chance alta
@@ -24,19 +25,30 @@ TAXA_ACERTO_POR_MOTIVO = {
 }
 
 
-def reason_hit_rate(reason: SuspicionReason, normalized_drop: float, base_months: int = MESES_BASE_COMPLETO) -> float:
+def reason_hit_rate(
+    reason: SuspicionReason,
+    normalized_drop: float,
+    base_months: int = MESES_BASE_COMPLETO,
+    *,
+    measured_curve: bool = False,
+) -> float:
     """Taxa histórica de acerto de um sinal; a queda moderada varia com a queda além da carteira.
 
     Args:
         reason: Motivo de suspeita.
-        normalized_drop: Queda da UC além da queda geral da carteira (0 a 1), usada só pela queda moderada.
+        normalized_drop: Queda da UC além da queda geral da carteira ou dos pares (0 a 1), usada pelas quedas.
         base_months: Meses com leitura na janela de base da UC; com menos de `MESES_BASE_MINIMO` a taxa medida em
             UCs com histórico completo não vale e a chance não passa da taxa fraca.
+        measured_curve: Com a queda relativa aos pares, a queda súbita e a moderada seguem a mesma curva de dois
+            patamares (D16), pois os dados não as distinguem; False mantém os degraus por motivo.
 
     Returns:
         A taxa de acerto do sinal (0 a 1).
     """
-    if reason == SuspicionReason.QUEDA_MODERADA:
+    is_drop_signal = reason in (SuspicionReason.QUEDA_SUBITA, SuspicionReason.QUEDA_MODERADA)
+    if measured_curve and is_drop_signal:
+        rate = curve_hit_rate(normalized_drop)
+    elif reason == SuspicionReason.QUEDA_MODERADA:
         is_above_portfolio = normalized_drop >= LIMIAR_QUEDA_NORMALIZADA
         rate = TAXA_ACERTO_QUEDA_ACIMA_DA_CARTEIRA if is_above_portfolio else TAXA_ACERTO_QUEDA_NA_CARTEIRA
     else:
@@ -45,7 +57,11 @@ def reason_hit_rate(reason: SuspicionReason, normalized_drop: float, base_months
 
 
 def hit_probability(
-    reasons: list[SuspicionReason], normalized_drop: float = 0.0, base_months: int = MESES_BASE_COMPLETO
+    reasons: list[SuspicionReason],
+    normalized_drop: float = 0.0,
+    base_months: int = MESES_BASE_COMPLETO,
+    *,
+    measured_curve: bool = False,
 ) -> float:
     """Estima a chance de uma inspeção achar irregularidade a partir dos sinais da UC.
 
@@ -57,5 +73,5 @@ def hit_probability(
     Returns:
         A maior taxa histórica de acerto entre os sinais presentes (0 a 1); 0 sem sinais.
     """
-    rates = [reason_hit_rate(reason, normalized_drop, base_months) for reason in reasons]
+    rates = [reason_hit_rate(reason, normalized_drop, base_months, measured_curve=measured_curve) for reason in reasons]
     return max(rates, default=0.0)

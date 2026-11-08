@@ -7,6 +7,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.features.loss_management import peers
 from app.features.loss_management.backtest_schemas import BacktestFilterDTO
+from app.features.loss_management.hit_curve import curve_hit_rate
 from app.features.loss_management.models import InspectionOrder
 from app.features.loss_management.peers import median_ratio_by_class
 from app.features.loss_management.queries import SuspicionFilters
@@ -67,7 +68,9 @@ def test_a_real_industrial_drop_in_winter_is_not_hidden_by_the_residential_media
     )
 
     assert with_global_median.probabilidade_acerto == pytest.approx(0.076)
-    assert with_peers.probabilidade_acerto == pytest.approx(0.915)
+    relative_drop = 1 - 650.0 / 1000.0 / INDUSTRIAL_PEER_RATIO  # 27,8%: na rampa entre os patamares
+    assert with_peers.probabilidade_acerto == pytest.approx(curve_hit_rate(relative_drop))
+    assert with_peers.probabilidade_acerto > 0.5
 
 
 def test_a_normal_residential_winter_drop_is_not_suspicious_with_peers():

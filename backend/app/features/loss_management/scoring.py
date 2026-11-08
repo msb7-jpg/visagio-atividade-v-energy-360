@@ -181,7 +181,10 @@ def build_suspicious_unit(
         motivos=reasons,
         score_risco=risk_score(profile),
         probabilidade_acerto=hit_probability(
-            reasons, normalized_drop_ratio(profile, reference_ratio), profile.meses_base
+            reasons,
+            normalized_drop_ratio(profile, reference_ratio),
+            profile.meses_base,
+            measured_curve=profile.peer_ratio is not None,
         ),
         meses_base=profile.meses_base,
         consumo_base_kwh=round(profile.consumo_base_kwh, 1),

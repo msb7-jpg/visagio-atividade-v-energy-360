@@ -341,13 +341,22 @@ fora (1.385 de 1.389 entram).
   entre verão e inverno e é corrigido demais.
 - **Decisão:** a referência de cada UC é a mediana de recente÷base da sua **classe** (os pares), com mínimo de 100 UCs
   no grupo. A **queda relativa aos pares** vale na entrada (piso de 20%, leitura zerada sempre entra), no déficit
-  (`base × razão dos pares − recente`) e na chance de acerto, que vira uma curva suave da queda relativa. Classes sem
-  medição própria (industrial, rural, poder público: 16 inspeções) usam a curva geral e a tela avisa. Município e faixa
-  de consumo só entram se o backtest provar ganho.
+  (`base × razão dos pares − recente`) e na chance de acerto, que segue a queda relativa em **dois patamares
+  medidos** (7,9% abaixo de 20% de queda; 92,5% a partir de 30%, plano até 70%) com uma **rampa linear entre 20% e
+  30%** (`hit_curve.py`). A rampa é suposição: há 2 inspeções nessa faixa, que concentra a maior parte da fila de 2026
+  (29 de 31 UCs em 2026-06). Queda súbita e moderada deixam de ter taxas próprias e a classe não entra na chance,
+  porque os dados não as distinguem (93,4%, 92,6% e 92,3% por faixa; comercial 94 a 97% contra residencial 92%). A
+  curva suave ajustada prevista no plano não é identificável: a relação é um degrau, sem dado entre os patamares.
+  Município e faixa de consumo só entram se o backtest provar ganho.
 - **Junto:** a fila deixa de ter teto de 200. A tela ganha o campo "quantas inspecionar" e a curva de retorno
   acumulado, com custo por inspeção opcional que marca o corte sugerido.
-- **Critério:** a lógica nova só substitui a atual se ganhar no backtest, ajustando a curva em quatro cortes e testando
-  no quinto (leave-one-month-out), em kWh recuperado e precisão nas primeiras N UCs (50, 100 e 200).
+- **Critério:** a lógica nova só substitui a atual se não ficar pior no backtest (kWh recuperado e precisão nas
+  primeiras N UCs: 50, 100 e 200) e ganhar em consistência entre classes e estações. Resultado: backtest igual no topo
+  (±1 a 3 UCs, kWh ±1%); a fila de 2025-07 cai de 34.193 para 956 UCs com as mesmas prioritárias. Os dois patamares
+  vêm de 2 parâmetros e 1.354 inspeções, estáveis por mês (alto 90,3% a 94,3%, baixo 6,5% a 9,3%), então o
+  leave-one-month-out não muda as taxas. AUC da queda: bruta 0,907, contra a carteira 0,909, contra os pares 0,914.
+- **Pendente:** medir a faixa de 20% a 30% no piloto fora da fila (D13); o detalhe da UC e a aba "Fora da fila" ainda
+  usam a queda bruta e a chance por degraus, até o modelo novo virar o padrão.
 - **Limites:** o backtest cobre só jul–dez/2025, então o verão não é validado. Ele mede apenas UCs que o campo visitou. O
   backtest atual avalia taxas medidas nas mesmas inspeções, e por isso é otimista. O plano está em
   `docs/planning/adrian_cesar/fila-inspecao-sazonalidade-plano.md`.
