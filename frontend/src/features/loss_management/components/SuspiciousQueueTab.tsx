@@ -39,7 +39,10 @@ export function SuspiciousQueueTab({ queue }: SuspiciousQueueTabProps) {
           <QueueReferencePills summary={summary} isError={queue.isSummaryError} onRetry={queue.retrySummary} />
         </div>
         <QueueActionsBar
-          selectedUnits={queue.selectedUnits}
+          selectedCount={queue.selectedUnits.length}
+          topCountText={queue.topCountText}
+          isSelecting={queue.isSelectingTop}
+          onTopCountTextChange={queue.setTopCountText}
           onSelectTop={queue.selectTopUnits}
           onGenerate={queue.openDialog}
         />

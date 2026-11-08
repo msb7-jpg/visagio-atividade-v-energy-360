@@ -18,6 +18,7 @@ from app.features.loss_management.schemas import (
     SuspiciousUnitsFilterDTO,
 )
 from app.features.loss_management.scoring import (
+    JANELA_RECUPERACAO_MESES,
     ConsumptionProfile,
     QueueCandidates,
     build_suspicious_unit,
@@ -56,8 +57,8 @@ def test_unit_exposes_monthly_energy_and_annual_value():
     assert unit is not None
     assert unit.kwh_mes_recuperavel == pytest.approx(250.0)
     assert unit.valor_ano_rs == pytest.approx(250.0 * 12 * TARIFF_RS_KWH)
-    assert unit.kwh_estimado_recuperar == pytest.approx(750.0)
-    assert unit.valor_estimado_recuperar_rs == pytest.approx(750.0 * TARIFF_RS_KWH)
+    assert unit.kwh_estimado_recuperar == pytest.approx(250.0 * JANELA_RECUPERACAO_MESES)
+    assert unit.valor_estimado_recuperar_rs == pytest.approx(250.0 * JANELA_RECUPERACAO_MESES * TARIFF_RS_KWH)
 
 
 def test_unit_starts_in_the_queue_without_an_order():
@@ -414,7 +415,7 @@ async def test_summary_reports_capacity_selected_energy_and_expected_return(clie
 
     assert response.status_code == 200
     summary = response.json()
-    assert summary["capacidade_total"] == 200
+    assert "capacidade_total" not in summary  # a equipe decide quantas UCs inspecionar; não há teto fixo na API
     assert summary["capacidade_programada"] == 1
     # UC_FRAUDE já tem ordem e não conta como selecionada; UC_INSPECAO_ANTIGA: déficit de 150 kWh/mês.
     assert summary["selecionadas"] == 1

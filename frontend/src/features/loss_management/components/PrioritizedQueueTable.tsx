@@ -18,11 +18,11 @@ function headerCheckState(selectableCount: number, selectedCount: number): Heade
 
 const PAGE_SIZE = 25
 const SCORE_EXPLANATION =
-  'Score de prioridade (0 a 100): compara esta UC com a primeira da fila, que vale 100. Considera quanta energia a UC deixou de consumir (média dos 12 meses anteriores menos a dos últimos 3, projetada por 3 meses) e o histórico de acerto das inspeções em casos parecidos, medido em campo. Score alto significa mais energia a recuperar por visita. Não é a probabilidade de haver fraude.'
+  'Prioridade (0 a 100): compara esta UC com a primeira da fila, que vale 100. Considera quanta energia a UC deixou de consumir (média dos 12 meses anteriores menos a dos últimos 3, projetada por 10 meses) e o histórico de acerto das inspeções em casos parecidos, medido em campo. Prioridade alta significa mais energia esperada a recuperar por visita. Não é a probabilidade de haver fraude.'
 
 const QUEDA_EXPLANATION =
   'Média dos 3 últimos meses contra a média dos 12 anteriores (menos, se a UC é recente). O gráfico do detalhe mostra mês a mês.'
-const COLUMN_HELP: Record<string, string> = { Score: SCORE_EXPLANATION, Queda: QUEDA_EXPLANATION }
+const COLUMN_HELP: Record<string, string> = { Prioridade: SCORE_EXPLANATION, Queda: QUEDA_EXPLANATION }
 
 const COLUMNS = [
   '#',
@@ -32,12 +32,12 @@ const COLUMNS = [
   'Queda',
   'kWh/mês',
   'R$/ano',
-  'Score',
+  'Prioridade',
   'Situação'
 ] as const
 
 /** A fila vem ordenada do maior para o menor kWh esperado, e o score cresce junto com ele: a seta mostra isso. */
-const SORTED_COLUMN = 'Score'
+const SORTED_COLUMN = 'Prioridade'
 
 interface PrioritizedQueueTableProps {
   units: SuspiciousUnit[]

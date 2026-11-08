@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     # Gestão de perdas: arquivo (relativo à pasta de execução) em que o resultado do backtest fica guardado entre
     # reinícios da API. Vazio desliga a persistência, e o resultado fica só em memória.
     loss_backtest_cache_path: str | None = ".cache/backtest_series.json"
+    # Gestão de perdas (D16): a fila compara cada UC com os pares da sua classe, o que desconta a sazonalidade. False
+    # volta à comparação com a queda bruta e a mediana da carteira.
+    loss_use_peers: bool = True
 
     jwt_secret_key: str = "v-energy-grid-360-jwt-secret-key-2026-visagio-super-secure"  # ruff: ignore[hardcoded-password-string]
     jwt_algorithm: str = "HS256"

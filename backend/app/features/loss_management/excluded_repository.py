@@ -13,6 +13,8 @@ from app.features.loss_management.daily_cache import DailyEngineCache
 from app.features.loss_management.excluded_schemas import ExcludedUnitDTO
 from app.features.loss_management.exclusion_rules import Exclusion, InspectionEvent, classify_exclusion
 from app.features.loss_management.models import InspectionOrder
+from app.features.loss_management.peers import fetch_peer_ratios
+from app.features.loss_management.portfolio_repository import NEUTRAL_PORTFOLIO_RATIO, PortfolioRepositoryMixin
 from app.features.loss_management.queries import (
     COMPLETED_STATUS,
     ConsumptionWindows,
@@ -63,11 +65,12 @@ def _to_dto(row: Mapping, exclusion: Exclusion) -> ExcludedUnitDTO:
     )
 
 
-class ExcludedUnitsRepositoryMixin(QueueSummaryRepositoryMixin):
+class ExcludedUnitsRepositoryMixin(QueueSummaryRepositoryMixin, PortfolioRepositoryMixin):
     """Leitura das exclusões da fila, no mesmo recorte de referência da fila."""
 
     session: AsyncSession
     reference_competencia: str | None
+    use_peers: bool
 
     async def _resolve_reference(self) -> AnalysisReference | None:
         latest = await self.session.scalar(latest_competencia_query())
@@ -133,7 +136,7 @@ class ExcludedUnitsRepositoryMixin(QueueSummaryRepositoryMixin):
             closed_orders = tuple((await self.session.execute(orders_version_query())).one())
             # As UCs da fila entram na chave: se uma ordem fecha entre o cálculo da fila e o das exclusões, a lista
             # calculada para uma fila não pode servir a outra.
-            key = (reference.competencia, reference.history_until, closed_orders, frozenset(queue_ids))
+            key = (reference.competencia, reference.history_until, closed_orders, frozenset(queue_ids), self.use_peers)
             return await _excluded_units_cache.get_or_compute(
                 self.session.get_bind(), key, lambda: self._compute_excluded_units(reference, queue_ids)
             )
@@ -143,7 +146,17 @@ class ExcludedUnitsRepositoryMixin(QueueSummaryRepositoryMixin):
 
     async def _compute_excluded_units(self, reference: AnalysisReference, queue_ids: set[str]) -> list[ExcludedUnitDTO]:
         windows = build_windows(reference.competencia)
-        query = evaluated_profiles_query(windows, SuspicionFilters(limiar_queda=LIMIAR_QUEDA_MODERADA))
+        portfolio_ratio = NEUTRAL_PORTFOLIO_RATIO
+        peer_ratios = None
+        if self.use_peers:
+            portfolio_ratio = await self.fetch_portfolio_ratio(reference.competencia)
+            peer_ratios = await fetch_peer_ratios(self.session, reference.competencia, portfolio_ratio)
+        query = evaluated_profiles_query(
+            windows,
+            SuspicionFilters(limiar_queda=LIMIAR_QUEDA_MODERADA),
+            peer_ratios=peer_ratios,
+            portfolio_ratio=portfolio_ratio,
+        )
         evaluated = (await self.session.execute(query)).mappings().all()
         inspections = await self.fetch_inspection_events(windows, reference.history_until)
         cancellations = await self.fetch_cancellation_dates(reference.history_until)

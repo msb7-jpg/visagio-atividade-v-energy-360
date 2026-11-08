@@ -68,6 +68,25 @@ describe('OrderHistorySheet', () => {
     expect(screen.getAllByText('Por perdas@venergy.com')).toHaveLength(2)
   })
 
+  it('põe cada registro num contêiner próprio, com autor, data e mudanças juntos', async () => {
+    mockedApi.listOrderEvents.mockResolvedValue(EVENTS)
+
+    renderSheet()
+
+    const generated = (await screen.findByText('Ordem gerada')).closest('.glass-panel')
+    const imported = screen.getByText('Resultado importado da planilha').closest('.glass-panel')
+    expect(generated).not.toBeNull()
+    expect(imported).not.toBeNull()
+    expect(imported).not.toBe(generated)
+    expect(imported?.closest('li')).not.toBeNull()
+    expect(generated).toContainElement(screen.getByText('06/11/2026 12:00'))
+    expect(imported).toContainElement(screen.getByText('06/11/2026 13:30'))
+    expect(imported).not.toContainElement(screen.getByText('06/11/2026 12:00'))
+    expect(imported).toContainElement(screen.getByText('Status: pendente → concluida'))
+    expect(imported).toContainElement(screen.getByText('Energia recuperada (kWh): — → 1.250,5'))
+    expect(generated).not.toContainElement(screen.getByText('Status: pendente → concluida'))
+  })
+
   it('não inventa histórico para ordem sem registros', async () => {
     mockedApi.listOrderEvents.mockResolvedValue([])
 

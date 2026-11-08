@@ -264,7 +264,7 @@ describe('CancelOrderDialog', () => {
 
     fireEvent.change(screen.getByLabelText(/Motivo do cancelamento/), { target: { value: reason } })
 
-    expect(screen.getByText(/A UC UC131844 volta para a fila e o score é recalculado no próximo processamento\./)).toBeInTheDocument()
+    expect(screen.getByText(/A UC UC131844 volta para a fila e a prioridade é recalculada no próximo processamento\./)).toBeInTheDocument()
   })
 
   it.each(['cliente_regularizou', 'endereco_nao_localizado'])('avisa que a UC fica fora da fila por 90 dias quando o motivo é %s', (reason) => {

@@ -66,8 +66,8 @@ export function GenerateOrdersDialog({ units: selectedUnits, summary: currentSum
           <dd>{formatInteger(summary.kwh_mes_selecionadas)} kWh/mês</dd>
           <dt className="text-muted-foreground">Retorno esperado</dt>
           <dd>{formatInteger(summary.retorno_esperado_kwh_mes)} kWh/mês</dd>
-          <dt className="text-muted-foreground">Capacidade depois</dt>
-          <dd>{summary.capacidade_programada + count} de {summary.capacidade_total}</dd>
+          <dt className="text-muted-foreground">Ordens abertas depois</dt>
+          <dd>{summary.capacidade_programada + count}</dd>
         </dl>
       ) : null}
       <SelectionOutlookNote units={units} />

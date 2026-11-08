@@ -8,6 +8,24 @@ export interface ReasonBacktest {
   amostra_suficiente: boolean
 }
 
+/** Faixa da chance de acerto prevista: patamar alto (90% ou mais), rampa sem medição ou patamar baixo (10% ou menos). */
+export type ChanceBand = 'alta' | 'rampa' | 'baixa'
+
+/** O previsto e o realizado das UCs selecionadas de uma faixa de chance. */
+export interface BandBacktest {
+  faixa: ChanceBand
+  selecionadas: number
+  inspecionadas: number
+  irregulares: number
+  /** Acerto observado: irregulares ÷ inspecionadas; nulo sem inspeções. */
+  taxa: number | null
+  /** Chance de acerto média que o modelo deu às inspecionadas; nula sem inspeções. */
+  chance_prevista: number | null
+  /** Energia a recuperar × chance de acerto, somada nas inspecionadas. */
+  kwh_esperado: number
+  kwh_recuperado: number
+}
+
 export interface Backtest {
   backtest_executado: boolean
   cortes_disponiveis: string[]
@@ -25,9 +43,33 @@ export interface Backtest {
   kwh_recuperado: number
   por_motivo: ReasonBacktest[]
   amostra_minima_por_motivo: number
+  /** Energia que o modelo esperava recuperar nas selecionadas que foram inspecionadas. */
+  kwh_esperado: number
+  /** Chance de acerto média das selecionadas inspecionadas; compare com a precisão. */
+  chance_media_prevista: number | null
+  /** UCs com irregularidade confirmada pelo campo na janela, estivessem ou não na fila. */
+  irregulares_janela: number
+  /** Dessas, as que a fila inteira do corte continha (não só o top N). */
+  irregulares_na_fila: number
+  por_faixa: BandBacktest[]
+}
+
+/** O backtest de todos os cortes para um tamanho de seleção (top N da fila). */
+export interface BacktestSize {
+  tamanho: number
+  cortes: Backtest[]
+}
+
+/** O resultado de um corte em um tamanho de seleção, para comparar os tamanhos no mesmo corte. */
+export interface BacktestAtSize {
+  tamanho: number
+  result: Backtest
 }
 
 export interface BacktestSeries {
+  /** Tamanho padrão da seleção, o de `cortes`. */
   tamanho: number
   cortes: Backtest[]
+  /** Todos os tamanhos medidos, incluindo o padrão; vazio sem histórico de inspeções. */
+  tamanhos: BacktestSize[]
 }

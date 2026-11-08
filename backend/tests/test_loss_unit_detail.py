@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.features.loss_management.detail_repository import UnitDetailRepository
 from app.features.loss_management.detail_schemas import PriorInspectionDTO, PriorInspectionSource
 from app.features.loss_management.schemas import SuspicionReason
-from app.features.loss_management.scoring import ConsumptionProfile, detect_reasons
+from app.features.loss_management.scoring import JANELA_RECUPERACAO_MESES, ConsumptionProfile, detect_reasons
 from app.features.loss_management.unit_detail import (
     explain_reasons,
     fill_monthly_series,
@@ -101,7 +101,7 @@ async def test_top_of_the_queue_has_score_100_and_equals_its_own_expected_kwh(cl
     breakdown = (await get_detail(client, "UC_FRAUDE")).json()["decomposicao_score"]
 
     assert breakdown["score"] == 100
-    assert breakdown["meses_janela_recuperacao"] == 3
+    assert breakdown["meses_janela_recuperacao"] == JANELA_RECUPERACAO_MESES
     assert breakdown["kwh_esperado"] == pytest.approx(breakdown["maior_kwh_esperado_fila"])
 
 

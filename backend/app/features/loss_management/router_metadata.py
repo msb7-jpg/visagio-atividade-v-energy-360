@@ -10,10 +10,12 @@ AUTH_ERROR_RESPONSES: OpenApiResponses = {
 list_suspicious_units_doc = EndpointDoc(
     summary="Fila de UCs suspeitas priorizada por energia esperada a recuperar",
     description=(
-        "Fila classificada: lista UCs com queda >= 20% do consumo médio das 3 últimas competências em relação "
-        "às 12 anteriores, ou com leitura zerada. A queda >= 50% é 'queda_subita' (acerto histórico de 93%); a "
-        "de 20% a 50% é 'queda_moderada', com 'probabilidade_acerto' calibrada por faixa (42% de 30% a 50%; "
-        "7% de 20% a 30%), então o topo da fila continua sendo a queda súbita. Exclui UCs com geração "
+        "Fila classificada: lista UCs que caíram 20% ou mais além da queda da própria classe de consumo (os "
+        "pares), medida pelo consumo médio das 3 últimas competências contra as 12 anteriores, ou com leitura "
+        "zerada. Comparar com os pares tira a sazonalidade: quando o consumo da classe inteira sobe ou cai, só a "
+        "UC que destoa entra. Com LOSS_USE_PEERS=false a fila volta a medir a queda bruta. A "
+        "'probabilidade_acerto' segue dois patamares medidos em campo (7,9% abaixo de 20% de queda relativa; "
+        "92,5% a partir de 30%), com rampa linear entre 20% e 30%, faixa sem medição. Exclui UCs com geração "
         "distribuída e as já inspecionadas dentro da janela de análise (ordem concluída ou histórico de "
         "campo). Quando a inspeção constatou irregularidade, a UC fica fora por 12 meses e volta antes só com "
         "uma nova queda súbita, posterior à inspeção. Também saem as com ordem cancelada por "
@@ -21,7 +23,7 @@ list_suspicious_units_doc = EndpointDoc(
         "dias; os demais motivos de cancelamento devolvem a UC à fila. UCs com ordem "
         "ativa seguem na lista, com `situacao` ordem_gerada ou em_campo. Cada UC traz `score` de 0 a 100 (kWh "
         "esperado relativo ao topo da fila). Filtros por município, bairro, classe e motivo; "
-        "limite padrão de 200 (capacidade mensal da equipe de campo). "
+        "limite padrão de 200 por página (a equipe decide quantas UCs inspecionar). "
         "Ordenação decrescente por kWh esperado, isto é, kWh estimado a recuperar vezes a "
         "taxa histórica de acerto do sinal ('probabilidade_acerto'); o score de risco só desempata. "
         "Se a tabela de inspeções de campo (Fatia 02) ainda não existir, a fila é montada sem excluir esse "
@@ -127,7 +129,8 @@ unit_detail_doc = EndpointDoc(
 queue_summary_doc = EndpointDoc(
     summary="Cartões do topo da Fila de Inspeção",
     description=(
-        "Resume a capacidade do mês (ordens ativas contra as 200 inspeções que a equipe faz), a energia recuperável "
+        "Resume as ordens abertas (geradas ou em campo, sem teto: a equipe decide quantas UCs inspecionar), "
+        "a energia recuperável "
         "das UCs selecionadas (`ucs`, repetível), o retorno esperado (soma, por UC selecionada, de energia x chance "
         "de acerto da própria UC, em kWh/mês e R$/ano) e a taxa histórica de inspeções com irregularidade "
         "confirmada, que não entra no retorno. UCs que já têm ordem ativa ou que saíram da fila "

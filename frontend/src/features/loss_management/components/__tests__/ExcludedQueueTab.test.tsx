@@ -60,6 +60,28 @@ describe('ExcludedQueueTab', () => {
     expect(screen.getByText('Mostrando 2 de 2 UCs')).toBeInTheDocument()
   })
 
+  it('põe a tabela e o rodapé num cartão, como a lista da fila priorizada, e os filtros fora dele', async () => {
+    mockedApi.listExcludedUnits.mockResolvedValue(queue([GD_UNIT, INSPECTED_UNIT]))
+
+    renderTab()
+
+    const table = await screen.findByRole('table')
+    const card = table.closest('.glass-panel')
+    expect(card).not.toBeNull()
+    expect(card).toHaveClass('p-4')
+    expect(card).toContainElement(screen.getByText('Mostrando 2 de 2 UCs'))
+    expect(card).not.toContainElement(screen.getByRole('group', { name: 'Filtrar por motivo da exclusão' }))
+  })
+
+  it('mostra o estado vazio dentro do cartão', async () => {
+    mockedApi.listExcludedUnits.mockResolvedValue({ itens: [], total: 0, resumo: [] })
+
+    renderTab()
+
+    const emptyTitle = await screen.findByText('Nenhuma UC fora da fila')
+    expect(emptyTitle.closest('.glass-panel')).not.toBeNull()
+  })
+
   it('não inventa data de volta para a UC com geração distribuída', async () => {
     mockedApi.listExcludedUnits.mockResolvedValue(queue([GD_UNIT]))
 

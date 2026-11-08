@@ -25,6 +25,18 @@ export function formatMwh(kwh: number): string {
   return `${mwhFormatter.format(kwh / KWH_PER_MWH)} MWh`
 }
 
+const multipleFormatter = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+
+/**
+ * Razão entre dois valores como múltiplo, no padrão brasileiro.
+ *
+ * @param ratio - Razão já calculada (ex.: 3,2 quando o realizado é 3,2 vezes o esperado).
+ * @returns Texto como "3,2×".
+ */
+export function formatMultiple(ratio: number): string {
+  return `${multipleFormatter.format(ratio)}×`
+}
+
 /**
  * Competência 'AAAA-MM' como "mm/aaaa".
  *

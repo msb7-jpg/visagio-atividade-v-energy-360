@@ -12,7 +12,12 @@ from app.features.loss_management.backtest_formulas import (
     evaluate_selection,
     outcome_window,
 )
-from app.features.loss_management.backtest_schemas import BacktestDTO, BacktestFilterDTO, ReasonBacktestDTO
+from app.features.loss_management.backtest_schemas import (
+    BacktestDTO,
+    BacktestFilterDTO,
+    BandBacktestDTO,
+    ReasonBacktestDTO,
+)
 from app.features.loss_management.queries import shift_competencia
 from app.features.loss_management.repository import LossRepository
 from app.features.loss_management.schemas import SuspiciousUnitsFilterDTO
@@ -88,6 +93,23 @@ def _to_dto(filter_dto: BacktestFilterDTO, cutoff: str, cutoffs: list[str], outc
             for entry in outcome.by_reason
         ],
         amostra_minima_por_motivo=MIN_SAMPLE_PER_REASON,
+        kwh_esperado=outcome.prediction.expected_kwh,
+        chance_media_prevista=outcome.prediction.mean_chance,
+        irregulares_janela=outcome.window_irregular_units,
+        irregulares_na_fila=outcome.queue_irregular_units,
+        por_faixa=[
+            BandBacktestDTO(
+                faixa=band.band,
+                selecionadas=band.selected,
+                inspecionadas=band.inspected,
+                irregulares=band.irregular,
+                taxa=band.rate,
+                chance_prevista=band.mean_chance,
+                kwh_esperado=band.expected_kwh,
+                kwh_recuperado=band.recovered_kwh,
+            )
+            for band in outcome.prediction.by_band
+        ],
     )
 
 
@@ -143,16 +165,25 @@ class BacktestService:
             raise BadRequestException(
                 f"Data de corte fora do histórico de inspeções: use de {cutoffs[0]} a {cutoffs[-1]}."
             )
-        cutoff_repository = LossRepository(self.repository.session, reference_competencia=cutoff)
+        cutoff_repository = LossRepository(
+            self.repository.session, reference_competencia=cutoff, use_peers=filter_dto.modelo == "novo"
+        )
         candidates = await cutoff_repository.fetch_consumption_profiles(suspicion_filters(SuspiciousUnitsFilterDTO()))
         tariff = await cutoff_repository.fetch_average_tariff()
-        ranked = rank_suspicious_units(
+        full_queue = rank_suspicious_units(
             candidates.profiles,
-            filter_dto.tamanho,
+            None,
             tariff_rs_kwh=tariff.rs_per_kwh,
             portfolio_ratio=candidates.portfolio_ratio,
         )
+        ranked = full_queue[: filter_dto.tamanho]
         selection = {unit.id_uc: unit.motivos[0] for unit in ranked}
         window_start, window_end = outcome_window(cutoff)
         inspections = await fetch_window_inspections(self.repository.session, window_start, window_end)
-        return _to_dto(filter_dto, cutoff, cutoffs, evaluate_selection(selection, inspections))
+        outcome = evaluate_selection(
+            selection,
+            inspections,
+            units={unit.id_uc: unit for unit in ranked},
+            queue_ids={unit.id_uc for unit in full_queue},
+        )
+        return _to_dto(filter_dto, cutoff, cutoffs, outcome)

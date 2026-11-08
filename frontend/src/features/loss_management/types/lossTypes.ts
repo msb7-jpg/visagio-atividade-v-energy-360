@@ -74,7 +74,7 @@ export interface HitRate {
 
 /** Cartões do topo da tela (`GET /losses/queue-summary`). */
 export interface QueueSummary {
-  capacidade_total: number
+  /** Ordens abertas (geradas ou em campo); a equipe decide quantas inspecionar, o servidor não impõe um teto. */
   capacidade_programada: number
   selecionadas: number
   kwh_mes_selecionadas: number

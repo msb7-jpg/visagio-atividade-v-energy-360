@@ -8,7 +8,7 @@ interface BrandMarkProps {
 }
 
 /**
- * Marca do V-Energy Grid 360: símbolo em tinta com o raio na cor da marca e o nome do produto.
+ * Marca do V-Energy Grid 360: símbolo na cor da marca (amarelo) com o raio em tinta e o nome do produto.
  *
  * @param props - Exibição do nome e classes de layout.
  * @returns Símbolo da marca, com ou sem o nome.
@@ -16,7 +16,7 @@ interface BrandMarkProps {
 export function BrandMark({ withName = true, className }: BrandMarkProps) {
   return (
     <span className={cn('flex items-center gap-2.5', className)}>
-      <span aria-hidden="true" className="bg-foreground text-brand flex size-7 items-center justify-center rounded-md">
+      <span aria-hidden="true" className="bg-brand text-brand-foreground flex size-7 items-center justify-center rounded-md">
         <Zap className="size-4 fill-current" />
       </span>
       {withName ? (

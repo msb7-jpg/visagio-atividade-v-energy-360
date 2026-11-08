@@ -79,7 +79,16 @@ fora (1.385 de 1.389 entram).
 
 ## 3. Energia a recuperar
 
-### D7. kWh estimado = déficit mensal x 3 meses (suposição)
+### D7. kWh estimado = déficit mensal x 10 meses, calibrado em campo (era 3, suposição)
+- **Atualização (2026-11-08):** o multiplicador passou de 3 para **10**. Nas 849 inspeções com irregularidade e kWh
+  recuperado (ago-dez/2025), medido contra o déficit relativo aos pares, o campo recuperou em mediana **10,3 meses** de
+  déficit (quartis 7,6 e 12,9; residencial 11,0 e comercial 9,0; por mês de 8,4 a 11,7). Contra o déficit bruto do modelo
+  antigo a mediana é 6,0 meses (a antiga nota "1,87× o estimado"). Com 3 meses, a energia recuperada era 2,7 a 3,4 vezes a
+  esperada no backtest; com 10, a razão ficou em 0,95 (0,81 a 1,00 por corte). A ordenação da fila não muda, e o
+  **R$/ano e o kWh/mês não dependem do multiplicador**: o R$/ano já usa 12 meses de déficit. Muda o kWh estimado a
+  recuperar, o `kwh_estimado` das ordens e a energia esperada do backtest. Limites: a medida é do mesmo histórico (ago-dez/2025),
+  sem teste fora da amostra, e os meses finais recuperaram um pouco menos (dezembro: 8,4). Com `LOSS_USE_PEERS=false` o
+  déficit é o bruto e o multiplicador adequado seria ~6. O texto abaixo é o registro original, com 3 meses.
 - **Decisão:** a energia a recuperar é `(consumo base - consumo recente) x 3`.
 - **O que os dados mostram** (188 ordens irregulares da demonstração de `2025-08`): o recuperado foi em mediana
   **1,87 vez** o estimado (quartis 1,32 e 2,25) e a estimativa ficou abaixo do recuperado em 176 das 188 UCs. A
@@ -332,6 +341,56 @@ fora (1.385 de 1.389 entram).
   `test_territory_filters_are_applied_after_the_ranking_and_not_in_the_query` em `test_loss_queue_design.py`. Medido na
   Gold real: `municipio=RECIFE` devolve as mesmas 72 UCs, e a UC142443 tem 72 na lista e no detalhe.
 - **Limite:** `service.py` está em exatamente 300 linhas, o teto do Pylint; acréscimos precisam de um módulo novo.
+
+### D16. A sazonalidade é descontada comparando cada UC com os pares da mesma classe (2026-11-08, em implementação)
+- **Como apareceu:** o consumo médio da base é 59% maior em janeiro (494 kWh) do que em julho (310 kWh), em quatro anos
+  seguidos. A fila compara os 3 meses recentes com os 12 anteriores, então no inverno quase toda UC "cai". Só a chance
+  de acerto descontava a queda geral (`portfolio_ratio`, mediana global). A entrada (queda bruta de 20%) e o déficit em kWh
+  usavam a queda bruta. Como o residencial é 85% das UCs, a mediana global é a dele; o industrial varia muito menos
+  entre verão e inverno e é corrigido demais.
+- **Decisão:** a referência de cada UC é a mediana de recente÷base da sua **classe** (os pares), com mínimo de 100 UCs
+  no grupo. A **queda relativa aos pares** vale na entrada (piso de 20%, leitura zerada sempre entra), no déficit
+  (`base × razão dos pares − recente`) e na chance de acerto, que segue a queda relativa em **dois patamares
+  medidos** (7,9% abaixo de 20% de queda; 92,5% a partir de 30%, plano até 70%) com uma **rampa linear entre 20% e
+  30%** (`hit_curve.py`). A rampa é suposição: há 2 inspeções nessa faixa, que concentra a maior parte da fila de 2026
+  (29 de 31 UCs em 2026-06). Queda súbita e moderada deixam de ter taxas próprias e a classe não entra na chance,
+  porque os dados não as distinguem (93,4%, 92,6% e 92,3% por faixa; comercial 94 a 97% contra residencial 92%). A
+  curva suave ajustada prevista no plano não é identificável: a relação é um degrau, sem dado entre os patamares.
+  Município e faixa de consumo só entram se o backtest provar ganho.
+- **Junto:** a fila deixa de ter teto de 200. A tela ganha o campo "quantas inspecionar" e a curva de retorno
+  acumulado, com custo por inspeção opcional que marca o corte sugerido. **Atualização de 2026-11-08:** a curva, o
+  corte sugerido e o endpoint `/losses/queue-curve` foram retirados (o gráfico não ajudava a decidir e o cartão tirava
+  espaço da fila); o gestor escolhe o N no campo da tela.
+- **Critério:** a lógica nova só substitui a atual se não ficar pior no backtest (kWh recuperado e precisão nas
+  primeiras N UCs: 50, 100 e 200) e ganhar em consistência entre classes e estações. Resultado: backtest igual no topo
+  (±1 a 3 UCs, kWh ±1%); a fila de 2025-07 cai de 34.193 para 956 UCs com as mesmas prioritárias. Os dois patamares
+  vêm de 2 parâmetros e 1.354 inspeções, estáveis por mês (alto 90,3% a 94,3%, baixo 6,5% a 9,3%), então o
+  leave-one-month-out não muda as taxas. AUC da queda: bruta 0,907, contra a carteira 0,909, contra os pares 0,914.
+- **Piso de entrada:** fica em 20% de queda relativa. Nas 1.354 inspeções, os pisos de 10% a 30% dão recall de 95,7%
+  a 96,0%; abaixo de 20% cada visita extra acerta 8% a 13%. A entrada antiga (queda bruta ≥ 20%) tinha recall de
+  98,7% e precisão de 69,7%: o modelo novo perde 25 irregularidades (2,9%), que custariam 330 inspeções a mais com
+  7,6% de acerto.
+- **Em produção:** o modelo com pares é o padrão (`LOSS_USE_PEERS=true`); `false` volta ao anterior. Fila, resumo,
+  filtros, "Fora da fila", detalhe da UC, `kwh_estimado` das ordens, backtest e painel executivo usam a mesma
+  referência.
+- **Efetividade (2026-11-08):** a aba deixou de usar a "diferença para a linha de base" como manchete, porque ela só
+  compara quem o campo visitou, com taxas medidas nas mesmas inspeções, e não distingue o modelo antigo do novo. Passou
+  a mostrar o **previsto ao lado do realizado**: acerto previsto contra observado, energia esperada contra recuperada,
+  calibração por faixa de chance e a cobertura da fila (irregularidades do campo que a fila continha). Medido com os
+  pares, N = 200, 5 cortes: a chance prevista (92,5%) ficou perto da observada (90,8% a 96,2%); a cobertura da fila foi de
+  95,2% a 96,0%; e a **energia recuperada foi de 2,7 a 3,4 vezes a esperada**, ou seja, a estimativa de 3 meses de
+  déficit era conservadora. Isso levou à calibração do D7 para 10 meses (razão de 0,95 depois). A curva de retorno não
+  dependia dele: o R$/ano usa 12 meses de déficit. As faixas de rampa e baixa quase não têm
+  inspeções nesses cortes, então a calibração ali segue em aberto. O N fixo em 200 não combina com a janela de 3 meses
+  (o top 200 pega só 113 a 185 das 541 irregularidades da janela). Por isso a série passou a medir **vários N**
+  (50, 100, 200 e 400), um corte de cada vez. Resultado: a captura sobe quase em linha reta com N (em 2025-07, de 5,9% com
+  N = 50 para 42,5% com N = 400) e a precisão cai pouco (de 97,0% para 94,3%), porque a cauda da fila ainda tem
+  chance alta. A razão recuperado ÷ esperado é estável entre os N (0,81 a 1,04). A captura é um piso: o campo
+  inspecionou mais UCs que N nos 3 meses da janela.
+- **Pendente:** medir a faixa de 20% a 30% no piloto fora da fila (D13).
+- **Limites:** o backtest cobre só jul–dez/2025, então o verão não é validado. Ele mede apenas UCs que o campo visitou. O
+  backtest atual avalia taxas medidas nas mesmas inspeções, e por isso é otimista. O plano está em
+  `docs/planning/adrian_cesar/fila-inspecao-sazonalidade-plano.md`.
 
 ## 5. Limitações e pendências
 

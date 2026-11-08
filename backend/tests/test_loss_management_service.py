@@ -16,6 +16,7 @@ from app.features.loss_management.schemas import (
     SuspiciousUnitsFilterDTO,
 )
 from app.features.loss_management.scoring import (
+    JANELA_RECUPERACAO_MESES,
     ConsumptionProfile,
     QueueCandidates,
     RegisteredUnit,
@@ -52,8 +53,8 @@ def test_sudden_drop_is_flagged_with_recoverable_energy():
 
     assert unit is not None
     assert unit.motivos == [SuspicionReason.QUEDA_SUBITA]
-    assert unit.kwh_estimado_recuperar == pytest.approx(750.0)
-    assert unit.valor_estimado_recuperar_rs == pytest.approx(562.5)
+    assert unit.kwh_estimado_recuperar == pytest.approx(250.0 * JANELA_RECUPERACAO_MESES)
+    assert unit.valor_estimado_recuperar_rs == pytest.approx(250.0 * JANELA_RECUPERACAO_MESES * TARIFF_RS_KWH)
     assert unit.score_risco == pytest.approx(66.7)
 
 
@@ -295,7 +296,7 @@ def test_future_inspection_date_is_rejected_but_today_is_accepted():
 def test_order_kwh_matches_queue_for_suspicious_unit():
     unit = make_unit(300.0, 50.0)
 
-    assert order_estimated_kwh(unit) == pytest.approx(750.0)
+    assert order_estimated_kwh(unit) == pytest.approx(250.0 * JANELA_RECUPERACAO_MESES)
 
 
 def test_order_kwh_is_zero_for_unit_without_suspicion():

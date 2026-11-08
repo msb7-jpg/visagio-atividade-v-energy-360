@@ -19,7 +19,7 @@ export function ScoreBar({ score }: ScoreBarProps) {
   return (
     <div
       role="meter"
-      aria-label={`Score ${score} de ${SCORE_MAX}`}
+      aria-label={`Prioridade ${score} de ${SCORE_MAX}`}
       aria-valuemin={0}
       aria-valuemax={SCORE_MAX}
       aria-valuenow={score}

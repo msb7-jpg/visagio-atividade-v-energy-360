@@ -15,6 +15,7 @@ const buttonVariants = cva(
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         outline: 'border border-border bg-card text-foreground hover:bg-muted',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/70',
+        brand: 'bg-brand text-brand-foreground hover:bg-brand/90',
         ghost: 'text-muted-foreground hover:bg-muted hover:text-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
         inline: 'text-inherit underline decoration-dotted decoration-muted-foreground underline-offset-4 hover:text-foreground'
@@ -24,6 +25,7 @@ const buttonVariants = cva(
         sm: 'h-8 px-3',
         lg: 'h-10 px-5 text-base',
         icon: 'size-9',
+        iconLg: 'size-14 [&_svg]:size-6',
         touch: 'h-11 px-3',
         inline: 'h-auto px-0'
       },
