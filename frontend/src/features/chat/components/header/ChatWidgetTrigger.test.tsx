@@ -37,6 +37,14 @@ describe('ChatWidgetTrigger', () => {
     expect(handleOpen).toHaveBeenCalledTimes(1)
   })
 
+  it('pinta o botão de amarelo, na cor da marca, com o ícone em tinta', () => {
+    render(<ChatWidgetTrigger isStreaming={false} positionClass="right-6 bottom-6" onOpen={vi.fn()} />)
+
+    const button = screen.getByRole('button', { name: /Abrir Assistente V-Energy IA/i })
+    expect(button).toHaveClass('bg-brand', 'text-brand-foreground')
+    expect(button).not.toHaveClass('bg-primary')
+  })
+
   it('mostra o rótulo visível e só exibe o indicador de resposta durante o streaming', () => {
     const { container } = render(
       <ChatWidgetTrigger
@@ -46,7 +54,7 @@ describe('ChatWidgetTrigger', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: /Abrir Assistente V-Energy IA/i })).toHaveTextContent('Assistente')
+    expect(screen.getByRole('button', { name: /Abrir Assistente V-Energy IA/i })).not.toHaveTextContent('Assistente')
     expect(container.querySelector('[data-testid="chat-streaming-indicator"]')).not.toBeInTheDocument()
   })
 })
