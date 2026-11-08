@@ -1315,6 +1315,19 @@
   - Decidir se os botões de filtro por motivo também ganham um cartão, como o cartão de filtros da "Fila priorizada".
 - **Validação de Testes:** tsc, ESLint, Fallow e vitest da pasta `loss_management` (403 testes, 43 arquivos), sem falhas. A suíte completa (`make lint-all` e `make test-all`) não foi rodada.
 
+### [2026-11-08] - Histórico da ordem: cada registro num contêiner
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - **Pedido.** No histórico da ordem, inclusive o da ordem concluída, cada log passa a ficar dentro de um contêiner.
+  - **Tela.** Em `OrderHistorySheet`, cada registro (tipo do evento, data e hora, autor e as mudanças de campo, como "Status", "Data da inspeção", "Irregularidade constatada" e "Energia recuperada") ficou dentro de um `Card` com `p-3`, no lugar da linha fina à esquerda. O texto, a ordem e o fuso dos registros não mudaram.
+  - **Teste.** Caso novo em `OrderHistorySheet.test.tsx`: cada registro tem o seu contêiner, com data, autor e mudanças dentro dele, e um registro não aparece dentro do contêiner do outro.
+- **Dificuldades / Desafios:**
+  - Não consegui ver o histórico na tela: a base local tem 0 ordens, e criar uma ordem gravaria no banco real do servidor que já roda na porta 8000. O visual está coberto só pelo teste.
+  - O pedido não dizia se o contêiner era para todos os registros ou só para o de conclusão; fiz para todos, para a lista ficar uniforme.
+- **Pendências:**
+  - Ver o histórico de uma ordem concluída na tela, quando houver uma ordem de teste.
+- **Validação de Testes:** tsc, ESLint e vitest do `OrderHistorySheet` (4 testes), sem falhas. Suíte completa registrada na entrada de validação do commit.
+
 ### [2026-11-08] - Revisão de código em dois eixos: nota no plano e renome de `queueCurve.ts`
 - **Autor:** Adrian César
 - **O que foi feito:**
