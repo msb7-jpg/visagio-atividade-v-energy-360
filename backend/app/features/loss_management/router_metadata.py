@@ -140,6 +140,21 @@ queue_summary_doc = EndpointDoc(
     },
 )
 
+queue_curve_doc = EndpointDoc(
+    summary="Curva de retorno acumulado da Fila de Inspeção",
+    description=(
+        "Soma, UC a UC e na ordem da fila, o retorno esperado (energia recuperável x chance de acerto) das UCs "
+        "livres, sem ordem ativa. Mostra onde cada inspeção a mais rende pouco. Com `custo` (R$ por inspeção), "
+        "`corte_sugerido` é quantas UCs inspecionar enquanto o retorno esperado em R$/ano de cada uma cobre o "
+        "custo; sem `custo` devolve só a curva. `pontos` limita o tamanho da resposta e sempre inclui a última UC."
+    ),
+    response_description="Curva reduzida, total de UCs livres e corte sugerido.",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        500: {"description": "Falha ao consultar tabelas Gold."},
+    },
+)
+
 queue_filters_doc = EndpointDoc(
     summary="Opções dos filtros da Fila de Inspeção",
     description=(

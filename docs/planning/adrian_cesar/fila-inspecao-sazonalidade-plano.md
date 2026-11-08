@@ -176,6 +176,27 @@ patamar baixo de qualquer UC sem queda relativa).
 de 20% a 30%, que concentra quase toda a fila de 2026 e tem chance desconhecida. A rampa da Fase 3 já ordena essas
 UCs, e a curva de retorno da Fase 5 deixa o gestor decidir onde parar. Nenhum código mudou nesta fase.
 
+## Fase 5: curva de retorno e corte sugerido (2026-11-08)
+
+Rota `GET /losses/queue-curve?custo=&pontos=`, só com UCs livres (sem ordem ativa). O retorno marginal nunca sobe (a
+fila é ordenada por kWh esperado e a tarifa é única), então o corte sugerido é um prefixo da fila. O corte para quando
+o R$/ano esperado da próxima UC fica abaixo do custo informado.
+
+Com a fila de produção (modelo com pares, tarifa de R$ 0,7876/kWh):
+
+| Competência | UCs livres | Retorno esperado total | Corte com R$ 50 | R$ 150 | R$ 400 | R$ 1.000 |
+|---|---|---|---|---|---|---|
+| 2025-07 | 949 | R$ 1,31 milhão/ano | 925 | 912 | 885 | 338 |
+| 2026-03 | 32 | R$ 10,4 mil/ano | 26 | 15 | 10 | 2 |
+| 2026-06 | 31 | R$ 1,4 mil/ano | 7 | 0 | 0 | 0 |
+
+**A fila atual (2026-06) rende pouco.** As 31 UCs somam R$ 1.415/ano de retorno esperado, e a 7ª UC já rende menos do que
+R$ 50 por visita. Com custo de R$ 150 por inspeção, nenhuma visita se paga. Isso depende do custo real da visita, que o
+projeto não conhece; é por isso que o custo é uma entrada da tela e não uma constante.
+
+O `capacidade_total` fixo de 200 continua no resumo da seleção e sai junto com a tela (Fase 6), porque o frontend lê o
+campo e removê-lo antes quebraria a tela.
+
 ## Riscos
 
 - O backtest só cobre jul–dez/2025: o verão não é validado.

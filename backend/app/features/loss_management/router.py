@@ -12,12 +12,14 @@ from app.features.loss_management.dependencies import (
     ExcludedSvc,
     LossSvc,
     OrderEventSvc,
+    QueueCurveSvc,
     UnitDetailSvc,
 )
 from app.features.loss_management.detail_schemas import UnitDetailDTO
 from app.features.loss_management.exceptions import UploadTooLargeError
 from app.features.loss_management.excluded_schemas import ExcludedQueueDTO, ExcludedUnitsFilterDTO
 from app.features.loss_management.order_events import OrderEventDTO
+from app.features.loss_management.queue_curve import ReturnCurveDTO
 from app.features.loss_management.router_metadata import (
     backtest_doc,
     backtest_series_doc,
@@ -28,6 +30,7 @@ from app.features.loss_management.router_metadata import (
     list_inspectors_doc,
     list_suspicious_units_doc,
     order_events_doc,
+    queue_curve_doc,
     queue_filters_doc,
     queue_summary_doc,
     unit_detail_doc,
@@ -53,6 +56,8 @@ from app.shared.role_groups import PERDAS_ACCESS, PERDAS_WRITE
 EXPORT_FILENAME = "ordens_inspecao_campo.csv"
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 MAX_SELECTED_UNITS = FILA_CAPACIDADE_MENSAL * 2
+DEFAULT_CURVE_POINTS = 200
+MAX_CURVE_POINTS = 500
 UnitId = Annotated[str, StringConstraints(min_length=1, max_length=20)]
 # Escrita só para o gerente de perdas; o diretor lê (o router já exige PERDAS_ACCESS).
 WRITE_ONLY = [Depends(require_role(PERDAS_WRITE))]
@@ -122,6 +127,20 @@ async def queue_summary(
 ) -> QueueSummaryDTO:
     """Devolve os cartões do topo da Fila de Inspeção para as UCs selecionadas."""
     return await service.summarize_queue(selected_units)
+
+
+@router.get("/queue-curve", response_model=ReturnCurveDTO, **queue_curve_doc.to_dict())
+async def queue_curve(
+    service: QueueCurveSvc,
+    inspection_cost: Annotated[
+        float | None, Query(alias="custo", ge=0, description="Custo de uma inspeção, em R$.")
+    ] = None,
+    max_points: Annotated[
+        int, Query(alias="pontos", ge=2, le=MAX_CURVE_POINTS, description="Máximo de pontos da curva.")
+    ] = DEFAULT_CURVE_POINTS,
+) -> ReturnCurveDTO:
+    """Devolve o retorno esperado acumulado por número de inspeções e o corte sugerido pelo custo."""
+    return await service.build_curve(inspection_cost, max_points)
 
 
 @router.get("/queue-filters", response_model=QueueFiltersDTO, **queue_filters_doc.to_dict())

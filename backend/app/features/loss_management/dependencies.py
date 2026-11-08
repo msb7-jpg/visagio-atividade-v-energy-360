@@ -13,6 +13,7 @@ from app.features.loss_management.backtest_store import BacktestSeriesStore
 from app.features.loss_management.detail_repository import UnitDetailRepository
 from app.features.loss_management.excluded_service import ExcludedQueueService
 from app.features.loss_management.order_event_service import OrderEventService
+from app.features.loss_management.queue_curve_service import QueueCurveService
 from app.features.loss_management.repository import LossRepository
 from app.features.loss_management.repository_factory import build_loss_repository
 from app.features.loss_management.service import LossService
@@ -52,6 +53,14 @@ def get_excluded_queue_service(
 
 
 ExcludedSvc = Annotated[ExcludedQueueService, Depends(get_excluded_queue_service)]
+
+
+def get_queue_curve_service(db: DbSession, settings: Annotated[Settings, Depends(get_settings)]) -> QueueCurveService:
+    """Monta o serviço da curva de retorno da fila com o repositório da sessão atual."""
+    return QueueCurveService(build_loss_repository(db, settings))
+
+
+QueueCurveSvc = Annotated[QueueCurveService, Depends(get_queue_curve_service)]
 
 
 def get_backtest_service(db: DbSession, settings: Annotated[Settings, Depends(get_settings)]) -> BacktestService:
