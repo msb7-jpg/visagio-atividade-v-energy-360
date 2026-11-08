@@ -263,15 +263,16 @@ describe('Customer360Page', () => {
     renderPage()
     searchFor('UC100004')
 
-    expect(await screen.findByText(/O consumo de jun\/2026 ficou estável/)).toBeInTheDocument()
-    expect(screen.getByText(/A bandeira tarifária ficou mais cara \(de Verde para Vermelha P2\)/)).toBeInTheDocument()
+    expect(await screen.findByText('Consumo estável')).toBeInTheDocument()
+    expect(screen.getByText(/^jun\/2026 vs jun\/2025: /)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Bandeira: Verde → Vermelha P2.*Bandeira mais cara/ })).toBeInTheDocument()
   })
 
   it('explica a conta pelo preço do kWh e mostra os totais de 12 meses', async () => {
     renderPage()
     searchFor('UC100004')
 
-    expect(await screen.findByText(/O preço médio do kWh subiu 21,3%/)).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Preço do kWh \+21,3%.*O preço médio do kWh subiu 21,3%/ })).toBeInTheDocument()
     expect(screen.getByText(/R\$\s0,97\/kWh vs R\$\s0,80\/kWh/)).toBeInTheDocument()
     expect(screen.getByText('Consumo (12 meses)')).toBeInTheDocument()
     expect(screen.getByText(fullText('R$ 2.150,50'))).toBeInTheDocument()
@@ -288,8 +289,9 @@ describe('Customer360Page', () => {
     renderPage()
     searchFor('UC100004')
 
-    expect(await screen.findByText(/subiu \(\+40%\)/)).toBeInTheDocument()
-    expect(screen.queryByText(/A bandeira tarifária/)).not.toBeInTheDocument()
+    const verdict = (await screen.findByText('Consumo subiu')).parentElement as HTMLElement
+    expect(within(verdict).getByText('+40%')).toBeInTheDocument()
+    expect(screen.queryByText(/Bandeira:/)).not.toBeInTheDocument()
   })
 
   it('lista faturas com o total em aberto e a situação de cada uma', async () => {

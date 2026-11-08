@@ -310,3 +310,15 @@
 - **Fora desta entrega:** backend, API e cálculos; conferência visual no navegador (feita por quem revisa).
 - **Validação de Testes:**
   - `dev.ps1 check` aprovado (lint, TypeScript e build); 936 pytest e 849 vitest. Antes, commit separado ajustou o teste de `AreaRevenueTable` ao formato compacto do ICU novo.
+
+### [2026-11-08] - Visão 360: diagnóstico de conta alta em selo e causas curtas (issue #102)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `HighBillDiagnosisBanner` mostra o veredito de relance: ícone, variação do consumo em % em destaque (`+20%`), selo ("Consumo subiu/estável/caiu") e uma linha de apoio ("jun/2026 vs jun/2025: 240 kWh vs 200 kWh"). O tom vermelho continua só para "subiu".
+  - As outras causas viraram chips de uma linha (`ExplanationChips`), cada um com a frase completa no tooltip (mouse, teclado e toque) e no texto para leitor de tela: "Leitura estimada", "36 dias faturados (antes 30)", "Bandeira: Verde → Vermelha P2", "Preço do kWh +21,3%", "Geração solar" / "Painel solar desde set/2025".
+  - `diagnosisMessages.ts`: as funções `describe*` passaram a devolver `{ label, detail }` com frases mais curtas. Limiares (1% de tarifa, 3 dias de faturamento), ordem de custo das bandeiras e as condições de cada causa não mudaram; números e variações são os mesmos.
+  - Testes: `diagnosisMessages.test.ts` ajustado ao novo formato e com casos novos de consumo e preço do kWh; `Customer360Page.test.tsx` confere selo, % e chips.
+- **Arquivos:** `customer360/components/` (`HighBillDiagnosisBanner`, `ExplanationChips`), `customer360/utils/diagnosisMessages.ts` e os dois testes acima.
+- **Fora desta entrega:** backend, API e cálculos; conferência visual no navegador (feita por quem revisa).
+- **Validação de Testes:**
+  - `dev.ps1 check` aprovado (lint, TypeScript e build); 936 pytest e 854 vitest.
