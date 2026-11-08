@@ -316,7 +316,7 @@ describe('Customer360Page', () => {
     expect(within(outages).getByText('3 vezes')).toBeInTheDocument()
     const tickets = screen.getByRole('list', { name: 'Chamados abertos' })
     expect(within(tickets).getByText('PRT-2026-0003')).toBeInTheDocument()
-    expect(within(tickets).getByText('Nota 4.5')).toBeInTheDocument()
+    expect(within(tickets).getByText('Nota 4,5')).toBeInTheDocument()
   })
 
   it('usa o total real quando a UC tem mais interrupções do que a lista mostra', async () => {

@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import { ShowMoreButton } from '@/features/customer360/components/ShowMoreButton'
 import { useExpandableList } from '@/features/customer360/hooks/useExpandableList'
 import type { ServiceTicket } from '@/features/customer360/types/customer360Types'
-import { formatDate, formatSentenceCase } from '@/features/customer360/utils/customer360Formatters'
+import { formatDate, formatNumber, formatSentenceCase } from '@/features/customer360/utils/customer360Formatters'
 
 const VISIBLE_TICKETS = 5
 
@@ -33,7 +33,7 @@ export function ServiceTicketsList({ tickets }: ServiceTicketsListProps) {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              {ticket.nota_csat === null ? null : <span className="text-muted-foreground text-xs">Nota {ticket.nota_csat}</span>}
+              {ticket.nota_csat === null ? null : <span className="text-muted-foreground text-xs">Nota {formatNumber(ticket.nota_csat)}</span>}
               <Badge variant={ticket.status_chamado === 'ABERTO' ? 'warning' : 'muted'}>{ticket.status_chamado ? formatSentenceCase(ticket.status_chamado) : 'Sem status'}</Badge>
             </div>
           </li>

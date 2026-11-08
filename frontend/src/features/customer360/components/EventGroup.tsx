@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { HelpCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Tooltip } from '@/components/ui/tooltip-card'
 
@@ -32,10 +33,10 @@ export function EventGroup({ title, scope, icon, count, hint, children }: EventG
           <Badge variant="secondary">{count}</Badge>
           {hint ? (
             <Tooltip content={hint}>
-              <span className="text-muted-foreground cursor-help">
+              <Button type="button" variant="inline" size="inline">
                 <HelpCircle className="size-3.5" aria-hidden="true" />
                 <span className="sr-only">{hint}</span>
-              </span>
+              </Button>
             </Tooltip>
           ) : null}
         </div>

@@ -22,7 +22,7 @@ function ticket(index: number): ServiceTicket {
     motivo_chamado: 'FATURA',
     data_abertura: '2026-06-25 09:15:00',
     status_chamado: 'ABERTO',
-    nota_csat: null
+    nota_csat: index === 1 ? 3.8 : null
   }
 }
 
@@ -50,6 +50,18 @@ describe('EventsTab', () => {
     expect(screen.getByText('0 meses')).toBeInTheDocument()
     expect(screen.getByText('3 chamados')).toBeInTheDocument()
     expect(screen.getByText(/Média por cliente do alimentador/)).toBeInTheDocument()
+    expect(screen.getByText('Nota 3,8')).toBeInTheDocument()
+  })
+
+  it('deixa a ajuda da região focável pelo teclado e rotula as colunas por cliente', () => {
+    render(<EventsTab events={{ ...buildEvents(1, 1), qualidade_alimentador: [{ competencia: '2026-05', dec_apurado_horas: 4.2, fec_apurado_vezes: 3, dec_limite_aneel: 2.5, fec_limite_aneel: 2, violou_meta: true }] }} />)
+
+    const help = screen.getByRole('button', { name: /Valores médios por cliente do alimentador/ })
+    help.focus()
+    expect(help).toHaveFocus()
+    const table = screen.getByRole('table', { name: 'Interrupções no alimentador' })
+    expect(within(table).getByText('Horas por cliente')).toBeInTheDocument()
+    expect(within(table).getByText('Interrupções por cliente')).toBeInTheDocument()
   })
 
   it('usa um estado vazio curto quando não há registros', () => {

@@ -6,7 +6,7 @@ import type { FeederQualityMonth } from '@/features/customer360/types/customer36
 import { formatCompetencia, formatCount, formatHours } from '@/features/customer360/utils/customer360Formatters'
 import { analyzeOutages, type OutageOverview } from '@/features/customer360/utils/outageAnalysis'
 
-const COLUMNS = ['Mês', 'Horas sem energia', 'Interrupções', 'Situação'] as const
+const COLUMNS = ['Mês', 'Horas por cliente', 'Interrupções por cliente', 'Situação'] as const
 const VISIBLE_MONTHS = 6
 
 function describeOutages(feeder: string | null, overview: OutageOverview): string {
