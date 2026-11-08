@@ -1,19 +1,12 @@
 import type { CSSProperties } from 'react'
+import { scoreBarColor } from '@/features/loss_management/utils/scoreTone'
 import { cn } from '@/lib/utils'
 
 const SCORE_MAX = 100
-const SCORE_HIGH = 85
-const SCORE_MEDIUM = 65
 
 interface ScoreBarProps {
   /** Prioridade de 0 a 100 (kWh esperado relativo ao topo da fila). */
   score: number
-}
-
-function barColor(score: number): string {
-  if (score >= SCORE_HIGH) return 'bg-destructive'
-  if (score >= SCORE_MEDIUM) return 'bg-warning'
-  return 'bg-muted-foreground'
 }
 
 /**
@@ -34,7 +27,7 @@ export function ScoreBar({ score }: ScoreBarProps) {
     >
       <div className="bg-muted h-1.5 w-16 overflow-hidden rounded-full">
         <div
-          className={cn('h-full w-(--bar-width) rounded-full', barColor(score))}
+          className={cn('h-full w-(--bar-width) rounded-full', scoreBarColor(score))}
           style={{ '--bar-width': `${score}%` } as CSSProperties}
         />
       </div>

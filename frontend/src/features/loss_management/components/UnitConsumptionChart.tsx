@@ -1,4 +1,4 @@
-import { CartesianGrid, Line, LineChart, ReferenceArea, Tooltip, XAxis, YAxis } from 'recharts'
+import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
 import type { TooltipProps } from 'recharts'
 import { ChartContainer, ChartTooltipFrame } from '@/components/ui/chart'
 import type { MonthlyConsumption } from '@/features/loss_management/types/unitDetailTypes'
@@ -22,8 +22,27 @@ function ConsumptionTooltip({ active, payload }: TooltipProps<number, string>) {
   )
 }
 
+const AVERAGE_DASH = '4 3'
+
+function LegendItem({ swatch, label }: { swatch: string; label: string }) {
+  return (
+    <li className="flex items-center gap-1.5">
+      <span className={`size-2.5 rounded-sm ${swatch}`} aria-hidden="true" />
+      {label}
+    </li>
+  )
+}
+
+/** Médias que o score compara: a da base e a dos 3 últimos meses. */
+interface WindowAverages {
+  baseKwh: number
+  recentKwh: number
+}
+
 interface UnitConsumptionChartProps {
   months: MonthlyConsumption[]
+  /** Desenha a média de cada janela como linha tracejada sobre a faixa. */
+  averages?: WindowAverages
   /** Série desde a primeira leitura da UC; afeta só os textos, o gráfico desenha o que recebe. */
   fullHistory?: boolean
 }
@@ -33,9 +52,9 @@ interface UnitConsumptionChartProps {
  * Mês sem leitura vem nulo e aparece como lacuna na linha, nunca como zero.
  *
  * @param props - Competências em ordem crescente e se a série é o histórico completo.
- * @returns Gráfico de linha com tooltip em kWh e legenda das faixas, ou aviso quando nenhum mês tem leitura.
+ * @returns Gráfico de linha com tooltip em kWh, médias tracejadas e legenda das faixas, ou aviso quando nenhum mês tem leitura.
  */
-export function UnitConsumptionChart({ months, fullHistory = false }: UnitConsumptionChartProps) {
+export function UnitConsumptionChart({ months, averages, fullHistory = false }: UnitConsumptionChartProps) {
   const periodText = fullHistory ? 'no histórico da UC' : 'nos últimos 12 meses'
   if (months.every((month) => month.consumo_kwh === null)) {
     return <p className="text-muted-foreground text-sm">Sem leituras {periodText}.</p>
@@ -73,6 +92,20 @@ export function UnitConsumptionChart({ months, fullHistory = false }: UnitConsum
               ifOverflow="visible"
             />
           ) : null}
+          {windows?.base && averages ? (
+            <ReferenceLine
+              segment={[{ x: windows.base.first, y: averages.baseKwh }, { x: windows.base.last, y: averages.baseKwh }]}
+              stroke="var(--color-muted-foreground)"
+              strokeDasharray={AVERAGE_DASH}
+            />
+          ) : null}
+          {windows && averages ? (
+            <ReferenceLine
+              segment={[{ x: windows.recent.first, y: averages.recentKwh }, { x: windows.recent.last, y: averages.recentKwh }]}
+              stroke="var(--color-chart-1)"
+              strokeDasharray={AVERAGE_DASH}
+            />
+          ) : null}
           <Tooltip content={<ConsumptionTooltip />} />
           <Line
             dataKey="consumo_kwh"
@@ -84,9 +117,11 @@ export function UnitConsumptionChart({ months, fullHistory = false }: UnitConsum
           />
         </LineChart>
       </ChartContainer>
-      <p className="text-muted-foreground text-xs">
-        Faixa escura: 3 últimos meses (consumo recente do score). Faixa clara: 12 meses anteriores (base do score).
-      </p>
+      <ul className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
+        <LegendItem swatch="bg-muted-foreground/20" label="Base do score (12 meses)" />
+        <LegendItem swatch="bg-chart-1/30" label="Últimos 3 meses" />
+        {averages ? <li className="flex items-center gap-1.5"><span className="border-muted-foreground w-3 border-t-2 border-dashed" aria-hidden="true" />Média da faixa</li> : null}
+      </ul>
     </>
   )
 }

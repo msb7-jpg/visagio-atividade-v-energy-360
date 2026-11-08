@@ -1,5 +1,6 @@
 import { isAxiosError } from 'axios'
 import { useState } from 'react'
+import { MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { Button } from '@/components/ui/button'
@@ -13,10 +14,12 @@ import { formatPlaceName } from '@/features/loss_management/utils/textFormat'
 
 const NOT_FOUND_STATUS = 404
 
+const readable = (rawName: string | null) => (rawName ? formatPlaceName(rawName) : null)
+
 function describeLocation(detail: UnitDetail | undefined): string {
   if (!detail) return 'Carregando os dados da UC'
-  const place = [detail.bairro, detail.municipio ? formatPlaceName(detail.municipio) : null].filter(Boolean).join(', ')
-  const parts = [place, detail.classe_consumo ? formatPlaceName(detail.classe_consumo) : null].filter(Boolean)
+  const place = [readable(detail.bairro), readable(detail.municipio)].filter(Boolean).join(', ')
+  const parts = [place, readable(detail.classe_consumo)].filter(Boolean)
   return parts.length > 0 ? parts.join(' · ') : 'Sem cadastro de território'
 }
 
@@ -55,13 +58,20 @@ export function UnitDetailSheet({ idUc, onClose, onGenerateOrder }: UnitDetailSh
 
   return (
     <Sheet open={idUc !== null} onOpenChange={(isOpen) => (isOpen ? undefined : handleClose())}>
-      <SheetContent side="right" className="flex flex-col">
-        <SheetHeader>
-          <SheetTitle>{idUc}</SheetTitle>
-          <SheetDescription>{describeLocation(detail)}</SheetDescription>
-          {detail ? <div><QueueSituationBadge situation={detail.situacao} /></div> : null}
-        </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+      <SheetContent side="right" className="flex w-full flex-col sm:max-w-xl">
+        <div className="border-border -mx-6 border-b px-6 pb-5">
+          <SheetHeader>
+            <div className="flex items-center gap-2.5 pr-8">
+              <SheetTitle>{idUc}</SheetTitle>
+              {detail ? <QueueSituationBadge situation={detail.situacao} /> : null}
+            </div>
+            <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+              <MapPin className="size-4 shrink-0" aria-hidden="true" />
+              <SheetDescription>{describeLocation(detail)}</SheetDescription>
+            </div>
+          </SheetHeader>
+        </div>
+        <div className="-mx-6 min-h-0 flex-1 overflow-y-auto px-6 py-2">
           <AsyncState
             isLoading={query.isLoading}
             isError={hasLoadError}
@@ -76,16 +86,18 @@ export function UnitDetailSheet({ idUc, onClose, onGenerateOrder }: UnitDetailSh
           </AsyncState>
         </div>
         {idUc ? (
-          <SheetFooter>
-            <Button asChild variant="outline">
-              <Link to={`/customers?uc=${encodeURIComponent(idUc)}`}>Abrir na UC 360</Link>
-            </Button>
-            {canWrite ? (
-              <Button type="button" disabled={detail?.situacao !== 'na_fila'} onClick={() => onGenerateOrder(idUc)}>
-                Gerar ordem desta UC
+          <div className="border-border -mx-6 border-t px-6">
+            <SheetFooter>
+              <Button asChild variant="outline">
+                <Link to={`/customers?uc=${encodeURIComponent(idUc)}`}>Abrir na UC 360</Link>
               </Button>
-            ) : null}
-          </SheetFooter>
+              {canWrite ? (
+                <Button type="button" disabled={detail?.situacao !== 'na_fila'} onClick={() => onGenerateOrder(idUc)}>
+                  Gerar ordem desta UC
+                </Button>
+              ) : null}
+            </SheetFooter>
+          </div>
         ) : null}
       </SheetContent>
     </Sheet>

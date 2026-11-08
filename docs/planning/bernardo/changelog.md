@@ -408,3 +408,16 @@
 - **Validação de Testes:**
   - `bun run lint`, `bun run lint:fallow`, `bun run test` e `bun run build` aprovados.
 
+
+### [2026-11-08] - Painel de detalhe da UC na Fila de Inspeção (UI)
+- **Autor:** Bernardo H
+- **Branch:** `style/fatia-05-detalhe-da-uc-na-fila`
+- **O que foi feito:**
+  - Redesenho do painel lateral que abre ao clicar numa UC da fila (código da Fatia 05; só apresentação, sem mudança de API nem de regra).
+  - Cabeçalho com a UC, o selo da situação e o local com ícone; bairro com iniciais maiúsculas; painel mais largo (`sm:max-w-xl`) com cabeçalho e rodapé fixos e o corpo rolando entre eles.
+  - "Por que está na fila": selos dos motivos, a queda em destaque e barras de consumo "Antes (base)" e "Últimos 3 meses"; a frase completa do backend fica em "Como a queda foi medida" (recolhida).
+  - "Score de prioridade": número grande, barra na cor da faixa (a mesma da tabela, agora em `utils/scoreTone.ts`) e a conta em três blocos (recuperável por mês × janela = a recuperar).
+  - "Consumo mensal": seletor 12 meses/Tudo ao lado do título, médias da base e dos 3 últimos meses tracejadas sobre as faixas e legenda com amostras no lugar da frase.
+  - "Inspeções anteriores": ícone e cor por resultado, data e inspetor em selo.
+- **Validação de Testes:**
+  - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; 785 testes aprovados (testes do painel e do gráfico atualizados).
