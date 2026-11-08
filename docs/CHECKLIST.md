@@ -20,7 +20,7 @@
   - [x] consumo negativo e virada de medidor; (0 consumos negativos na Gold)
   - [x] CSAT de 1 a 5; (mínimo 1,3 e máximo 5,0; a origem usa uma casa decimal)
   - [x] ocorrências antes da ligação da UC; (595 marcadas com `fl_anterior_ligacao`; ADR-005)
-  - [x] 6.329 leituras sem consumo; (6.329 com `consumo_kwh` nulo na Gold)
+  - [x] 6.329 leituras sem consumo; (6.215 eram o mês da troca de medidor e passaram a usar a leitura do medidor novo, ADR-032; restam 114 com `consumo_kwh` nulo na Gold, sem `leitura_anterior` na origem)
   - [x] dias_faturamento entre 1 e 58. (mínimo 1 e máximo 58 na Gold)
   (dicionário de dados + notebook)
 - [x] ⚠️ **`fato_anomalia_leitura` está vazia.** (documentado em `DATA_DICTIONARY.md`, "Por que está vazia": a regra não dispara com os dados de troca de medidor) Conferir se é correto (a regra da ADR-006 nunca dispara nos dados) ou se é bug. Se for correto, documentar. Hoje parece entrega faltando.

@@ -25,7 +25,7 @@
 
 ## 2. Diagnóstico da receita (Renan e Célio)
 
-Nada pendente.
+- [ ] 🔴 **Refazer os números do diagnóstico com o consumo do mês da troca de medidor** (Célio, com Renan). A Silver da Fatia 01 deixava sem consumo o mês em que o medidor foi trocado (6.329 faturas, quase todas entre ago/2025 e mar/2026), e isso inflava a queda de volume. Corrigido no ADR-032: o mês passa a usar a leitura do medidor novo. Medido no banco novo (08/11/2026), nos períodos padrão: receita +8,0% (igual), volume −3,97% (era −5,12%; bate com o "quase 4%" do case), tarifa média +12,5% (era +13,8%), queda de volume de 9.024 MWh (era 11.618) e, sem as UCs com GD, volume +1,0% (era −0,2%). A queda das UCs com GD (−11.314 MWh na C1) passa a ser maior que a queda total. **Correção sugerida:** rodar de novo as consultas C1 a C9 e atualizar `DIAGNOSTICO_RECEITA.md` (resposta em uma frase, seções 4, 6 e 9, linha 115 sobre as faturas sem consumo), `ROTEIRO_APRESENTACAO.md` e as linhas 59 e 97 do `CHECKLIST.md`; conferir na tela de Receita.
 
 ## 3. IA (Miguel)
 

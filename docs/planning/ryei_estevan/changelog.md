@@ -168,3 +168,14 @@
   - Consulta somente leitura no SQL Warehouse com as expressões novas sobre `bronze_faturas`: mesma distribuição da simulação, 0 marcadores e 0 status incoerentes.
   - Notebooks importados no workspace e job executado de ponta a ponta: 10 tarefas SUCCESS em 8,5 min, com os 26 testes de `fatia02_testes_qualidade` aprovados.
   - `v_energy.db` exportado: 9 tabelas, `integrity_check=ok`, 0 violações de FK, 0 faturas com `9999-12-31`, `PAGA` 1.979.783 / `VENCIDA` 170.853 / `ABERTA` 1.700, inadimplência por valor 5,45%.
+
+### [2026-11-08] - Consumo do mês da troca de medidor na Silver da Fatia 01 (ADR-032)
+- **Autor:** Ryei Estevan (com apoio do Claude Code), com autorização do Renan para mexer na Fatia 01
+- **Contexto:** a queda de volume dava −5,1% e o case fala em "quase 4%". A diferença vinha das 6.329 faturas sem kWh: no mês da troca de medidor, a leitura anterior é do medidor velho e a atual do novo, e a Silver deixava o consumo nulo.
+- **O que foi feito:**
+  - `fatia01_silver`: no mês da troca, consumo nulo com queda de leitura passa a ser `leitura_atual` (medidor novo); nova coluna `consumo_imputado_troca` na Silver.
+  - ADR-032, `DATA_DICTIONARY.md`, `CHECKLIST.md` e README atualizados; refazer o diagnóstico da receita registrado no `CORRECOES.md` (seção 2, Célio).
+- **Impacto:** 6.215 leituras recuperadas (média de 417 kWh), 114 continuam nulas (sem `leitura_anterior`). Volume −3,97% (era −5,12%), tarifa +12,5% (era +13,8%), receita +8,0% igual. Nenhuma outra leitura ou fatura mudou.
+- **Validação de Testes:**
+  - `make pipeline-local`: 10 notebooks executados com sucesso, testes de qualidade das duas fatias aprovados, `integrity_check=ok`, mesmas contagens de linhas em todas as tabelas.
+  - `make lint-all` e `make test-all`: 100% aprovados (800 testes no backend, 756 no frontend).
