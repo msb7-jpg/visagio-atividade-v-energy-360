@@ -65,7 +65,6 @@ const UNITS = [
 ]
 
 const baseSummary: QueueSummary = {
-  capacidade_total: 200,
   capacidade_programada: 58,
   selecionadas: 0,
   kwh_mes_selecionadas: 0,
@@ -236,13 +235,33 @@ describe('Fila de Inspeção', () => {
   })
 
   it('seleciona o topo da fila pulando as UCs que já têm ordem', async () => {
+    // Fila de 1.248 UCs cuja primeira página tem só 3 livres: a página seguinte vem vazia, como a do servidor sem mais UCs.
+    mockedApi.listSuspiciousUnits.mockImplementation(async (filters) =>
+      filters.offset ? buildQueue([], [], 1248) : buildQueue(UNITS)
+    )
     renderPage()
     await rowOf('UC100002')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Selecionar top 10 prioritárias' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar as 10 primeiras' }))
 
     expect(await screen.findByRole('button', { name: 'Gerar 3 ordens' })).toBeEnabled()
     expect(within(await rowOf('UC100005')).getByRole('checkbox')).toBeChecked()
+  })
+
+  it('para de pedir páginas quando uma delas falha e marca as UCs livres que já chegaram', async () => {
+    mockedApi.listSuspiciousUnits.mockImplementation(async (filters) => {
+      if (filters.offset) throw new Error('falha de rede')
+      return buildQueue(UNITS)
+    })
+    renderPage()
+    await rowOf('UC100002')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar as 10 primeiras' }))
+
+    expect(await screen.findByRole('button', { name: 'Gerar 3 ordens' })).toBeEnabled()
+    const pageRequests = mockedApi.listSuspiciousUnits.mock.calls.filter(([filters]) => filters.offset)
+    expect(pageRequests.length).toBeLessThanOrEqual(2)
+    expect(screen.getByRole('button', { name: 'Marcar as 10 primeiras' })).toBeEnabled()
   })
 
   it('gera uma ordem por UC marcada depois de confirmar', async () => {
@@ -337,7 +356,7 @@ describe('Fila de Inspeção', () => {
     fireEvent.change(screen.getByLabelText('Situação'), { target: { value: 'ordem_gerada' } })
     await waitFor(() => expect(screen.queryByRole('row', { name: /UC100002/ })).not.toBeInTheDocument())
 
-    fireEvent.click(screen.getByRole('button', { name: 'Selecionar top 10 prioritárias' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar as 10 primeiras' }))
 
     await waitFor(() => expect(mockedApi.listSuspiciousUnits).toHaveBeenLastCalledWith(
       { situacao: 'na_fila' },
@@ -348,10 +367,13 @@ describe('Fila de Inspeção', () => {
   })
 
   it('no Top 10, com a fila sem filtro de situação, mantém os filtros e não troca a situação', async () => {
+    mockedApi.listSuspiciousUnits.mockImplementation(async (filters) =>
+      filters.offset ? buildQueue([], [], 1248) : buildQueue(UNITS)
+    )
     renderPage()
     await rowOf('UC100002')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Selecionar top 10 prioritárias' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar as 10 primeiras' }))
 
     expect(await screen.findByRole('button', { name: 'Gerar 3 ordens' })).toBeEnabled()
     expect(mockedApi.listSuspiciousUnits).not.toHaveBeenCalledWith(
@@ -446,7 +468,8 @@ describe('Fila de Inspeção', () => {
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('2.000 kWh/mês')).toBeInTheDocument()
     expect(within(dialog).getByText('1.254 kWh/mês')).toBeInTheDocument()
-    expect(within(dialog).getByText('60 de 200')).toBeInTheDocument()
+    expect(within(dialog).getByText('Ordens abertas depois')).toBeInTheDocument()
+    expect(within(dialog).getByText('60')).toBeInTheDocument() // 58 abertas + as 2 que serão geradas
   })
 
   it('mantém a seleção ao trocar de aba e voltar', async () => {
@@ -489,7 +512,7 @@ describe('Fila de Inspeção', () => {
     fireEvent.click(within(await rowOf('UC100002')).getByRole('checkbox'))
 
     expect(screen.queryByRole('button', { name: /^Gerar/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Selecionar top/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Marcar as .* primeiras/ })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('tab', { name: /Ordens de inspeção/ }))
 

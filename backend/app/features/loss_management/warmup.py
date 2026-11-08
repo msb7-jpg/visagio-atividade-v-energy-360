@@ -9,7 +9,7 @@ from app.core.config import Settings
 from app.features.loss_management.dependencies import build_backtest_series_service
 from app.features.loss_management.excluded_schemas import ExcludedUnitsFilterDTO
 from app.features.loss_management.excluded_service import ExcludedQueueService
-from app.features.loss_management.repository import LossRepository
+from app.features.loss_management.repository_factory import build_loss_repository
 from app.features.loss_management.schemas import SuspiciousUnitsFilterDTO
 from app.features.loss_management.service import LossService
 from app.shared.exceptions import DomainException
@@ -29,7 +29,7 @@ async def warm_up_loss_queue(session_factory: async_sessionmaker[AsyncSession], 
     """
     started = time.monotonic()
     async with session_factory() as session:
-        repository = LossRepository(session, reference_competencia=settings.loss_reference_competencia)
+        repository = build_loss_repository(session, settings)
         try:
             await LossService(repository).list_suspicious_units(SuspiciousUnitsFilterDTO())
             await ExcludedQueueService(repository).list_excluded_units(ExcludedUnitsFilterDTO())

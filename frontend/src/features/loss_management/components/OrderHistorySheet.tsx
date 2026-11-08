@@ -1,4 +1,5 @@
 import { AsyncState } from '@/components/feedback/AsyncState'
+import { Card } from '@/components/ui/card'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { useOrderEventsQuery } from '@/features/loss_management/hooks/useLossQueries'
 import type { InspectionOrder } from '@/features/loss_management/types/lossTypes'
@@ -14,21 +15,23 @@ interface OrderHistorySheetProps {
 function EventItem({ event }: { event: OrderEvent }) {
   const changes = Object.entries(event.alteracoes)
   return (
-    <li className="border-border flex flex-col gap-1 border-l-2 pl-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="text-sm font-medium">{EVENT_LABELS[event.tipo] ?? event.tipo}</span>
-        <time className="text-muted-foreground text-xs" dateTime={event.criado_em}>
-          {formatEventDate(event.criado_em)}
-        </time>
-      </div>
-      <span className="text-muted-foreground text-xs">Por {event.autor}</span>
-      {changes.length > 0 ? (
-        <ul className="text-sm">
-          {changes.map(([field, values]) => (
-            <li key={field}>{describeChange(field, values)}</li>
-          ))}
-        </ul>
-      ) : null}
+    <li>
+      <Card className="flex flex-col gap-1 p-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <span className="text-sm font-medium">{EVENT_LABELS[event.tipo] ?? event.tipo}</span>
+          <time className="text-muted-foreground text-xs" dateTime={event.criado_em}>
+            {formatEventDate(event.criado_em)}
+          </time>
+        </div>
+        <span className="text-muted-foreground text-xs">Por {event.autor}</span>
+        {changes.length > 0 ? (
+          <ul className="text-sm">
+            {changes.map(([field, values]) => (
+              <li key={field}>{describeChange(field, values)}</li>
+            ))}
+          </ul>
+        ) : null}
+      </Card>
     </li>
   )
 }

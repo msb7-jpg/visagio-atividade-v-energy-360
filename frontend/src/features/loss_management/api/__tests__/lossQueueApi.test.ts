@@ -11,7 +11,6 @@ vi.mock('@/lib/api-client', () => ({
 const mockedGet = vi.mocked(apiClient.get)
 
 const summary: QueueSummary = {
-  capacidade_total: 200,
   capacidade_programada: 58,
   selecionadas: 3,
   kwh_mes_selecionadas: 7228,

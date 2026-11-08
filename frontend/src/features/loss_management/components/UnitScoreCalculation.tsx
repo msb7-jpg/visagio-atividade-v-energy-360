@@ -30,11 +30,11 @@ interface UnitScoreCalculationProps {
 }
 
 /**
- * O score de 0 a 100 em destaque, com a barra na cor da faixa, e a conta da energia recuperável em três blocos.
- * O score compara a UC com a primeira da fila; a chance de acerto continua no cálculo do backend, mas não é exibida.
+ * A prioridade de 0 a 100 em destaque, com a barra na cor da faixa, e a conta da energia recuperável em três blocos.
+ * A prioridade compara a UC com a primeira da fila; a chance de acerto continua no cálculo do backend, mas não é exibida.
  *
  * @param props - Decomposição devolvida pelo backend.
- * @returns Score com medidor e a conta kWh/mês × meses = kWh a recuperar.
+ * @returns Prioridade com medidor e a conta kWh/mês × meses = kWh a recuperar.
  */
 export function UnitScoreCalculation({ breakdown }: UnitScoreCalculationProps) {
   const score = formatInteger(breakdown.score)
@@ -46,11 +46,11 @@ export function UnitScoreCalculation({ breakdown }: UnitScoreCalculationProps) {
           <span className="text-foreground text-3xl font-semibold tabular-nums">{score}</span>
           <span className="text-muted-foreground text-sm">/100</span>
         </div>
-        <span className="sr-only">Score {score} de 100</span>
+        <span className="sr-only">Prioridade {score} de 100</span>
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div
             role="meter"
-            aria-label={`Score ${score} de ${SCORE_MAX}`}
+            aria-label={`Prioridade ${score} de ${SCORE_MAX}`}
             aria-valuemin={0}
             aria-valuemax={SCORE_MAX}
             aria-valuenow={breakdown.score}

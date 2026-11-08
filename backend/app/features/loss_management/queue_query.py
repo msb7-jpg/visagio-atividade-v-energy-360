@@ -1,8 +1,9 @@
 """Consulta da fila de suspeitas: UCs candidatas por queda de consumo, descontadas as já inspecionadas."""
 
+from collections.abc import Mapping
 from datetime import date, datetime, timedelta
 
-from sqlalchemy import CompoundSelect, Select, Subquery, and_, or_, select, true, union
+from sqlalchemy import CompoundSelect, Select, Subquery, and_, case, or_, select, true, union
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.features.loss_management.models import InspectionOrder
@@ -179,25 +180,54 @@ def _candidate_select(consumo: Subquery) -> Select:
     ).join_from(consumo, uc, uc.c.id_uc == consumo.c.id_uc)
 
 
-def _signal_conditions(consumo: Subquery, filters: SuspicionFilters) -> list[ColumnElement[bool]]:
-    """Condições do sinal de suspeita: base com consumo e queda acima do piso (ou leitura zerada)."""
-    drop_ceiling_kwh = consumo.c.consumo_base_kwh * (1 - filters.limiar_queda)
+def _expected_share(
+    peer_ratios: Mapping[str | None, float] | None, portfolio_ratio: float
+) -> ColumnElement[float] | float:
+    """Fração do consumo base que a UC deveria manter: a mediana da classe (pares), ou 1.0 sem pares."""
+    if peer_ratios is None:
+        return 1.0
+    if not peer_ratios:
+        return portfolio_ratio  # modelo com pares, mas nenhuma classe medida: todas usam a mediana da carteira
+    return case(dict(peer_ratios), value=dim_unidade_consumidora.c.classe_consumo, else_=portfolio_ratio)
+
+
+def _signal_conditions(
+    consumo: Subquery, filters: SuspicionFilters, expected_share: ColumnElement[float] | float = 1.0
+) -> list[ColumnElement[bool]]:
+    """Condições do sinal de suspeita: base com consumo e queda acima do piso (ou leitura zerada).
+
+    A queda é medida além do que os pares da classe caíram (`expected_share`); 1.0 mede a queda bruta.
+    """
+    drop_ceiling_kwh = consumo.c.consumo_base_kwh * expected_share * (1 - filters.limiar_queda)
     has_drop = consumo.c.consumo_recente_kwh <= drop_ceiling_kwh
     has_zero_reading = consumo.c.meses_zerados > 0
     return [consumo.c.consumo_base_kwh > 0, consumo.c.consumo_recente_kwh.is_not(None), has_drop | has_zero_reading]
 
 
-def evaluated_profiles_query(windows: ConsumptionWindows, filters: SuspicionFilters) -> Select:
+def evaluated_profiles_query(
+    windows: ConsumptionWindows,
+    filters: SuspicionFilters,
+    *,
+    peer_ratios: Mapping[str | None, float] | None = None,
+    portfolio_ratio: float = NEUTRAL_PORTFOLIO_RATIO,
+) -> Select:
     """UCs com sinal de suspeita (queda ou leitura zerada), com ou sem GD ou inspeção que as tire da fila.
+
+    Args:
+        windows: Janelas base e recente.
+        filters: Limiar de queda e filtros opcionais.
+        peer_ratios: Mediana de recente/base de cada classe; com ela o sinal é a queda além dos pares, como na fila.
+        portfolio_ratio: Razão da carteira, usada pela classe que não aparece em `peer_ratios`.
 
     Returns:
         SELECT dos perfis de consumo mais a coluna `possui_gd`; a aba "Fora da fila" subtrai a fila real dele.
     """
     consumo = consumption_subquery(windows)
+    expected_share = _expected_share(peer_ratios, portfolio_ratio)
     return (
         _candidate_select(consumo)
         .add_columns(dim_unidade_consumidora.c.possui_gd)
-        .where(*_signal_conditions(consumo, filters), *_optional_filters(filters))
+        .where(*_signal_conditions(consumo, filters, expected_share), *_optional_filters(filters))
     )
 
 
@@ -206,12 +236,13 @@ def _candidate_conditions(
     filters: SuspicionFilters,
     excluded_units: Select | CompoundSelect,
     reincidence: ColumnElement[bool],
+    expected_share: ColumnElement[float] | float = 1.0,
 ) -> list[ColumnElement[bool]]:
     """Condições para uma UC virar candidata: sem GD, sem inspeção recente, com queda acima do piso ou zerada."""
     uc = dim_unidade_consumidora
     return [
         uc.c.possui_gd.is_not(true()),
-        *_signal_conditions(consumo, filters),
+        *_signal_conditions(consumo, filters, expected_share),
         uc.c.id_uc.not_in(excluded_units),
         reincidence,
         *_optional_filters(filters),
@@ -225,6 +256,7 @@ def suspicious_profiles_query(
     include_field_history: bool = True,
     history_until: date | None = None,
     portfolio_ratio: float = NEUTRAL_PORTFOLIO_RATIO,
+    peer_ratios: Mapping[str | None, float] | None = None,
 ) -> Select:
     """Monta a consulta dos perfis de consumo candidatos à fila de suspeitas.
 
@@ -238,6 +270,8 @@ def suspicious_profiles_query(
         history_until: Data (exclusiva) em que o histórico de campo deixa de valer; None usa todo o histórico.
         portfolio_ratio: Razão mediana recente/base da carteira, que a regra de retorno antecipado desconta da
             queda da UC; 1.0 (padrão) usa a queda bruta.
+        peer_ratios: Mediana de recente/base de cada classe (D16); com ela a queda de entrada é medida além dos
+            pares da classe, e a classe fora do mapa usa `portfolio_ratio`. None mede a queda bruta.
 
     Returns:
         SELECT com cadastro e consumo agregado das UCs candidatas.
@@ -253,4 +287,6 @@ def suspicious_profiles_query(
         history_until=history_until,
         portfolio_ratio=portfolio_ratio,
     )
-    return _candidate_select(consumo).where(*_candidate_conditions(consumo, filters, excluded_units, reincidence))
+    expected_share = _expected_share(peer_ratios, portfolio_ratio)
+    conditions = _candidate_conditions(consumo, filters, excluded_units, reincidence, expected_share)
+    return _candidate_select(consumo).where(*conditions)

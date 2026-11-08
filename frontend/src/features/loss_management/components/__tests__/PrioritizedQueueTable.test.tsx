@@ -75,9 +75,9 @@ describe('PrioritizedQueueTable', () => {
   it('explica o score ao focar o cabeçalho da coluna pelo teclado', async () => {
     renderTable([buildUnit('UC1')])
 
-    fireEvent.focus(screen.getByRole('button', { name: 'Score' }))
+    fireEvent.focus(screen.getByRole('button', { name: 'Prioridade' }))
 
-    expect(await screen.findByText(/Score de prioridade \(0 a 100\)/)).toBeInTheDocument()
+    expect(await screen.findByText(/Prioridade \(0 a 100\)/)).toBeInTheDocument()
   })
 
   it('mostra 25 UCs por página e navega para as seguintes', () => {
@@ -187,7 +187,7 @@ describe('PrioritizedQueueTable', () => {
     renderTable([buildUnit('UC1', { probabilidade_acerto: 0.93 })])
 
     const headers = screen.getAllByRole('columnheader').map((header) => header.textContent?.replace(/\s+/g, ' ').trim())
-    expect(headers).toEqual(['', '#', 'UC', 'Bairro / município', 'Classe', 'Queda', 'kWh/mês', 'R$/ano', 'Score ↓', 'Situação'])
+    expect(headers).toEqual(['', '#', 'UC', 'Bairro / município', 'Classe', 'Queda', 'kWh/mês', 'R$/ano', 'Prioridade ↓', 'Situação'])
 
     const cells = within(screen.getByRole('row', { name: /UC1/ })).getAllByRole('cell')
     expect(within(cells[8]).getByRole('meter')).toBeInTheDocument()
@@ -197,7 +197,7 @@ describe('PrioritizedQueueTable', () => {
   it('informa aos leitores de tela que a tabela está em ordem decrescente de score, e só nessa coluna', () => {
     renderTable([buildUnit('UC1')])
 
-    expect(screen.getByRole('columnheader', { name: /Score/ })).toHaveAttribute('aria-sort', 'descending')
+    expect(screen.getByRole('columnheader', { name: /Prioridade/ })).toHaveAttribute('aria-sort', 'descending')
     expect(screen.getByRole('columnheader', { name: 'Queda' })).not.toHaveAttribute('aria-sort')
   })
 
@@ -232,6 +232,6 @@ describe('ScoreBar', () => {
     const { container } = render(<ScoreBar score={score} />)
 
     expect(container.querySelector(`.${expectedClass}`)).not.toBeNull()
-    expect(screen.getByRole('meter', { name: `Score ${score} de 100` })).toHaveAttribute('aria-valuenow', String(score))
+    expect(screen.getByRole('meter', { name: `Prioridade ${score} de 100` })).toHaveAttribute('aria-valuenow', String(score))
   })
 })

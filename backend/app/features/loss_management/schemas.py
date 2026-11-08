@@ -242,8 +242,7 @@ class HitRateDTO(BaseModel):
 class QueueSummaryDTO(BaseModel):
     """Cartões do topo da tela: capacidade do mês, energia das selecionadas, retorno esperado e taxa histórica."""
 
-    capacidade_total: int = Field(description="Inspeções que a equipe faz por mês")
-    capacidade_programada: int = Field(description="Ordens ativas (geradas ou em campo)")
+    capacidade_programada: int = Field(description="Ordens abertas (geradas ou em campo)")
     selecionadas: int = Field(description="UCs selecionadas que ainda estão na fila, sem ordem")
     kwh_mes_selecionadas: float
     valor_ano_selecionadas_rs: float

@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 from app.features.loss_management.hit_rate import TAXA_ACERTO_GERAL
 from app.features.loss_management.schemas import (
-    FILA_CAPACIDADE_MENSAL,
     HitRateDTO,
     InspectionStatus,
     QueueSituation,
@@ -123,7 +122,6 @@ def build_queue_summary(
     monthly_kwh = sum(unit.kwh_mes_recuperavel for unit in selected_units)
     annual_value_rs = sum(unit.valor_ano_rs for unit in selected_units)
     return QueueSummaryDTO(
-        capacidade_total=FILA_CAPACIDADE_MENSAL,
         capacidade_programada=scheduled_orders,
         selecionadas=len(selected_units),
         kwh_mes_selecionadas=round(monthly_kwh, 1),

@@ -10,7 +10,8 @@ import { useEffectivenessController } from '@/features/loss_management/hooks/use
  * @returns KPIs de campo e o backtest, com a comparação entre cortes e o detalhe de um deles.
  */
 export function EffectivenessTab() {
-  const { inspections, orders, series, results, selected, selectCutoff } = useEffectivenessController()
+  const { inspections, orders, series, results, selected, selectCutoff, sizes, size, selectSize, bySize } =
+    useEffectivenessController()
 
   return (
     <div className="flex flex-col gap-4">
@@ -39,7 +40,17 @@ export function EffectivenessTab() {
           errorDescription="Verifique se o histórico de inspeções está disponível."
           onRetry={() => void series.refetch()}
         >
-          {series.data ? <BacktestSeriesView results={results} selected={selected} onSelectCutoff={selectCutoff} /> : null}
+          {series.data ? (
+            <BacktestSeriesView
+              results={results}
+              selected={selected}
+              onSelectCutoff={selectCutoff}
+              sizes={sizes}
+              size={size}
+              onSelectSize={selectSize}
+              bySize={bySize}
+            />
+          ) : null}
         </AsyncState>
       </Card>
     </div>

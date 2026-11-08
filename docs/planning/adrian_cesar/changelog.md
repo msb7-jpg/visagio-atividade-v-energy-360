@@ -1133,3 +1133,211 @@
   - Fuso: `atualizado_em` é gravado em UTC e `cancellation_block_start` usa o relógio local no tempo real (até 3 h de diferença em 90 dias).
   - Não verificado no navegador.
 - **Validação de Testes:** `make lint-all` (Ruff, Pylint 10/10, import-linter com 4 contratos, ESLint e Fallow) e `make test-all` (pytest 894, vitest 801) sem falhas.
+
+### [2026-11-08] - Sazonalidade, pares por classe, curva de retorno e "quantas inspecionar" (Fase 19)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Pares por classe (D16).** O consumo médio da base é 59% maior em janeiro (494 kWh) do que em julho (310 kWh); o residencial varia 2,37 vezes entre os dois meses e o industrial 1,13. A fila comparava a UC com a mediana da carteira inteira (na prática, a do residencial) e usava a queda bruta na entrada e no déficit. Agora cada UC é comparada com a mediana de recente÷base da própria classe (`peers.py`, mínimo de 100 UCs, reserva na carteira), na entrada (`queue_query.py`, `CASE` por classe), nos sinais, no déficit em kWh (`base × razão dos pares − recente`) e na chance de acerto.
+  - **Chance de acerto em dois patamares (`hit_curve.py`).** Nas 1.354 inspeções sem GD o acerto é de 7,9% abaixo de 20% de queda relativa e de 92,5% a partir de 30%, plano até 70%. Há 2 inspeções entre 20% e 30%: a rampa linear é suposição declarada. Queda súbita e moderada e a classe saíram da chance, porque os dados não as distinguem. O piso de entrada ficou em 20%.
+  - **Modelo novo como padrão** (`LOSS_USE_PEERS`, `repository_factory.py`): fila, resumo, filtros, "Fora da fila", detalhe, `kwh_estimado` das ordens, backtest, painel executivo e aquecimento da subida. `false` volta ao anterior.
+  - **`GET /losses/queue-curve?custo=&pontos=`:** retorno esperado acumulado das UCs livres e corte sugerido pelo custo de uma inspeção.
+  - **Tela:** campo "Quantas UCs inspecionar" (N), cartão da curva com custo por inspeção e "Usar o corte sugerido", "Ordens abertas depois" no lugar da capacidade de 200, "Prioridade" no lugar de "Score" e aviso do limite jul–dez/2025 na Efetividade. `capacidade_total` saiu da API.
+  - Documentação: D16 em `DECISOES_PERDAS.md`, plano `fila-inspecao-sazonalidade-plano.md`, `regras-de-negocio.md`, `GLOSSARY.md` e a descrição OpenAPI da fila.
+- **Resultado medido (Gold real):**
+  - Backtest igual no topo entre o modelo atual e o novo (±1 a 3 UCs inspecionadas, kWh ±1%). O efeito está no tamanho da fila: 2025-07, de 34.193 UCs para 956, com as mesmas prioritárias; 2026-03 (verão), de 2 UCs para 32; 2026-06, de 165 para 31.
+  - Entrada por queda relativa: recall de 95,8% e precisão de 92,4%, contra 98,7% e 69,7% da entrada antiga. Perde 25 irregularidades (2,9%), que custariam 330 inspeções a mais, com 7,6% de acerto.
+  - Curva de retorno da fila de produção (2026-06): 31 UCs livres, R$ 1.415/ano de retorno esperado; com custo de R$ 150 por inspeção o corte sugerido é 0.
+- **Dificuldades / Desafios:**
+  - A relação entre queda e acerto é um degrau, e não a curva suave combinada no início: o modelo foi simplificado de "ajustar uma curva" para "dois patamares e uma rampa declarada".
+  - O backtest não distingue os modelos nos meses que tem inspeções, e não cobre o verão, que é onde a sazonalidade mais pesa.
+  - O `conftest.py` define `LOSS_USE_PEERS=false`: os testes de rota legados medem a queda bruta em bancos pequenos.
+- **Pendências:**
+  - Medir a faixa de 20% a 30% de queda relativa no piloto fora da fila (D13); em 2026-06, 29 das 31 UCs da fila estão nela.
+  - Não verificado no navegador; o custo real de uma inspeção é desconhecido, por isso o custo é um campo da tela.
+  - As faixas "Prioritárias" e "Baixa chance" (corte de 30%) continuam como estavam.
+- **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 934; frontend: tsc, ESLint, Fallow e vitest 814, sem falhas.
+
+### [2026-11-08] - Revisão de código da Fase 19 (python-reviewer e react-reviewer)
+- **Autor:** Adrian Cesar
+- **O que foi feito:** duas revisões independentes sobre `git diff 9cc9396..HEAD`, sem CRITICAL. Corrigido:
+  - **A série do backtest (aba Efetividade) media o modelo antigo mesmo com os pares ligados.** O campo temporário `modelo` nunca era repassado. A série agora herda `use_peers` do repositório e a chave gravada em disco leva o modelo (`|modelo=novo`), então ligar ou desligar a flag não reaproveita a série errada.
+  - Chaves de cache: o "Fora da fila" passou a incluir `use_peers`; o mapa de pares vazio não colide mais com a ausência de pares (`peers_cache_key`), e `_expected_share` trata o mapa vazio com a mediana da carteira.
+  - `GET /losses/queue-curve`: `custo` aceitava `inf`; agora tem teto de R$ 1.000.000.
+  - Frontend: o laço de "Marcar as N primeiras" repetia a chamada sem fim quando uma página falhava (`fetchNextPage` não lança) e agora sai em erro ou quando a página não traz UCs novas; N tem teto de 400 UCs por vez (o resumo da seleção devolve 422 acima disso); o botão trava enquanto marca; o custo tem debounce de 400 ms e o botão "Usar o corte sugerido" fica desligado enquanto a curva é a de um custo anterior; a lógica de marcação foi para `useTopUnitsSelection` (a complexidade cognitiva do controlador passou de 15).
+  - Acessibilidade: o nome do botão passou a conter o texto visível, com singular para N = 1; o campo N ganhou `aria-invalid` e aviso do teto.
+  - A Efetividade avisa que as chances de acerto foram medidas nas mesmas inspeções, então a precisão tende a ser otimista.
+- **Dificuldades / Desafios:**
+  - O Fallow reprovou a complexidade do controlador depois da correção do laço; extrair o hook resolveu.
+  - Dois testes antigos da série esperavam a chave sem o modelo e um falso de repositório sem `use_peers`: ajustados para a chave nova.
+- **Pendências (não corrigidas, registradas):**
+  - A regra de retorno antecipado da reincidência ainda usa a mediana da carteira, não os pares.
+  - A mediana da carteira e as dos pares varrem `fato_medicao` duas vezes (cache frio), e o `GET /losses/backtest?corte=` de um corte avulso expulsa essas entradas do cache diário.
+  - `useDebouncedValue` existe também na Fatia 03 (`customer360`): promover para um local compartilhado (`src/hooks/`) é uma mudança transversal.
+  - Sem teste de integração de rota com `LOSS_USE_PEERS=true` e sem teste de propriedade da ordem da curva; o gráfico não tem teste de `ReferenceLine`; com uma única UC o `domain=[1,'dataMax']` pode não desenhar a linha.
+  - "Marcar as N primeiras" com a fila filtrada por outra situação só olha a primeira página.
+- **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 939; frontend: tsc, ESLint, Fallow e vitest 823, sem falhas.
+
+### [2026-11-08] - Aba Efetividade: do "melhor que a linha de base" para o previsto contra o realizado
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Por quê.** A "diferença para a linha de base" (cerca de +30 p.p.) era a manchete e a medida menos confiável: compara só quem o campo visitou, as chances de acerto foram medidas nas mesmas inspeções e ela não distinguiu o modelo antigo do novo. O N fixo em 200 também não combinava com o desenho novo, em que a equipe escolhe quantas UCs inspecionar.
+  - **Backtest (backend).** `evaluate_selection` recebe as UCs selecionadas e a fila inteira do corte e devolve energia esperada (energia a recuperar vezes a chance, só das inspecionadas), chance média prevista, calibração por faixa (`ChanceBand`: alta, rampa e baixa) e a cobertura da fila. `BacktestDTO` ganhou `kwh_esperado`, `chance_media_prevista`, `irregulares_janela`, `irregulares_na_fila` e `por_faixa`, todos com padrão.
+  - **Tela.** Tabela dos cortes com precisão, acerto previsto, energia esperada e recuperada, irregulares na fila e n (saíram "Linha de base" e "Diferença"); cartão do corte com o esperado ao lado do recuperado e a cobertura; tabela de calibração por faixa no lugar do "por motivo" (`ReasonRateBars` removido); avisos do viés de medição e de que o verão não foi coberto.
+- **Resultado medido (Gold real, modelo com pares, N = 200, 5 cortes):**
+  - Chance prevista de 92,5% contra observada de 90,8% a 96,2%: bem calibrada.
+  - Cobertura da fila de 95,2% a 96,0% das irregularidades confirmadas pelo campo.
+  - **Energia recuperada de 2,7 a 3,4 vezes a esperada.** A estimativa de 3 meses de déficit (D7) é conservadora, e o R$/ano da curva de retorno também.
+  - O top 200 pega só 113 a 185 das 541 irregularidades da janela, porque o backtest compara 200 UCs com 3 meses de inspeções: medir vários N é a segunda etapa.
+  - Rampa e baixa quase não têm inspeções nesses cortes; a tabela mostra travessão, e não inventa resultado.
+- **Dificuldades / Desafios:**
+  - O `StatTile` separa o número do sufixo (`95,6` e `%`), o que explica por que as buscas por `94,2%` só achavam a tabela; as expectativas dos testes foram ajustadas.
+- **Pendências:**
+  - Segunda etapa: medir N = 50, 100 e 200 em vez de só 200, e alimentar as faixas com os resultados das ordens concluídas no portal (o que mediria a faixa de 20% a 30%).
+  - Calibrar o multiplicador de 3 meses do déficit (D7) com o `kwh_recuperado` real, que ficou 2,7 a 3,4 vezes acima do esperado.
+  - `por_motivo` continua no DTO, mas a tela não o usa mais.
+- **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 944; frontend: tsc, ESLint, Fallow e vitest 830, sem falhas.
+
+### [2026-11-08] - Multiplicador do déficit calibrado em campo: de 3 para 10 meses (D7)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Medida.** Em 849 inspeções com irregularidade e kWh recuperado (ago-dez/2025), o campo recuperou em mediana **10,3 meses** do déficit relativo aos pares (quartis 7,6 e 12,9; residencial 11,0, comercial 9,0; por mês de 8,4 a 11,7). Contra o déficit bruto do modelo antigo a mediana é 6,0 meses, que explicava a antiga nota "1,87× o estimado".
+  - **Mudança.** `JANELA_RECUPERACAO_MESES` passou de 3 (suposição, sem fonte) para 10, com a origem documentada na constante. O frontend espelha o valor e a nota passou a dizer "Estimativa de 10 meses de déficit, a mediana recuperada em campo (metade das inspeções, de 7,6 a 12,9 meses)". Tooltip da prioridade e texto do backtest atualizados.
+  - **Alcance.** A ordenação da fila não muda (multiplicar todas as UCs pela mesma constante não altera a ordem). O kWh/mês e o R$/ano também não mudam: o R$/ano já usa 12 meses de déficit. Mudam o kWh estimado a recuperar, o `kwh_estimado` das ordens e a energia esperada do backtest. Só 9 testes tinham o "×3" escrito à mão; agora derivam da constante.
+- **Resultado medido (Gold real, pares, N = 200):** recuperado ÷ esperado de **3,2 para 0,95**, por corte de 0,81 a 1,00 (julho 1,00; agosto 0,92; setembro 1,00; outubro 0,96; novembro 0,81).
+- **Correção de uma imprecisão anterior:** a entrada de Efetividade deste dia dizia que o R$/ano da curva de retorno também era conservador. Não é: ele usa 12 meses de déficit e não depende do multiplicador.
+- **Dificuldades / Desafios:**
+  - O multiplicador depende do modelo: com `LOSS_USE_PEERS=false` o déficit é o bruto, e o valor adequado seria ~6.
+  - A calibração e a verificação usam as mesmas inspeções (sem teste fora da amostra), e os meses finais recuperaram um pouco menos (dezembro 8,4; corte de novembro 0,81).
+- **Pendências:**
+  - Medir vários N (50, 100 e 200) no backtest e alimentar as faixas com os resultados das ordens concluídas no portal.
+  - Rever o multiplicador quando houver inspeções de 2026, para ver se a queda dos meses finais é tendência.
+- **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 944; frontend: tsc, ESLint, Fallow e vitest 830, sem falhas.
+
+### [2026-11-08] - Backtest em vários N (50, 100, 200 e 400)
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Por quê.** O backtest media só N = 200 contra 3 meses de inspeções, e o campo inspecionou bem mais UCs que 200 nesse período; o top 200 pegava só 113 a 185 das 541 irregularidades da janela. Com o N escolhido pela equipe, a aba precisava mostrar o efeito do tamanho.
+  - **Backend.** `BACKTEST_SIZES = (50, 100, 200, 400)`. A série mede um corte de cada vez em todos os tamanhos: a fila do corte fica em cache e os outros tamanhos só refazem a medição (série inteira: cerca de 20 s, guardada em disco). `BacktestSeriesDTO` ganhou `tamanhos` (todos os tamanhos medidos); `tamanho` e `cortes` continuam como o resultado do padrão, então nada existente quebra.
+  - **Tela.** Seletor "Tamanho da seleção (top N)" que troca a tabela dos cortes, tabela "Quantas UCs inspecionar: o que cada tamanho captura" (inspecionadas, precisão, irregulares capturadas da janela e energia recuperada) no corte em detalhe, e aviso de que a captura é um piso. A escolha de tamanho e de corte foi extraída para `effectivenessSelection.ts`.
+- **Resultado medido (Gold real, pares, 5 cortes):**
+  - A captura das irregularidades da janela sobe quase em linha reta com N: 2025-07, de 5,9% (N = 50) para 10,4%, 20,9% e 42,5% (N = 400); 2025-10, de 13,6% para 94,8%, porque a fila daquele corte tem só 330 UCs.
+  - A precisão cai pouco: 2025-07, de 97,0% para 94,3%. A cauda da fila ainda é de chance alta, e a razão recuperado ÷ esperado é estável entre os N (0,81 a 1,04).
+  - Conclusão para a decisão do gestor: aumentar N custa pouca precisão; o que limita é o custo da visita e a capacidade, não a qualidade da cauda.
+- **Dificuldades / Desafios:**
+  - O Fallow reprovou a complexidade ciclomática do controlador (18, limite 15); extrair funções puras resolveu.
+  - Com um único tamanho a tabela de comparação não aparece, então os testes localizam as tabelas pelo nome acessível, e não pelo índice.
+- **Pendências:**
+  - Alimentar as faixas com os resultados das ordens concluídas no portal (mediria a faixa de 20% a 30%).
+  - O cálculo da série na subida da API cresceu para cerca de 20 s, em segundo plano.
+- **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 946; frontend: tsc, ESLint, Fallow e vitest 843, sem falhas.
+
+### [2026-11-08] - Aviso de amostra pequena nos resultados reais de campo
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Por quê.** O banco local tinha 6 ordens concluídas, todas de teste (tipos `teste`, `testee` e `testeee`, TOI `123`, criadas no mesmo segundo), e a seção "Resultados reais de campo" as mostrava como resultado: 6 concluídas, 100% de acerto. Com poucas ordens a taxa não tem significado.
+  - **Regra.** Com 1 a 29 ordens concluídas, a seção mostra a frase "Só N ordens concluídas: com menos de 30, a taxa de acerto real ainda não tem significado e muda muito com uma ordem a mais" e o rodapé "n = N: amostra pequena" na taxa de acerto real. Com 30 ou mais não avisa. Sem nenhuma ordem concluída não há aviso: o rodapé "Nenhuma ordem concluída ainda" já diz isso. Os números continuam na tela.
+  - **Onde.** `fieldSampleWarning` e `MIN_FIELD_SAMPLE = 30` em `utils/fieldResultsSample.ts`; o `FieldResultsKpis` usa a função. O limite de 30 vem da margem de erro: com 30 ordens e acerto perto de 90%, ela ainda é de uns 10 pontos percentuais.
+- **Dificuldades / Desafios:**
+  - Só as ordens concluídas contam para o mínimo, e não as geradas, pendentes ou canceladas.
+- **Pendências:**
+  - O 30 é uma escolha prática, e não uma medida da base; vale rever quando o portal tiver dados reais.
+  - O aviso não distingue ordem de teste de ordem real: depende de o banco estar limpo.
+- **Validação de Testes:** frontend: tsc, ESLint, Fallow e vitest 853, sem falhas (backend não foi alterado: pytest 946).
+
+### [2026-11-08] - Fila de Inspeção: o cartão "Quantas inspecionar" (gráfico e corte sugerido) sai da tela
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Por quê.** O cartão "Quantas inspecionar" ficava aberto entre os filtros e a tabela e empurrava a fila, que é o principal da tela, para baixo. O gráfico (192 px) não ajudava a decidir: o número vem do custo por inspeção e do corte sugerido, e a linha tracejada só repetia o corte que o servidor já calculou; o custo da visita nem aparecia no gráfico.
+  - **O que mudou.** `QueueReturnCurve` ficou sem gráfico e sem botão de expandir: título, frase do corte, campo "Custo por inspeção (R$)", botão "Usar o corte sugerido (N)" e uma linha de valor ("Em valor, o kWh esperado das N UCs livres soma R$ X/ano (fila inteira, sem os filtros)"). `ReturnCurveChart.tsx` foi apagado.
+  - **Não mudou.** O endpoint da curva, o campo `pontos` e o corte sugerido no backend continuam como estavam; só a tela deixou de desenhar a curva.
+  - **Passo intermediário descartado.** Antes de remover, o gráfico chegou a ficar recolhido por padrão com um botão "Ver curva de kWh esperado"; o termo "Curva de kWh esperado" entrou e saiu do `GLOSSARY.md` no mesmo dia, porque sem o gráfico ele não nomeia nada na tela.
+  - **Cartão de filtros em uma linha.** Os filtros, a nota da tarifa e as ações (campo, "Marcar as N primeiras", "Gerar") somavam uns 40 px a mais que a largura do cartão em 1366 px, e as ações caíam para uma segunda linha (133 px de altura). Em `QueueActionsBar`, o rótulo passou a mostrar só "Quantas UCs", com " inspecionar" em `sr-only` (o nome acessível continua "Quantas UCs inspecionar"), e o campo foi de `w-24` para `w-20`.
+  - **Cartão inteiro removido.** Depois dos passos acima, a decisão foi tirar o cartão "Quantas inspecionar" por completo: o campo de custo por inspeção, a frase do corte sugerido, o botão "Usar o corte sugerido" e a linha de valor deixaram de existir na tela. O gestor escolhe N no campo "Quantas UCs" do cartão de filtros.
+  - **Limpeza do frontend.** Saíram o `QueueReturnCurve`, o tipo `ReturnCurve` (`queueCurveTypes.ts`), `useQueueCurveQuery`, `queueCurveQueryOptions` e a chave de cache, `lossApi.getQueueCurve`, `parseCostInput`, `totalExpectedReturn`, `describeCut` e o `useDebouncedValue` da fatia (só o custo o usava; o de `customer360` é outro). Sem isso o controlador continuaria chamando `/losses/queue-curve` a cada carga da fila sem ninguém usar a resposta. Os testes desses arquivos saíram junto.
+  - **Backend: endpoint removido.** Em seguida, a pedido, saiu o `GET /losses/queue-curve`: `queue_curve.py` e `queue_curve_service.py` (DTOs `ReturnCurveDTO` e `ReturnCurvePointDTO`, `build_return_curve`, corte sugerido) foram apagados; em `router.py`, `router_metadata.py` e `dependencies.py` saíram a rota, a documentação `queue_curve_doc`, `QueueCurveSvc` e as constantes `MAX_INSPECTION_COST_RS`, `DEFAULT_CURVE_POINTS` e `MAX_CURVE_POINTS`; `tests/test_loss_queue_curve.py` foi apagado e `test_loss_router.py` perdeu os 2 testes da rota e o caso `/queue-curve` da leitura do diretor. O texto da fila que remetia à curva foi reescrito. `rank_suspicious_units`, `apply_situation` e o resto da fila são compartilhados e não mudaram.
+  - **Documentação.** A seção "Curva de retorno e corte sugerido" de `regras-de-negocio.md` virou uma nota de remoção, a regra sobre os filtros da curva saiu, e o D16 em `DECISOES_PERDAS.md` ganhou a atualização. O termo "Corte sugerido" saiu do `GLOSSARY.md`. As entradas antigas deste changelog e o plano da fase não foram reescritos (são histórico).
+- **Resultado medido com o cartão removido (mesmas condições, 1366 × 657, aba "Todas"):** o cartão de filtros continua com 86 px, a primeira linha da tabela começa em 455 px (era 599 px) e **3 linhas cabem inteiras** sem rolar a página (eram 0). A meta de 8 continua longe: o cabeçalho, o título e as abas ocupam cerca de 225 px.
+- **Resultado medido depois do ajuste do cartão de filtros, antes de remover o cartão (mesmas condições):** o cartão de filtros caiu de 133 px para 86 px (uma linha) e a primeira linha da tabela subiu de 599 px para 551 px; **1 linha cabe inteira** sem rolar. A meta de 8 linhas continua longe: o cabeçalho da página, o título e as abas ocupam cerca de 225 px antes do primeiro cartão. A folga na largura é de poucos pixels, então em telas mais estreitas que 1366 px as ações voltam para a segunda linha (a tela continua funcionando).
+- **Resultado medido antes do ajuste do cartão de filtros (navegador, 1366 × 657 de área útil, base local de 30 UCs, aba "Todas"):**
+  - O cartão do corte tem 58 px de altura. A primeira linha da tabela começa em 599 px, no limite da área útil: **nenhuma linha cabe inteira sem rolar a página**.
+  - **A meta combinada (8 linhas visíveis sem rolar) não foi atingida.** Só a tela do topo já gasta cerca de 385 px antes do cartão do corte (título, abas e o cartão de filtros, que tem 133 px por causa do bloco "Quantas UCs inspecionar" que quebra de linha).
+  - O tamanho do cartão antes da mudança não foi medido no navegador; pelo código ele somava o gráfico de 192 px, o cabeçalho com texto explicativo e o rodapé, bem mais que os 58 px de agora.
+- **Dificuldades / Desafios:**
+  - A checagem de portas da sessão (`Get-NetTCPConnection`) não enxergou o servidor já em uso e a medição foi feita contra o backend e o frontend que já estavam rodando; o servidor que tentei subir não conseguiu ligar na porta 8000 e foi descartado. A medição só leu dados (login, consulta da fila, troca de aba), sem gravar ordens.
+- **Pendências:**
+  - Para chegar às 8 linhas ainda falta espaço: o cabeçalho da página e as abas ocupam cerca de 225 px antes dos filtros. Ver o ajuste do cartão de filtros logo abaixo.
+  - Se o gráfico voltar um dia, o que faria sentido é o ganho marginal por UC contra o custo da visita, e não o acumulado.
+  - Quem consumia `/losses/queue-curve` fora do repositório (script, apresentação) passa a receber 404; não encontrei nenhum no código.
+  - O `ruff format --check` do backend aponta 59 arquivos (já era assim, o projeto só exige `ruff check`) e o pylint acusa `R0902` em `backtest_formulas.py`, arquivo que esta entrega não tocou.
+- **Validação de Testes:** frontend: tsc, ESLint, Fallow e vitest da pasta `loss_management` (392 testes, 41 arquivos), sem falhas. Backend: `ruff check`, import-linter (4 contratos) e pytest (936 testes, 10 a menos que antes por terem saído os da curva), sem falhas. A suíte completa do frontend (`make lint-all` e `make test-all`) não foi rodada nesta entrega, então ainda falta antes do commit.
+
+### [2026-11-08] - Aba Ordens de inspeção: exportar e importar no topo, só "Registrar achado" em azul na faixa
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Pedido.** Tirar os três botões da faixa cinza do ciclo da ordem: exportar e importar passam para o topo da aba, à direita, e a faixa fica só com a legenda e o botão "Registrar achado", em azul.
+  - **Tela.** Novo `OrderSheetActions` (linha alinhada à direita, acima da faixa) com "Exportar para o campo (CSV)" e "Importar resultados de campo", os dois em contorno (neutros). `OrderFlowBar` ficou com a legenda do ciclo e o "Registrar achado" na variante principal (`bg-primary`, o azul de marca); perdeu as props `canExport` e `onImport`. `InspectionOrdersTab` monta os dois. Os textos dos botões não mudaram. Antes o azul era o "Importar".
+  - **Permissões iguais às de antes.** Exportar aparece para todo perfil; importar e registrar só para quem pode editar perdas (`useCanWriteLosses`). Para o diretor, a faixa fica só com a legenda e o topo só com "Exportar".
+  - **Glossário.** `GLOSSARY.md` ganhou **Resultado de campo** (o que a visita constatou numa ordem; registrá-lo conclui a ordem; _Avoid_: "Achado" para o ato de registrar) e **Achado** (irregularidade constatada; a ordem é concluída com ou sem achado). O botão continua "Registrar achado" a pedido, e o cartão da ordem continua "Registrar resultado".
+- **Conferido no navegador (1366 × 657, perfil Gerente de Perdas):** exportar e importar na mesma linha do topo, com o importar encostado na borda direita do painel; os dois com fundo branco e borda (contorno); "Registrar achado" em azul na faixa. O "Exportar" aparece desabilitado porque a base local não tem ordens geradas nem em campo.
+- **Dificuldades / Desafios:**
+  - "Registrar achado" (atalho) e "Registrar resultado" (cartão) são o mesmo ato com dois nomes. Só o glossário foi alinhado; unificar os rótulos da tela fica como decisão do dono da fatia.
+- **Pendências:**
+  - Decidir se o atalho passa a se chamar "Registrar resultado" para casar com o cartão.
+  - **Decidido:** as abas Prioritárias, Demais e Todas da Fila priorizada ficam como estão (a lista única com selo "Baixa chance" foi proposta e recusada pelo dono da fatia).
+- **Validação de Testes:** tsc, ESLint, Fallow e vitest da pasta `loss_management` (400 testes, 43 arquivos; 8 novos em `OrderFlowBar.test.tsx` e `OrderSheetActions.test.tsx`), sem falhas. A suíte completa (`make lint-all` e `make test-all`) não foi rodada, então ainda falta antes do commit.
+
+### [2026-11-08] - Logo com fundo amarelo e botão do assistente amarelo
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Logo (`BrandMark`).** O símbolo passou de quadrado escuro com raio amarelo para quadrado amarelo (`bg-brand`, `#F2B01E`) com o raio em tinta (`text-brand-foreground`, `#18191C`), como na imagem enviada. Vale para a lateral e para o painel de login.
+  - **Botão do assistente.** `ChatWidgetTrigger` ficou amarelo e mantém a estrela de quatro pontas, agora em tinta. Para respeitar a regra de não sobrescrever `bg-*` do `Button` por `className`, entrou a variante `brand` em `button.tsx` (`bg-brand text-brand-foreground`). O anel do hover passou de azul para amarelo e o ponto de "respondendo" ganhou um anel da cor do fundo, para continuar visível sobre o amarelo.
+  - **`design.md`.** O âmbar deixou de ser só do raio do símbolo: agora vale para o símbolo da marca (fundo e raio), o botão do assistente e o ponto de "respondendo". Atualizados o texto de "Cores" e a linha do token `--brand`.
+  - **Favicon.** O `public/favicon.svg` (o raio roxo padrão do Vite) foi trocado pelo mesmo símbolo da logo: quadrado amarelo arredondado (`#F2B01E`) com o raio do lucide em tinta (`#18191C`), com o raio um pouco maior que na logo para ler bem em 16 px. O `icons.svg` ao lado não é usado pelo código e ficou como estava.
+  - **Testes.** Novo `BrandMark.test.tsx` e um caso novo em `ChatWidgetTrigger.test.tsx`.
+- **Conferido no navegador:** logo e botão com fundo `rgb(242, 176, 30)` e ícone `rgb(24, 25, 28)`.
+- **Dificuldades / Desafios:**
+  - A imagem "Image #3" citada no pedido não chegou; usei a única imagem anexada (quadrado amarelo com raio escuro) como o visual da logo.
+  - O navegador guarda o favicon em cache: para ver o novo na aba pode ser preciso recarregar com Ctrl+F5 ou fechar e reabrir a aba.
+- **Pendências:**
+  - `button.tsx` e `ChatWidgetTrigger.tsx` já tinham alterações não commitadas anteriores (tamanho `iconLg` e a estrela); esta mudança foi feita por cima delas.
+- **Validação de Testes:** tsc, ESLint, Fallow e vitest de `components`, `features/chat` e `features/auth` (20 arquivos, 128 testes), sem falhas. A suíte completa não foi rodada.
+
+### [2026-11-08] - Aba "Fora da fila": a lista passa a ficar num cartão
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - **Pedido.** A tabela da aba "Fora da fila" ficava solta na página, ao contrário da "Fila priorizada", cuja lista está num cartão. Em `ExcludedQueueTab`, o `AsyncState` (tabela, rodapé "Mostrando N de M", "Carregar mais", e também os estados de carregando, erro e vazio) ficou dentro de `<Card className="p-4">`, igual ao cartão da lista da outra aba.
+  - **Fora do cartão.** Os botões de filtro por motivo da exclusão continuam soltos acima da lista, sem cartão, como pedido (o pedido era só sobre a lista).
+  - **Testes.** Dois casos novos em `ExcludedQueueTab.test.tsx`: tabela e rodapé dentro do cartão com os filtros fora dele, e o estado vazio dentro do cartão.
+- **Dificuldades / Desafios:**
+  - A conferência no navegador não foi concluída: o navegador de teste reiniciou e perdeu a página duas vezes seguidas. A estrutura está coberta pelos testes, mas o visual na tela não foi visto.
+- **Pendências:**
+  - Ver a aba "Fora da fila" na tela (cartão, espaçamento entre os filtros e o cartão).
+  - Decidir se os botões de filtro por motivo também ganham um cartão, como o cartão de filtros da "Fila priorizada".
+- **Validação de Testes:** tsc, ESLint, Fallow e vitest da pasta `loss_management` (403 testes, 43 arquivos), sem falhas. A suíte completa (`make lint-all` e `make test-all`) não foi rodada.
+
+### [2026-11-08] - Histórico da ordem: cada registro num contêiner
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - **Pedido.** No histórico da ordem, inclusive o da ordem concluída, cada log passa a ficar dentro de um contêiner.
+  - **Tela.** Em `OrderHistorySheet`, cada registro (tipo do evento, data e hora, autor e as mudanças de campo, como "Status", "Data da inspeção", "Irregularidade constatada" e "Energia recuperada") ficou dentro de um `Card` com `p-3`, no lugar da linha fina à esquerda. O texto, a ordem e o fuso dos registros não mudaram.
+  - **Teste.** Caso novo em `OrderHistorySheet.test.tsx`: cada registro tem o seu contêiner, com data, autor e mudanças dentro dele, e um registro não aparece dentro do contêiner do outro.
+- **Dificuldades / Desafios:**
+  - Não consegui ver o histórico na tela: a base local tem 0 ordens, e criar uma ordem gravaria no banco real do servidor que já roda na porta 8000. O visual está coberto só pelo teste.
+  - O pedido não dizia se o contêiner era para todos os registros ou só para o de conclusão; fiz para todos, para a lista ficar uniforme.
+- **Pendências:**
+  - Ver o histórico de uma ordem concluída na tela, quando houver uma ordem de teste.
+- **Validação de Testes:** tsc, ESLint e vitest do `OrderHistorySheet` (4 testes), sem falhas. Suíte completa registrada na entrada de validação do commit.
+
+### [2026-11-08] - Revisão de código em dois eixos: nota no plano e renome de `queueCurve.ts`
+- **Autor:** Adrian César
+- **O que foi feito:**
+  - **Revisão.** Revisão de `origin/main` contra o disco (14 commits da branch e o trabalho não commitado), com um revisor de padrões e um de aderência à spec. Padrões: nenhuma violação dura; apontados como julgamento `peer_ratios` e `portfolio_ratio` viajando juntos (Data Clumps), parâmetros booleanos que mantêm o caminho antigo (`measured_curve`, `use_peers`) e o crescimento de `BacktestSeriesView.tsx`. Spec: nenhum requisito ausente.
+  - **Nota no plano.** `fila-inspecao-sazonalidade-plano.md` ainda descrevia a curva de retorno e o corte sugerido como entrega vigente. Entraram uma atualização no início do plano (cobre a decisão 4 e as Fases 5 e 6), uma nota "Superada em 2026-11-08" no título da Fase 5 e o ajuste da frase da Fase 4 que dizia que a curva "deixa o gestor decidir". As tabelas e medições antigas foram mantidas como registro.
+  - **Renome.** `utils/queueCurve.ts` virou `utils/queueSelection.ts` (e o teste, `queueSelection.test.ts`), porque já não havia curva: o módulo só tem `MAX_SELECTION_COUNT`, `parsePositiveInt` e `firstFreeUnitIds`. Atualizados os imports de `QueueActionsBar.tsx`, `useTopUnitsSelection.ts` e do teste. A API não mudou.
+- **Dificuldades / Desafios:**
+  - O revisor de spec apontou o redesenho do botão do chat (bola, estrela, `iconLg`) como fora do pedido, mas isso já estava no trabalho não commitado anterior do dono da fatia; esta sessão só acrescentou a variante `brand`. Nada foi revertido.
+  - Há dois módulos de nomes parecidos: `utils/queueSelection.ts` (helpers do N) e `hooks/useQueueSelection.ts` (seleção das UCs). São coisas diferentes.
+- **Pendências:**
+  - Avaliar o `PeerReference` para agrupar `peer_ratios` e `portfolio_ratio` e apagar os caminhos antigos `measured_curve` e `use_peers` se não forem mais usados em produção.
+  - Dividir `BacktestSeriesView.tsx` quando crescer mais.
+- **Validação de Testes:** tsc, ESLint, Fallow e vitest da pasta `loss_management` (403 testes, 43 arquivos), sem falhas. A suíte completa não foi rodada.

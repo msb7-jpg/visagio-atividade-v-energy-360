@@ -5,6 +5,7 @@ import { InspectionUploadModal } from '@/features/loss_management/components/Ins
 import { OrderHistorySheet } from '@/features/loss_management/components/OrderHistorySheet'
 import { OrderBoard } from '@/features/loss_management/components/OrderBoard'
 import { OrderFlowBar } from '@/features/loss_management/components/OrderFlowBar'
+import { OrderSheetActions } from '@/features/loss_management/components/OrderSheetActions'
 import { PickFieldOrderDialog } from '@/features/loss_management/components/PickFieldOrderDialog'
 import { RegisterResultDialog } from '@/features/loss_management/components/RegisterResultDialog'
 import { useInspectionsQuery } from '@/features/loss_management/hooks/useLossQueries'
@@ -32,7 +33,8 @@ export function InspectionOrdersTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      <OrderFlowBar canExport={canExport} onImport={() => setIsUploadOpen(true)} onRegister={() => setIsPickerOpen(true)} />
+      <OrderSheetActions canExport={canExport} onImport={() => setIsUploadOpen(true)} />
+      <OrderFlowBar onRegister={() => setIsPickerOpen(true)} />
       <OrderBoard
         orders={orders}
         isLoading={isLoading}

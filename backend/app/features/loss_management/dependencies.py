@@ -14,6 +14,7 @@ from app.features.loss_management.detail_repository import UnitDetailRepository
 from app.features.loss_management.excluded_service import ExcludedQueueService
 from app.features.loss_management.order_event_service import OrderEventService
 from app.features.loss_management.repository import LossRepository
+from app.features.loss_management.repository_factory import build_loss_repository
 from app.features.loss_management.service import LossService
 from app.features.loss_management.unit_detail_service import UnitDetailService
 from app.shared.dependencies import DbSession
@@ -29,8 +30,7 @@ def get_loss_service(db: DbSession, settings: Annotated[Settings, Depends(get_se
     Returns:
         Serviço pronto para uso pelas rotas.
     """
-    repository = LossRepository(db, reference_competencia=settings.loss_reference_competencia)
-    return LossService(repository=repository)
+    return LossService(repository=build_loss_repository(db, settings))
 
 
 LossSvc = Annotated[LossService, Depends(get_loss_service)]
@@ -48,7 +48,7 @@ def get_excluded_queue_service(
     Returns:
         Serviço pronto para uso pela rota de UCs excluídas.
     """
-    return ExcludedQueueService(LossRepository(db, reference_competencia=settings.loss_reference_competencia))
+    return ExcludedQueueService(build_loss_repository(db, settings))
 
 
 ExcludedSvc = Annotated[ExcludedQueueService, Depends(get_excluded_queue_service)]
@@ -64,7 +64,7 @@ def get_backtest_service(db: DbSession, settings: Annotated[Settings, Depends(ge
     Returns:
         Serviço pronto para uso pela rota de backtest.
     """
-    return BacktestService(LossRepository(db, reference_competencia=settings.loss_reference_competencia))
+    return BacktestService(build_loss_repository(db, settings))
 
 
 BacktestSvc = Annotated[BacktestService, Depends(get_backtest_service)]
@@ -80,7 +80,7 @@ def build_backtest_series_service(db: AsyncSession, settings: Settings) -> Backt
     Returns:
         Serviço pronto para uso pela rota e pelo pré-cálculo da subida da API.
     """
-    repository = LossRepository(db, reference_competencia=settings.loss_reference_competencia)
+    repository = build_loss_repository(db, settings)
     cache_path = Path(settings.loss_backtest_cache_path) if settings.loss_backtest_cache_path else None
     return BacktestSeriesService(repository, BacktestService(repository), BacktestSeriesStore(cache_path))
 
@@ -115,7 +115,7 @@ def get_unit_detail_service(db: DbSession, settings: Annotated[Settings, Depends
     """
     fixed_competencia = settings.loss_reference_competencia
     return UnitDetailService(
-        queue_repository=LossRepository(db, reference_competencia=fixed_competencia),
+        queue_repository=build_loss_repository(db, settings),
         detail_repository=UnitDetailRepository(db, reference_competencia=fixed_competencia),
     )
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useExcludedUnitsQuery } from '@/features/loss_management/hooks/useLossQueries'
 import type { ExclusionReason } from '@/features/loss_management/types/excludedTypes'
@@ -43,63 +44,65 @@ export function ExcludedQueueTab() {
           </Button>
         ))}
       </div>
-      <AsyncState
-        isLoading={query.isLoading}
-        isError={query.isError}
-        isEmpty={units.length === 0}
-        errorTitle="Não foi possível carregar as UCs fora da fila"
-        errorDescription="Verifique a conexão com a API e se as tabelas Gold de cadastro e medição estão disponíveis."
-        onRetry={() => void query.refetch()}
-        emptyTitle="Nenhuma UC fora da fila"
-        emptyDescription="Toda UC com queda de consumo está na fila."
-      >
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>UC</TableHead>
-              <TableHead>Bairro / Município</TableHead>
-              <TableHead>Classe</TableHead>
-              <TableHead>Motivo da exclusão</TableHead>
-              <TableHead>Detalhe</TableHead>
-              <TableHead>Volta a ser avaliada</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {units.map((unit) => (
-              <TableRow key={unit.id_uc}>
-                <TableCell>
-                  <span className="font-mono">{unit.id_uc}</span>
-                </TableCell>
-                <TableCell>
-                  {unit.bairro ?? EMPTY_VALUE}
-                  <span className="text-muted-foreground block text-xs">{unit.municipio ?? EMPTY_VALUE}</span>
-                </TableCell>
-                <TableCell>{unit.classe_consumo ?? EMPTY_VALUE}</TableCell>
-                <TableCell>{EXCLUSION_LABELS[unit.motivo_exclusao]}</TableCell>
-                <TableCell>
-                  <span className="text-muted-foreground">{describeExclusion(unit)}</span>
-                </TableCell>
-                <TableCell>{formatReturnDate(unit)}</TableCell>
+      <Card className="p-4">
+        <AsyncState
+          isLoading={query.isLoading}
+          isError={query.isError}
+          isEmpty={units.length === 0}
+          errorTitle="Não foi possível carregar as UCs fora da fila"
+          errorDescription="Verifique a conexão com a API e se as tabelas Gold de cadastro e medição estão disponíveis."
+          onRetry={() => void query.refetch()}
+          emptyTitle="Nenhuma UC fora da fila"
+          emptyDescription="Toda UC com queda de consumo está na fila."
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>UC</TableHead>
+                <TableHead>Bairro / Município</TableHead>
+                <TableHead>Classe</TableHead>
+                <TableHead>Motivo da exclusão</TableHead>
+                <TableHead>Detalhe</TableHead>
+                <TableHead>Volta a ser avaliada</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <div className="mt-3 flex items-center justify-between gap-3 text-sm">
-          <span className="text-muted-foreground">
-            Mostrando {formatInteger(units.length)} de {formatInteger(total)} UCs
-          </span>
-          {query.hasNextPage ? (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={query.isFetchingNextPage}
-              onClick={() => void query.fetchNextPage()}
-            >
-              Carregar mais
-            </Button>
-          ) : null}
-        </div>
-      </AsyncState>
+            </TableHeader>
+            <TableBody>
+              {units.map((unit) => (
+                <TableRow key={unit.id_uc}>
+                  <TableCell>
+                    <span className="font-mono">{unit.id_uc}</span>
+                  </TableCell>
+                  <TableCell>
+                    {unit.bairro ?? EMPTY_VALUE}
+                    <span className="text-muted-foreground block text-xs">{unit.municipio ?? EMPTY_VALUE}</span>
+                  </TableCell>
+                  <TableCell>{unit.classe_consumo ?? EMPTY_VALUE}</TableCell>
+                  <TableCell>{EXCLUSION_LABELS[unit.motivo_exclusao]}</TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground">{describeExclusion(unit)}</span>
+                  </TableCell>
+                  <TableCell>{formatReturnDate(unit)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="mt-3 flex items-center justify-between gap-3 text-sm">
+            <span className="text-muted-foreground">
+              Mostrando {formatInteger(units.length)} de {formatInteger(total)} UCs
+            </span>
+            {query.hasNextPage ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={query.isFetchingNextPage}
+                onClick={() => void query.fetchNextPage()}
+              >
+                Carregar mais
+              </Button>
+            ) : null}
+          </div>
+        </AsyncState>
+      </Card>
     </div>
   )
 }

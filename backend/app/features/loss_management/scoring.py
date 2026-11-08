@@ -3,11 +3,14 @@
 from dataclasses import dataclass, field
 
 from app.features.loss_management.hit_rate import MESES_BASE_COMPLETO, hit_probability
+from app.features.loss_management.peer_reference import pairs_ratio
 from app.features.loss_management.schemas import InspectionStatus, SuspicionReason, SuspiciousUnitDTO
 
 LIMIAR_QUEDA_SUBITA = 0.5
 LIMIAR_QUEDA_MODERADA = 0.2  # piso da fila classificada: abaixo disso a UC não entra
-JANELA_RECUPERACAO_MESES = 3
+# Mediana de meses de déficit (relativo aos pares) que o campo recuperou em 849 inspeções irregulares, ago-dez/2025:
+# 10,3, com metade entre 7,6 e 12,9 (D7, D16). Era 3, sem fonte. Com LOSS_USE_PEERS=false o déficit é bruto: ~6.
+JANELA_RECUPERACAO_MESES = 10
 MESES_POR_ANO = 12
 PESO_QUEDA_CONSUMO = 80.0
 BONUS_LEITURA_ZERADA = 20.0
@@ -29,6 +32,7 @@ class ConsumptionProfile:
     consumo_recente_kwh: float
     meses_zerados: int
     meses_base: int = MESES_BASE_COMPLETO  # meses com leitura na janela de base; menos que o completo = ligação recente
+    peer_ratio: float | None = None  # mediana recente/base da classe da UC (os pares); None usa a da carteira
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,7 +100,7 @@ def detect_reasons(profile: ConsumptionProfile) -> list[SuspicionReason]:
         Motivos detectados (queda súbita, queda moderada e/ou leitura zerada); vazio se a UC não é suspeita.
         Queda súbita e queda moderada são excludentes: a moderada vai do piso até o limiar da súbita.
     """
-    drop_ratio = consumption_drop_ratio(profile)
+    drop_ratio = normalized_drop_ratio(profile, pairs_ratio(profile.peer_ratio, 1.0))  # além dos pares, se houver
     has_sudden_drop = drop_ratio >= LIMIAR_QUEDA_SUBITA
     has_moderate_drop = LIMIAR_QUEDA_MODERADA <= drop_ratio < LIMIAR_QUEDA_SUBITA
     has_zero_reading = profile.meses_zerados > 0
@@ -131,10 +135,10 @@ def monthly_deficit_kwh(profile: ConsumptionProfile) -> float:
         profile: Consumo médio da UC nas janelas base e recente.
 
     Returns:
-        Consumo base menos consumo recente, em kWh/mês (mínimo 0).
+        Consumo esperado (base vezes a razão dos pares, se houver) menos o recente, em kWh/mês (mínimo 0).
     """
-    consumption_gap_kwh = profile.consumo_base_kwh - profile.consumo_recente_kwh
-    return max(0.0, consumption_gap_kwh)
+    expected_recent_kwh = profile.consumo_base_kwh * pairs_ratio(profile.peer_ratio, 1.0)
+    return max(0.0, expected_recent_kwh - profile.consumo_recente_kwh)
 
 
 def estimated_recoverable_kwh(profile: ConsumptionProfile) -> float:
@@ -170,6 +174,7 @@ def build_suspicious_unit(
     recoverable_value_rs = recoverable_kwh * tariff_rs_kwh
     monthly_kwh = monthly_deficit_kwh(profile)
     annual_value_rs = monthly_kwh * MESES_POR_ANO * tariff_rs_kwh
+    reference_ratio = pairs_ratio(profile.peer_ratio, portfolio_ratio)
     return SuspiciousUnitDTO(
         id_uc=profile.id_uc,
         municipio=profile.municipio,
@@ -178,7 +183,10 @@ def build_suspicious_unit(
         motivos=reasons,
         score_risco=risk_score(profile),
         probabilidade_acerto=hit_probability(
-            reasons, normalized_drop_ratio(profile, portfolio_ratio), profile.meses_base
+            reasons,
+            normalized_drop_ratio(profile, reference_ratio),
+            profile.meses_base,
+            measured_curve=profile.peer_ratio is not None,
         ),
         meses_base=profile.meses_base,
         consumo_base_kwh=round(profile.consumo_base_kwh, 1),
