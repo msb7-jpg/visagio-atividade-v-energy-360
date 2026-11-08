@@ -4,16 +4,15 @@ import type { Indicator, IndicatorEvaluation } from '@/features/executive_dashbo
 interface EvaluationEntry {
   label: string
   tone: NonNullable<BadgeProps['variant']>
-  textColor: string
 }
 
 /** Vocabulário fechado da avaliação: o texto aparece sempre junto da cor. */
 export const EVALUATIONS: Record<IndicatorEvaluation, EvaluationEntry> = {
-  MELHOROU: { label: 'Melhorou', tone: 'success', textColor: 'text-success' },
-  PIOROU: { label: 'Piorou', tone: 'destructive', textColor: 'text-destructive' },
-  ESTAVEL: { label: 'Estável', tone: 'muted', textColor: 'text-muted-foreground' },
-  SEM_COMPARACAO: { label: 'Sem comparação', tone: 'muted', textColor: 'text-muted-foreground' },
-  INFORMATIVO: { label: 'Informativo', tone: 'accent', textColor: 'text-muted-foreground' }
+  MELHOROU: { label: 'Melhorou', tone: 'success' },
+  PIOROU: { label: 'Piorou', tone: 'destructive' },
+  ESTAVEL: { label: 'Estável', tone: 'muted' },
+  SEM_COMPARACAO: { label: 'Sem comparação', tone: 'muted' },
+  INFORMATIVO: { label: 'Informativo', tone: 'accent' }
 }
 
 /**

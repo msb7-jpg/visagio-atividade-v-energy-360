@@ -116,8 +116,8 @@
 
 - [x] Issue #98: Visão 360, bloco 3 "Falta de luz e chamados" em três sub-blocos com título e contagem. Concluído por Joao Henrique em 2026-11-08; registro no `changelog.md`.
 - [x] Issue #102: Visão 360, bloco 2 "Contas": diagnóstico de conta alta em selo com a variação e causas curtas. Concluído por Joao Henrique em 2026-11-08; registro no `changelog.md`.
-- [- Em andamento por Joao Henrique - 2026-11-08] Issue #100: Painel do Diretor: hierarquia dos indicadores e bloco "Perdas" no mesmo padrão.
-- [ ] Issue #101: Inteligência Comercial: gráfico único com métrica e bairros à escolha, no lugar das minibarras.
+- [x] Issue #100: Painel do Diretor: hierarquia dos indicadores e bloco "Perdas" no mesmo padrão. Concluído por Joao Henrique em 2026-11-08; registro no `changelog.md`.
+- [- Em andamento por Joao Henrique - 2026-11-08] Issue #101: Inteligência Comercial: gráfico único com métrica e bairros à escolha, no lugar das minibarras.
 
 ---
 

@@ -322,3 +322,17 @@
 - **Fora desta entrega:** backend, API e cálculos; conferência visual no navegador (feita por quem revisa).
 - **Validação de Testes:**
   - `dev.ps1 check` aprovado (lint, TypeScript e build); 936 pytest e 854 vitest.
+
+### [2026-11-08] - Painel do Diretor: hierarquia dos indicadores e bloco Perdas no mesmo padrão (issue #100)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `IndicatorTile` (novo, extraído de `IndicatorGroups`): três camadas fixas em todos os blocos. Valor atual; variação com o selo da avaliação; rodapé com "Antes: …" e, quando existe, o detalhe secundário separado por uma divisória.
+  - Menos sinal repetido: a variação ficou neutra, com a seta só do sentido do número; a cor e o texto "Melhorou/Piorou/Estável" ficam só no selo. A fórmula segue no ícone de ajuda (tooltip) e o aviso, no ícone de alerta.
+  - Grade: todos os blocos têm a mesma largura e estrutura; cada área ocupa tantas colunas quanto tem indicadores, como antes.
+  - Perdas (`LossesSnapshotCard`): mesmos blocos e grade dos outros grupos. O selo "Retrato atual, sem comparação" ganhou tooltip dizendo que a falta de comparação é decisão (o histórico de inspeções cobre só ago a dez/2025). Os avisos viraram uma lista de linhas curtas, uma por aviso, abaixo dos blocos. O rodapé longo do retorno esperado virou "Teto de R$ …", com a explicação no tooltip.
+  - `EVALUATIONS` perdeu o campo `textColor`, que deixou de ser usado. SmartInsightCard continua no topo; valores, variações e avaliações são os mesmos.
+  - Testes ajustados em `ExecutiveDashboardPage.test.tsx` (variação neutra, detalhe separado, tooltip e lista de avisos de Perdas) e `indicatorTrend.test.ts`.
+- **Arquivos:** `executive_dashboard/components/` (`IndicatorTile`, `IndicatorGroups`, `LossesSnapshotCard`), `utils/indicatorTrend.ts` e os dois testes.
+- **Fora desta entrega:** backend, API e cálculos; reordenar as áreas para fechar a linha da grade (a ordem vem da API); conferência visual no navegador (feita por quem revisa).
+- **Validação de Testes:**
+  - `dev.ps1 check` aprovado (lint, TypeScript e build); 936 pytest e 854 vitest.
