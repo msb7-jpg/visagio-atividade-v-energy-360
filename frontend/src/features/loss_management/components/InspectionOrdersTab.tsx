@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CancelOrderDialog } from '@/features/loss_management/components/CancelOrderDialog'
 import { DispatchOrderDialog } from '@/features/loss_management/components/DispatchOrderDialog'
 import { InspectionUploadModal } from '@/features/loss_management/components/InspectionUploadModal'
+import { OrderHistorySheet } from '@/features/loss_management/components/OrderHistorySheet'
 import { OrderBoard } from '@/features/loss_management/components/OrderBoard'
 import { OrderFlowBar } from '@/features/loss_management/components/OrderFlowBar'
 import { PickFieldOrderDialog } from '@/features/loss_management/components/PickFieldOrderDialog'
@@ -52,6 +53,7 @@ export function InspectionOrdersTab() {
       {isUploadOpen ? <InspectionUploadModal onClose={() => setIsUploadOpen(false)} /> : null}
       {pendingAction?.kind === 'dispatch' ? <DispatchOrderDialog order={pendingAction.order} onClose={closeAction} /> : null}
       {pendingAction?.kind === 'result' ? <RegisterResultDialog order={pendingAction.order} onClose={closeAction} /> : null}
+      {pendingAction?.kind === 'history' ? <OrderHistorySheet order={pendingAction.order} onClose={closeAction} /> : null}
       {pendingAction?.kind === 'cancel' ? <CancelOrderDialog order={pendingAction.order} onClose={closeAction} /> : null}
     </div>
   )

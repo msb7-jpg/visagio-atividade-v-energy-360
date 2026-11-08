@@ -43,6 +43,65 @@ list_suspicious_units_doc = EndpointDoc(
     },
 )
 
+order_events_doc = EndpointDoc(
+    summary="Histórico (trilha de auditoria) de uma ordem de inspeção",
+    description=(
+        "Lista, do primeiro passo ao mais recente, o que aconteceu com a ordem: geração, envio a campo, resultado "
+        "(registrado ou importado por planilha) e cancelamento. Cada evento traz o autor (e-mail), a data e, por "
+        "campo alterado, `[valor antes, valor depois]`. Só há eventos de mudanças feitas depois da criação da "
+        "trilha; ordens anteriores respondem lista vazia, nunca um histórico reconstruído."
+    ),
+    response_description="Eventos da ordem em ordem cronológica.",
+    responses={**AUTH_ERROR_RESPONSES, 404: {"description": "Ordem de inspeção não encontrada."}},
+)
+
+backtest_doc = EndpointDoc(
+    summary="Backtest da seleção da fila numa data de corte",
+    description=(
+        "Refaz a fila como estava na competência de corte (`corte`, 'YYYY-MM'; vazio usa a anterior à primeira "
+        "inspeção do histórico), seleciona o top `tamanho` e mede o acerto nas inspeções de campo dos 3 meses "
+        "seguintes. A seleção usa só medições e inspeções até o fim do corte (sem vazamento temporal). "
+        "`precisao_selecao` é irregulares ÷ inspecionadas entre as selecionadas; `linha_base` é a taxa de acerto "
+        "de todas as inspeções da mesma janela, selecionadas ou não. `por_motivo` traz a taxa por motivo "
+        "principal, com `amostra_suficiente` falso abaixo do mínimo. Sem histórico de inspeções, devolve "
+        "`backtest_executado=false`. Corte fora do histórico responde 400."
+    ),
+    response_description="Precisão da seleção, linha de base, diferença em p.p., energia recuperada e taxa por motivo.",
+    responses={
+        **AUTH_ERROR_RESPONSES,
+        400: {"description": "Data de corte fora do período do histórico de inspeções."},
+        500: {"description": "Falha ao consultar tabelas Gold."},
+    },
+)
+
+backtest_series_doc = EndpointDoc(
+    summary="Backtest da seleção da fila em todos os cortes disponíveis",
+    description=(
+        "Roda o backtest de cada competência de corte do histórico de inspeções, com o tamanho da capacidade mensal "
+        "(`tamanho`), e devolve um resultado por corte, do mais antigo ao mais recente, no mesmo formato de "
+        "`/losses/backtest`. Como a fila de cada corte leva segundos para ser refeita, o resultado fica em memória e "
+        "em disco e só é recalculado quando muda o Gold, o código ou as ordens do portal anteriores ao último corte "
+        "(uma ordem de hoje não invalida). Sem histórico de inspeções, `cortes` vem vazio."
+    ),
+    response_description="Um resultado de backtest por corte, com precisão, linha de base e taxa por motivo.",
+    responses={**AUTH_ERROR_RESPONSES, 500: {"description": "Falha ao consultar tabelas Gold."}},
+)
+
+excluded_units_doc = EndpointDoc(
+    summary="UCs com queda de consumo que ficaram fora da fila",
+    description=(
+        "Aba 'Fora da fila': UCs com sinal de suspeita (queda de 20% ou mais, ou leitura zerada) que a fila não "
+        "traz, cada uma com o motivo ('possui_gd', 'inspecionada_sem_achado', 'irregularidade_recente' ou "
+        "'cancelamento_bloqueante'), a data do evento e `volta_a_ser_avaliada`, o primeiro dia em que a regra "
+        "deixa de excluir a UC (vazio para GD, que não tem prazo). Só os motivos que a fila realmente aplica. "
+        "Na irregularidade recente a UC pode voltar antes, com nova queda súbita. Usa a mesma competência de "
+        "referência da fila. `resumo` conta o conjunto inteiro por motivo; `motivo`, `limit` e `offset` "
+        "filtram e paginam `itens`."
+    ),
+    response_description="Página de UCs excluídas, total do filtro e resumo por motivo.",
+    responses={**AUTH_ERROR_RESPONSES, 500: {"description": "Falha ao consultar tabelas Gold."}},
+)
+
 unit_detail_doc = EndpointDoc(
     summary="Detalhe de uma UC da Fila de Inspeção",
     description=(
@@ -173,7 +232,8 @@ upload_inspections_doc = EndpointDoc(
         "preenchido passam a 'concluida'. Aceita as variações reais de campo: resultado ('CONFIRMADA', 'NADA "
         "CONSTA', 'sim', 'não'), datas ('2025-08-01', '14.08.2025', '09-01-2025' como dia-mês-ano) e decimais "
         "com vírgula. Uma linha inválida é recusada com motivo sem abortar as demais; linhas sem resultado "
-        "preenchido são contadas em 'ignoradas'. Limite de 5 MB e 10.000 linhas."
+        "preenchido são contadas em 'ignoradas'. Com `dry_run=true` só valida e resume (`simulacao=true`), "
+        "sem gravar nenhuma ordem, para pré-visualizar antes de importar. Limite de 5 MB e 10.000 linhas."
     ),
     response_description="Resumo da conciliação: conciliadas, ignoradas, rejeitadas com motivo e kWh total.",
     responses={

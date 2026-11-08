@@ -174,7 +174,7 @@ describe('Fila de Inspeção', () => {
     expect(screen.queryByText(/de baixa chance acertam? no máximo/)).not.toBeInTheDocument()
   })
 
-  it('lista a UC com score, queda, chance de acerto, kWh por mês, valor por ano e link para a Visão 360', async () => {
+  it('lista a UC com score, queda, kWh por mês, valor por ano e link para a Visão 360', async () => {
     renderPage()
 
     const row = await rowOf('UC100002')
@@ -182,7 +182,7 @@ describe('Fila de Inspeção', () => {
     expect(within(row).getByRole('link', { name: 'UC100002' })).toHaveAttribute('href', '/customers?uc=UC100002')
     expect(within(row).getByText('91')).toBeInTheDocument()
     expect(within(row).getByText('−83%')).toBeInTheDocument()
-    expect(within(row).getByText('93%')).toBeInTheDocument()
+    expect(within(row).queryByText('93%')).not.toBeInTheDocument()
     expect(within(row).getByText('1.840')).toBeInTheDocument()
     expect(within(row).getByText('Na fila')).toBeInTheDocument()
   })
@@ -210,7 +210,8 @@ describe('Fila de Inspeção', () => {
     expect(await screen.findByRole('button', { name: 'Gerar 2 ordens' })).toBeEnabled()
     await waitFor(() => expect(mockedApi.getQueueSummary).toHaveBeenLastCalledWith(['UC100002', 'UC100003'], expect.anything()))
     const strip = await screen.findByRole('region', { name: 'Resumo da seleção' })
-    expect(await within(strip).findByText('2.000 kWh/mês · R$ 0/ano')).toBeInTheDocument()
+    expect(await within(strip).findByText('MWh/mês')).toBeInTheDocument()
+    expect(strip).toHaveTextContent(/2,0\s*MWh\/mês/)
     expect(within(strip).getByText('1.254 kWh/mês · R$ 0/ano')).toBeInTheDocument()
   })
 
@@ -223,8 +224,9 @@ describe('Fila de Inspeção', () => {
     fireEvent.click(within(await rowOf('UC100003')).getByRole('checkbox'))
 
     const strip = await screen.findByRole('region', { name: 'Resumo da seleção' })
-    expect(within(strip).getByText('2 selecionadas')).toBeInTheDocument()
-    expect(await within(strip).findByText('2.000 kWh/mês · R$ 0/ano')).toBeInTheDocument()
+    expect(within(strip).getByText('unidades selecionadas')).toBeInTheDocument()
+    expect(await within(strip).findByText('MWh/mês')).toBeInTheDocument()
+    expect(strip).toHaveTextContent(/2,0\s*MWh\/mês/)
 
     fireEvent.click(within(strip).getByRole('button', { name: 'Limpar seleção' }))
 

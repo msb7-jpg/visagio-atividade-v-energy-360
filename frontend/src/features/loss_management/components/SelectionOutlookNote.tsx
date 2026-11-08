@@ -1,6 +1,5 @@
 import type { SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
-import { formatInteger, formatPercent } from '@/features/loss_management/utils/lossFormatters'
-import { PRIORITY_MIN_HIT_PROBABILITY } from '@/features/loss_management/utils/queueBands'
+import { formatInteger } from '@/features/loss_management/utils/lossFormatters'
 import { selectionOutlook } from '@/features/loss_management/utils/queueOutlook'
 
 interface SelectionOutlookNoteProps {
@@ -8,26 +7,25 @@ interface SelectionOutlookNoteProps {
 }
 
 /**
- * Quantas inspeções da seleção devem achar irregularidade e quantas devem voltar sem achado.
+ * Quantas das UCs selecionadas estão na faixa prioritária.
  *
  * @param props - UCs marcadas para gerar ordem.
- * @returns Texto da expectativa pela chance de acerto histórica de cada UC e, havendo, o aviso de baixa chance.
+ * @returns A contagem de prioritárias e, havendo, o aviso das que ficaram fora da faixa prioritária.
  */
 export function SelectionOutlookNote({ units }: SelectionOutlookNoteProps) {
-  const { selectedCount, expectedHits, expectedMisses, lowChanceCount } = selectionOutlook(units)
+  const { selectedCount, priorityCount, otherCount } = selectionOutlook(units)
   if (selectedCount === 0) return null
 
   return (
     <div className="text-muted-foreground flex flex-col gap-1 text-sm">
       <p>
-        Pelo histórico, cerca de {formatInteger(expectedHits)} de {formatInteger(selectedCount)}{' '}
-        {selectedCount === 1 ? 'inspeção deve' : 'inspeções devem'} achar irregularidade;{' '}
-        {formatInteger(expectedMisses)} {expectedMisses === 1 ? 'deve' : 'devem'} voltar sem achado.
+        {formatInteger(priorityCount)} de {formatInteger(selectedCount)}{' '}
+        {selectedCount === 1 ? 'selecionada é prioritária' : 'selecionadas são prioritárias'}.
       </p>
-      {lowChanceCount > 0 ? (
+      {otherCount > 0 ? (
         <p className="text-warning">
-          {formatInteger(lowChanceCount)} {lowChanceCount === 1 ? 'das selecionadas tem' : 'das selecionadas têm'} chance de
-          acerto abaixo de {formatPercent(PRIORITY_MIN_HIT_PROBABILITY)}.
+          {formatInteger(otherCount)} {otherCount === 1 ? 'das selecionadas está' : 'das selecionadas estão'} fora da
+          faixa prioritária.
         </p>
       ) : null}
     </div>

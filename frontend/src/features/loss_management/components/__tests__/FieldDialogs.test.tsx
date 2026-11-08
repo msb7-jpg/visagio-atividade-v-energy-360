@@ -135,7 +135,7 @@ describe('RegisterResultDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Salvar resultado' }))
 
-    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['losses'] }))
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['losses'] })))
   })
 
   it('mostra o 422 do servidor em pt-BR ao lado do campo e não fecha o diálogo', async () => {

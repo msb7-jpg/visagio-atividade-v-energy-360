@@ -24,6 +24,10 @@ function describeRejection(row: RejectedRow): string {
  */
 export function UploadResultSummary({ result }: UploadResultSummaryProps) {
   const { conciliadas, ignoradas, rejeitadas, kwh_recuperado_total: kwhTotal } = result
+  const isPreview = result.simulacao === true
+  const title = isPreview
+    ? `Pré-visualização: ${pluralize(conciliadas, 'ordem será conciliada', 'ordens serão conciliadas')}`
+    : `${pluralize(conciliadas, 'ordem conciliada', 'ordens conciliadas')} com sucesso`
   const ignoredText = pluralize(ignoradas, 'linha sem resultado preenchido ignorada', 'linhas sem resultado preenchido ignoradas')
 
   return (
@@ -31,9 +35,9 @@ export function UploadResultSummary({ result }: UploadResultSummaryProps) {
       <Alert>
         <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <div>
-          <AlertTitle>{pluralize(conciliadas, 'ordem conciliada', 'ordens conciliadas')} com sucesso</AlertTitle>
+          <AlertTitle>{title}</AlertTitle>
           <AlertDescription>
-            Energia recuperada registrada: {formatKwh(kwhTotal)}.
+            {isPreview ? 'Energia a registrar' : 'Energia recuperada registrada'}: {formatKwh(kwhTotal)}.
             {ignoradas > 0 ? ` ${ignoredText}.` : null}
           </AlertDescription>
         </div>

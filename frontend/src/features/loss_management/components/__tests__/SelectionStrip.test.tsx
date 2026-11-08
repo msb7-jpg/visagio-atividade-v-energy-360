@@ -1,7 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { useCanWriteLosses } from '@/features/loss_management/hooks/useCanWriteLosses'
 import { SelectionStrip } from '@/features/loss_management/components/SelectionStrip'
 import type { QueueSummary, SuspiciousUnit } from '@/features/loss_management/types/lossTypes'
+
+vi.mock('@/features/loss_management/hooks/useCanWriteLosses', () => ({ useCanWriteLosses: vi.fn(() => true) }))
 
 const summary: QueueSummary = {
   capacidade_total: 200,
@@ -30,23 +33,25 @@ function unitWithChance(idUc: string, probabilidade_acerto: number): SuspiciousU
 const strongUnits = [unitWithChance('A', 0.915), unitWithChance('B', 0.915), unitWithChance('C', 0.915)]
 
 function renderStrip(overrides: Partial<Parameters<typeof SelectionStrip>[0]> = {}) {
-  return render(<SelectionStrip units={strongUnits} summary={summary} isUpdating={false} onClear={vi.fn()} {...overrides} />)
+  return render(<SelectionStrip units={strongUnits} summary={summary} isUpdating={false} onClear={vi.fn()} onGenerate={vi.fn()} {...overrides} />)
 }
 
 describe('SelectionStrip', () => {
   it('mostra quantas UCs foram marcadas, a energia delas e o retorno esperado vindos do servidor', () => {
     renderStrip()
 
-    expect(screen.getByText('3 selecionadas')).toBeInTheDocument()
-    expect(screen.getByText('7.228 kWh/mês · R$ 61,9 mil/ano')).toBeInTheDocument()
+    expect(screen.getByText('unidades selecionadas')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('7,2')).toBeInTheDocument()
+    expect(screen.getByText('MWh/mês')).toBeInTheDocument()
+    expect(screen.getByText('R$ 61,9 mil')).toBeInTheDocument()
     expect(screen.getByText('4.532 kWh/mês · R$ 21,5 mil/ano')).toBeInTheDocument()
-    expect(screen.getByText('(kWh × chance de cada UC)')).toBeInTheDocument()
   })
 
   it('usa o singular com uma UC', () => {
     renderStrip({ units: [unitWithChance('A', 0.915)] })
 
-    expect(screen.getByText('1 selecionada')).toBeInTheDocument()
+    expect(screen.getByText('unidade selecionada')).toBeInTheDocument()
   })
 
   it('não aparece sem UC marcada', () => {
@@ -67,14 +72,14 @@ describe('SelectionStrip', () => {
   it('mostra só a contagem e o limpar enquanto o primeiro resumo não chega, sem inventar números', () => {
     renderStrip({ summary: undefined })
 
-    expect(screen.getByText('3 selecionadas')).toBeInTheDocument()
-    expect(screen.queryByText(/kWh\/mês/)).not.toBeInTheDocument()
+    expect(screen.getByText('unidades selecionadas')).toBeInTheDocument()
+    expect(screen.queryByText(/MWh\/mês/)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Limpar seleção' })).toBeInTheDocument()
   })
 
-  it('mostra o selo de baixa chance só quando a seleção tem UC abaixo do corte de 30%', () => {
+  it('mostra o selo de fora da faixa prioritária só quando a seleção tem UC abaixo do corte', () => {
     const { rerender } = renderStrip()
-    expect(screen.queryByText(/chance abaixo de 30%/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/fora da faixa prioritária/)).not.toBeInTheDocument()
 
     rerender(
       <SelectionStrip
@@ -82,17 +87,34 @@ describe('SelectionStrip', () => {
         summary={summary}
         isUpdating={false}
         onClear={vi.fn()}
+        onGenerate={vi.fn()}
       />
     )
 
-    expect(screen.getByText('2 com chance abaixo de 30%')).toBeInTheDocument()
+    expect(screen.getByText('2 fora da faixa prioritária')).toBeInTheDocument()
+  })
+
+  it('gera as ordens pela barra, com a contagem no rótulo', () => {
+    const onGenerate = vi.fn()
+    renderStrip({ onGenerate })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Gerar ordens de inspeção (3)' }))
+
+    expect(onGenerate).toHaveBeenCalledOnce()
+  })
+
+  it('esconde o botão de gerar para quem só consulta', () => {
+    vi.mocked(useCanWriteLosses).mockReturnValueOnce(false)
+    renderStrip()
+
+    expect(screen.queryByRole('button', { name: /Gerar ordens de inspeção/ })).not.toBeInTheDocument()
   })
 
   it('sinaliza que os números estão sendo atualizados', () => {
     const { rerender } = renderStrip({ isUpdating: true })
     expect(screen.getByRole('region', { name: 'Resumo da seleção' })).toHaveAttribute('aria-busy', 'true')
 
-    rerender(<SelectionStrip units={strongUnits} summary={summary} isUpdating={false} onClear={vi.fn()} />)
+    rerender(<SelectionStrip units={strongUnits} summary={summary} isUpdating={false} onClear={vi.fn()} onGenerate={vi.fn()} />)
     expect(screen.getByRole('region', { name: 'Resumo da seleção' })).toHaveAttribute('aria-busy', 'false')
   })
 })

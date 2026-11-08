@@ -54,17 +54,17 @@ describe('QueueBandTabs', () => {
     renderTabs([buildUnit('UC1', 0.42), buildUnit('UC2', 0.07), buildUnit('UC3', 0.07)])
 
     expect(tab(/Prioritárias · 1/)).toHaveAttribute('aria-selected', 'true')
-    expect(tab(/Baixa chance · 2/)).toHaveAttribute('aria-selected', 'false')
+    expect(tab(/Demais · 2/)).toHaveAttribute('aria-selected', 'false')
     expect(tab(/Todas · 3/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'UC1' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'UC2' })).not.toBeInTheDocument()
-    expect(screen.getByText('Chance de acerto de 30% ou mais')).toBeInTheDocument()
+    expect(screen.getByText('Queda abrupta, leitura zerada ou queda além da variação da carteira')).toBeInTheDocument()
   })
 
   it('usa o sublinhado nas abas da faixa, para não parecer o segundo nível das abas da página', () => {
     renderTabs([buildUnit('UC1', 0.42)])
 
-    expect(screen.getByRole('tablist', { name: 'Faixa da fila por chance de acerto' })).toHaveAttribute(
+    expect(screen.getByRole('tablist', { name: 'Faixa da fila por prioridade' })).toHaveAttribute(
       'data-variant',
       'line'
     )
@@ -73,11 +73,11 @@ describe('QueueBandTabs', () => {
   it('troca de faixa pela aba e mostra só as UCs dela', () => {
     renderTabs([buildUnit('UC1', 0.42), buildUnit('UC2', 0.07)])
 
-    fireEvent.click(tab(/Baixa chance/))
+    fireEvent.click(tab(/Demais/))
 
     expect(screen.getByRole('link', { name: 'UC2' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'UC1' })).not.toBeInTheDocument()
-    expect(screen.getByText('Chance de acerto abaixo de 30%')).toBeInTheDocument()
+    expect(screen.getByText('UCs fora da faixa prioritária')).toBeInTheDocument()
   })
 
   it('mostra todas as UCs na aba Todas', () => {
@@ -93,21 +93,21 @@ describe('QueueBandTabs', () => {
     renderTabs([buildUnit('UC1', 0.07)])
 
     expect(tab(/Prioritárias · 0/)).toHaveAttribute('aria-disabled', 'true')
-    expect(tab(/Baixa chance · 1/)).toHaveAttribute('aria-selected', 'true')
+    expect(tab(/Demais · 1/)).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('link', { name: 'UC1' })).toBeInTheDocument()
   })
 
   it('desliga a aba de baixa chance quando todas as UCs são prioritárias', () => {
     renderTabs([buildUnit('UC1', 0.93), buildUnit('UC2', 0.42)])
 
-    expect(tab(/Baixa chance · 0/)).toHaveAttribute('aria-disabled', 'true')
+    expect(tab(/Demais · 0/)).toHaveAttribute('aria-disabled', 'true')
   })
 
   it('mantém as UCs marcadas ao trocar de aba', () => {
     renderTabs([buildUnit('UC1', 0.42), buildUnit('UC2', 0.07)])
     fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar UC1' }))
 
-    fireEvent.click(tab(/Baixa chance/))
+    fireEvent.click(tab(/Demais/))
     fireEvent.click(tab(/Prioritárias/))
 
     expect(screen.getByRole('checkbox', { name: 'Selecionar UC1' })).toBeChecked()
@@ -127,7 +127,7 @@ describe('QueueBandTabs', () => {
 
   it('volta para as prioritárias quando a fila passa a ter prioritárias depois de abrir na baixa chance', () => {
     const { rerender } = renderTabs([buildUnit('UC1', 0.07)])
-    expect(tab(/Baixa chance · 1/)).toHaveAttribute('aria-selected', 'true')
+    expect(tab(/Demais · 1/)).toHaveAttribute('aria-selected', 'true')
 
     rerenderTabs(rerender, [buildUnit('UC2', 0.93), buildUnit('UC3', 0.07)])
 
@@ -137,7 +137,7 @@ describe('QueueBandTabs', () => {
 
   it('sai da faixa que ficou vazia para a primeira com UCs', () => {
     const { rerender } = renderTabs([buildUnit('UC1', 0.93), buildUnit('UC2', 0.07)])
-    fireEvent.click(tab(/Baixa chance/))
+    fireEvent.click(tab(/Demais/))
 
     rerenderTabs(rerender, [buildUnit('UC3', 0.93)])
 
@@ -146,10 +146,10 @@ describe('QueueBandTabs', () => {
 
   it('mantém a faixa escolhida quando a fila muda e ela continua com UCs', () => {
     const { rerender } = renderTabs([buildUnit('UC1', 0.93), buildUnit('UC2', 0.07)])
-    fireEvent.click(tab(/Baixa chance/))
+    fireEvent.click(tab(/Demais/))
 
     rerenderTabs(rerender, [buildUnit('UC3', 0.93), buildUnit('UC4', 0.07), buildUnit('UC5', 0.07)])
 
-    expect(tab(/Baixa chance · 2/)).toHaveAttribute('aria-selected', 'true')
+    expect(tab(/Demais · 2/)).toHaveAttribute('aria-selected', 'true')
   })
 })

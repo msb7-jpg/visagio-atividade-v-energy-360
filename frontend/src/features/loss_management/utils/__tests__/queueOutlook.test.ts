@@ -7,21 +7,19 @@ function unitWithChance(idUc: string, probabilidade_acerto: number) {
 }
 
 describe('selectionOutlook', () => {
-  it('soma a chance de acerto de cada UC e arredonda as inspeções esperadas', () => {
+  it('separa as UCs da seleção entre prioritárias e demais', () => {
     const outlook = selectionOutlook([unitWithChance('A', 0.93), unitWithChance('B', 0.42), unitWithChance('C', 0.07)])
 
-    expect(outlook.selectedCount).toBe(3)
-    expect(outlook.expectedHits).toBe(1)
-    expect(outlook.expectedMisses).toBe(2)
+    expect(outlook).toEqual({ selectedCount: 3, priorityCount: 2, otherCount: 1 })
   })
 
-  it('conta as UCs abaixo do corte de prioridade como baixa chance', () => {
+  it('conta como demais as UCs abaixo do corte de prioridade', () => {
     const outlook = selectionOutlook([unitWithChance('A', 0.42), unitWithChance('B', 0.07), unitWithChance('C', 0.07)])
 
-    expect(outlook.lowChanceCount).toBe(2)
+    expect(outlook.otherCount).toBe(2)
   })
 
-  it('não inventa acertos para uma seleção vazia', () => {
-    expect(selectionOutlook([])).toEqual({ selectedCount: 0, expectedHits: 0, expectedMisses: 0, lowChanceCount: 0 })
+  it('zera tudo para uma seleção vazia', () => {
+    expect(selectionOutlook([])).toEqual({ selectedCount: 0, priorityCount: 0, otherCount: 0 })
   })
 })

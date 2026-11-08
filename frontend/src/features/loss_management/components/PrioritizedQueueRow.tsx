@@ -1,7 +1,6 @@
 import type { KeyboardEvent, MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Checkbox } from '@/components/ui/checkbox'
-import { ChanceBadge } from '@/features/loss_management/components/ChanceBadge'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { QueueSituationBadge } from '@/features/loss_management/components/QueueSituationBadge'
 import { ScoreBar } from '@/features/loss_management/components/ScoreBar'
@@ -27,8 +26,8 @@ interface PrioritizedQueueRowProps {
 }
 
 /**
- * Linha da fila priorizada: marcação, posição, UC (link para a Visão 360), território, score, queda de consumo,
- * chance de acerto e situação. Clicar na linha, ou Enter com ela focada, abre o painel de detalhe da UC.
+ * Linha da fila priorizada: marcação, posição, UC (link para a Visão 360), território, queda de consumo,
+ * kWh e valor recuperáveis, score e situação. Clicar na linha, ou Enter com ela focada, abre o painel de detalhe da UC.
  *
  * @param props - UC, posição, estado de seleção e callbacks de marcação e de abertura do detalhe.
  * @returns Linha da tabela; UCs com ordem gerada ou em campo não podem ser marcadas.
@@ -82,7 +81,6 @@ export function PrioritizedQueueRow({ unit, rank, isSelected, isSelectable, onTo
           {shortHistory ? <span className="text-warning text-xs">{shortHistory}</span> : null}
         </div>
       </TableCell>
-      <TableCell><ChanceBadge probability={unit.probabilidade_acerto} /></TableCell>
       <TableCell>{formatInteger(unit.kwh_mes_recuperavel)}</TableCell>
       <TableCell className="whitespace-nowrap">{formatCompactCurrency(unit.valor_ano_rs)}</TableCell>
       <TableCell><ScoreBar score={unit.score} /></TableCell>

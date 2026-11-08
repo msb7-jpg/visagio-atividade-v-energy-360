@@ -36,8 +36,27 @@ def _optional_filters(filters: SuspicionFilters) -> list[ColumnElement[bool]]:
     ]
 
 
-def _system_orders_query(cutoff: date, *, irregular: bool) -> Select:
-    """UCs com ordem concluída desde `cutoff` no sistema, com ou sem irregularidade constatada.
+def orders_until_condition(until: date | None) -> list[ColumnElement[bool]]:
+    """Limita as ordens do portal às feitas antes de `until` (exclusivo), para ver a fila como estava no passado.
+
+    Sem `until` (tempo real), toda ordem registrada vale.
+    """
+    if until is None:
+        return []
+    return [InspectionOrder.atualizado_em < datetime.combine(until, datetime.min.time())]
+
+
+def cancellation_block_start(until: date | None) -> datetime:
+    """Início dos `CANCELLATION_BLOCK_DAYS` em que um cancelamento bloqueante ainda mantém a UC fora da fila.
+
+    Conta a partir de `until` quando a fila é vista no passado, e a partir de agora no tempo real.
+    """
+    reference_moment = datetime.combine(until, datetime.min.time()) if until else datetime.now()
+    return reference_moment - timedelta(days=CANCELLATION_BLOCK_DAYS)
+
+
+def _system_orders_query(cutoff: date, *, irregular: bool, until: date | None = None) -> Select:
+    """UCs com ordem concluída desde `cutoff` (e antes de `until`, se informado) no sistema, com ou sem irregularidade.
 
     Ordens ativas não excluem: a UC segue na fila, marcada com a situação da ordem.
     """
@@ -45,6 +64,7 @@ def _system_orders_query(cutoff: date, *, irregular: bool) -> Select:
     return select(InspectionOrder.id_uc).where(
         InspectionOrder.status == COMPLETED_STATUS,
         InspectionOrder.atualizado_em >= cutoff_datetime,
+        *orders_until_condition(until),
         _irregularity_condition(InspectionOrder.irregularidade_constatada, irregular=irregular),
     )
 
@@ -54,17 +74,18 @@ def _irregularity_condition(column: ColumnElement[bool], *, irregular: bool) -> 
     return column.is_(true()) if irregular else column.is_not(true())
 
 
-def _blocking_cancellations_query() -> Select:
+def _blocking_cancellations_query(until: date | None = None) -> Select:
     """UCs cuja ordem foi cancelada por um motivo que torna inútil uma nova visita agora.
 
     O cliente já regularizou, ou o endereço não foi localizado e outra ordem falharia do mesmo jeito. A UC fica
-    fora da fila por `CANCELLATION_BLOCK_DAYS`; os demais motivos devolvem a UC à fila na hora.
+    fora da fila por `CANCELLATION_BLOCK_DAYS`; os demais motivos devolvem a UC à fila na hora. Com `until`, só
+    valem os cancelamentos feitos antes dele e os 90 dias contam a partir dele.
     """
-    blocked_since = datetime.now() - timedelta(days=CANCELLATION_BLOCK_DAYS)
     return select(InspectionOrder.id_uc).where(
         InspectionOrder.status == InspectionStatus.CANCELADA.value,
         InspectionOrder.motivo_cancelamento.in_([reason.value for reason in BLOCKING_CANCELLATION_REASONS]),
-        InspectionOrder.atualizado_em >= blocked_since,
+        InspectionOrder.atualizado_em >= cancellation_block_start(until),
+        *orders_until_condition(until),
     )
 
 
@@ -84,7 +105,7 @@ def _irregular_inspections_query(
     since: date, *, include_field_history: bool, history_until: date | None
 ) -> Select | CompoundSelect:
     """UCs com irregularidade constatada desde `since`, por ordem concluída no sistema ou pelo histórico de campo."""
-    system_orders = _system_orders_query(since, irregular=True)
+    system_orders = _system_orders_query(since, irregular=True, until=history_until)
     if not include_field_history:
         return system_orders
     return union(system_orders, _field_history_query(since, history_until, irregular=True))
@@ -140,7 +161,10 @@ def excluded_units_query(
         `id_uc` excluídos; UNION com o histórico de campo quando ele é aplicado.
     """
     cutoff = inspection_cutoff_date(windows)
-    system_exclusions = [_system_orders_query(cutoff, irregular=False), _blocking_cancellations_query()]
+    system_exclusions = [
+        _system_orders_query(cutoff, irregular=False, until=history_until),
+        _blocking_cancellations_query(history_until),
+    ]
     if not include_field_history:
         return union(*system_exclusions)
     return union(*system_exclusions, _field_history_query(cutoff, history_until, irregular=False))
@@ -155,6 +179,28 @@ def _candidate_select(consumo: Subquery) -> Select:
     ).join_from(consumo, uc, uc.c.id_uc == consumo.c.id_uc)
 
 
+def _signal_conditions(consumo: Subquery, filters: SuspicionFilters) -> list[ColumnElement[bool]]:
+    """Condições do sinal de suspeita: base com consumo e queda acima do piso (ou leitura zerada)."""
+    drop_ceiling_kwh = consumo.c.consumo_base_kwh * (1 - filters.limiar_queda)
+    has_drop = consumo.c.consumo_recente_kwh <= drop_ceiling_kwh
+    has_zero_reading = consumo.c.meses_zerados > 0
+    return [consumo.c.consumo_base_kwh > 0, consumo.c.consumo_recente_kwh.is_not(None), has_drop | has_zero_reading]
+
+
+def evaluated_profiles_query(windows: ConsumptionWindows, filters: SuspicionFilters) -> Select:
+    """UCs com sinal de suspeita (queda ou leitura zerada), com ou sem GD ou inspeção que as tire da fila.
+
+    Returns:
+        SELECT dos perfis de consumo mais a coluna `possui_gd`; a aba "Fora da fila" subtrai a fila real dele.
+    """
+    consumo = consumption_subquery(windows)
+    return (
+        _candidate_select(consumo)
+        .add_columns(dim_unidade_consumidora.c.possui_gd)
+        .where(*_signal_conditions(consumo, filters), *_optional_filters(filters))
+    )
+
+
 def _candidate_conditions(
     consumo: Subquery,
     filters: SuspicionFilters,
@@ -163,15 +209,9 @@ def _candidate_conditions(
 ) -> list[ColumnElement[bool]]:
     """Condições para uma UC virar candidata: sem GD, sem inspeção recente, com queda acima do piso ou zerada."""
     uc = dim_unidade_consumidora
-    remaining_share = 1 - filters.limiar_queda
-    drop_ceiling_kwh = consumo.c.consumo_base_kwh * remaining_share
-    has_sudden_drop = consumo.c.consumo_recente_kwh <= drop_ceiling_kwh
-    has_zero_reading = consumo.c.meses_zerados > 0
     return [
         uc.c.possui_gd.is_not(true()),
-        consumo.c.consumo_base_kwh > 0,
-        consumo.c.consumo_recente_kwh.is_not(None),
-        has_sudden_drop | has_zero_reading,
+        *_signal_conditions(consumo, filters),
         uc.c.id_uc.not_in(excluded_units),
         reincidence,
         *_optional_filters(filters),

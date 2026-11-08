@@ -8,15 +8,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.loss_management.daily_cache import DailyEngineCache
 from app.features.loss_management.models import InspectionOrder
+from app.features.loss_management.schemas import InspectionStatus
 
 QueueRows = list[Any]
+CLOSED_STATUSES = (InspectionStatus.CONCLUIDA.value, InspectionStatus.CANCELADA.value)
 
 _queue_rows_cache = DailyEngineCache[QueueRows]()
 
 
 def orders_version_query() -> Select:
-    """Quantas ordens existem e quando a última mudou: muda a cada ordem criada, alterada, concluída ou cancelada."""
-    return select(func.count(InspectionOrder.id_inspecao), func.max(InspectionOrder.atualizado_em))
+    """Quantas ordens encerradas existem e quando a última mudou: muda a cada ordem concluída ou cancelada.
+
+    Ordens geradas e pendentes ficam de fora: elas não tiram UC da fila, e a situação delas é lida a cada chamada.
+    Uma ordem encerrada nunca mais muda de status, então a contagem e o último horário bastam como versão.
+    """
+    return select(func.count(InspectionOrder.id_inspecao), func.max(InspectionOrder.atualizado_em)).where(
+        InspectionOrder.status.in_(CLOSED_STATUSES)
+    )
 
 
 async def cached_queue_rows(
@@ -26,8 +34,9 @@ async def cached_queue_rows(
 
     A abertura da Fila pede a mesma fila sem filtro três vezes (lista, resumo da seleção e contagem dos filtros).
     Com o cache, a consulta pesada roda uma vez e as outras chamadas recebem a mesma lista (o mesmo objeto), o que
-    também deixa a ordenação da fila ser reaproveitada (`scoring.rank_suspicious_units`). Qualquer mudança
-    em `ordem_inspecao` muda a versão e refaz o cálculo, porque ordens concluídas e canceladas tiram UCs da fila.
+    também deixa a ordenação da fila ser reaproveitada (`scoring.rank_suspicious_units`). Toda ordem que se encerra
+    (concluída ou cancelada) muda a versão e refaz o cálculo, porque são elas que tiram UCs da fila; gerar uma ordem
+    não refaz nada, já que a situação das ordens ativas é lida a cada chamada.
 
     Args:
         session: Sessão do banco da fila.

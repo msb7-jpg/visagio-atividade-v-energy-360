@@ -12,6 +12,9 @@ import type {
   SuspiciousUnitsPageRequest,
   UploadResult
 } from '@/features/loss_management/types/lossTypes'
+import type { BacktestSeries } from '@/features/loss_management/types/backtestTypes'
+import type { ExcludedQueue, ExcludedUnitsFilter } from '@/features/loss_management/types/excludedTypes'
+import type { OrderEvent } from '@/features/loss_management/types/orderEventTypes'
 import type { UnitDetail } from '@/features/loss_management/types/unitDetailTypes'
 
 export const lossApi = {
@@ -20,6 +23,21 @@ export const lossApi = {
       params: filters,
       signal
     })
+    return data
+  },
+
+  async listOrderEvents(idInspecao: number, signal?: AbortSignal): Promise<OrderEvent[]> {
+    const { data } = await apiClient.get<OrderEvent[]>(`/losses/inspections/${idInspecao}/events`, { signal })
+    return data
+  },
+
+  async getBacktestSeries(signal?: AbortSignal): Promise<BacktestSeries> {
+    const { data } = await apiClient.get<BacktestSeries>('/losses/backtest/series', { signal })
+    return data
+  },
+
+  async listExcludedUnits(filters: ExcludedUnitsFilter, signal?: AbortSignal): Promise<ExcludedQueue> {
+    const { data } = await apiClient.get<ExcludedQueue>('/losses/excluded-units', { params: filters, signal })
     return data
   },
 
@@ -74,11 +92,12 @@ export const lossApi = {
     return data
   },
 
-  async uploadFieldResults(file: File): Promise<UploadResult> {
+  async uploadFieldResults(file: File, dryRun = false): Promise<UploadResult> {
     const formData = new FormData()
     formData.append('file', file)
     const { data } = await apiClient.post<UploadResult>('/losses/inspections/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
+      params: dryRun ? { dry_run: true } : undefined
     })
     return data
   },

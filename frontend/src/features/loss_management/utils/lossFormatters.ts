@@ -108,6 +108,17 @@ export function formatInteger(value: number): string {
 }
 
 /**
+ * Converte kWh em MWh, com uma casa decimal só quando o valor é pequeno.
+ *
+ * @param kwh - Energia em kWh.
+ * @returns Texto como "412" ou "7,2" (sem a unidade).
+ */
+export function formatMwhValue(kwh: number): string {
+  const mwh = kwh / THOUSAND
+  return mwh >= 100 ? integerFormatter.format(mwh) : compactFormatter.format(mwh)
+}
+
+/**
  * Formata valor em reais de forma compacta para os cartões e a tabela.
  *
  * @param value - Valor em R$.

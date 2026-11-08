@@ -14,6 +14,7 @@ from app.core.profiler import QueryProfilerMiddleware
 from app.db.session import AsyncSessionLocal, engine
 from app.features.executive_dashboard.warmup import warm_up_dashboard
 from app.features.loss_management.schema_upgrade import upgrade_inspection_table
+from app.features.loss_management.warmup import warm_up_loss_screens
 from app.shared.error_handlers import register_exception_handlers
 
 configure_logging()
@@ -28,10 +29,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await upgrade_inspection_table()
     # Painel do Diretor: consultas de segundos sobre milhões de linhas, calculadas uma vez em segundo plano
     dashboard_warm_up = asyncio.create_task(warm_up_dashboard(AsyncSessionLocal, settings))
+    # Gestão de perdas: backtest da Efetividade (vem do disco quando os dados não mudaram) e, depois, a Fila de
+    # Inspeção e o Fora da fila, cuja primeira abertura varreria a carteira inteira
+    loss_warm_up = asyncio.create_task(warm_up_loss_screens(AsyncSessionLocal, settings))
+    warm_ups = (dashboard_warm_up, loss_warm_up)
     try:
         yield
     finally:
-        dashboard_warm_up.cancel()
+        for warm_up in warm_ups:
+            warm_up.cancel()
+        # Espera as tarefas terminarem antes de fechar o banco, para nenhuma consulta ficar com a conexão fechada
+        await asyncio.gather(*warm_ups, return_exceptions=True)
         await engine.dispose()
 
 

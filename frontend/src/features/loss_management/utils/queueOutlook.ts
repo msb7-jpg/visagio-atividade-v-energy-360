@@ -3,27 +3,23 @@ import { isPriorityUnit } from '@/features/loss_management/utils/queueBands'
 
 export interface SelectionOutlook {
   selectedCount: number
-  /** Inspeções que, pelo histórico, devem achar irregularidade (soma das chances, arredondada). */
-  expectedHits: number
-  /** Inspeções que, pelo histórico, devem voltar sem achado: dias de equipe sem retorno. */
-  expectedMisses: number
-  /** UCs selecionadas abaixo do corte de chance da faixa prioritária. */
-  lowChanceCount: number
+  /** UCs selecionadas na faixa prioritária. */
+  priorityCount: number
+  /** UCs selecionadas fora da faixa prioritária. */
+  otherCount: number
 }
 
 /**
- * Estima quantas inspeções da seleção devem achar irregularidade, somando a chance de acerto de cada UC.
+ * Conta quantas UCs da seleção estão na faixa prioritária e quantas ficaram fora dela.
  *
  * @param selectedUnits - UCs marcadas para gerar ordem.
- * @returns Acertos e perdas esperados e quantas UCs são de baixa chance.
+ * @returns Total selecionado, prioritárias e demais.
  */
 export function selectionOutlook(selectedUnits: SuspiciousUnit[]): SelectionOutlook {
-  const expectedHitsExact = selectedUnits.reduce((total, unit) => total + unit.probabilidade_acerto, 0)
-  const expectedHits = Math.round(expectedHitsExact)
+  const priorityCount = selectedUnits.filter(isPriorityUnit).length
   return {
     selectedCount: selectedUnits.length,
-    expectedHits,
-    expectedMisses: selectedUnits.length - expectedHits,
-    lowChanceCount: selectedUnits.filter((unit) => !isPriorityUnit(unit)).length
+    priorityCount,
+    otherCount: selectedUnits.length - priorityCount
   }
 }

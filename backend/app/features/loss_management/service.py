@@ -1,7 +1,5 @@
 """Regras de negócio da fila de suspeitas e do ciclo de vida das ordens de inspeção."""
 
-import asyncio
-
 from app.features.loss_management.exceptions import ActiveOrderConflictError, InspectionConflictError
 from app.features.loss_management.export import render_field_orders_csv
 from app.features.loss_management.queries import SuspicionFilters
@@ -26,13 +24,8 @@ from app.features.loss_management.schemas import (
 )
 from app.features.loss_management.scoring import LIMIAR_QUEDA_MODERADA, order_estimated_kwh, rank_suspicious_units
 from app.features.loss_management.update_rules import ensure_fields_match_status, ensure_required_fields
-from app.features.loss_management.upload_parser import read_spreadsheet
-from app.features.loss_management.upload_reconcile import (
-    reconcile_rows,
-    referenced_order_ids,
-    referenced_unit_ids,
-    skipped_rejections,
-)
+from app.features.loss_management.upload_plan import build_upload_plan
+from app.features.loss_management.upload_reconcile import skipped_rejections
 from app.shared.exceptions import NotFoundException
 
 ALLOWED_TRANSITIONS: dict[InspectionStatus, frozenset[InspectionStatus]] = {
@@ -83,9 +76,7 @@ def validate_transition(current_status: InspectionStatus, payload: InspectionOrd
         BadRequestException: Se faltarem dados obrigatórios ou vierem campos de outro status.
     """
     if payload.status not in ALLOWED_TRANSITIONS[current_status]:
-        raise InspectionConflictError(
-            f"Transição de status inválida: '{current_status}' -> '{payload.status}'."
-        )
+        raise InspectionConflictError(f"Transição de status inválida: '{current_status}' -> '{payload.status}'.")
     ensure_required_fields(payload)
     ensure_fields_match_status(payload)
 
@@ -242,14 +233,19 @@ class LossService:
         if await self.repository.has_active_order(payload.id_uc):
             raise ActiveOrderConflictError(payload.id_uc)
         kwh_estimado = order_estimated_kwh(registered_unit)
-        return await self.repository.create_order(payload, criado_por, kwh_estimado=kwh_estimado)
+        created_order = await self.repository.create_order(payload, criado_por, kwh_estimado=kwh_estimado)
+        await self.repository.record_creation_event(created_order, criado_por)
+        return created_order
 
-    async def update_inspection(self, id_inspecao: int, payload: InspectionOrderUpdateDTO) -> InspectionOrderDTO:
+    async def update_inspection(
+        self, id_inspecao: int, payload: InspectionOrderUpdateDTO, autor: str | None = None
+    ) -> InspectionOrderDTO:
         """Avança o status de uma ordem, registra o resultado de campo ou a cancela.
 
         Args:
             id_inspecao: Identificador da ordem.
             payload: Novo status e dados associados (resultado de campo ou justificativa).
+            autor: E-mail de quem alterou a ordem, gravado na trilha de auditoria.
 
         Returns:
             A ordem atualizada.
@@ -266,9 +262,12 @@ class LossService:
         updated_order = await self.repository.update_order(id_inspecao, payload)
         if updated_order is None:
             raise NotFoundException(f"Ordem de inspeção {id_inspecao} não encontrada.")
+        await self.repository.record_update_event(current_order, updated_order, autor)
         return updated_order
 
-    async def upload_field_results(self, content: bytes, filename: str) -> UploadResultDTO:
+    async def upload_field_results(
+        self, content: bytes, filename: str, *, dry_run: bool = False, autor: str | None = None
+    ) -> UploadResultDTO:
         """Concilia a planilha preenchida em campo com as ordens ativas e conclui as que casam.
 
         A linha casa pelo `id_inspecao` do portal ou, quando o id não é do portal (planilha do campo), pela ordem
@@ -278,6 +277,8 @@ class LossService:
         Args:
             content: Bytes do arquivo .csv ou .xlsx devolvido pela equipe de campo.
             filename: Nome original do arquivo, usado para escolher o formato.
+            dry_run: Só valida e resume o que seria importado, sem gravar nenhuma ordem.
+            autor: E-mail de quem importou a planilha, gravado na trilha das ordens concluídas.
 
         Returns:
             Resumo com ordens conciliadas, linhas sem resultado, linhas recusadas e kWh recuperado total.
@@ -285,16 +286,13 @@ class LossService:
         Raises:
             BadRequestException: Se o arquivo for de formato inválido, corrompido ou sem a coluna `id_inspecao`.
         """
-        rows = await asyncio.to_thread(read_spreadsheet, content, filename)
-        active_order_by_uc = await self.repository.get_active_order_ids_by_uc(referenced_unit_ids(rows))
-        order_ids = referenced_order_ids(rows) | set(active_order_by_uc.values())
-        order_statuses = await self.repository.get_order_statuses(order_ids)
-        plan = reconcile_rows(rows, order_statuses, active_order_by_uc)
-        applied_ids = await self.repository.apply_field_results(plan.updates)
+        plan = await build_upload_plan(self.repository, content, filename)
+        applied_ids = list(plan.updates) if dry_run else await self.repository.apply_field_results(plan.updates, autor)
         kwh_recovered = sum(plan.updates[order_id].kwh_recuperado or 0.0 for order_id in applied_ids)
         return UploadResultDTO(
             conciliadas=len(applied_ids),
             ignoradas=plan.ignored,
             rejeitadas=[*plan.rejections, *skipped_rejections(plan, applied_ids)],
             kwh_recuperado_total=round(kwh_recovered, 2),
+            simulacao=dry_run,
         )

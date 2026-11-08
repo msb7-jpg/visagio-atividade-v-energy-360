@@ -95,7 +95,8 @@ describe('OrderBoard', () => {
       buildOrder({ id_inspecao: 4, status: 'cancelada', justificativa_cancelamento: 'UC regularizada pelo cliente' })
     ])
 
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Despachar|Registrar resultado|Cancelar/ })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Histórico/ })).toHaveLength(2)
     expect(screen.getByText('Irregularidade confirmada · BY-PASS · 860 kWh')).toBeInTheDocument()
     expect(screen.getByText('Cancelada: UC regularizada pelo cliente')).toBeInTheDocument()
   })
@@ -168,7 +169,8 @@ describe('OrderBoard', () => {
       buildOrder({ id_inspecao: 3, id_uc: 'UC300', status: 'concluida', irregularidade_constatada: false })
     ])
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.queryByRole('button', { name: /Despachar|Registrar resultado|Cancelar/ })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Histórico/ })).toHaveLength(3)
     expect(screen.getByText('UC300')).toBeInTheDocument()
   })
 

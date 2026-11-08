@@ -1072,3 +1072,64 @@
   - A tela ainda mostra 1,87×: o texto do cartão "Energia recuperável das selecionadas" está fixo em `recoveryEstimate.ts` (`OBSERVED_RECOVERY_RATIO`) e é checado em `QueueReferencePills.test.tsx`. Fica como decisão pendente da fatia: atualizar o código ou manter o número da medição original.
   - O retorno esperado de R$ 7,45 mil/ano do `DIAGNOSTICO_RECEITA.md` (fila inteira, 165 UCs) e o de R$ 2,4 mil/ano do D9 (só as 7 prioritárias) medem coisas diferentes; ambos estão corretos.
 - **Validação de Testes:** só documentação; nenhum código alterado, então `make lint-all` e `make test-all` não foram reexecutados.
+
+### [2026-11-06] - Especificação da Fila de Inspeção: abas Fora da fila e Efetividade, pré-visualização do upload e histórico das ordens
+- **Autor:** Adrian Cesar, com apoio do Claude Code. Mapeamento e propostas aprovadas em [`fila-inspecao-mapeamento-spec.md`](fila-inspecao-mapeamento-spec.md).
+- **O que foi feito:**
+  - **Fora da fila (P2):** `GET /losses/excluded-units` e aba nova. Lista as UCs com queda de consumo que a fila não traz, com o motivo (`possui_gd`, `inspecionada_sem_achado`, `irregularidade_recente`, `cancelamento_bloqueante`), a data do evento e quando voltam a ser avaliadas (inspeção sem achado: +15 meses; irregularidade: +12; cancelamento bloqueante: +90 dias; GD não tem prazo). Só os motivos que a fila de fato aplica (`exclusion_rules.py`).
+  - **Efetividade e backtest (P3):** `GET /losses/backtest?corte=AAAA-MM&tamanho=N` e aba nova. Refaz a fila como estava no corte (medições e inspeções só até o fim da competência) e mede o top N nas inspeções dos 3 meses seguintes. A linha de base é a taxa de acerto de todas as inspeções da mesma janela, calculada, nunca fixa. Taxa por motivo com o n de cada barra e "sem inspeções suficientes" abaixo de 10. KPIs reais de campo (concluídas, com achado, taxa, MWh) vêm das ordens do portal.
+  - **Pré-visualização do upload (P4):** `POST /losses/inspections/upload?dry_run=true` valida e resume sem gravar nada (`simulacao: true`); o modal ganhou "Pré-visualizar" e "Importar N linhas válidas". O fechamento da decisão P6 de `fila-inspecao-decisoes.md`.
+  - **Histórico das ordens (P1):** tabela `ordem_inspecao_evento` (criada na subida da API), gravada ao gerar, atualizar (despachar, resultado, cancelar) e importar planilha, com autor, data e `[antes, depois]` de cada campo. `GET /losses/inspections/{id}/events` e gaveta "Histórico" em cada cartão, visível também para o diretor. Ordens anteriores à trilha mostram "Nenhum registro", sem histórico reconstruído.
+  - `service.py` e `repository.py` estavam no teto de 300 linhas: o planejamento do upload foi para `upload_plan.py`, e `ExcludedUnitsRepositoryMixin`/`OrderEventRepositoryMixin` entraram por herança dos mixins existentes.
+- **Medido na Gold real (`v_energy.db`):** 1.658 UCs fora da fila (1.167 com GD, 457 com irregularidade recente, 34 inspecionadas sem achado). Backtest com corte em 2025-07 e top 200: 94,2% de acerto (114 de 121 inspecionadas) contra 64,9% de linha de base (833 inspeções da janela), +29,3 p.p., 463 MWh recuperados; por motivo, queda súbita 93,8% (n = 97) e queda moderada 95,8% (n = 24). Consistente com os 94,6% a 94,9% medidos antes.
+- **Dificuldades / Desafios:**
+  - A primeira chamada a frio de "Fora da fila" e do backtest leva de 7 a 9 s (a fila da competência é calculada uma vez e fica em cache).
+  - A pré-visualização mostra recusas por linha, não por célula: o parser não guarda a coluna que falhou.
+  - Gravação do evento e da ordem em `create` e `update` são commits separados (no upload é a mesma transação).
+- **Fora desta entrega (sem dado que sustente):** famílias de motivo e filtro por nº de sinais (só existe a família Consumo), série "pares" e marcadores de troca de medidor no detalhe, botão "Recalcular fila" (parâmetros são constantes), linha mensal da Efetividade e contagem nas abas novas. P5 (tipo de medidor e concentração por alimentador no score) não foi feita: muda o score e exige nova medição.
+- **Validação de Testes:** backend com Ruff, Pylint 10/10, import-linter (4 contratos) e pytest (838); frontend com ESLint, Fallow e `tsc -b` limpos.
+
+### [2026-11-07] - Score sem "chance de acerto" na interface e análise de motivo principal e sinais
+- **Autor:** Adrian Cesar (assistido por Claude)
+- **O que foi feito:**
+  - Análise somente leitura sobre `v_energy.db` (fila de 165 UCs, referência 2026-06; teste retroativo com as 1.389 inspeções de `fato_inspecoes_perdas`). Conclusão: com os dados atuais só a família Consumo é sustentada, então motivo principal, lista de sinais, filtro por família e filtro por nº de sinais ficam adiados. Troca de medidor, atendimentos, inadimplência e reincidência não discriminam; GD segue só como exclusão (1 irregularidade em 31 inspeções de GD).
+  - Tooltip da coluna Score reescrito sem a chance de acerto (`PrioritizedQueueTable.tsx`); cartão de score do Detalhe mostra só a energia recuperável e o score (`UnitScoreCalculation.tsx`). O cálculo e a API não mudaram.
+  - O selo de ligação recente já usava o corte de 11 meses (`MESES_BASE_MINIMO`), então ficou como está.
+- **Pendências:**
+  - `ChanceBadge` na linha da tabela, `QueueBandTabs` e a descrição da página ainda citam a chance; a frase `motivo_resumo` do Detalhe também cita a taxa histórica. Decisão do dono.
+  - Prior por alimentador (P5): testar descontando a queda normalizada antes de qualquer uso.
+  - Pedidos ao pipeline: `dim_medidor`, `fato_anomalia_leitura` populada e leitura zero distinta de leitura ausente.
+- **Validação de Testes:**
+  - Frontend: vitest 793 testes, `tsc --noEmit`, ESLint e Fallow sem erros. Backend não foi alterado.
+
+### [2026-11-07] - Chance de acerto fora da fila de prioridade (frontend)
+- **Autor:** Adrian Cesar (assistido por Claude)
+- **O que foi feito:**
+  - Removidos a coluna "Chance de acerto" e o `ChanceBadge` (componente e teste apagados); a tabela mostra UC, local, classe, queda, kWh/mês, R$/ano, score e situação.
+  - Abas da fila renomeadas para "Prioritárias", "Demais" e "Todas", sem percentual; o critério aparece em palavras (queda abrupta, leitura zerada ou queda além da variação da carteira). A regra de corte por trás não mudou.
+  - `SelectionOutlookNote` e `SelectionStrip` passaram a contar UCs prioritárias e fora da faixa prioritária (`selectionOutlook` devolve `priorityCount` e `otherCount`); saíram as inspeções esperadas com e sem achado. O "Retorno esperado" da faixa segue vindo do servidor, agora com a legenda "estimado pelo histórico de campo".
+  - Descrição da página sem "chance de irregularidade".
+- **Pendências:**
+  - A frase `motivo_resumo` do Detalhe (backend) ainda cita a taxa histórica de acerto; o painel do Diretor também usa a chance. Fora do escopo desta entrega.
+- **Validação de Testes:**
+  - Frontend: vitest 786 testes, `tsc --noEmit`, ESLint e Fallow sem erros. Backend não foi alterado.
+
+### [2026-11-07] - Desempenho da Fila, do Fora da fila e da Efetividade; backtest sem vazamento temporal
+- **Autor:** Adrian Cesar (assistido por Claude)
+- **O que foi feito:**
+  - **Diagnóstico**, medido na Gold real (`fato_medicao` com 2,15 mi de linhas; cada cálculo da fila varre a carteira em cerca de 1,4 s): fila a frio 4,8 s; Fora da fila 1,2 s em toda chamada (sem cache); Efetividade 3,6 a 3,9 s por corte, com duas varreduras a cada corte novo.
+  - **Vazamento temporal no backtest corrigido.** Ordens do portal e cancelamentos bloqueantes agora respeitam o limite `history_until` (exclusivo) da fila vista no passado (`orders_until_condition` e `cancellation_block_start` em `queue_query.py`; a aba Fora da fila usa a mesma regra). Os números mudaram em 4 dos 5 cortes. Corte 2025-07: 113 irregulares em 120 inspecionadas, 94,2% contra 64,9% de linha de base (+29,2 p.p.), 484 MWh. Nos 5 cortes a diferença sobre a linha de base fica entre +29,2 e +34,5 p.p. **Estes números substituem os da entrada de 2026-11-06** (114 de 121, +29,3 p.p., 463 MWh).
+  - **`GET /losses/backtest/series`:** backtest dos 5 cortes com N = 200, guardado em memória e em disco (`backend/.cache/backtest_series.json`; `LOSS_BACKTEST_CACHE_PATH` vazio desliga). A chave de validade reúne o Gold (medições, faturamento, cadastro e inspeções), o código do pacote `loss_management` e as ordens anteriores ao último corte, então uma ordem de hoje não invalida. A chave é calculada uma vez por dia e por processo (2,7 s). O cálculo a frio leva 27,5 s uma vez; depois de um reinício o resultado sai do disco em cerca de 3 s.
+  - **Aba Efetividade:** tabela com os 5 cortes (precisão, linha de base, diferença, n de inspecionadas e MWh), seletor "Corte em detalhe" e o aviso de que a precisão vale só para as UCs selecionadas que foram inspecionadas e de que o histórico de campo foi direcionado. Saíram o campo N e o botão "Executar backtest"; `/losses/backtest` segue na API, sem uso pela tela. Os KPIs de campo mostram erro com nova tentativa em vez de zeros.
+  - **Fora da fila em cache diário**, por referência, versão das ordens encerradas e UCs da fila. A versão da fila passou a contar só ordens concluídas e canceladas: gerar ou despachar uma ordem não refaz mais a fila, porque a situação das ordens ativas é lida a cada chamada. Medido: 0,01 s depois do aquecimento.
+  - **Aquecimento na subida da API:** o backtest e, depois, a Fila e o Fora da fila (11,5 s em segundo plano). Erros inesperados são registrados e as tarefas são aguardadas antes de fechar o banco.
+  - **Frontend:** mudar uma ordem invalida fila, resumo, filtros, Fora da fila, ordens, detalhe e histórico, e poupa o backtest e os inspetores.
+  - **Revisão de código** (python-reviewer e react-reviewer): corrigidos uma corrida no cache do Fora da fila, a chave sem faturamento e consumo, a chave recalculada a cada requisição, o arquivo temporário fixo, o `.gitignore` por nível e a acessibilidade da tabela (`aria-current` e legenda).
+- **Dificuldades / Desafios:**
+  - Uma varredura única para os 5 cortes foi medida e descartada: a varredura cai para 4,3 s, mas o ranqueamento (0,9 s por corte) continua, e o total iria de cerca de 19,5 s para 9 a 10 s, com cerca de 200 linhas de lógica espelhada do SQL. Optou-se por guardar o resultado.
+  - Qualquer edição em `app/features/loss_management/` invalida o resultado guardado (hash do código): em desenvolvimento, cada edição custa cerca de 27 s no próximo reinício.
+- **Pendências:**
+  - O backtest de um corte avulso (`/losses/backtest?corte=`) e a série compartilham os caches de uma entrada por banco: um corte avulso expulsa a fila do cache e custa um recálculo de cerca de 3 s. A tela não usa esse endpoint.
+  - Fuso: `atualizado_em` é gravado em UTC e `cancellation_block_start` usa o relógio local no tempo real (até 3 h de diferença em 90 dias).
+  - Não verificado no navegador.
+- **Validação de Testes:** `make lint-all` (Ruff, Pylint 10/10, import-linter com 4 contratos, ESLint e Fallow) e `make test-all` (pytest 894, vitest 801) sem falhas.

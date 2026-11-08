@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.loss_management.exceptions import ActiveOrderConflictError
+from app.features.loss_management.excluded_repository import ExcludedUnitsRepositoryMixin
 from app.features.loss_management.models import ACTIVE_STATUSES, InspectionOrder
 from app.features.loss_management.portfolio_repository import NEUTRAL_PORTFOLIO_RATIO, PortfolioRepositoryMixin
 from app.features.loss_management.queries import (
@@ -21,7 +22,6 @@ from app.features.loss_management.queue_query import suspicious_profiles_query
 from app.features.loss_management.queue_repository import (
     GOLD_QUERY_ERRORS,
     GOLD_TABLES_ERROR_MESSAGE,
-    QueueSummaryRepositoryMixin,
 )
 from app.features.loss_management.queue_rows_cache import QueueRows, cached_queue_rows
 from app.features.loss_management.reference import AnalysisReference, resolve_analysis_reference
@@ -78,7 +78,7 @@ def to_registered_unit(row: RowMapping) -> RegisteredUnit:
 
 
 class LossRepository(
-    FieldUploadRepositoryMixin, PortfolioRepositoryMixin, QueueSummaryRepositoryMixin, TariffRepositoryMixin
+    FieldUploadRepositoryMixin, PortfolioRepositoryMixin, ExcludedUnitsRepositoryMixin, TariffRepositoryMixin
 ):
     """Consultas analíticas de consumo e persistência das ordens de inspeção."""
 

@@ -346,6 +346,10 @@ class FakeDtoOnlyRepository:
         assert self.stored_order is not None
         return self.stored_order.model_copy(update=payload.model_dump(exclude_none=True))
 
+    async def record_update_event(self, before, after, autor) -> None:
+        self.audit_author = autor
+        del before, after
+
 
 async def test_update_inspection_delegates_persistence_to_repository_with_dtos():
     repository = FakeDtoOnlyRepository(make_order_dto(InspectionStatus.GERADA))

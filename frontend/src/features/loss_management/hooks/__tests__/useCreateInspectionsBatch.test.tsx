@@ -98,6 +98,6 @@ describe('useCreateInspectionsBatchMutation', () => {
 
     await act(() => result.current.mutateAsync(toPayloads(['UC1'])))
 
-    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: lossKeys.all }))
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: lossKeys.all })))
   })
 })
