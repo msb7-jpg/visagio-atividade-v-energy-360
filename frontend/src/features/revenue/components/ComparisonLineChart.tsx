@@ -2,11 +2,11 @@ import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts'
 import type { TooltipProps } from 'recharts'
 import { ChartContainer, ChartLegendItem, ChartTooltipFrame } from '@/components/ui/chart'
 import type { ComparedArea } from '@/features/revenue/hooks/useAreaComparison'
-import { formatCompactCurrency, formatCompetencia } from '@/features/revenue/utils/revenueFormatters'
+import { axisFormatOf, SERIES_TOKENS, seriesStroke } from '@/features/revenue/utils/comparisonSeries'
+import { formatCompetencia } from '@/features/revenue/utils/revenueFormatters'
 import type { HistoryMetric } from '@/features/revenue/utils/revenueHistoryMetrics'
 
 const AXIS_TICK = { fill: 'var(--color-muted-foreground)' }
-const SERIES = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'] as const
 
 type ChartRow = Record<string, string | number | null>
 
@@ -46,21 +46,20 @@ interface ComparisonLineChartProps {
  * @returns Legenda por cor e gráfico de linhas com eixo e tooltip na unidade da métrica.
  */
 export function ComparisonLineChart({ series, metric }: ComparisonLineChartProps) {
-  const axisFormat = metric.key === 'receita_rs' ? formatCompactCurrency : metric.format
   const names = series.map((area) => area.name).join(', ')
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-4">
-        {series.map((area, index) => <ChartLegendItem key={area.key} label={area.name} series={SERIES[index]} />)}
+        {series.map((area, index) => <ChartLegendItem key={area.key} label={area.name} series={SERIES_TOKENS[index]} />)}
       </div>
       <ChartContainer label={`${metric.seriesLabel} por mês: ${names}`}>
         <LineChart data={toRows(series, metric)} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--color-border)" />
           <XAxis dataKey="competencia" tickFormatter={formatCompetencia} tickLine={false} axisLine={false} tick={AXIS_TICK} minTickGap={24} />
-          <YAxis domain={[0, 'auto']} tickFormatter={axisFormat} tickLine={false} axisLine={false} tick={AXIS_TICK} width={72} />
+          <YAxis domain={[0, 'auto']} tickFormatter={axisFormatOf(metric)} tickLine={false} axisLine={false} tick={AXIS_TICK} width={72} />
           <Tooltip content={<ComparisonTooltip series={series} metric={metric} />} />
           {series.map((area, index) => (
-            <Line key={area.key} dataKey={`serie${index}`} stroke={`var(--color-${SERIES[index]})`} strokeWidth={2} dot={false} />
+            <Line key={area.key} dataKey={`serie${index}`} stroke={seriesStroke(index)} strokeWidth={2} dot={false} />
           ))}
         </LineChart>
       </ChartContainer>
