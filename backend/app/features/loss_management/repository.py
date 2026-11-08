@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.features.loss_management.exceptions import ActiveOrderConflictError
 from app.features.loss_management.excluded_repository import ExcludedUnitsRepositoryMixin
 from app.features.loss_management.models import ACTIVE_STATUSES, InspectionOrder
-from app.features.loss_management.portfolio_repository import NEUTRAL_PORTFOLIO_RATIO, PortfolioRepositoryMixin
 from app.features.loss_management.queries import (
     SuspicionFilters,
     build_windows,
@@ -18,13 +17,12 @@ from app.features.loss_management.queries import (
     latest_competencia_query,
     registered_unit_query,
 )
-from app.features.loss_management.queue_query import suspicious_profiles_query
+from app.features.loss_management.queue_profiles_repository import QueueProfilesRepositoryMixin
 from app.features.loss_management.queue_repository import (
     GOLD_QUERY_ERRORS,
     GOLD_TABLES_ERROR_MESSAGE,
 )
-from app.features.loss_management.queue_rows_cache import QueueRows, cached_queue_rows
-from app.features.loss_management.reference import AnalysisReference, resolve_analysis_reference
+from app.features.loss_management.reference import resolve_analysis_reference
 from app.features.loss_management.schemas import (
     InspectionOrderCreateDTO,
     InspectionOrderDTO,
@@ -78,19 +76,23 @@ def to_registered_unit(row: RowMapping) -> RegisteredUnit:
 
 
 class LossRepository(
-    FieldUploadRepositoryMixin, PortfolioRepositoryMixin, ExcludedUnitsRepositoryMixin, TariffRepositoryMixin
+    FieldUploadRepositoryMixin, QueueProfilesRepositoryMixin, ExcludedUnitsRepositoryMixin, TariffRepositoryMixin
 ):
     """Consultas analíticas de consumo e persistência das ordens de inspeção."""
 
-    def __init__(self, session: AsyncSession, reference_competencia: str | None = None) -> None:
+    def __init__(
+        self, session: AsyncSession, reference_competencia: str | None = None, *, use_peers: bool = False
+    ) -> None:
         """Cria o repositório da sessão.
 
         Args:
             session: Sessão assíncrona do banco.
             reference_competencia: Competência ('YYYY-MM') fixada para calcular a fila; None usa a mais recente.
+            use_peers: Cada perfil leva a mediana de recente/base da sua classe (D16); False usa só a da carteira.
         """
         self.session = session
         self.reference_competencia = reference_competencia
+        self.use_peers = use_peers
 
     async def fetch_consumption_profiles(self, filters: SuspicionFilters) -> QueueCandidates:
         """Busca os perfis de consumo candidatos à fila de suspeitas.
@@ -121,31 +123,6 @@ class LossRepository(
             active_orders=await self.fetch_active_order_statuses(),
             portfolio_ratio=portfolio_ratio,
         )
-
-    async def _read_queue_rows(
-        self, filters: SuspicionFilters, field_history_applied: bool
-    ) -> tuple[AnalysisReference | None, QueueRows, float]:
-        """Executa a consulta da fila na competência de referência (em cache, ver `queue_rows_cache`).
-
-        Returns:
-            A referência de análise, as linhas candidatas e a razão mediana recente/base da carteira;
-            `(None, [], 1.0)` se ainda não há medições.
-        """
-        ultima_competencia = await self.session.scalar(latest_competencia_query())
-        if ultima_competencia is None:
-            return None, [], NEUTRAL_PORTFOLIO_RATIO
-        reference = resolve_analysis_reference(ultima_competencia, self.reference_competencia)
-        portfolio_ratio = await self.fetch_portfolio_ratio(reference.competencia)
-        query = suspicious_profiles_query(
-            build_windows(reference.competencia),
-            filters,
-            include_field_history=field_history_applied,
-            history_until=reference.history_until,
-            portfolio_ratio=portfolio_ratio,
-        )
-        key = (filters, field_history_applied, reference.competencia, reference.history_until, portfolio_ratio)
-        profiles = await cached_queue_rows(self.session, key, query, lambda row: ConsumptionProfile(**row))
-        return reference, profiles, portfolio_ratio
 
     async def fetch_registered_unit(self, id_uc: str) -> RegisteredUnit | None:
         """Busca a UC no cadastro com o consumo da mesma janela usada pela fila.

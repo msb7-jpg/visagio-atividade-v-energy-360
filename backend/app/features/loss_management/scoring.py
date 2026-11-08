@@ -29,6 +29,7 @@ class ConsumptionProfile:
     consumo_recente_kwh: float
     meses_zerados: int
     meses_base: int = MESES_BASE_COMPLETO  # meses com leitura na janela de base; menos que o completo = ligação recente
+    peer_ratio: float | None = None  # mediana recente/base da classe da UC (os pares); None usa a da carteira
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,6 +171,7 @@ def build_suspicious_unit(
     recoverable_value_rs = recoverable_kwh * tariff_rs_kwh
     monthly_kwh = monthly_deficit_kwh(profile)
     annual_value_rs = monthly_kwh * MESES_POR_ANO * tariff_rs_kwh
+    reference_ratio = portfolio_ratio if profile.peer_ratio is None else profile.peer_ratio
     return SuspiciousUnitDTO(
         id_uc=profile.id_uc,
         municipio=profile.municipio,
@@ -178,7 +180,7 @@ def build_suspicious_unit(
         motivos=reasons,
         score_risco=risk_score(profile),
         probabilidade_acerto=hit_probability(
-            reasons, normalized_drop_ratio(profile, portfolio_ratio), profile.meses_base
+            reasons, normalized_drop_ratio(profile, reference_ratio), profile.meses_base
         ),
         meses_base=profile.meses_base,
         consumo_base_kwh=round(profile.consumo_base_kwh, 1),

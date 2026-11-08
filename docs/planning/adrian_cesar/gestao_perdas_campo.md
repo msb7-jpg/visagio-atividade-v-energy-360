@@ -242,6 +242,18 @@ Fonte: `A-visao-gerente-de-perdas-fila.png` e `B-gerar-ordem-no-detalhe.png`. **
 - [x] **18.3 — Efetividade em comparação de cortes (2026-11-07):** `BacktestSeriesView` com tabela de todos os cortes e detalhe de um deles. `make lint-all` e `make test-all` limpos (pytest 894, vitest 801).
 - [ ] **18.4 — Pendências:** o endpoint antigo `/losses/backtest?corte=` pode expulsar a fila do cache de uma entrada (a tela não o usa; avaliar remoção); diferença de fuso de até 3 h em `cancellation_block_start`; tela não conferida no navegador.
 
+### Fase 19 — Sazonalidade, pares e "quantas inspecionar" (2026-11-08)
+Plano em [`fila-inspecao-sazonalidade-plano.md`](fila-inspecao-sazonalidade-plano.md); decisão D16.
+- [ ] **19.1 — Plano e documentação (2026-11-08):** plano e D16 escritos; branch `feat/fatia-05-fila-sazonalidade`. - Em andamento por Adrian César - 2026-11-08
+- [x] **19.2 — Linha de base (2026-11-08):** backtest atual (5 cortes, N = 50/100/200) e sazonalidade na base inteira, em modo só leitura. Precisão atual de 90% a 98%; resultados no plano.
+- [x] **19.3 — Pares por classe (2026-11-08):** `peers.py` (mediana por classe, mínimo de 100 UCs, reserva na carteira), `peer_ratio` no perfil, `use_peers` no repositório e `modelo=atual|novo` no backtest. `_read_queue_rows` saiu de `repository.py` (estava em 300 linhas) para `queue_profiles_repository.py`. Só a chance de acerto usa os pares; entrada e déficit ficam na 19.4. Backtest atual × novo praticamente igual (1 a 3 UCs por corte), como esperado. Ruff, Pylint, import-linter, pytest 902, ESLint, Fallow e vitest 784 limpos.
+- [ ] **19.4 — Entrada e déficit pela queda relativa aos pares.**
+- [ ] **19.5 — Curva de chance de acerto e portão de decisão** (leave-one-month-out).
+- [ ] **19.6 — Piso de entrada** (10, 15, 20 e 30%) escolhido no backtest.
+- [ ] **19.7 — Curva de retorno e corte sugerido** no backend; sai o 200 fixo do resumo.
+- [ ] **19.8 — Tela:** campo N, curva, custo por inspeção, card "ordens abertas", vocabulário "prioridade".
+- [ ] **19.9 — Documentação, revisão, lint, testes e commit local.**
+
 ---
 
 ## 4. Telas Concretas, Comportamentos & Contratos de Integração (Fatia 05)

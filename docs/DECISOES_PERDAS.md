@@ -333,6 +333,25 @@ fora (1.385 de 1.389 entram).
   Gold real: `municipio=RECIFE` devolve as mesmas 72 UCs, e a UC142443 tem 72 na lista e no detalhe.
 - **Limite:** `service.py` está em exatamente 300 linhas, o teto do Pylint; acréscimos precisam de um módulo novo.
 
+### D16. A sazonalidade é descontada comparando cada UC com os pares da mesma classe (2026-11-08, em implementação)
+- **Como apareceu:** o consumo médio da base é 59% maior em janeiro (494 kWh) do que em julho (310 kWh), em quatro anos
+  seguidos. A fila compara os 3 meses recentes com os 12 anteriores, então no inverno quase toda UC "cai". Só a chance
+  de acerto descontava a queda geral (`portfolio_ratio`, mediana global). A entrada (queda bruta de 20%) e o déficit em kWh
+  usavam a queda bruta. Como o residencial é 85% das UCs, a mediana global é a dele; o industrial varia muito menos
+  entre verão e inverno e é corrigido demais.
+- **Decisão:** a referência de cada UC é a mediana de recente÷base da sua **classe** (os pares), com mínimo de 100 UCs
+  no grupo. A **queda relativa aos pares** vale na entrada (piso de 20%, leitura zerada sempre entra), no déficit
+  (`base × razão dos pares − recente`) e na chance de acerto, que vira uma curva suave da queda relativa. Classes sem
+  medição própria (industrial, rural, poder público: 16 inspeções) usam a curva geral e a tela avisa. Município e faixa
+  de consumo só entram se o backtest provar ganho.
+- **Junto:** a fila deixa de ter teto de 200. A tela ganha o campo "quantas inspecionar" e a curva de retorno
+  acumulado, com custo por inspeção opcional que marca o corte sugerido.
+- **Critério:** a lógica nova só substitui a atual se ganhar no backtest, ajustando a curva em quatro cortes e testando
+  no quinto (leave-one-month-out), em kWh recuperado e precisão nas primeiras N UCs (50, 100 e 200).
+- **Limites:** o backtest cobre só jul–dez/2025, então o verão não é validado. Ele mede apenas UCs que o campo visitou. O
+  backtest atual avalia taxas medidas nas mesmas inspeções, e por isso é otimista. O plano está em
+  `docs/planning/adrian_cesar/fila-inspecao-sazonalidade-plano.md`.
+
 ## 5. Limitações e pendências
 
 - Os números de fila vêm da **Gold real** desde 2026-10-27. A remedição do limiar de 50% (92,6%), da exclusão de GD

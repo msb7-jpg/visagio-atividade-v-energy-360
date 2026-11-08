@@ -143,7 +143,9 @@ class BacktestService:
             raise BadRequestException(
                 f"Data de corte fora do histórico de inspeções: use de {cutoffs[0]} a {cutoffs[-1]}."
             )
-        cutoff_repository = LossRepository(self.repository.session, reference_competencia=cutoff)
+        cutoff_repository = LossRepository(
+            self.repository.session, reference_competencia=cutoff, use_peers=filter_dto.modelo == "novo"
+        )
         candidates = await cutoff_repository.fetch_consumption_profiles(suspicion_filters(SuspiciousUnitsFilterDTO()))
         tariff = await cutoff_repository.fetch_average_tariff()
         ranked = rank_suspicious_units(

@@ -1,6 +1,7 @@
 """Schemas do backtest da fila (tela Efetividade)."""
 
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -18,6 +19,10 @@ class BacktestFilterDTO(BaseModel):
         description="Competência de corte 'YYYY-MM'; vazio usa a anterior à primeira inspeção do histórico",
     )
     tamanho: int = Field(default=FILA_CAPACIDADE_MENSAL, ge=1, le=500, description="Tamanho da seleção (top N da fila)")
+    modelo: Literal["atual", "novo"] = Field(
+        default="atual",
+        description="Temporário (D16): 'novo' compara cada UC com os pares da classe; 'atual' usa a carteira inteira",
+    )
 
 
 class ReasonBacktestDTO(BaseModel):
