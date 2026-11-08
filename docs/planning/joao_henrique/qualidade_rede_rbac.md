@@ -112,6 +112,13 @@
 - [x] Filtro de causa na Continuidade (`GET /quality/continuity?causa=`, ADR-025, item 7). Concluído por Joao Henrique em 2026-10-30; registro no `changelog.md`.
 - [x] Índice de regras de negócio da Fatia 06 em [`regras-de-negocio.md`](regras-de-negocio.md).
 
+### Melhorias de interface do backlog (issues abertas por Joao Henrique)
+
+- [- Em andamento por Joao Henrique - 2026-11-08] Issue #98: Visão 360, bloco 3 "Falta de luz e chamados" em três sub-blocos com título e contagem.
+- [ ] Issue #102: Visão 360, bloco 2 "Contas": diagnóstico de conta alta em selo com a variação e causas curtas.
+- [ ] Issue #100: Painel do Diretor: hierarquia dos indicadores e bloco "Perdas" no mesmo padrão.
+- [ ] Issue #101: Inteligência Comercial: gráfico único com métrica e bairros à escolha, no lugar das minibarras.
+
 ---
 
 ## 4. Telas Concretas, Comportamentos & Contratos de Integração (Fatia 06)
