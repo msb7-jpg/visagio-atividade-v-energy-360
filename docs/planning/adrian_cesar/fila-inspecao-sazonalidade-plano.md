@@ -77,6 +77,35 @@ A precisão atual está inflada, porque as taxas foram ajustadas nas mesmas insp
    residência com queda sazonal normal não entra.
 3. **O limite do verão** (sem inspeções em jan–jun) fica declarado na documentação e na tela.
 
+## Fases 1 e 2: efeito medido (2026-11-08)
+
+**Backtest (`modelo=novo` contra `atual`), 5 cortes, N = 50/100/200:** praticamente igual no topo (±1 UC inspecionada,
+kWh recuperado até 3% menor). O backtest não enxerga o efeito, porque nos cortes jul–nov o topo é dominado por quedas
+fortes, que os dois modelos veem.
+
+**O efeito está no tamanho e na composição da fila** (competência de referência; "prioritárias" = chance ≥ 30%):
+
+| Competência | Carteira (recente÷base) | Fila atual | Fila com pares |
+|---|---|---|---|
+| 2025-07 | 0,749 | 34.193 UCs (33.102 residenciais), 930 prioritárias | 956 UCs, 931 prioritárias |
+| 2025-09 | 0,611 | 39.243 UCs, 587 prioritárias | 577 UCs, 575 prioritárias |
+| 2025-11 | 1,015 | 501 UCs | 581 UCs |
+| 2026-01 | 1,324 | 7 UCs | 31 UCs |
+| 2026-03 | 1,346 | 2 UCs | 32 UCs (22 prioritárias) |
+| 2026-06 | 0,918 | 165 UCs, 7 prioritárias | 31 UCs, as mesmas 7 prioritárias |
+
+Leituras:
+- **Inverno:** a lógica atual põe a carteira inteira na fila (todo mundo "cai"). Com pares, só ficam as UCs que caíram
+  além da classe, e as prioritárias continuam as mesmas.
+- **Verão:** o consumo sobe cerca de 32% e quase ninguém tem queda bruta de 20%, então a fila atual quase some. Com
+  pares, aparecem UCs que ficaram para trás num mês em que a classe subiu. Esta é a direção que o backtest (só
+  jul–dez) não consegue validar com inspeções reais.
+- **kWh/mês recuperável** cai muito (2025-07: de 1,80 milhão para 157 mil): o déficit atual contava a queda sazonal
+  como energia a recuperar.
+- **Ainda curta no verão e em 2026-06** (31 a 32 UCs): a Fase 4 testa o piso de 10 e 15%.
+- **Pendência de coerência:** o detalhe da UC (`fetch_registered_unit`) e a aba "Fora da fila" ainda usam a queda
+  bruta. Só importam quando o modelo novo virar o padrão.
+
 ## Riscos
 
 - O backtest só cobre jul–dez/2025: o verão não é validado.

@@ -79,7 +79,11 @@ async def _query_peer_ratios(session: AsyncSession, reference_competencia: str, 
     query = (
         select(dim_unidade_consumidora.c.classe_consumo, ratio)
         .select_from(consumo.join(dim_unidade_consumidora, consumo.c.id_uc == dim_unidade_consumidora.c.id_uc))
-        .where(consumo.c.consumo_base_kwh > 0, consumo.c.consumo_recente_kwh.is_not(None))
+        .where(
+            consumo.c.consumo_base_kwh > 0,
+            consumo.c.consumo_recente_kwh.is_not(None),
+            dim_unidade_consumidora.c.classe_consumo.is_not(None),  # sem classe, a UC usa a carteira
+        )
     )
     ratios_by_class: dict[str | None, list[float]] = defaultdict(list)
     for classe, unit_ratio in (await session.execute(query)).all():

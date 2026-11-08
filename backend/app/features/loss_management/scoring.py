@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 
 from app.features.loss_management.hit_rate import MESES_BASE_COMPLETO, hit_probability
+from app.features.loss_management.peer_reference import pairs_ratio
 from app.features.loss_management.schemas import InspectionStatus, SuspicionReason, SuspiciousUnitDTO
 
 LIMIAR_QUEDA_SUBITA = 0.5
@@ -97,7 +98,7 @@ def detect_reasons(profile: ConsumptionProfile) -> list[SuspicionReason]:
         Motivos detectados (queda súbita, queda moderada e/ou leitura zerada); vazio se a UC não é suspeita.
         Queda súbita e queda moderada são excludentes: a moderada vai do piso até o limiar da súbita.
     """
-    drop_ratio = consumption_drop_ratio(profile)
+    drop_ratio = normalized_drop_ratio(profile, pairs_ratio(profile.peer_ratio, 1.0))  # além dos pares, se houver
     has_sudden_drop = drop_ratio >= LIMIAR_QUEDA_SUBITA
     has_moderate_drop = LIMIAR_QUEDA_MODERADA <= drop_ratio < LIMIAR_QUEDA_SUBITA
     has_zero_reading = profile.meses_zerados > 0
@@ -132,10 +133,10 @@ def monthly_deficit_kwh(profile: ConsumptionProfile) -> float:
         profile: Consumo médio da UC nas janelas base e recente.
 
     Returns:
-        Consumo base menos consumo recente, em kWh/mês (mínimo 0).
+        Consumo esperado (base vezes a razão dos pares, se houver) menos o recente, em kWh/mês (mínimo 0).
     """
-    consumption_gap_kwh = profile.consumo_base_kwh - profile.consumo_recente_kwh
-    return max(0.0, consumption_gap_kwh)
+    expected_recent_kwh = profile.consumo_base_kwh * pairs_ratio(profile.peer_ratio, 1.0)
+    return max(0.0, expected_recent_kwh - profile.consumo_recente_kwh)
 
 
 def estimated_recoverable_kwh(profile: ConsumptionProfile) -> float:
@@ -171,7 +172,7 @@ def build_suspicious_unit(
     recoverable_value_rs = recoverable_kwh * tariff_rs_kwh
     monthly_kwh = monthly_deficit_kwh(profile)
     annual_value_rs = monthly_kwh * MESES_POR_ANO * tariff_rs_kwh
-    reference_ratio = portfolio_ratio if profile.peer_ratio is None else profile.peer_ratio
+    reference_ratio = pairs_ratio(profile.peer_ratio, portfolio_ratio)
     return SuspiciousUnitDTO(
         id_uc=profile.id_uc,
         municipio=profile.municipio,

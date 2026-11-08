@@ -11,7 +11,8 @@ from app.features.loss_management.models import InspectionOrder
 from app.features.loss_management.peers import median_ratio_by_class
 from app.features.loss_management.queries import SuspicionFilters
 from app.features.loss_management.repository import LossRepository
-from app.features.loss_management.scoring import ConsumptionProfile, build_suspicious_unit
+from app.features.loss_management.schemas import SuspicionReason
+from app.features.loss_management.scoring import ConsumptionProfile, build_suspicious_unit, detect_reasons
 
 TARIFF_RS_KWH = 0.7
 QUEUE_FILTERS = SuspicionFilters(limiar_queda=0.2)
@@ -69,21 +70,25 @@ def test_a_real_industrial_drop_in_winter_is_not_hidden_by_the_residential_media
     assert with_peers.probabilidade_acerto == pytest.approx(0.915)
 
 
-def test_a_normal_residential_winter_drop_stays_weak_with_peers():
+def test_a_normal_residential_winter_drop_is_not_suspicious_with_peers():
     residential_winter = make_profile("RESIDENCIAL", 100.0, 72.0, peer_ratio=WINTER_PORTFOLIO_RATIO)
 
-    unit = build_suspicious_unit(residential_winter, TARIFF_RS_KWH, portfolio_ratio=1.0)
-
-    assert unit.probabilidade_acerto == pytest.approx(0.076)
+    assert build_suspicious_unit(residential_winter, TARIFF_RS_KWH, portfolio_ratio=1.0) is None
 
 
 async def profiles_by_class(use_peers: bool) -> dict[str, float | None]:
     """Semeia 3 UCs residenciais, 3 industriais e 1 rural e devolve o `peer_ratio` do perfil de cada classe."""
     units = {
-        "RESIDENCIAL": [50.0, 60.0, 70.0],
-        "INDUSTRIAL": [70.0, 75.0, 90.0],
-        "RURAL": [50.0],
+        "RESIDENCIAL": [40.0, 60.0, 70.0],
+        "INDUSTRIAL": [50.0, 75.0, 90.0],
+        "RURAL": [30.0],
     }
+    profiles = await candidate_profiles(units, use_peers)
+    return {profile.classe_consumo: profile.peer_ratio for profile in profiles}
+
+
+async def candidate_profiles(units: dict[str, list[float]], use_peers: bool) -> list[ConsumptionProfile]:
+    """Semeia UCs `{classe: [consumo recente de cada UC]}` (base 100) e devolve os perfis candidatos à fila."""
     engine = create_async_engine("sqlite+aiosqlite://", poolclass=StaticPool)
     try:
         async with engine.begin() as connection:
@@ -105,7 +110,7 @@ async def profiles_by_class(use_peers: bool) -> dict[str, float | None]:
                     )
         async with async_sessionmaker(engine, expire_on_commit=False)() as session:
             candidates = await LossRepository(session, use_peers=use_peers).fetch_consumption_profiles(QUEUE_FILTERS)
-            return {profile.classe_consumo: profile.peer_ratio for profile in candidates.profiles}
+            return candidates.profiles
     finally:
         await engine.dispose()
 
@@ -124,13 +129,54 @@ async def test_a_class_below_the_minimum_uses_the_portfolio_median(monkeypatch):
 
     ratio_by_class = await profiles_by_class(use_peers=True)
 
-    assert ratio_by_class["RURAL"] == pytest.approx(0.7)
+    assert ratio_by_class["RURAL"] == pytest.approx(0.6)  # mediana das 7 UCs da carteira
 
 
 async def test_the_current_model_leaves_the_peer_ratio_empty():
     ratio_by_class = await profiles_by_class(use_peers=False)
 
     assert set(ratio_by_class.values()) == {None}
+
+
+def test_reasons_use_the_drop_relative_to_the_pairs():
+    normal_winter_drop = make_profile("RESIDENCIAL", 100.0, 72.0, peer_ratio=WINTER_PORTFOLIO_RATIO)
+
+    assert detect_reasons(normal_winter_drop) == []
+    assert detect_reasons(make_profile("RESIDENCIAL", 100.0, 72.0)) == [SuspicionReason.QUEDA_MODERADA]
+
+
+def test_a_sudden_drop_is_measured_beyond_the_pairs():
+    profile = make_profile("RESIDENCIAL", 100.0, 40.0, peer_ratio=WINTER_PORTFOLIO_RATIO)  # bruta 60%, relativa 43%
+
+    assert detect_reasons(profile) == [SuspicionReason.QUEDA_MODERADA]
+    assert detect_reasons(make_profile("RESIDENCIAL", 100.0, 40.0)) == [SuspicionReason.QUEDA_SUBITA]
+
+
+def test_the_deficit_discounts_the_part_that_the_season_explains():
+    unit = build_suspicious_unit(
+        make_profile("RESIDENCIAL", 100.0, 50.0, peer_ratio=WINTER_PORTFOLIO_RATIO), TARIFF_RS_KWH
+    )
+
+    assert unit.kwh_mes_recuperavel == pytest.approx(20.0)  # esperado 70 kWh, consumiu 50
+    assert unit.kwh_estimado_recuperar == pytest.approx(60.0)
+    assert unit.valor_ano_rs == pytest.approx(20.0 * 12 * TARIFF_RS_KWH)
+
+
+def test_the_deficit_is_the_raw_gap_without_pairs():
+    unit = build_suspicious_unit(make_profile("RESIDENCIAL", 100.0, 50.0), TARIFF_RS_KWH)
+
+    assert unit.kwh_mes_recuperavel == pytest.approx(50.0)
+
+
+async def test_entry_uses_the_drop_relative_to_the_pairs_of_the_class(monkeypatch):
+    monkeypatch.setattr(peers, "MIN_PEER_UNITS", 3)
+    units = {"RESIDENCIAL": [55.0, 60.0, 70.0], "INDUSTRIAL": [50.0, 90.0, 95.0]}
+
+    with_peers = await candidate_profiles(units, use_peers=True)
+    without_peers = await candidate_profiles(units, use_peers=False)
+
+    assert {profile.id_uc for profile in with_peers} == {"IND0"}
+    assert {profile.id_uc for profile in without_peers} == {"RES0", "RES1", "RES2", "IND0"}
 
 
 def test_the_backtest_runs_the_current_model_unless_told_otherwise():

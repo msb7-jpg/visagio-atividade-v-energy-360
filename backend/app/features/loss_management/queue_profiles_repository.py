@@ -39,6 +39,7 @@ class QueueProfilesRepositoryMixin(PortfolioRepositoryMixin):
             include_field_history=field_history_applied,
             history_until=reference.history_until,
             portfolio_ratio=portfolio_ratio,
+            peer_ratios=peer_ratios,
         )
         peers_key = tuple(sorted(peer_ratios.items(), key=lambda entry: str(entry[0]))) if peer_ratios else None
         criteria = (filters, field_history_applied, reference.competencia, reference.history_until)
