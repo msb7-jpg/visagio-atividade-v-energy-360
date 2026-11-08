@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.features.loss_management.backtest_formulas import ChanceBand
 from app.features.loss_management.schemas import FILA_CAPACIDADE_MENSAL, SuspicionReason
 
 COMPETENCIA_PATTERN = r"^\d{4}-(0[1-9]|1[0-2])$"
@@ -35,6 +36,19 @@ class ReasonBacktestDTO(BaseModel):
     amostra_suficiente: bool = Field(description="Falso com menos inspeções que o mínimo definido para mostrar a taxa")
 
 
+class BandBacktestDTO(BaseModel):
+    """O previsto e o realizado das UCs selecionadas de uma faixa de chance de acerto."""
+
+    faixa: ChanceBand = Field(description="Patamar alto (chance de 90% ou mais), rampa ou patamar baixo (10% ou menos)")
+    selecionadas: int
+    inspecionadas: int
+    irregulares: int
+    taxa: float | None = Field(description="Acerto observado: irregulares ÷ inspecionadas; vazio sem inspeções")
+    chance_prevista: float | None = Field(description="Chance de acerto média que o modelo deu às inspecionadas")
+    kwh_esperado: float = Field(description="Energia a recuperar vezes a chance de acerto, somada nas inspecionadas")
+    kwh_recuperado: float = Field(description="Energia efetivamente recuperada nas inspecionadas")
+
+
 class BacktestDTO(BaseModel):
     """Resultado do backtest: a fila como estava no corte, medida nas inspeções dos meses seguintes."""
 
@@ -54,6 +68,19 @@ class BacktestDTO(BaseModel):
     kwh_recuperado: float = Field(description="Energia recuperada nas inspeções das selecionadas")
     por_motivo: list[ReasonBacktestDTO]
     amostra_minima_por_motivo: int
+    kwh_esperado: float = Field(
+        default=0.0, description="Energia que o modelo esperava recuperar nas UCs selecionadas que foram inspecionadas"
+    )
+    chance_media_prevista: float | None = Field(
+        default=None, description="Chance de acerto média das selecionadas inspecionadas; compare com a precisão"
+    )
+    irregulares_janela: int = Field(
+        default=0, description="UCs com irregularidade confirmada pelo campo na janela, na fila ou fora dela"
+    )
+    irregulares_na_fila: int = Field(
+        default=0, description="Dessas, as que a fila inteira do corte continha (não só o top N)"
+    )
+    por_faixa: list[BandBacktestDTO] = Field(default_factory=list, description="Previsto contra realizado por faixa")
 
 
 class BacktestSeriesDTO(BaseModel):

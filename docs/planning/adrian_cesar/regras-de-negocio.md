@@ -222,6 +222,11 @@ de carro ganha apóstrofo, para não virar fórmula.
   tende a ser otimista. A aba avisa.
 - A curva de retorno considera a fila inteira, sem os filtros da tela; o "Marcar as N primeiras" respeita os filtros.
 - "Marcar as N primeiras" vale no máximo 400 UCs por vez (o resumo da seleção não aceita mais).
+- **Efetividade.** A aba compara o previsto com o realizado: acerto previsto contra observado, energia esperada (energia a
+  recuperar vezes a chance, só das UCs inspecionadas) contra a recuperada, calibração por faixa de chance e a cobertura da
+  fila (irregularidades confirmadas pelo campo que a fila inteira do corte continha). Nos 5 cortes de 2025 a energia
+  recuperada foi de 2,7 a 3,4 vezes a esperada: a estimativa de 3 meses de déficit é conservadora (D7, D16). O backtest
+  mede N = 200 contra 3 meses de inspeções, o que subestima a cobertura do top N.
 - Ordens antigas só com fiscal exportam `inspetor_selecionado` vazio.
 - A data da ordem usa `atualizado_em` do servidor, e o corte de reincidência parte da competência de referência; com
   referência fixada no passado os dois podem divergir.

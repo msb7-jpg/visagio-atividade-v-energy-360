@@ -1176,3 +1176,23 @@
   - Sem teste de integração de rota com `LOSS_USE_PEERS=true` e sem teste de propriedade da ordem da curva; o gráfico não tem teste de `ReferenceLine`; com uma única UC o `domain=[1,'dataMax']` pode não desenhar a linha.
   - "Marcar as N primeiras" com a fila filtrada por outra situação só olha a primeira página.
 - **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 939; frontend: tsc, ESLint, Fallow e vitest 823, sem falhas.
+
+### [2026-11-08] - Aba Efetividade: do "melhor que a linha de base" para o previsto contra o realizado
+- **Autor:** Adrian Cesar
+- **O que foi feito:**
+  - **Por quê.** A "diferença para a linha de base" (cerca de +30 p.p.) era a manchete e a medida menos confiável: compara só quem o campo visitou, as chances de acerto foram medidas nas mesmas inspeções e ela não distinguiu o modelo antigo do novo. O N fixo em 200 também não combinava com o desenho novo, em que a equipe escolhe quantas UCs inspecionar.
+  - **Backtest (backend).** `evaluate_selection` recebe as UCs selecionadas e a fila inteira do corte e devolve energia esperada (energia a recuperar vezes a chance, só das inspecionadas), chance média prevista, calibração por faixa (`ChanceBand`: alta, rampa e baixa) e a cobertura da fila. `BacktestDTO` ganhou `kwh_esperado`, `chance_media_prevista`, `irregulares_janela`, `irregulares_na_fila` e `por_faixa`, todos com padrão.
+  - **Tela.** Tabela dos cortes com precisão, acerto previsto, energia esperada e recuperada, irregulares na fila e n (saíram "Linha de base" e "Diferença"); cartão do corte com o esperado ao lado do recuperado e a cobertura; tabela de calibração por faixa no lugar do "por motivo" (`ReasonRateBars` removido); avisos do viés de medição e de que o verão não foi coberto.
+- **Resultado medido (Gold real, modelo com pares, N = 200, 5 cortes):**
+  - Chance prevista de 92,5% contra observada de 90,8% a 96,2%: bem calibrada.
+  - Cobertura da fila de 95,2% a 96,0% das irregularidades confirmadas pelo campo.
+  - **Energia recuperada de 2,7 a 3,4 vezes a esperada.** A estimativa de 3 meses de déficit (D7) é conservadora, e o R$/ano da curva de retorno também.
+  - O top 200 pega só 113 a 185 das 541 irregularidades da janela, porque o backtest compara 200 UCs com 3 meses de inspeções: medir vários N é a segunda etapa.
+  - Rampa e baixa quase não têm inspeções nesses cortes; a tabela mostra travessão, e não inventa resultado.
+- **Dificuldades / Desafios:**
+  - O `StatTile` separa o número do sufixo (`95,6` e `%`), o que explica por que as buscas por `94,2%` só achavam a tabela; as expectativas dos testes foram ajustadas.
+- **Pendências:**
+  - Segunda etapa: medir N = 50, 100 e 200 em vez de só 200, e alimentar as faixas com os resultados das ordens concluídas no portal (o que mediria a faixa de 20% a 30%).
+  - Calibrar o multiplicador de 3 meses do déficit (D7) com o `kwh_recuperado` real, que ficou 2,7 a 3,4 vezes acima do esperado.
+  - `por_motivo` continua no DTO, mas a tela não o usa mais.
+- **Validação de Testes:** backend: Ruff, Pylint 10/10, import-linter com 4 contratos e pytest 944; frontend: tsc, ESLint, Fallow e vitest 830, sem falhas.

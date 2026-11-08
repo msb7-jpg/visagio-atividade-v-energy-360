@@ -2,8 +2,8 @@ import type { ChangeEvent } from 'react'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { BacktestCard } from '@/features/loss_management/components/BacktestCard'
+import { BandCalibrationTable } from '@/features/loss_management/components/BandCalibrationTable'
 import { BacktestSeriesTable } from '@/features/loss_management/components/BacktestSeriesTable'
-import { ReasonRateBars } from '@/features/loss_management/components/ReasonRateBars'
 import type { Backtest } from '@/features/loss_management/types/backtestTypes'
 import { formatCompetencia } from '@/features/loss_management/utils/backtestFormat'
 
@@ -57,8 +57,13 @@ export function BacktestSeriesView({ results, selected, onSelectCutoff }: Backte
         </Select>
       </div>
       <BacktestCard backtest={selected} />
-      <h3 className="text-sm font-medium">Taxa de acerto por motivo</h3>
-      <ReasonRateBars reasons={selected.por_motivo} minimumSample={selected.amostra_minima_por_motivo} />
+      <h3 className="text-sm font-medium">Previsto contra realizado, por faixa de chance</h3>
+      <BandCalibrationTable bands={selected.por_faixa} />
+      <p className="text-muted-foreground text-xs">
+        Energia esperada é a energia a recuperar (3 meses de déficit) vezes a chance de acerto, só das UCs inspecionadas.
+        Recuperada bem acima da esperada indica que a estimativa é conservadora. Faixa sem inspeções fica em branco: não
+        há dado para medir, e a rampa de 20% a 30% segue uma suposição.
+      </p>
     </div>
   )
 }

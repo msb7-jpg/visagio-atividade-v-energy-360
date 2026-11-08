@@ -362,6 +362,15 @@ fora (1.385 de 1.389 entram).
 - **Em produção:** o modelo com pares é o padrão (`LOSS_USE_PEERS=true`); `false` volta ao anterior. Fila, resumo,
   filtros, "Fora da fila", detalhe da UC, `kwh_estimado` das ordens, backtest e painel executivo usam a mesma
   referência.
+- **Efetividade (2026-11-08):** a aba deixou de usar a "diferença para a linha de base" como manchete, porque ela só
+  compara quem o campo visitou, com taxas medidas nas mesmas inspeções, e não distingue o modelo antigo do novo. Passou
+  a mostrar o **previsto ao lado do realizado**: acerto previsto contra observado, energia esperada contra recuperada,
+  calibração por faixa de chance e a cobertura da fila (irregularidades do campo que a fila continha). Medido com os
+  pares, N = 200, 5 cortes: a chance prevista (92,5%) ficou perto da observada (90,8% a 96,2%); a cobertura da fila foi de
+  95,2% a 96,0%; e a **energia recuperada foi de 2,7 a 3,4 vezes a esperada**, ou seja, a estimativa de 3 meses de
+  déficit (D7) é conservadora, e o R$/ano da curva de retorno também. As faixas de rampa e baixa quase não têm
+  inspeções nesses cortes, então a calibração ali segue em aberto. O N fixo em 200 não combina com a janela de 3 meses
+  (o top 200 pega só 113 a 185 das 541 irregularidades da janela): medir vários N é a segunda etapa.
 - **Pendente:** medir a faixa de 20% a 30% no piloto fora da fila (D13).
 - **Limites:** o backtest cobre só jul–dez/2025, então o verão não é validado. Ele mede apenas UCs que o campo visitou. O
   backtest atual avalia taxas medidas nas mesmas inspeções, e por isso é otimista. O plano está em

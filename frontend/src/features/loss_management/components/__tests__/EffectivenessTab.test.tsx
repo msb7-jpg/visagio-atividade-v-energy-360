@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { lossApi } from '@/features/loss_management/api/lossApi'
 import { EffectivenessTab } from '@/features/loss_management/components/EffectivenessTab'
@@ -27,11 +27,44 @@ const JULY: Backtest = {
   linha_base: 0.649,
   diferenca_pp: 29.3,
   kwh_recuperado: 462953.1,
-  por_motivo: [
-    { motivo: 'queda_subita', inspecionadas: 97, irregulares: 91, taxa: 0.938, amostra_suficiente: true },
-    { motivo: 'queda_moderada', inspecionadas: 4, irregulares: 4, taxa: 1, amostra_suficiente: false }
-  ],
-  amostra_minima_por_motivo: 10
+  por_motivo: [{ motivo: 'queda_subita', inspecionadas: 97, irregulares: 91, taxa: 0.938, amostra_suficiente: true }],
+  amostra_minima_por_motivo: 10,
+  kwh_esperado: 145300,
+  chance_media_prevista: 0.925,
+  irregulares_janela: 541,
+  irregulares_na_fila: 517,
+  por_faixa: [
+    {
+      faixa: 'alta',
+      selecionadas: 199,
+      inspecionadas: 119,
+      irregulares: 113,
+      taxa: 0.95,
+      chance_prevista: 0.925,
+      kwh_esperado: 145300,
+      kwh_recuperado: 462953.1
+    },
+    {
+      faixa: 'rampa',
+      selecionadas: 1,
+      inspecionadas: 0,
+      irregulares: 0,
+      taxa: null,
+      chance_prevista: null,
+      kwh_esperado: 0,
+      kwh_recuperado: 0
+    },
+    {
+      faixa: 'baixa',
+      selecionadas: 0,
+      inspecionadas: 0,
+      irregulares: 0,
+      taxa: null,
+      chance_prevista: null,
+      kwh_esperado: 0,
+      kwh_recuperado: 0
+    }
+  ]
 }
 
 const AUGUST: Backtest = {
@@ -45,7 +78,10 @@ const AUGUST: Backtest = {
   linha_base: 0.642,
   diferenca_pp: 32.5,
   kwh_recuperado: 571100,
-  por_motivo: [{ motivo: 'queda_subita', inspecionadas: 155, irregulares: 150, taxa: 0.968, amostra_suficiente: true }]
+  kwh_esperado: 186300,
+  irregulares_janela: 544,
+  irregulares_na_fila: 522,
+  por_faixa: [{ ...JULY.por_faixa[0], inspecionadas: 158, irregulares: 152, taxa: 0.962, kwh_esperado: 186300 }]
 }
 
 function seriesOf(...cortes: Backtest[]): BacktestSeries {
@@ -83,32 +119,61 @@ function renderTab() {
   )
 }
 
+/** A tabela dos cortes é a primeira da aba; a de calibração por faixa vem depois. */
+const seriesTable = async () => (await screen.findAllByRole('table'))[0]
+const bandTable = async () => (await screen.findAllByRole('table'))[1]
+
 describe('EffectivenessTab', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockedApi.listInspections.mockResolvedValue([])
   })
 
-  it('mostra uma linha por corte com precisão, linha de base, diferença, n e energia', async () => {
+  it('mostra uma linha por corte com precisão, acerto previsto, energia esperada e recuperada, cobertura e n', async () => {
     mockedApi.getBacktestSeries.mockResolvedValue(seriesOf(JULY, AUGUST))
 
     renderTab()
 
-    expect(await screen.findByText('94,2%')).toBeInTheDocument()
-    expect(screen.getByText('64,9%')).toBeInTheDocument()
-    expect(screen.getByText('+29,3 p.p.')).toBeInTheDocument()
-    expect(screen.getByText('121 de 200')).toBeInTheDocument()
-    expect(screen.getByText('463 MWh')).toBeInTheDocument()
-    expect(screen.getByText('96,8%')).toBeInTheDocument()
-    expect(screen.getByText('155 de 200')).toBeInTheDocument()
-    expect(screen.getByText('571,1 MWh')).toBeInTheDocument()
+    const table = within(await seriesTable())
+    expect(table.getByText('94,2%')).toBeInTheDocument()
+    expect(table.getByText('96,8%')).toBeInTheDocument()
+    expect(table.getAllByText('92,5%')).toHaveLength(2) // o acerto previsto dos dois cortes
+    expect(table.getByText('145,3 MWh')).toBeInTheDocument()
+    expect(table.getByText('463 MWh')).toBeInTheDocument()
+    expect(table.getByText('186,3 MWh')).toBeInTheDocument()
+    expect(table.getByText('571,1 MWh')).toBeInTheDocument()
+    expect(table.getByText('517 de 541')).toBeInTheDocument()
+    expect(table.getByText('522 de 544')).toBeInTheDocument()
+    expect(table.getByText('121 de 200')).toBeInTheDocument()
+    expect(table.getByText('155 de 200')).toBeInTheDocument()
+  })
+
+  it('não usa mais a comparação com a linha de base como manchete', async () => {
+    mockedApi.getBacktestSeries.mockResolvedValue(seriesOf(JULY, AUGUST))
+
+    renderTab()
+    await seriesTable()
+
+    expect(screen.queryByText('Linha de base')).not.toBeInTheDocument()
+    expect(screen.queryByText('Diferença')).not.toBeInTheDocument()
+    expect(screen.queryByText('+29,3 p.p.')).not.toBeInTheDocument()
+  })
+
+  it('mostra no cartão o esperado ao lado do recuperado e a cobertura da fila', async () => {
+    mockedApi.getBacktestSeries.mockResolvedValue(seriesOf(JULY, AUGUST))
+
+    renderTab()
+
+    expect(await screen.findByText('Esperado: 145,3 MWh (3,2× o esperado)')).toBeInTheDocument()
+    expect(screen.getAllByText('Irregulares na fila')).toHaveLength(2) // a coluna da tabela e o indicador do cartão
+    expect(screen.getByText('95,6')).toBeInTheDocument() // 517 de 541 estavam na fila; o StatTile separa o "%"
   })
 
   it('consulta a série uma única vez, sem pedir corte nem tamanho', async () => {
     mockedApi.getBacktestSeries.mockResolvedValue(seriesOf(JULY, AUGUST))
 
     renderTab()
-    await screen.findByText('94,2%')
+    await seriesTable()
 
     expect(mockedApi.getBacktestSeries).toHaveBeenCalledTimes(1)
     expect(mockedApi.getBacktestSeries).toHaveBeenCalledWith(expect.any(AbortSignal))
@@ -117,7 +182,7 @@ describe('EffectivenessTab', () => {
   it('destaca na tabela só a linha do corte em detalhe e acompanha a troca de corte', async () => {
     mockedApi.getBacktestSeries.mockResolvedValue(seriesOf(JULY, AUGUST))
     renderTab()
-    await screen.findByText('94,2%')
+    await seriesTable()
 
     const [, julyRow, augustRow] = screen.getAllByRole('row') // a primeira linha é o cabeçalho
     expect(julyRow).toHaveAttribute('aria-current', 'true')
@@ -137,36 +202,40 @@ describe('EffectivenessTab', () => {
 
     expect(await screen.findByText('Não foi possível carregar os resultados de campo')).toBeInTheDocument()
     expect(screen.queryByText('Ordens concluídas')).not.toBeInTheDocument()
-    expect(await screen.findByText('94,2%')).toBeInTheDocument()
+    expect(within(await seriesTable()).getByText('94,2%')).toBeInTheDocument()
   })
 
-  it('detalha por padrão o primeiro corte, o mais antigo', async () => {
+  it('detalha por padrão o primeiro corte, o mais antigo, com o previsto contra o realizado por faixa', async () => {
     mockedApi.getBacktestSeries.mockResolvedValue(seriesOf(JULY, AUGUST))
 
     renderTab()
 
-    expect(await screen.findByText('93,8% · n = 97')).toBeInTheDocument()
+    const bands = within(await bandTable())
+    expect(bands.getByText('Alta (queda de 30% ou mais além dos pares)')).toBeInTheDocument()
+    expect(bands.getByText('119')).toBeInTheDocument() // inspecionadas na faixa alta do corte de julho
+    expect(bands.getByText('95%')).toBeInTheDocument() // acerto observado
     expect(screen.getByLabelText('Corte em detalhe')).toHaveValue('2025-07')
   })
 
   it('troca o detalhe ao escolher outro corte, sem nova consulta', async () => {
     mockedApi.getBacktestSeries.mockResolvedValue(seriesOf(JULY, AUGUST))
     renderTab()
-    await screen.findByText('93,8% · n = 97')
+    await bandTable()
 
     fireEvent.change(screen.getByLabelText('Corte em detalhe'), { target: { value: '2025-08' } })
 
-    expect(await screen.findByText('96,8% · n = 155')).toBeInTheDocument()
-    expect(screen.queryByText('93,8% · n = 97')).not.toBeInTheDocument()
+    await waitFor(async () => expect(within(await bandTable()).getByText('158')).toBeInTheDocument())
+    expect(within(await bandTable()).queryByText('119')).not.toBeInTheDocument()
     expect(mockedApi.getBacktestSeries).toHaveBeenCalledTimes(1)
   })
 
-  it('não mostra taxa de um motivo com amostra insuficiente', async () => {
+  it('deixa em branco a faixa sem inspeções em vez de inventar um resultado', async () => {
     mockedApi.getBacktestSeries.mockResolvedValue(seriesOf(JULY))
 
     renderTab()
 
-    expect(await screen.findByText(/sem inspeções suficientes \(n = 4, mínimo 10\)/)).toBeInTheDocument()
+    const rampRow = within(await bandTable()).getByRole('row', { name: /Rampa/ })
+    expect(within(rampRow).getAllByText('—')).toHaveLength(4) // previsto, observado, esperado e recuperado
   })
 
   it('mostra travessão e explica quando a seleção de um corte não teve inspeções', async () => {
@@ -177,7 +246,12 @@ describe('EffectivenessTab', () => {
         n_irregulares: 0,
         precisao_selecao: null,
         diferenca_pp: null,
-        por_motivo: []
+        chance_media_prevista: null,
+        kwh_esperado: 0,
+        irregulares_janela: 0,
+        irregulares_na_fila: 0,
+        por_motivo: [],
+        por_faixa: []
       })
     )
 
@@ -186,6 +260,7 @@ describe('EffectivenessTab', () => {
     expect(await screen.findByText('0 de 200')).toBeInTheDocument()
     const messages = await screen.findAllByText('Sem inspeções suficientes para calcular')
     expect(messages.length).toBeGreaterThan(0)
+    expect(screen.getByText('Sem decomposição por faixa neste corte.')).toBeInTheDocument()
   })
 
   it('avisa que a precisão vale só para as UCs inspecionadas e que o histórico foi direcionado', async () => {
@@ -194,6 +269,15 @@ describe('EffectivenessTab', () => {
     renderTab()
 
     expect(await screen.findByText(/Leia a precisão junto com o n/)).toBeInTheDocument()
+  })
+
+  it('avisa que a precisão tende a ser otimista e que o verão não foi medido', async () => {
+    mockedApi.getBacktestSeries.mockResolvedValue(seriesOf(JULY))
+
+    renderTab()
+
+    expect(await screen.findByText(/a precisão tende a ser otimista/)).toBeInTheDocument()
+    expect(screen.getByText(/julho a dezembro de 2025/)).toBeInTheDocument()
   })
 
   it('avisa que o backtest não foi executado quando não há histórico de inspeções', async () => {
@@ -226,6 +310,6 @@ describe('EffectivenessTab', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /tentar novamente/i }))
 
-    expect(await screen.findByText('94,2%')).toBeInTheDocument()
+    expect(within(await seriesTable()).getByText('94,2%')).toBeInTheDocument()
   })
 })
