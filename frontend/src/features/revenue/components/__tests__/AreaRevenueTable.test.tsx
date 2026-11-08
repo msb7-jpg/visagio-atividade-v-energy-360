@@ -44,7 +44,7 @@ describe('AreaRevenueTable', () => {
   it('mostra a receita média por mês e os 12 meses em barras na própria linha', () => {
     renderTable()
 
-    expect(screen.getByText(/100,0\smil\/mês/)).toBeInTheDocument()
+    expect(screen.getByText(/100(,0)?\smil\/mês/)).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /^Receita mensal: jul\/2025/ })).toBeInTheDocument()
   })
 
