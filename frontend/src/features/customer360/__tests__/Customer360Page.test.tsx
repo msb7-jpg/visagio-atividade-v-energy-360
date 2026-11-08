@@ -263,7 +263,10 @@ describe('Customer360Page', () => {
     renderPage()
     searchFor('UC100004')
 
-    expect(await screen.findByText('Consumo estável')).toBeInTheDocument()
+    const selo = await screen.findByRole('button', { name: /Consumo estável.*até 10% para mais ou para menos/ })
+    const variation = within(selo.parentElement?.parentElement as HTMLElement).getByText(/%$/)
+    expect(variation).toHaveClass('text-muted-foreground', 'text-sm')
+    expect(variation).not.toHaveClass('text-2xl')
     expect(screen.getByText(/^jun\/2026 vs jun\/2025: /)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Bandeira: Verde → Vermelha P2.*Bandeira mais cara/ })).toBeInTheDocument()
   })
@@ -289,8 +292,8 @@ describe('Customer360Page', () => {
     renderPage()
     searchFor('UC100004')
 
-    const verdict = (await screen.findByText('Consumo subiu')).parentElement as HTMLElement
-    expect(within(verdict).getByText('+40%')).toBeInTheDocument()
+    const verdict = (await screen.findByRole('button', { name: /Consumo subiu/ })).parentElement?.parentElement as HTMLElement
+    expect(within(verdict).getByText('+40%')).toHaveClass('text-2xl', 'text-foreground')
     expect(screen.queryByText(/Bandeira:/)).not.toBeInTheDocument()
   })
 

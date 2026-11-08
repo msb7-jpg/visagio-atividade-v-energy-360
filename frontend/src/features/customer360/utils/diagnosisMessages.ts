@@ -140,3 +140,15 @@ export function describeSolar(diagnosis: HighBillDiagnosis, solarConnectedAt: st
     detail: `O painel foi ligado depois de ${formatCompetencia(diagnosis.competencia_comparada)}: a energia gerada é abatida, então o consumo faturado tende a cair.`
   }
 }
+
+/** Espelha `LIMIAR_VARIACAO_CONSUMO_PCT` do backend (`consumption_analysis.py`); mudar lá exige mudar aqui. */
+const STABLE_CONSUMPTION_LIMIT_PCT = 10
+
+/**
+ * Critério que separa "subiu", "estável" e "caiu", para o tooltip do selo do veredito.
+ *
+ * @returns Frase com o limite de variação contra o mesmo mês do ano anterior.
+ */
+export function describeTrendCriterion(): string {
+  return `Estável é variação de até ${STABLE_CONSUMPTION_LIMIT_PCT}% para mais ou para menos contra o mesmo mês do ano anterior. Acima disso o consumo subiu; abaixo, caiu.`
+}
