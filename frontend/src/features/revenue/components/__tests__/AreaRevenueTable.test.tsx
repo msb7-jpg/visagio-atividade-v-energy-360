@@ -35,7 +35,7 @@ describe('AreaRevenueTable', () => {
 
     expect(screen.getByText('Boa Viagem')).toBeInTheDocument()
     expect(screen.getByText('Recife')).toBeInTheDocument()
-    expect(screen.getByText(/100\s?mil\/mês/)).toBeInTheDocument()
+    expect(screen.getByText(/100(,0)?[\s\u00a0]?mil\/mês/)).toBeInTheDocument()
     expect(screen.queryByRole('columnheader', { name: /12 meses/i })).not.toBeInTheDocument()
   })
 
