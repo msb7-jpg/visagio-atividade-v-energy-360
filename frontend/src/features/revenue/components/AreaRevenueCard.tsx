@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/ui/pagination'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AreaComparisonChart } from '@/features/revenue/components/AreaComparisonChart'
 import { AreaRevenueTable } from '@/features/revenue/components/AreaRevenueTable'
-import { useNeighborhoodHistories } from '@/features/revenue/hooks/useRevenueQueries'
+import { NeighborhoodHistoryPanel } from '@/features/revenue/components/NeighborhoodHistoryPanel'
+import { useRevenueHistoryQuery } from '@/features/revenue/hooks/useRevenueQueries'
 import type { BreakdownPage, NeighborhoodRef, RevenueQuery } from '@/features/revenue/types/revenueTypes'
 import { searchAndSort, toAreaRevenue, type AreaSortField } from '@/features/revenue/utils/areaRevenue'
 import { getRevenueErrorMessage } from '@/features/revenue/utils/revenueErrorMessage'
@@ -22,6 +22,7 @@ const monthsBetween = (window: RevenueQuery['atual']) => {
   const [endYear, endMonth] = window.fim.split('-').map(Number)
   return Math.max(1, (endYear - startYear) * MONTHS_PER_YEAR + (endMonth - startMonth) + 1)
 }
+
 const LEVEL_LABELS: Record<AreaLevel, { tab: string; column: string; plural: string }> = {
   bairro: { tab: 'Bairros', column: 'Bairro', plural: 'bairros' },
   municipio: { tab: 'Municípios', column: 'Município', plural: 'municípios' }
@@ -31,30 +32,36 @@ interface AreaRevenueCardProps {
   query: RevenueQuery
   neighborhoodsQuery: UseQueryResult<BreakdownPage>
   municipalitiesQuery: UseQueryResult<BreakdownPage>
-  onOpenNeighborhood: (neighborhood: NeighborhoodRef) => void
+  onOpenNeighborhood?: (neighborhood: NeighborhoodRef) => void
 }
 
 /**
- * Receita, volume e tarifa média de todos os bairros (ou municípios) numa tabela só, com busca pelo nome.
- * Responde "quanto fatura este bairro?" sem abrir bairro por bairro: total e média por mês, um gráfico para comparar
- * bairros na mesma escala e, em "Mês a mês", receita, volume e tarifa de cada mês na própria linha. O nome ainda abre os 24 meses.
+ * Receita, volume e tarifa média de bairros (ou municípios) em tabela com gráfico persistente integrado ao lado.
+ * Ao clicar em qualquer linha de bairro na tabela, o painel à direita reflete imediatamente o histórico dos 24 meses.
  *
- * @param props - Consultas com todas as linhas de cada nível e o callback do histórico.
- * @returns Card com nível, busca, tabela ordenável e paginação.
+ * @param props - Consultas com as linhas de cada nível.
+ * @returns Card dividido com tabela e gráfico de barras mensal contínuo.
  */
-export function AreaRevenueCard({ query, neighborhoodsQuery, municipalitiesQuery, onOpenNeighborhood }: AreaRevenueCardProps) {
+export function AreaRevenueCard({ query, neighborhoodsQuery, municipalitiesQuery }: AreaRevenueCardProps) {
   const [level, setLevel] = useState<AreaLevel>('bairro')
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState<AreaSortField>('revenue')
   const [page, setPage] = useState(1)
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<NeighborhoodRef | null>(null)
+
   const source = level === 'bairro' ? neighborhoodsQuery : municipalitiesQuery
   const areas = searchAndSort((source.data?.items ?? []).map(toAreaRevenue), search, sortField)
   const totalPages = Math.max(1, Math.ceil(areas.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
   const labels = LEVEL_LABELS[level]
   const pageAreas = areas.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
-  const histories = useNeighborhoodHistories(query, pageAreas.flatMap((area) => (area.neighborhood ? [area.neighborhood] : [])))
   const monthsInWindow = monthsBetween(query.atual)
+
+  const defaultNeighborhood = pageAreas.find((area) => area.neighborhood)?.neighborhood ?? null
+  const activeNeighborhood = level === 'bairro' ? (selectedNeighborhood ?? defaultNeighborhood) : null
+  const historyQuery = useRevenueHistoryQuery(query, activeNeighborhood)
+  const selectedKey = activeNeighborhood ? `${activeNeighborhood.municipio}|${activeNeighborhood.bairro}` : null
+
   const changeSearch = (text: string) => {
     setSearch(text)
     setPage(1)
@@ -62,6 +69,7 @@ export function AreaRevenueCard({ query, neighborhoodsQuery, municipalitiesQuery
   const changeLevel = (next: AreaLevel) => {
     setLevel(next)
     setPage(1)
+    setSelectedNeighborhood(null)
   }
   const changeSort = (field: AreaSortField) => {
     setSortField(field)
@@ -73,7 +81,9 @@ export function AreaRevenueCard({ query, neighborhoodsQuery, municipalitiesQuery
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <CardTitle>Receita por {labels.column.toLowerCase()}</CardTitle>
-          <CardDescription>Receita, volume e tarifa média de cada {labels.column.toLowerCase()} no período analisado, com o mês a mês.</CardDescription>
+          <CardDescription>
+            Receita, volume e tarifa média por {labels.column.toLowerCase()}, com histórico mensal interativo ao lado.
+          </CardDescription>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="w-64">
@@ -103,23 +113,34 @@ export function AreaRevenueCard({ query, neighborhoodsQuery, municipalitiesQuery
           onRetry={() => void source.refetch()}
           emptyTitle={search ? `Nenhum ${labels.column.toLowerCase()} com esse nome` : 'Nada neste recorte'}
         >
-          {level === 'bairro' ? <AreaComparisonChart areas={pageAreas} histories={histories} /> : null}
-          <AreaRevenueTable
-            areas={pageAreas}
-            histories={histories}
-            monthsInWindow={monthsInWindow}
-            levelLabel={labels.column}
-            sortField={sortField}
-            onSort={changeSort}
-            onOpen={onOpenNeighborhood}
-          />
-          <Pagination
-            page={currentPage}
-            totalPages={totalPages}
-            summary={`${areas.length} ${labels.plural}`}
-            label="Paginação da receita por área"
-            onPageChange={setPage}
-          />
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+            <div className={level === 'bairro' ? 'flex flex-col gap-4 xl:col-span-7' : 'flex flex-col gap-4 xl:col-span-12'}>
+              <AreaRevenueTable
+                areas={pageAreas}
+                monthsInWindow={monthsInWindow}
+                levelLabel={labels.column}
+                sortField={sortField}
+                selectedKey={selectedKey}
+                onSort={changeSort}
+                onSelect={setSelectedNeighborhood}
+              />
+              <Pagination
+                page={currentPage}
+                totalPages={totalPages}
+                summary={`${areas.length} ${labels.plural}`}
+                label="Paginação da receita por área"
+                onPageChange={setPage}
+              />
+            </div>
+            {level === 'bairro' ? (
+              <div className="xl:col-span-5">
+                <NeighborhoodHistoryPanel
+                  neighborhood={activeNeighborhood}
+                  historyQuery={historyQuery}
+                />
+              </div>
+            ) : null}
+          </div>
         </AsyncState>
       </CardContent>
     </Card>

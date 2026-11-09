@@ -1,7 +1,6 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AreaRevenueTable } from '@/features/revenue/components/AreaRevenueTable'
-import type { MonthlyPoint } from '@/features/revenue/types/revenueTypes'
 import { toAreaRevenue } from '@/features/revenue/utils/areaRevenue'
 
 const area = toAreaRevenue({
@@ -19,45 +18,65 @@ const area = toAreaRevenue({
   efeito_cruzado_rs: 0
 })
 
-const points: MonthlyPoint[] = Array.from({ length: 24 }, (_, index) => ({
-  competencia: `${2024 + Math.floor((index + 6) / 12)}-${String(((index + 6) % 12) + 1).padStart(2, '0')}`,
-  volume_kwh: 100_000,
-  receita_rs: 80_000 + index,
-  tarifa_media_rs_kwh: 0.8
-}))
-
-function renderTable() {
-  render(
-    <AreaRevenueTable
-      areas={[area]}
-      histories={new Map([[area.key, points]])}
-      monthsInWindow={12}
-      levelLabel="Bairro"
-      sortField="revenue"
-      onSort={vi.fn()}
-      onOpen={vi.fn()}
-    />
-  )
-}
-
 describe('AreaRevenueTable', () => {
-  it('mostra a receita média por mês e não traz mais minibarras na linha', () => {
-    renderTable()
+  it('mostra os dados de receita, média por mês, variação, volume e tarifa', () => {
+    const onSelect = vi.fn()
+    render(
+      <AreaRevenueTable
+        areas={[area]}
+        monthsInWindow={12}
+        levelLabel="Bairro"
+        sortField="revenue"
+        selectedKey={null}
+        onSort={vi.fn()}
+        onSelect={onSelect}
+      />
+    )
 
-    expect(screen.getByText(/100(,0)?\smil\/mês/)).toBeInTheDocument()
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Mês a mês' })).toBeInTheDocument()
-    expect(screen.queryByText('12 meses')).not.toBeInTheDocument()
+    expect(screen.getByText('Boa Viagem')).toBeInTheDocument()
+    expect(screen.getByText('Recife')).toBeInTheDocument()
+    expect(screen.getByText(/100\s?mil\/mês/)).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: /12 meses/i })).not.toBeInTheDocument()
   })
 
-  it('abre receita, volume e tarifa de cada mês sem sair da tabela', () => {
-    renderTable()
+  it('chama onSelect ao clicar na linha do bairro', () => {
+    const onSelect = vi.fn()
+    render(
+      <AreaRevenueTable
+        areas={[area]}
+        monthsInWindow={12}
+        levelLabel="Bairro"
+        sortField="revenue"
+        selectedKey={area.key}
+        onSort={vi.fn()}
+        onSelect={onSelect}
+      />
+    )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mês a mês' }))
+    const row = screen.getByText('Boa Viagem').closest('tr')
+    expect(row).toHaveAttribute('data-state', 'selected')
 
-    const table = screen.getByRole('table', { name: 'Receita por bairro' })
-    expect(within(table).getByText('jun/2026')).toBeInTheDocument()
-    expect(within(table).getAllByText('Tarifa média')).toHaveLength(3)
-    expect(within(table).queryByText('jun/2025')).not.toBeInTheDocument()
+    if (row) {
+      fireEvent.click(row)
+    }
+    expect(onSelect).toHaveBeenCalledWith(area.neighborhood)
+  })
+
+  it('permite reordenar pelas colunas sortable', () => {
+    const onSort = vi.fn()
+    render(
+      <AreaRevenueTable
+        areas={[area]}
+        monthsInWindow={12}
+        levelLabel="Bairro"
+        sortField="revenue"
+        selectedKey={null}
+        onSort={onSort}
+        onSelect={vi.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /tarifa média/i }))
+    expect(onSort).toHaveBeenCalledWith('tariff')
   })
 })
