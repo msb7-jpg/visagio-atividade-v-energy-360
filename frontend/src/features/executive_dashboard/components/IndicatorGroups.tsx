@@ -1,46 +1,7 @@
-import { StatTile } from '@/components/data/StatTile'
-import { Badge } from '@/components/ui/badge'
 import { GroupHeading } from '@/features/executive_dashboard/components/GroupHeading'
-import type { Indicator, IndicatorGroup } from '@/features/executive_dashboard/types/executiveDashboardTypes'
-import { formatIndicatorChange, formatIndicatorValue } from '@/features/executive_dashboard/utils/indicatorFormatters'
-import { EVALUATIONS, variationArrow } from '@/features/executive_dashboard/utils/indicatorTrend'
+import { IndicatorTile } from '@/features/executive_dashboard/components/IndicatorTile'
+import type { IndicatorGroup } from '@/features/executive_dashboard/types/executiveDashboardTypes'
 import { cn } from '@/lib/utils'
-
-function IndicatorTile({ indicator }: { indicator: Indicator }) {
-  const evaluation = EVALUATIONS[indicator.avaliacao]
-  const arrow = variationArrow(indicator)
-  const detail = indicator.detalhe
-  return (
-    <StatTile
-      testId={`indicator-${indicator.id}`}
-      label={indicator.titulo}
-      hint={indicator.explicacao}
-      value={formatIndicatorValue(indicator.atual, indicator.unidade)}
-      warning={indicator.aviso}
-      change={(
-        <>
-          <span className={cn('font-semibold tabular-nums', evaluation.textColor)}>
-            {arrow ? <span aria-hidden="true">{arrow}</span> : null}
-            <span title={indicator.variacao_pp !== null ? 'Pontos percentuais' : undefined}>
-              {formatIndicatorChange(indicator.variacao_pct, indicator.variacao_pp)}
-            </span>
-          </span>
-          <Badge variant={evaluation.tone}>{evaluation.label}</Badge>
-        </>
-      )}
-      footnote={(
-        <>
-          <span>Antes: {formatIndicatorValue(indicator.base, indicator.unidade)}</span>
-          {detail ? (
-            <span className="block">
-              {detail.titulo}: {formatIndicatorValue(detail.atual, detail.unidade)} (antes {formatIndicatorValue(detail.base, detail.unidade)})
-            </span>
-          ) : null}
-        </>
-      )}
-    />
-  )
-}
 
 const GROUP_SPAN = ['xl:col-span-1', 'xl:col-span-1', 'xl:col-span-2', 'xl:col-span-3', 'xl:col-span-4']
 const GROUP_COLUMNS = ['xl:grid-cols-1', 'xl:grid-cols-1', 'xl:grid-cols-2', 'xl:grid-cols-3', 'xl:grid-cols-4']
@@ -49,8 +10,8 @@ const spanOf = (count: number) => Math.min(Math.max(count, 1), 4)
 
 /**
  * Indicadores do Painel numa grade de 4 colunas: cada área ocupa tantas colunas quantos indicadores tem, com o
- * nome da área acima dos blocos, e as áreas pequenas dividem a mesma linha.
- * A cor e o selo dizem se melhorou ou piorou; a seta segue só o sentido do número.
+ * nome da área acima dos blocos. Todos os blocos têm a mesma largura e a mesma estrutura (`IndicatorTile`), e a
+ * área "Perdas" segue o mesmo padrão logo abaixo.
  *
  * @param props - Grupos de indicadores devolvidos pela API.
  * @returns Grade com um bloco por indicador, agrupado por área.

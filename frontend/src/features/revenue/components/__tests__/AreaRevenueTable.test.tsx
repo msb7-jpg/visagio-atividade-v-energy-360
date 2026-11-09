@@ -41,11 +41,13 @@ function renderTable() {
 }
 
 describe('AreaRevenueTable', () => {
-  it('mostra a receita média por mês e os 12 meses em barras na própria linha', () => {
+  it('mostra a receita média por mês e não traz mais minibarras na linha', () => {
     renderTable()
 
     expect(screen.getByText(/100(,0)?\smil\/mês/)).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: /^Receita mensal: jul\/2025/ })).toBeInTheDocument()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Mês a mês' })).toBeInTheDocument()
+    expect(screen.queryByText('12 meses')).not.toBeInTheDocument()
   })
 
   it('abre receita, volume e tarifa de cada mês sem sair da tabela', () => {

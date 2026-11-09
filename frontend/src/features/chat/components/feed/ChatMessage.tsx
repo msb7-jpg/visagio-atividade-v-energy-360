@@ -85,8 +85,8 @@ function AssistantMessageBody({
       {message.error ? <ChatErrorCard message={message.error} onRetry={onRetry} /> : null}
 
       {showStreamingBanner ? (
-        <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-foreground shadow-xs">
-          <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
+        <div className="flex items-center gap-2 rounded-lg border border-brand/50 bg-brand/15 px-3 py-2 text-xs text-foreground shadow-xs">
+          <Loader2 className="size-3.5 shrink-0 animate-spin text-foreground" />
           <span className="font-medium">{getActiveStreamingLabel(message.steps)}</span>
         </div>
       ) : null}

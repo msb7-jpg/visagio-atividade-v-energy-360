@@ -297,3 +297,55 @@
 - **Fora desta entrega:** mudança de código ou de regra; só documentação.
 - **Validação de Testes:**
   - `make lint-all` e `make test-all` aprovados.
+
+### [2026-11-08] - Visão 360: listas de "Falta de luz e chamados" em sub-blocos (issue #98)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Cada lista do bloco 3 virou um sub-bloco (`EventGroup`) com contorno próprio, ícone, título e selo de contagem ("2 interrupções", "12 meses", "3 chamados").
+  - A linha de escopo deixa clara a diferença: "Interrupções que atingiram a própria UC" contra "Média por cliente do alimentador, mês a mês (não é da UC)". A nota de DEC/FEC passou para o tooltip do cabeçalho da região.
+  - Saiu a rolagem interna (`max-h-96`). Cada lista mostra as 5 mais recentes (6 meses no alimentador) e "Ver todos (mais N)" expande no próprio bloco, com "Mostrar menos" para recolher (`ShowMoreButton`, `useExpandableList`).
+  - Estados vazios viraram uma linha curta, sem `EmptyState` com ícone grande. Textos de resumo e números iguais aos de antes.
+  - Teste novo `EventsTab.test.tsx`: sub-blocos com título e contagem, estado vazio e expansão.
+- **Arquivos:** `customer360/components/` (`EventsTab`, `EventGroup`, `ShowMoreButton`, `UnitOutagesList`, `FeederOutagesList`, `ServiceTicketsList`), `customer360/hooks/useExpandableList.ts`, `customer360/__tests__/EventsTab.test.tsx`.
+- **Fora desta entrega:** backend, API e cálculos; conferência visual no navegador (feita por quem revisa).
+- **Validação de Testes:**
+  - `dev.ps1 check` aprovado (lint, TypeScript e build); 936 pytest e 849 vitest. Antes, commit separado ajustou o teste de `AreaRevenueTable` ao formato compacto do ICU novo.
+
+### [2026-11-08] - Visão 360: diagnóstico de conta alta em selo e causas curtas (issue #102)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `HighBillDiagnosisBanner` mostra o veredito de relance: ícone, variação do consumo em % em destaque (`+20%`), selo ("Consumo subiu/estável/caiu") e uma linha de apoio ("jun/2026 vs jun/2025: 240 kWh vs 200 kWh"). O tom vermelho continua só para "subiu".
+  - As outras causas viraram chips de uma linha (`ExplanationChips`), cada um com a frase completa no tooltip (mouse, teclado e toque) e no texto para leitor de tela: "Leitura estimada", "36 dias faturados (antes 30)", "Bandeira: Verde → Vermelha P2", "Preço do kWh +21,3%", "Geração solar" / "Painel solar desde set/2025".
+  - `diagnosisMessages.ts`: as funções `describe*` passaram a devolver `{ label, detail }` com frases mais curtas. Limiares (1% de tarifa, 3 dias de faturamento), ordem de custo das bandeiras e as condições de cada causa não mudaram; números e variações são os mesmos.
+  - Testes: `diagnosisMessages.test.ts` ajustado ao novo formato e com casos novos de consumo e preço do kWh; `Customer360Page.test.tsx` confere selo, % e chips.
+- **Arquivos:** `customer360/components/` (`HighBillDiagnosisBanner`, `ExplanationChips`), `customer360/utils/diagnosisMessages.ts` e os dois testes acima.
+- **Fora desta entrega:** backend, API e cálculos; conferência visual no navegador (feita por quem revisa).
+- **Validação de Testes:**
+  - `dev.ps1 check` aprovado (lint, TypeScript e build); 936 pytest e 854 vitest.
+
+### [2026-11-08] - Painel do Diretor: hierarquia dos indicadores e bloco Perdas no mesmo padrão (issue #100)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - `IndicatorTile` (novo, extraído de `IndicatorGroups`): três camadas fixas em todos os blocos. Valor atual; variação com o selo da avaliação; rodapé com "Antes: …" e, quando existe, o detalhe secundário separado por uma divisória.
+  - Menos sinal repetido: a variação ficou neutra, com a seta só do sentido do número; a cor e o texto "Melhorou/Piorou/Estável" ficam só no selo. A fórmula segue no ícone de ajuda (tooltip) e o aviso, no ícone de alerta.
+  - Grade: todos os blocos têm a mesma largura e estrutura; cada área ocupa tantas colunas quanto tem indicadores, como antes.
+  - Perdas (`LossesSnapshotCard`): mesmos blocos e grade dos outros grupos. O selo "Retrato atual, sem comparação" ganhou tooltip dizendo que a falta de comparação é decisão (o histórico de inspeções cobre só ago a dez/2025). Os avisos viraram uma lista de linhas curtas, uma por aviso, abaixo dos blocos. O rodapé longo do retorno esperado virou "Teto de R$ …", com a explicação no tooltip.
+  - `EVALUATIONS` perdeu o campo `textColor`, que deixou de ser usado. SmartInsightCard continua no topo; valores, variações e avaliações são os mesmos.
+  - Testes ajustados em `ExecutiveDashboardPage.test.tsx` (variação neutra, detalhe separado, tooltip e lista de avisos de Perdas) e `indicatorTrend.test.ts`.
+- **Arquivos:** `executive_dashboard/components/` (`IndicatorTile`, `IndicatorGroups`, `LossesSnapshotCard`), `utils/indicatorTrend.ts` e os dois testes.
+- **Fora desta entrega:** backend, API e cálculos; reordenar as áreas para fechar a linha da grade (a ordem vem da API); conferência visual no navegador (feita por quem revisa).
+- **Validação de Testes:**
+  - `dev.ps1 check` aprovado (lint, TypeScript e build); 936 pytest e 854 vitest.
+
+### [2026-11-08] - Inteligência Comercial: gráfico único com métrica à escolha no lugar das minibarras (issue #101)
+- **Autor:** Joao Henrique
+- **O que foi feito:**
+  - Removidos `MonthlySparkline` e as minibarras da tabela de receita por bairro. A última coluna virou "Mês a mês", só com o botão que abre receita, volume e tarifa de cada mês na linha.
+  - Novo `AreaComparisonChart`, acima da tabela no nível de bairro: o usuário escolhe a métrica (Receita, Volume ou Tarifa) e até 5 bairros da página. O título traz a métrica e a unidade ("Receita mensal por bairro · R$ por mês"); o gráfico (`ComparisonLineChart`) usa um eixo comum a partir de zero para todas as linhas, legenda por cor e tooltip com o valor de cada bairro no mês.
+  - Estado da escolha em `useAreaComparison`: sem escolha (ou com a escolha fora da página atual) compara os 3 primeiros bairros; sempre fica ao menos 1 e no máximo 5 (uma cor `--chart-*` por série).
+  - Os dados são os mesmos de antes: reaproveita `useNeighborhoodHistories` (mesma série da gaveta de 24 meses), sem endpoint novo nem cálculo novo. `MonthlyBarChart` não mudou.
+  - Testes: `AreaRevenueTable.test.tsx` agora confere que não há minibarras; `AreaComparisonChart.test.tsx` (novo, 4 testes) cobre título com métrica e unidade, troca de métrica, limite de 1 a 5 bairros e o estado de carregamento.
+- **Arquivos:** `revenue/components/` (`AreaComparisonChart`, `ComparisonLineChart`, `AreaRevenueCard`, `AreaRevenueRow`, `AreaRevenueTable`), `revenue/hooks/useAreaComparison.ts` e os dois testes.
+- **Fora desta entrega:** comparar bairros fora da página atual da tabela (a série só é consultada para os bairros visíveis); backend, API e cálculos; conferência visual no navegador (feita por quem revisa).
+- **Validação de Testes:**
+  - `dev.ps1 check` aprovado (lint, TypeScript e build); 936 pytest e 858 vitest.

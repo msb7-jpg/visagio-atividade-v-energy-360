@@ -55,6 +55,16 @@ export function formatKwh(kwh: number | null): string {
 }
 
 /**
+ * Formata um número simples em pt-BR, com até 1 casa decimal.
+ *
+ * @param value - Número, ex: 3.8.
+ * @returns Texto como "3,8".
+ */
+export function formatNumber(value: number): string {
+  return energyFormatter.format(value)
+}
+
+/**
  * Formata uma quantidade (inteira ou média) com o substantivo no singular ou plural.
  *
  * @param count - Quantidade, ex: 1 ou 2,4.

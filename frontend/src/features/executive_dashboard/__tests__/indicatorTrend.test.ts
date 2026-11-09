@@ -11,7 +11,7 @@ describe('indicatorTrend', () => {
   })
 
   it('dá a cor e o texto pela avaliação', () => {
-    expect(EVALUATIONS.PIOROU).toMatchObject({ label: 'Piorou', textColor: 'text-destructive' })
-    expect(EVALUATIONS.MELHOROU).toMatchObject({ label: 'Melhorou', textColor: 'text-success' })
+    expect(EVALUATIONS.PIOROU).toMatchObject({ label: 'Piorou' })
+    expect(EVALUATIONS.MELHOROU).toMatchObject({ label: 'Melhorou' })
   })
 })

@@ -263,15 +263,19 @@ describe('Customer360Page', () => {
     renderPage()
     searchFor('UC100004')
 
-    expect(await screen.findByText(/O consumo de jun\/2026 ficou estável/)).toBeInTheDocument()
-    expect(screen.getByText(/A bandeira tarifária ficou mais cara \(de Verde para Vermelha P2\)/)).toBeInTheDocument()
+    const selo = await screen.findByRole('button', { name: /Consumo estável.*até 10% para mais ou para menos/ })
+    const variation = within(selo.parentElement?.parentElement as HTMLElement).getByText(/%$/)
+    expect(variation).toHaveClass('text-muted-foreground', 'text-sm')
+    expect(variation).not.toHaveClass('text-2xl')
+    expect(screen.getByText(/^jun\/2026 vs jun\/2025: /)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Bandeira: Verde → Vermelha P2.*Bandeira mais cara/ })).toBeInTheDocument()
   })
 
   it('explica a conta pelo preço do kWh e mostra os totais de 12 meses', async () => {
     renderPage()
     searchFor('UC100004')
 
-    expect(await screen.findByText(/O preço médio do kWh subiu 21,3%/)).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Preço do kWh \+21,3%.*O preço médio do kWh subiu 21,3%/ })).toBeInTheDocument()
     expect(screen.getByText(/R\$\s0,97\/kWh vs R\$\s0,80\/kWh/)).toBeInTheDocument()
     expect(screen.getByText('Consumo (12 meses)')).toBeInTheDocument()
     expect(screen.getByText(fullText('R$ 2.150,50'))).toBeInTheDocument()
@@ -288,8 +292,9 @@ describe('Customer360Page', () => {
     renderPage()
     searchFor('UC100004')
 
-    expect(await screen.findByText(/subiu \(\+40%\)/)).toBeInTheDocument()
-    expect(screen.queryByText(/A bandeira tarifária/)).not.toBeInTheDocument()
+    const verdict = (await screen.findByRole('button', { name: /Consumo subiu/ })).parentElement?.parentElement as HTMLElement
+    expect(within(verdict).getByText('+40%')).toHaveClass('text-2xl', 'text-foreground')
+    expect(screen.queryByText(/Bandeira:/)).not.toBeInTheDocument()
   })
 
   it('lista faturas com o total em aberto e a situação de cada uma', async () => {
@@ -316,7 +321,7 @@ describe('Customer360Page', () => {
     expect(within(outages).getByText('3 vezes')).toBeInTheDocument()
     const tickets = screen.getByRole('list', { name: 'Chamados abertos' })
     expect(within(tickets).getByText('PRT-2026-0003')).toBeInTheDocument()
-    expect(within(tickets).getByText('Nota 4.5')).toBeInTheDocument()
+    expect(within(tickets).getByText('Nota 4,5')).toBeInTheDocument()
   })
 
   it('usa o total real quando a UC tem mais interrupções do que a lista mostra', async () => {

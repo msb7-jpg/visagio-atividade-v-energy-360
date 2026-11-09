@@ -65,7 +65,7 @@ export function SlashCommandMenu({
                     className={cn(
                       'flex size-6 shrink-0 items-center justify-center rounded-md border',
                       isSelected
-                        ? 'border-primary/30 bg-primary/20 text-primary'
+                        ? 'border-brand/60 bg-brand/20 text-foreground'
                         : 'border-border bg-muted/40 text-muted-foreground'
                     )}
                   >

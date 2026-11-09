@@ -78,7 +78,7 @@ export function InvoicesTab({ history, diagnosis }: InvoicesTabProps) {
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        {diagnosis ? <div className="lg:col-span-2">{diagnosis}</div> : null}
+        {diagnosis ? <div className="lg:col-span-2 lg:self-start">{diagnosis}</div> : null}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
           <OpenInvoicesTile openInvoices={history.faturas_em_aberto} openAmount={history.valor_em_aberto_rs} />
           {history.pontualidade ? <PunctualityTile punctuality={history.pontualidade} /> : null}

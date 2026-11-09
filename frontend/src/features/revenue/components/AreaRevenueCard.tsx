@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/ui/pagination'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { AreaComparisonChart } from '@/features/revenue/components/AreaComparisonChart'
 import { AreaRevenueTable } from '@/features/revenue/components/AreaRevenueTable'
 import { useNeighborhoodHistories } from '@/features/revenue/hooks/useRevenueQueries'
 import type { BreakdownPage, NeighborhoodRef, RevenueQuery } from '@/features/revenue/types/revenueTypes'
@@ -35,8 +36,8 @@ interface AreaRevenueCardProps {
 
 /**
  * Receita, volume e tarifa média de todos os bairros (ou municípios) numa tabela só, com busca pelo nome.
- * Responde "quanto fatura este bairro?" sem abrir bairro por bairro: total e média por mês, os 12 meses em barras e,
- * em "Mês a mês", receita, volume e tarifa de cada mês na própria linha. O nome ainda abre os 24 meses.
+ * Responde "quanto fatura este bairro?" sem abrir bairro por bairro: total e média por mês, um gráfico para comparar
+ * bairros na mesma escala e, em "Mês a mês", receita, volume e tarifa de cada mês na própria linha. O nome ainda abre os 24 meses.
  *
  * @param props - Consultas com todas as linhas de cada nível e o callback do histórico.
  * @returns Card com nível, busca, tabela ordenável e paginação.
@@ -102,6 +103,7 @@ export function AreaRevenueCard({ query, neighborhoodsQuery, municipalitiesQuery
           onRetry={() => void source.refetch()}
           emptyTitle={search ? `Nenhum ${labels.column.toLowerCase()} com esse nome` : 'Nada neste recorte'}
         >
+          {level === 'bairro' ? <AreaComparisonChart areas={pageAreas} histories={histories} /> : null}
           <AreaRevenueTable
             areas={pageAreas}
             histories={histories}

@@ -34,7 +34,7 @@ export function SuggestionsExplorer({ onSelectPrompt }: SuggestionsExplorerProps
           variant={tab === 'business' ? 'secondary' : 'ghost'}
           onClick={() => setTab('business')}
         >
-          <Sparkles className="size-3.5 text-primary" />
+          <Sparkles className="size-3.5 text-foreground" />
           <span className="truncate">Análises do Case</span>
         </Button>
         <Button
@@ -62,7 +62,7 @@ export function SuggestionsExplorer({ onSelectPrompt }: SuggestionsExplorerProps
               onClick={() => onSelectPrompt(item.prompt)}
             >
               <span className="flex min-w-0 flex-1 items-start gap-2 text-left">
-                <Icon className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                <Icon className="mt-0.5 size-3.5 shrink-0 text-foreground" />
                 <span className="break-words text-xs leading-snug text-foreground">
                   {item.prompt}
                 </span>
