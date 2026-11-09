@@ -6,6 +6,16 @@
 
 ## Registros de Execução
 
+### [2026-11-09] - Divisão Oficial da Apresentação em Dupla (Bernardo & Miguel)
+- **Autor:** Miguel & Bernardo
+- **O que foi feito:**
+  - **Definição da Apresentação em Dupla ([`docs/ROTEIRO_APRESENTACAO.md`](docs/ROTEIRO_APRESENTACAO.md)):**
+    - **Bernardo Heuer (00:00 – 09:00 · 9 min):** Abertura, TI & Engenharia de Dados (Painel Executivo), O Diagnóstico Comercial de Henrique Duarte (Inteligência Comercial) e Gestão de Perdas & Fila de Fiscalização (Fila de Inspeção), com frase formal de passagem de bastão.
+    - **Miguel Batista (09:00 – 15:00 · 6 min):** Qualidade da Rede & Indicadores DEC/FEC da ANEEL (Operação), Atendimento ao Consumidor & UC 360 (Atendimento) e Assistente IA Text-to-SQL & Fechamento da Sessão (IA Embutida).
+    - Distribuição dos líderes de resposta para as 8 perguntas prováveis da banca avaliadora (Bernardo: BD/SQLite, GD solar, fraude nos bairros e rotina de campo; Miguel: segurança e honestidade da IA, metodologia DEC/FEC, escalabilidade de produção e rastreabilidade nas tabelas Gold).
+    - Checklist prático atualizado para a dupla no dia D.
+
+
 ### [2026-11-09] - Reestruturação do Roteiro Oficial & Botão 'Pergunta do Case' na Topbar do Portal
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

@@ -4,6 +4,9 @@
 > **Duração Total da Sessão:** 30 minutos cronometrados  
 > • **15 minutos:** Apresentação Executiva & Demonstração ao Vivo da Solução  
 > • **15 minutos:** Arguição Técnica e de Negócio pela Banca Avaliadora  
+> **Apresentadores:**  
+> • **Bernardo Heuer:** Blocos 1, 2 e 3 (00:00 a 09:00 — 9 min) · Abertura, TI/Dados, Inteligência Comercial e Perdas  
+> • **Miguel Batista:** Blocos 4, 5 e 6 (09:00 a 15:00 — 6 min) · Qualidade da Rede, Atendimento/UC 360, Assistente IA e Fechamento  
 > **Composição da Banca:** Lideranças Executivas da V-Energy (Diretoria Comercial, TI, Operação, Perdas e Atendimento) e Consultores Técnicos da Visagio.
 
 ---
@@ -45,19 +48,31 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
 
 ## ⏱️ Roteiro de Apresentação (15 Minutos Cronometrados)
 
+### 👥 Divisão de Apresentadores
+- 🎙️ **Bernardo Heuer (00:00 – 09:00 · 9 min):**
+  - **Bloco 1:** Abertura & A Fundação da TI (Painel Executivo)
+  - **Bloco 2:** O Diagnóstico do Diretor Comercial (Inteligência Comercial)
+  - **Bloco 3:** Gestão de Perdas & Fila de Fiscalização (Fila de Inspeção)
+  - *Transição e passagem de bastão para Miguel*
+- 🎙️ **Miguel Batista (09:00 – 15:00 · 6 min):**
+  - **Bloco 4:** Qualidade da Rede & Indicadores DEC/FEC da ANEEL (Operação)
+  - **Bloco 5:** Atendimento ao Consumidor & Visão 360 da UC (Atendimento)
+  - **Bloco 6:** Assistente IA Text-to-SQL & Fechamento da Sessão (IA Embutida)
+
 ```
-00:00 ── Bloco 1: Abertura & A Fundação da TI (Painel Executivo) ─────── 02:00
-02:00 ── Bloco 2: O Diagnóstico Comercial (Inteligência Comercial) ───── 06:00
-06:00 ── Bloco 3: Gestão de Perdas & Fiscalização em Campo ────────────── 09:00
-09:00 ── Bloco 4: Qualidade da Rede & DEC/FEC da ANEEL ────────────────── 11:00
-11:00 ── Bloco 5: Atendimento ao Consumidor & UC 360 ──────────────────── 13:00
-13:00 ── Bloco 6: Assistente IA Text-to-SQL & Fechamento ──────────────── 15:00
+00:00 ── [Bernardo] Bloco 1: Abertura & A Fundação da TI (Painel Executivo) ───── 02:00
+02:00 ── [Bernardo] Bloco 2: O Diagnóstico Comercial (Inteligência Comercial) ─── 06:00
+06:00 ── [Bernardo] Bloco 3: Gestão de Perdas & Fiscalização em Campo ──────────── 09:00
+09:00 ── [Miguel]   Bloco 4: Qualidade da Rede & DEC/FEC da ANEEL ──────────────── 11:00
+11:00 ── [Miguel]   Bloco 5: Atendimento ao Consumidor & UC 360 ────────────────── 13:00
+13:00 ── [Miguel]   Bloco 6: Assistente IA Text-to-SQL & Fechamento ────────────── 15:00
 ```
 
 ---
 
 ### Bloco 1: Abertura & A Fundação da TI (00:00 – 02:00) · 2 min
 
+- **Apresentador:** Bernardo Heuer
 - **Stakeholder / Persona:** Patrícia Lins · Diretora de Tecnologia (`atividade.pdf`, pág. 2).
 - **Citação Literal do Problema (`atividade.pdf`):**
   > *"Cada sistema exporta de um jeito. O faturamento sai em CSV com ponto e vírgula, o call center manda JSONs, as inspeções chegam em Excel preenchido à mão. Cada área tem um número diferente para a mesma coisa. Antes de qualquer dashboard, precisamos de engenharia de dados séria. [...]"*
@@ -80,6 +95,7 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
 
 ### Bloco 2: O Diagnóstico do Diretor Comercial (02:00 – 06:00) · 4 min
 
+- **Apresentador:** Bernardo Heuer
 - **Stakeholder / Persona:** Henrique Duarte · Diretor Comercial (`atividade.pdf`, pág. 2 e 6).
 - **Citação Literal do Problema (`atividade.pdf`):**
   > *"A base de clientes cresceu, e a tarifa residencial acumulou reajuste homologado de 10,5% desde meados de 2022. Mesmo assim, comparando os últimos 12 meses com o primeiro ano da nossa base, o volume de energia faturada caiu quase 4% e a receita subiu só 8%. Ninguém nesta mesa sabe explicar por quê. Preciso de uma resposta baseada em dados, não em opinião. [...] Preciso entender o que aconteceu com a receita. Não me basta o total. Quero ver por bairro e por classe, e quero saber quanto da variação foi preço e quanto foi quantidade de energia. Se foi volume, quero saber onde e por quê."*
@@ -105,6 +121,7 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
 
 ### Bloco 3: Gestão de Perdas & Fila de Fiscalização (06:00 – 09:00) · 3 min
 
+- **Apresentador:** Bernardo Heuer
 - **Stakeholder / Persona:** Rafael Coutinho · Gerente de Perdas (`atividade.pdf`, pág. 6).
 - **Citação Literal do Problema (`atividade.pdf`):**
   > *"Minha equipe consegue fazer mais de 200 inspeções por mês, e pouco mais da metade encontra alguma irregularidade. Quero abrir o sistema e ver uma fila das unidades suspeitas, da mais promissora para a menos promissora, com o motivo da suspeita e quanta energia dá para recuperar em cada uma. Dali eu escolho quem vai para campo e gero a ordem de inspeção. Quando a equipe volta, quero registrar ali mesmo o que foi encontrado. Uma lista com mil nomes sem ordem não me serve: cada inspeção que não encontra nada é um dia de equipe perdido."*
@@ -120,7 +137,8 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
   > *"Para o Gerente de Perdas Rafael Coutinho, cada inspeção em vão é um dia de equipe jogado fora.  
   > Na tela **Fila de Inspeção**, nós priorizamos quem realmente importa. O sistema analisa a queda abrupta de consumo e descarta automaticamente quem tem placas solares, evitando constranger clientes honestos.  
   > A tabela coloca no topo as unidades com maior volume de kWh a recuperar e o motivo claro da suspeita.  
-  > E entregamos os diferenciais solicitados: o gestor exporta a lista em CSV para a equipe de rua em um clique. Quando a equipe volta, basta subir a planilha preenchida no portal — o sistema processa os laudos em lote e atualiza as ordens de serviço instantaneamente, sem redigitação."*
+  > E entregamos os diferenciais solicitados: o gestor exporta a lista em CSV para a equipe de rua em um clique. Quando a equipe volta, basta subir a planilha preenchida no portal — o sistema processa os laudos em lote e atualiza as ordens de serviço instantaneamente, sem redigitação.  
+  > **Passo a palavra agora para o Miguel**, que vai demonstrar como a plataforma atende a Operação com os indicadores da ANEEL, agiliza o Atendimento ao Consumidor e traz o poder da IA generativa Text-to-SQL."*
 
 - 💡 **A Resposta Direta:**
   > *"Acabamos com o desperdício em campo: o gestor tem uma fila inteligente que mira R$ 2,02 milhões com 96% de assertividade comprovada."*
@@ -129,6 +147,7 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
 
 ### Bloco 4: Qualidade da Rede & Indicadores DEC/FEC da ANEEL (09:00 – 11:00) · 2 min
 
+- **Apresentador:** Miguel Batista
 - **Stakeholder / Persona:** Beatriz Farias · Gerente de Operação (`atividade.pdf`, pág. 6).
 - **Citação Literal do Problema (`atividade.pdf`):**
   > *"A ANEEL cobra DEC e FEC da gente, e multa quando passamos do limite. Quero acompanhar esses indicadores por alimentador, saber quais regiões concentram as piores interrupções e onde a manutenção preventiva dá mais retorno."*
@@ -140,7 +159,8 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
   4. Aponte para a decomposição por causa de falha (falhas internas atacáveis vs causas climáticas/externas).
 
 - 🗣️ **O que falar:**
-  > *"Para a Gerente de Operação Beatriz Farias, estabilidade da rede significa evitar multas pesadas da ANEEL.  
+  > *"Obrigado, Bernardo. Boa tarde a todos os membros da banca.  
+  > Para a Gerente de Operação Beatriz Farias, estabilidade da rede significa evitar multas pesadas da ANEEL.  
   > Na tela **Qualidade da Rede**, calculamos de forma automatizada no pipeline as duas métricas oficiais do PRODIST Módulo 8 da ANEEL: o **DEC** — horas que os clientes ficaram sem luz — e o **FEC** — quantidade de vezes que faltou energia.  
   > O sistema permite acompanhar esses números ao longo dos 4 anos e, principalmente, filtrar por **alimentador** — que são os circuitos de média tensão dos bairros.  
   > Destacamos visualmente os alimentadores mais críticos, orientando a manutenção preventiva exatamente onde o risco de estourar as metas regulatórias é iminente."*
@@ -152,6 +172,7 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
 
 ### Bloco 5: Atendimento ao Cliente & Visão 360 da UC (11:00 – 13:00) · 2 min
 
+- **Apresentador:** Miguel Batista
 - **Stakeholder / Persona:** Camila Barreto · Gerente de Atendimento (`atividade.pdf`, pág. 6).
 - **Citação Literal do Problema (`atividade.pdf`):**
   > *"O cliente liga, o atendente pede o número da unidade que está na conta e digita no sistema. Nessa hora tem que aparecer tudo numa tela só: quem é o cliente, o consumo dos últimos meses ao lado do mesmo período do ano passado, as faturas em aberto, o medidor instalado, se ele tem painel solar, se a rua dele teve falta de luz e os chamados que ele já abriu. Hoje meu atendente abre quatro sistemas e o cliente espera na linha. Quando alguém diz que a conta veio alta, o atendente precisa conseguir responder na hora se o consumo realmente subiu."*
@@ -178,6 +199,7 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
 
 ### Bloco 6: Inteligência Artificial Text-to-SQL & Fechamento (13:00 – 15:00) · 2 min
 
+- **Apresentador:** Miguel Batista
 - **Stakeholders / Personas:** Patrícia Lins (TI) & Henrique Duarte (Comercial) (`atividade.pdf`, pág. 2 e 7).
 - **Citação Literal do Problema (`atividade.pdf`):**
   > *"[...] Quero que qualquer pessoa da empresa faça uma pergunta em português e receba a resposta na hora, sem abrir chamado para o meu time. Com uma condição: se o agente não souber, ele tem que dizer que não sabe. Dados inventados são mais prejudiciais do que não ter."*
@@ -203,60 +225,68 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
 
 ## 🛡️ Guia de Defesa da Banca (15 Minutos de Q&A)
 
-As 8 perguntas de maior probabilidade que a banca examinadora fará, com a resposta técnica e de negócio exata:
+As 8 perguntas de maior probabilidade que a banca examinadora fará, com a resposta técnica e de negócio exata e o apresentador que lidera a resposta:
 
 ### 1. Pergunta sobre Escolha do Banco de Dados:
 > *"Por que vocês escolheram SQLite no backend em vez de PostgreSQL?"*
+- **Líder da Resposta:** Bernardo Heuer (ou apoio técnico conjunto)
 - **Resposta:** *"O SQLite foi uma escolha técnica consciente para o escopo da área piloto (45 mil UCs e 2,1 milhões de registros). Ele torna a aplicação 100% autocontida, com portabilidade total e zero dependência de infraestrutura externa em homologação. Toda a camada Gold foi modelada em terceira forma normal e indexada nas chaves de maior tráfego (competência, alimentador e código de UC), atingindo tempos de resposta inferiores a 100 milissegundos nas rotas da API e nas consultas da IA."*
 
 ---
 
 ### 2. Pergunta sobre Prevenção de Alucinação na Inteligência Artificial:
 > *"Como vocês garantem que o modelo de IA não alucina nem gera consultas perigosas que corrompam o banco?"*
+- **Líder da Resposta:** Miguel Batista
 - **Resposta:** *"Adotamos defesa em três níveis: 1. Segurança de Infraestrutura: a conexão disponibilizada para a IA é estritamente de leitura (SELECT), sem privilégios de escrita ou deleção. 2. Arquitetura FSM: o agente valida a sintaxe SQL contra o catálogo de tabelas Gold antes de disparar a consulta. 3. Golden Dataset: criamos uma bateria de testes com dezenas de perguntas de negócio auditadas, penalizando o modelo caso ele desvie do gabarito."*
 
 ---
 
 ### 3. Pergunta sobre o Impacto da Geração Distribuída (GD):
 > *"Se apenas 3,5 mil UCs possuem energia solar de um total de 45 mil, como ela explica 97,4% da queda de volume faturado?"*
+- **Líder da Resposta:** Bernardo Heuer
 - **Resposta:** *"A adoção de energia solar exige investimento inicial e ocorreu nos maiores consumidores da concessão: comércios, pequenas indústrias e residências de grande porte. Embora sejam 7,8% das conexões, essas 3,5 mil UCs tinham consumo elevado. A energia gerada pelo sol é consumida instantaneamente no imóvel e abatida antes da fatura. Portanto, eles deixaram de comprar 11,3 mil MWh da rede, o que corresponde matematicamente a 97,4% do recuo de 11,6 mil MWh entre os períodos."*
 
 ---
 
 ### 4. Pergunta sobre a Fraude nos 4 Bairros:
 > *"Qual é a evidência real nos dados de que houve fraude nos quatro bairros críticos a partir de maio de 2025?"*
+- **Líder da Resposta:** Bernardo Heuer
 - **Resposta:** *"Cruzamos as curvas mensais de faturamento com os laudos de campo. Em Iputinga, Macaxeira, Jardim Jordão e Prazeres, o consumo residencial despencou repentinamente a partir de maio de 2025 sem relação com placas solares. A confirmação definitiva veio da fiscalização: das 871 inspeções efetuadas nesses bairros, 835 (96%) registraram irregularidade material no medidor (violação de lacre, bobina adulterada ou ligação direta), isolando um potencial de R$ 2,02 milhões anuais de receita recuperável."*
 
 ---
 
 ### 5. Pergunta sobre Metodologia Regulatória (DEC e FEC):
 > *"Como vocês calcularam o DEC e o FEC a partir das ocorrências de rede?"*
+- **Líder da Resposta:** Miguel Batista
 - **Resposta:** *"Implementamos as fórmulas oficiais do PRODIST Módulo 8 da ANEEL. Para cada alimentador em cada mês, o DEC é a soma da duração de cada interrupção ponderada pela quantidade de unidades consumidoras atingidas, dividida pelo total de UCs atendidas pelo alimentador. O FEC é análogo, ponderando a quantidade de interrupções. Esse cálculo permite comparar circuitos de portes completamente diferentes de forma justa e regulatória."*
 
 ---
 
 ### 6. Pergunta sobre Rotina da Equipe de Campo:
 > *"Como a solução ajuda a equipe de campo que trabalha na rua sem acesso à internet?"*
+- **Líder da Resposta:** Bernardo Heuer
 - **Resposta:** *"A tela de fiscalização possui botão de exportação da fila priorizada em CSV. O supervisor exporta a rota do dia para o dispositivo da equipe. Ao retornarem à base com os laudos preenchidos, o gestor utiliza o botão de upload de planilha no portal: o backend processa o arquivo em lote, atualiza os status das ordens de serviço e computa a energia recuperada, poupando centenas de horas de redigitação manual."*
 
 ---
 
 ### 7. Pergunta sobre Escalabilidade para Produção:
 > *"Se a diretoria decidir colocar esse sistema em produção para 2 milhões de clientes no estado inteiro, o que mudaria na arquitetura?"*
+- **Líder da Resposta:** Miguel Batista
 - **Resposta:** *"A arquitetura já foi desenhada para isso: 1. O pipeline de dados já está em PySpark no Databricks, bastando escalar horizontalmente o cluster de processamento. 2. Substituiríamos o SQLite local por uma instância distribuída gerenciada (como PostgreSQL particionado ou BigQuery). 3. O backend FastAPI é sem estado (stateless) e o portal React é compilado estaticamente, viabilizando escalabilidade imediata sob contêineres e balanceamento de carga com cache Redis."*
 
 ---
 
 ### 8. Pergunta sobre Rastreabilidade nas Tabelas Gold:
 > *"Quais tabelas e colunas específicas comprovaram essa tese da GD e da Fraude?"*
+- **Líder da Resposta:** Bernardo Heuer & Miguel Batista
 - **Resposta:** *"1. Na `fato_faturamento`, medimos que o volume faturado encolheu 11.618 MWh (-5,1%). 2. Na `dim_unidade_consumidora`, filtramos `possui_gd = 1` e medimos que esses 3,5k clientes deixaram de comprar 11.314 MWh (97,4% da perda). 3. Filtrando as UCs restantes sem GD na `fato_faturamento`, isolamos a queda abrupta a partir de maio de 2025 em Iputinga, Macaxeira, Jardim Jordão e Prazeres. 4. Na `fato_inspecoes_perdas`, confirmamos que 835 de 871 laudos nesses 4 bairros atestaram irregularidade comprovada (96% de assertividade)."*
 
 ---
 
-## 📋 Checklist Prático para o Apresentador no Dia D
+## 📋 Checklist Prático para a Dupla no Dia D
 
 - [ ] **Ambiente Local Iniciado:** Garantir que o comando `make run-all` (ou `make run-all-ngrok`) esteja rodando e que as páginas abram instantaneamente em `http://localhost:5173`.
 - [ ] **Abas Pré-carregadas:** Deixar o navegador aberto com as telas da Navbar já carregadas em abas individuais (para evitar qualquer atraso de renderização durante a fala).
-- [ ] **Prompt da IA Pronto:** Deixar a pergunta de demonstração da IA copiada na área de transferência (*"Qual bairro teve a maior queda de volume faturado residencial no último ano?"*).
-- [ ] **UC Pré-selecionada:** Ter em mãos o código `UC-0001` para demonstração rápida na tela de atendimento.
-- [ ] **Controle do Relógio:** Manter um cronômetro visível com os marcadores de 2 min, 6 min, 9 min, 11 min, 13 min e 15 min.
+- [ ] **Bernardo com Telas Prontas:** Painel Executivo, Inteligência Comercial e Fila de Inspeção (com arquivo CSV de exemplo na pasta se quiser demonstrar upload).
+- [ ] **Miguel com Telas Prontas:** Qualidade da Rede, UC 360 (código `UC-0001` testado) e Assistente IA (pergunta de demonstração copiada na área de transferência: *"Qual bairro teve a maior queda de volume faturado residencial no último ano?"*).
+- [ ] **Controle do Relógio:** Manter um cronômetro visível com a transição aos 09:00 minutos de Bernardo para Miguel e término cravado em 15:00 minutos.
