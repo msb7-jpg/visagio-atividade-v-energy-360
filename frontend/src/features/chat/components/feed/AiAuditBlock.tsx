@@ -1,25 +1,36 @@
 import { ChevronRight, ShieldCheck } from 'lucide-react'
-import { useState, type JSX } from 'react'
+import { useMemo, useState, type JSX } from 'react'
 import { CollapsibleMotion } from '@/components/animations/CollapsibleMotion'
+import { Badge } from '@/components/ui/badge'
 import { NodeStepper } from '@/features/chat/components/feed/NodeStepper'
 import { SqlCodeBlock } from '@/features/chat/components/renderers/SqlCodeBlock'
+import { splitSqlStatements } from '@/features/chat/components/renderers/sqlStatements'
 import { ThoughtInspector } from '@/features/chat/components/renderers/ThoughtInspector'
 import type { AgentStepItem } from '@/features/chat/types/chat.types'
 import { cn, handleKeyboardClick } from '@/lib/utils'
 
-// TODO(miguel): Exibir múltiplas consultas SQL geradas no frontend quando houver lote analítico
-// (ex.: abas ou sub-acordeons para cada consulta individual rotulada em _bloco_consulta).
+/**
+ * Propriedades para o bloco de auditoria técnica da IA.
+ */
 export interface AiAuditBlockProps {
+  /** Lista de passos executados pela máquina de estados finitos (FSM). */
   steps?: AgentStepItem[]
+  /** Texto do raciocínio interno gerado pelo modelo. */
   thought?: string | null
+  /** Consulta(s) SQL executada(s) em modo read-only. */
   sql?: string | null
+  /** Indica se a resposta ainda está sendo transmitida via SSE. */
   isStreaming?: boolean
+  /** Classes CSS adicionais. */
   className?: string
 }
 
 /**
  * Bloco de auditoria técnica da IA recolhido por padrão.
- * Agrupa etapas de execução da FSM, raciocínio interno e consulta SQL.
+ * Agrupa etapas de execução da FSM, raciocínio interno e consulta(s) SQL.
+ *
+ * @param props - Propriedades com etapas, pensamento e código SQL.
+ * @returns Elemento JSX do acordeon de auditoria ou null se vazio.
  */
 export function AiAuditBlock({
   steps = [],
@@ -30,6 +41,7 @@ export function AiAuditBlock({
 }: AiAuditBlockProps): JSX.Element | null {
   const [isExpanded, setIsExpanded] = useState(false)
   const hasContent = steps.length > 0 || Boolean(thought) || Boolean(sql)
+  const queryCount = useMemo(() => (sql ? splitSqlStatements(sql).length : 0), [sql])
 
   if (!hasContent) {
     return null
@@ -64,6 +76,13 @@ export function AiAuditBlock({
           <span className="truncate text-xs font-semibold text-foreground">
             Ver raciocínio da IA (Auditoria)
           </span>
+          {queryCount > 1 ? (
+            <Badge variant="muted" className="shrink-0">
+              {queryCount}
+              {' '}
+              consultas SQL
+            </Badge>
+          ) : null}
         </div>
         <span className="shrink-0 text-xs text-muted-foreground">
           {isExpanded ? '(clique para recolher)' : '(clique para expandir)'}
