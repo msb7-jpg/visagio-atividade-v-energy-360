@@ -6,6 +6,46 @@
 
 ## Registros de Execução
 
+### [2026-11-09] - Responsividade e Quebra Fluida de Texto (Wrap) no Widget de IA Flutuante (Mobile & Desktop)
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Suporte Oficial a Múltiplas Linhas no Design System (`frontend/src/components/ui/button.tsx`):**
+    - Adicionada a variante de tamanho `multiline` (`h-auto min-h-9 py-2 px-3 whitespace-normal`) ao `buttonVariants`.
+    - Permite que botões quebrem linhas naturalmente mantendo 100% de conformidade com as regras do `@shadcn/lint` (sem necessidade de injetar `p-*`, `w-*` ou `h-*` no `className`).
+    - Criado teste unitário em `frontend/src/components/ui/__tests__/button.test.tsx` validando `size="multiline"` e `fullWidth`.
+  - **Layout Fluido e Responsivo nas Sugestões de Prompts (`SuggestionsExplorer.tsx` & `ChatEmptyWelcome.tsx`):**
+    - Substituído o alinhamento de pílulas horizontais rígidas por cartões acionáveis em pilha fluida (`flex w-full flex-col gap-2`) utilizando `<Button fullWidth size="multiline" variant="outline">`.
+    - Alinhamento de conteúdo com ícone no topo (`items-start mt-0.5`), texto com quebra natural (`break-words text-xs leading-snug flex-1 min-w-0`) e badge posicionado no canto superior direito (`self-start ml-2`).
+    - Alternador de abas ("Análises do Case" vs "Testes de Segurança & Recusa") tornado responsivo (`grid grid-cols-2 sm:inline-flex`) com texto truncado seguro no mobile.
+  - **Dimensionamento Responsivo e Smart Snap da Janela Flutuante (`useFloatingWidgetDragResize.ts`, `floatingWidgetCalculations.ts`, `smartSnapCalculations.ts` & `ChatWidget.tsx`):**
+    - Inicialização dinâmica das dimensões baseada no viewport: em mobile (< 640px), largura inicial calculada via `Math.min(600, window.innerWidth - 24)` e altura proporcional.
+    - Limite mínimo `MIN_WIDTH` responsivo ao viewport atual (`Math.min(380, Math.max(280, window.innerWidth - 24))`), evitando overflow em telas de 360px a 390px.
+    - Padding responsivo do smart snap magnético (`12px` em mobile e `24px` em desktop).
+    - Posicionamento responsivo da janela (`right-3 bottom-3 sm:right-6 sm:bottom-6`), maximizando a área útil para visualização de dados.
+    - Atualizado `index.css` com `max-width: calc(100vw - 1.5rem)` e `max-height: calc(100dvh - 1.5rem)`.
+  - **Blindagem do Feed de Mensagens (`ChatMessage.tsx`):**
+    - Adicionado `min-w-0 break-words` no balão de mensagens do usuário e argumentos de comando, impedindo overflow horizontal.
+  - **Validação:**
+    - `make lint-all` 100% verde (Ruff, Pylint 10.00/10, import-linter, ESLint, Fallow com 0 violações).
+    - `make test-all` 100% verde (941 backend pytest + 856 frontend vitest).
+
+### [2026-11-09] - Integração do Gemini Bridge, Abertura Estilo Google AI Overview (`inspiração.png`) e Multi-Query SQL
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Conexão ao Gemini Bridge (`backend/.env` & `synthesizer_prompt.py`):**
+    - Configurado o backend para utilizar o modelo de alta capacidade `gemini-3.8-flash` via `gemini-bridge` escutando localmente na porta 8765 (`AI_PROVIDER="local"`, `AI_BASE_URL="http://127.0.0.1:8765/v1"` e `AI_MODEL_NAME="gemini-3.8-flash"`).
+    - Ajustado o `SYNTHESIZER_PROMPT` para adotar a estrutura exata do Google AI Overview: início imediato no primeiro parágrafo respondendo à dúvida do usuário com grifo na frase de abertura (`==resposta central==`), sem títulos redundantes no topo e sem espalhar grifos pelo resto do texto.
+  - **Estilização de Marca-Texto Google AI Overview e Escala Tipográfica (`MarkdownRenderer.tsx`):**
+    - Estilizado o elemento `<mark>` com o azul corporativo do Google AI Overview (`bg-primary/25 text-foreground box-decoration-clone rounded-sm px-1 py-0.5 font-medium`).
+    - Ajustada a escala tipográfica de subtítulos: `h1` com `text-xl` (`20px`), `h2` com `text-lg` (`16px`) e `h3` com `text-base` (`14px`), eliminando a aparência plana anterior.
+  - **Visualização de Múltiplas Consultas SQL (`sqlStatements.ts`, `SqlStatementsTabs.tsx`, `SqlCodeBlock.tsx` & `AiAuditBlock.tsx`):**
+    - Implementado analisador léxico leve (`splitSqlStatements`) que divide instruções SQL separadas por `;` no nível superior (respeitando strings e comentários) e extrai os títulos de negócio dos cabeçalhos `-- [CONSULTA N: Titulo]`.
+    - Criado seletor em abas `<SqlStatementsTabs />` exibido automaticamente quando o lote analítico contém 2 ou mais consultas, permitindo alternar entre cada consulta individual ou visualizar todas combinadas (`Todas (N)`), com realce de sintaxe Shiki e botão de cópia contextual.
+    - Adicionado badge de contagem (`N consultas SQL`) no cabeçalho do `AiAuditBlock` e do `SqlCodeBlock`.
+  - **Qualidade, Testes e Governança:**
+    - Criadas suítes de testes unitários em `sqlStatements.test.ts`, `MarkdownRenderer.test.tsx` e expandido `ChatMessage.test.tsx`.
+    - Eliminados todos os 4 avisos `sonarjs/todo-tag` no ESLint e reduzida a complexidade/tamanho de `ChatMessage.tsx` (126 LOC), mantendo 0 violações no Fallow.
+
 ### [2026-11-08] - Otimização do Agente para Cruzamento Multidimensional e Cobertura Total do Roteiro de Apresentação
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

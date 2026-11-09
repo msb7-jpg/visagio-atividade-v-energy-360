@@ -8,3 +8,5 @@ colocar sugestões de perguntas para o agente de IA
 
 colocar sublinhado nas perguntas e tal e no geral facilitar a leitura dos inishgts
 
+![](image.png)
+![](image.png)

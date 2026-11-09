@@ -85,9 +85,9 @@
 - [x] Validação completa e resolução dos 6 critérios de avaliação do `docs/CHECKLIST.md` (modelo `.env`, perguntas ao vivo dos 4 temas de negócio, gabaritos das perguntas canônicas #26 a #28, jargões, suíte de recusa estrita com script corrigido e follow-up multi-turno).
 - [x] Fechamento da Issue #19 no GitHub com relatório oficial consolidado.
 - [x] Otimização do Agente para Cruzamento Multidimensional de Informações (Multi-Query AST Read-Only, Playbook de Domínio dos 5 temas do `ROTEIRO_APRESENTACAO.md` e suíte de testes avançados de cruzamento no backend).
-- [ ] TODO(miguel): Visualização de Múltiplas Consultas SQL no Frontend (`AiAuditBlock.tsx` e `SqlCodeBlock.tsx`).
-- [ ] TODO(miguel): Highlight da Mensagem Principal no topo da resposta estilo Gemini (`ChatMessage.tsx`).
-- [ ] TODO(miguel): Ajuste de escala tipográfica e hierarquia visual para títulos Markdown `##` e `###` (`MarkdownRenderer.tsx`).
+- [x] Visualização de Múltiplas Consultas SQL no Frontend (`AiAuditBlock.tsx`, `SqlCodeBlock.tsx`, `SqlStatementsTabs.tsx` e `sqlStatements.ts`).
+- [x] Highlight Embutido na Resposta estilo Obsidian (`==texto==` via `remarkHighlight.ts`, `MarkdownRenderer.tsx`, `ChatMessage.tsx` e `synthesizer_prompt.py`).
+- [x] Ajuste de escala tipográfica e hierarquia visual para títulos Markdown `##` e `###` (`MarkdownRenderer.tsx`).
 
 ---
 
