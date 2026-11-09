@@ -23,7 +23,7 @@ const STATUS_FILTERS: { value: QualityStatus | ''; label: string }[] = [
  * @returns Cards de indicadores, filtro de status, ranking e gaveta do histórico.
  */
 export function CurrentQualityView() {
-  const { status, setStatus, pagination, selectedFeederId, openFeeder, closeFeeder, indicators, feeders, history, customers } =
+  const { status, setStatus, pagination, selectedFeederId, selectedFeeder, openFeeder, closeFeeder, indicators, feeders, history, customers } =
     useGridQualityController()
 
   return (
@@ -72,6 +72,7 @@ export function CurrentQualityView() {
 
       <FeederHistorySheet
         feederId={selectedFeederId}
+        feeder={selectedFeeder}
         history={history.data}
         isLoading={history.isLoading}
         isError={history.isError}

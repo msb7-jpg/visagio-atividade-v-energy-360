@@ -34,6 +34,7 @@ export function useGridQualityController() {
     setStatus: changeStatus,
     pagination: paginate(feeders.data ?? [], page, setPage),
     selectedFeederId,
+    selectedFeeder: feeders.data?.find((feeder) => feeder.id_alimentador === selectedFeederId),
     openFeeder: setSelectedFeederId,
     closeFeeder: () => setSelectedFeederId(null),
     indicators,

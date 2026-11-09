@@ -17,7 +17,7 @@ interface MunicipalityMapProps {
 }
 
 /**
- * Mapa da RMR da Continuidade: cada município pintado pela faixa de DEC (verde, azul, âmbar ou vermelho).
+ * Mapa da RMR da Continuidade: cada município pintado pela faixa de DEC (escala âmbar de `DEC_BANDS`).
  * Passar o mouse ou clicar destaca o município também na lista ao lado.
  *
  * @param props - Municípios com DEC do período, seleção e callbacks.
