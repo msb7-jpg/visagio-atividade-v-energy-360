@@ -26,3 +26,33 @@ export function axisFormatOf(metric: HistoryMetric): (value: number | null) => s
   if (metric.key === 'tarifa_media_rs_kwh') return formatCurrency
   return metric.format
 }
+
+const TARIFF_STEP = 0.05
+
+type DomainBound = number | string | ((value: number) => number)
+
+/**
+ * Faixa do eixo Y. Receita e volume partem do zero, que mostra o tamanho de cada bairro. A tarifa varia poucos
+ * centavos entre bairros: a partir do zero as linhas se sobrepõem, então o eixo vai do menor ao maior valor,
+ * arredondados para a casa de R$ 0,05 abaixo e acima.
+ *
+ * @param metric - Métrica exibida no gráfico.
+ * @returns Limites inferior e superior do eixo, no formato do Recharts.
+ */
+export function axisDomainOf(metric: HistoryMetric): [DomainBound, DomainBound] {
+  if (metric.key !== 'tarifa_media_rs_kwh') return [0, 'auto']
+  return [
+    (dataMin: number) => Math.max(0, Math.floor(dataMin / TARIFF_STEP) * TARIFF_STEP),
+    (dataMax: number) => Math.ceil(dataMax / TARIFF_STEP) * TARIFF_STEP
+  ]
+}
+
+/**
+ * Diz se o eixo Y começa acima de zero, para a tela avisar o leitor.
+ *
+ * @param metric - Métrica exibida no gráfico.
+ * @returns Verdadeiro para a tarifa.
+ */
+export function isZoomedAxis(metric: HistoryMetric): boolean {
+  return metric.key === 'tarifa_media_rs_kwh'
+}

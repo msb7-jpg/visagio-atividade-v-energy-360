@@ -2,7 +2,7 @@ import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts'
 import type { TooltipProps } from 'recharts'
 import { ChartContainer, ChartLegendItem, ChartTooltipFrame } from '@/components/ui/chart'
 import type { ComparedArea } from '@/features/revenue/hooks/useAreaComparison'
-import { axisFormatOf, SERIES_TOKENS, seriesStroke } from '@/features/revenue/utils/comparisonSeries'
+import { axisDomainOf, axisFormatOf, isZoomedAxis, SERIES_TOKENS, seriesStroke } from '@/features/revenue/utils/comparisonSeries'
 import { formatCompetencia } from '@/features/revenue/utils/revenueFormatters'
 import type { HistoryMetric } from '@/features/revenue/utils/revenueHistoryMetrics'
 
@@ -40,7 +40,8 @@ interface ComparisonLineChartProps {
 }
 
 /**
- * Uma linha por bairro, todas na mesma escala (eixo comum a partir de zero), para comparar a métrica escolhida mês a mês.
+ * Uma linha por bairro, todas na mesma escala, para comparar a métrica escolhida mês a mês. Receita e volume partem
+ * do zero; a tarifa usa a faixa dos dados, com aviso abaixo do gráfico.
  *
  * @param props - Bairros escolhidos com a série mensal de cada um e a métrica (rótulo e formatação).
  * @returns Legenda por cor e gráfico de linhas com eixo e tooltip na unidade da métrica.
@@ -56,13 +57,16 @@ export function ComparisonLineChart({ series, metric }: ComparisonLineChartProps
         <LineChart data={toRows(series, metric)} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--color-border)" />
           <XAxis dataKey="competencia" tickFormatter={formatCompetencia} tickLine={false} axisLine={false} tick={AXIS_TICK} minTickGap={24} />
-          <YAxis domain={[0, 'auto']} tickFormatter={axisFormatOf(metric)} tickLine={false} axisLine={false} tick={AXIS_TICK} width={72} />
+          <YAxis domain={axisDomainOf(metric)} tickFormatter={axisFormatOf(metric)} tickLine={false} axisLine={false} tick={AXIS_TICK} width={72} />
           <Tooltip content={<ComparisonTooltip series={series} metric={metric} />} />
           {series.map((area, index) => (
             <Line key={area.key} dataKey={`serie${index}`} stroke={seriesStroke(index)} strokeWidth={2} dot={false} />
           ))}
         </LineChart>
       </ChartContainer>
+      {isZoomedAxis(metric) ? (
+        <p className="text-muted-foreground text-xs">O eixo não começa em zero, para as diferenças de tarifa entre os bairros ficarem visíveis.</p>
+      ) : null}
     </div>
   )
 }

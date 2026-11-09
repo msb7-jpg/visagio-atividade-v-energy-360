@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { axisFormatOf, SERIES_TOKENS, seriesStroke } from '@/features/revenue/utils/comparisonSeries'
+import { axisDomainOf, axisFormatOf, isZoomedAxis, SERIES_TOKENS, seriesStroke } from '@/features/revenue/utils/comparisonSeries'
 import { HISTORY_METRICS } from '@/features/revenue/utils/revenueHistoryMetrics'
 import { readTokens } from '@/test/contrastTokens'
 
@@ -32,5 +32,23 @@ describe('axisFormatOf', () => {
   it('mantém a receita compacta e o volume em MWh', () => {
     expect(axisFormatOf(metric('receita_rs'))(100_000)).toMatch(/^R\$\s100(,0)?\smil$/)
     expect(axisFormatOf(metric('volume_kwh'))(100_000)).toMatch(/MWh$/)
+  })
+})
+
+describe('axisDomainOf', () => {
+  const metric = (key: string) => HISTORY_METRICS.find((candidate) => candidate.key === key) ?? HISTORY_METRICS[0]
+
+  it('começa a receita e o volume no zero', () => {
+    expect(axisDomainOf(metric('receita_rs'))).toEqual([0, 'auto'])
+    expect(axisDomainOf(metric('volume_kwh'))).toEqual([0, 'auto'])
+    expect(isZoomedAxis(metric('receita_rs'))).toBe(false)
+  })
+
+  it('ajusta a tarifa à faixa dos dados, arredondada de R$ 0,05 em R$ 0,05', () => {
+    const [lower, upper] = axisDomainOf(metric('tarifa_media_rs_kwh')) as [(value: number) => number, (value: number) => number]
+
+    expect(lower(0.718)).toBeCloseTo(0.7)
+    expect(upper(0.871)).toBeCloseTo(0.9)
+    expect(isZoomedAxis(metric('tarifa_media_rs_kwh'))).toBe(true)
   })
 })
