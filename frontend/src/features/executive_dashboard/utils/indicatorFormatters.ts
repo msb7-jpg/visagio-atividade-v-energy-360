@@ -3,7 +3,10 @@ import type { IndicatorUnit } from '@/features/executive_dashboard/types/executi
 const EMPTY_VALUE = '—'
 
 const UNIT_FORMATTERS: Record<IndicatorUnit, (value: number) => string> = {
-  RS: (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(value),
+  // Uma casa decimal: sem ela o compacto arredonda R$ 169,7 mi para "R$ 170 mi", diferente do resumo da IA e da Receita.
+  RS: (value) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', minimumFractionDigits: 0, maximumFractionDigits: 1 })
+      .format(value),
   KWH: (value) => `${new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 }).format(value)} kWh`,
   RS_KWH: (value) =>
     `${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 4 }).format(value)}/kWh`,

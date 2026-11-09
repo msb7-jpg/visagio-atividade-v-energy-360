@@ -111,10 +111,31 @@ describe('ExecutiveDashboardPage', () => {
     expect(screen.getByRole('heading', { name: 'Comercial' })).toBeTruthy()
     expect(within(revenueCard).getByText('Melhorou')).toBeTruthy()
     expect(within(revenueCard).getByText('+10%')).toBeTruthy()
-    expect(within(revenueCard).getByText(/Antes:/)).toBeTruthy()
+    expect(within(revenueCard).getByText('Antes')).toBeTruthy()
+    expect(within(revenueCard).getByText('Agora')).toBeTruthy()
     const outageCard = screen.getByTestId('indicator-dec_area')
     expect(within(outageCard).getByText('Piorou')).toBeTruthy()
     expect(within(outageCard).getByText('Jul/2025 teve um temporal.')).toBeTruthy()
+  })
+
+  it('resume no placar quantos indicadores melhoraram, ficaram estáveis e pioraram', async () => {
+    renderPage()
+
+    const scoreboard = await screen.findByTestId('dashboard-scoreboard')
+    expect(within(scoreboard).getByText('Placar do período')).toBeTruthy()
+    expect(within(screen.getByTestId('score-MELHOROU')).getByText('1')).toBeTruthy()
+    expect(within(screen.getByTestId('score-ESTAVEL')).getByText('1')).toBeTruthy()
+    expect(within(screen.getByTestId('score-PIOROU')).getByText('1')).toBeTruthy()
+    expect(within(scoreboard).getByRole('link', { name: 'Rede' }).getAttribute('href')).toBe('#grupo-rede')
+  })
+
+  it('ordena o gráfico de variação da maior para a menor mudança', async () => {
+    renderPage()
+
+    const chart = await screen.findByTestId('dashboard-variations')
+    const rows = within(chart).getAllByRole('listitem').map((row) => row.dataset.testid)
+    expect(rows).toEqual(['variation-dec_area', 'variation-faturamento', 'variation-inadimplencia'])
+    expect(within(screen.getByTestId('variation-dec_area')).getByText('+50%')).toBeTruthy()
   })
 
   it('mostra a variação das taxas em pontos percentuais', async () => {
@@ -134,7 +155,7 @@ describe('ExecutiveDashboardPage', () => {
       { base: indicators.base, atual: indicators.atual },
       expect.anything()
     )
-    expect(screen.getByText(/Compara jul\/2025 a jun\/2026 com jul\/2022 a jun\/2023/)).toBeTruthy()
+    expect(screen.getByText(fullText(/^Comparando jul\/2025 a jun\/2026 com jul\/2022 a jun\/2023/))).toBeTruthy()
     expect((screen.getByRole('button', { name: /Restaurar períodos padrão/ }) as HTMLButtonElement).disabled).toBe(true)
   })
 
@@ -146,13 +167,13 @@ describe('ExecutiveDashboardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Início: período analisado: jul/2025' }))
     fireEvent.click(await screen.findByRole('button', { name: 'ago/2025' }))
 
-    await screen.findByText(/Compara ago\/2025 a jun\/2026/)
+    await screen.findByText(fullText(/^Comparando ago\/2025 a jun\/2026/))
     expect(mockedApi.getIndicators).toHaveBeenLastCalledWith(
       { base: indicators.base, atual: { competencia_inicio: '2025-08', competencia_fim: '2026-06' } },
       expect.anything()
     )
     fireEvent.click(screen.getByRole('button', { name: /Restaurar períodos padrão/ }))
-    expect(await screen.findByText(/Compara jul\/2025 a jun\/2026/)).toBeTruthy()
+    expect(await screen.findByText(fullText(/^Comparando jul\/2025 a jun\/2026/))).toBeTruthy()
   })
 
   it('avisa períodos sobrepostos sem consultar a API', async () => {
@@ -166,13 +187,13 @@ describe('ExecutiveDashboardPage', () => {
     renderPage()
 
     const snapshot = await screen.findByTestId('losses-snapshot')
-    expect(within(snapshot).getByText('Retrato atual, sem comparação')).toBeTruthy()
+    expect(screen.getByText('jun/2026')).toBeTruthy()
+    expect(screen.getByText('Retrato atual')).toBeTruthy()
     expect(within(snapshot).getByText(fullText('12 UCs'))).toBeTruthy()
     expect(within(snapshot).getByText('de 40 UCs na fila')).toBeTruthy()
     expect(within(snapshot).getByText(fullText(/^R\$\s11 mil$/))).toBeTruthy()
-    expect(within(snapshot).getByText(/até R\$\s12 mil se todas confirmarem/)).toBeTruthy()
-    expect(within(snapshot).getByText('20 inspeções avaliadas')).toBeTruthy()
-    expect(within(snapshot).queryByText(/fixada para a demonstração/)).toBeNull()
+    expect(within(snapshot).getByText(/Potencial: R\$\s12 mil/)).toBeTruthy()
+    expect(within(snapshot).getByText('20 inspeções')).toBeTruthy()
   })
 
   it('avisa quando a fila só tem UCs de baixa chance', async () => {
@@ -180,16 +201,15 @@ describe('ExecutiveDashboardPage', () => {
     renderPage()
 
     const snapshot = await screen.findByTestId('losses-snapshot')
-    expect(within(snapshot).getByText(/Nenhuma UC com chance alta de acerto; as 40 da fila têm chance baixa/)).toBeTruthy()
+    expect(within(snapshot).getByText(/Nenhuma UC prioritária; 40 na fila com baixa chance de acerto/)).toBeTruthy()
   })
 
-  it('avisa a competência fixada e a fila vazia', async () => {
+  it('avisa a fila vazia', async () => {
     mockedApi.getLossesSnapshot.mockResolvedValue({ ...losses, competencia_fixada: true, ucs_na_fila: 0 })
     renderPage()
 
     const snapshot = await screen.findByTestId('losses-snapshot')
-    expect(within(snapshot).getByText(/Competência fixada para a demonstração/)).toBeTruthy()
-    expect(within(snapshot).getByText(/Nenhuma UC com queda suspeita/)).toBeTruthy()
+    expect(within(snapshot).getByText(/Fila vazia nesta competência/)).toBeTruthy()
   })
 
   it('mostra o erro dos indicadores sem esconder as perdas', async () => {

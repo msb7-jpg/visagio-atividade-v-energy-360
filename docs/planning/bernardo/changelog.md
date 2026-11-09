@@ -421,3 +421,19 @@
   - "Inspeções anteriores": ícone e cor por resultado, data e inspetor em selo.
 - **Validação de Testes:**
   - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; 785 testes aprovados (testes do painel e do gráfico atualizados).
+
+### [2026-11-09] - Painel do Diretor mais visual (UI)
+- **Autor:** Bernardo H
+- **Branch:** `style/painel-diretor-visual`
+- **O que foi feito:**
+  - Só apresentação: mesma API, mesmos indicadores e mesmas avaliações do backend; nada é recalculado no frontend.
+  - Faixa de visão geral no topo, logo abaixo do resumo da IA, com dois cards lado a lado:
+    - **Placar do período:** manchete ("Mais indicadores pioraram do que melhoraram"), contagem grande de melhoraram, estáveis, pioraram e informativos (ícone e texto junto da cor), barra segmentada com a mesma conta e a lista "Por área", com uma pastilha por indicador na cor da avaliação e o nome da área levando ao bloco dela.
+    - **O que mais mudou:** barras divergentes a partir do zero, da maior para a menor variação, coloridas pela avaliação (subir pode ser bom ou ruim). Tooltip com antes, agora e p.p. nas taxas. Os indicadores sem base (painel solar) aparecem listados, e não somem.
+  - "Detalhe por área": a grade passou a encaixar as áreas em linhas de até 4 indicadores que ocupam a largura toda (`packGroupSpans`), sem buracos. Em cada bloco, o texto "Antes: X" virou barras "Antes" e "Agora" na mesma escala, com o valor ao lado.
+  - Perdas: barras de proporção (prioritárias sobre a fila, retorno esperado sobre o potencial e taxa de acerto) com o `ShareBar` compartilhado.
+  - Textos enxutos: subtítulo fixo da página (a frase dos períodos já aparece no seletor), "Placar do período" sem frase de veredito, "Maiores variações" sem subtítulo, eixo "Queda" e "Alta", atalhos só com o nome da tela, selo "Retrato atual" e notas e dicas de Perdas mais curtas. `describeWindow` saiu por ficar sem uso.
+  - Correção de exibição: o formato compacto em reais arredondava R$ 169,7 mi para "R$ 170 mi", diferente do resumo da IA e da Receita; agora mostra uma casa decimal.
+  - Números conferidos contra a API com o banco real: receita +8,0%, energia −5,1%, tarifa +13,8%, inadimplência 5,52% → 5,42% (−0,09 p.p.), DEC 1,47 → 3,45 e FEC 0,89 → 1,31, iguais à seção 14 do plano.
+- **Validação de Testes:**
+  - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; 862 testes aprovados (testes novos do placar, da ordem do gráfico e de `dashboardSummary`).

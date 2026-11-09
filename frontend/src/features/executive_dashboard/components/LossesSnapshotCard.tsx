@@ -1,29 +1,35 @@
+import { ShareBar } from '@/components/data/ShareBar'
 import { StatTile } from '@/components/data/StatTile'
-import { Badge } from '@/components/ui/badge'
 import type { LossesSnapshot } from '@/features/executive_dashboard/types/executiveDashboardTypes'
-import { formatMonth } from '@/lib/periods/periodPresets'
 import { formatIndicatorValue, formatMonthlyKwh } from '@/features/executive_dashboard/utils/indicatorFormatters'
 
 const countFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
 
-const HINT_UCS_PRIORITARIAS =
-  'Unidades consumidoras com queda atípica de consumo e chance calculada de irregularidade acima de 30%, priorizadas para envio de equipe a campo.'
+const HINT_UCS_PRIORITARIAS = 'UCs com queda atípica de consumo e chance de irregularidade de 30% ou mais.'
 
-const HINT_ENERGIA_RECUPERAVEL =
-  'Soma do volume mensal estimado de energia desviada (kWh/mês) em todas as UCs prioritárias da fila, medido pela diferença entre o consumo histórico normal e o consumo recente após a queda.'
+const HINT_ENERGIA_RECUPERAVEL = 'Energia mensal estimada como desviada nas UCs prioritárias: consumo histórico menos consumo recente.'
 
-const HINT_RETORNO_ESPERADO =
-  'Estimativa de receita recuperada por ano (R$/ano), calculada multiplicando a energia desviada pela tarifa média e ponderada pela probabilidade de confirmação de fraude em campo.'
+const HINT_RETORNO_ESPERADO = 'Energia recuperável × tarifa média × chance de confirmação, em R$ por ano.'
 
-const HINT_ACERTO_INSPECOES =
-  'Percentual de inspeções realizadas em campo que confirmaram irregularidade material ou furto no medidor (taxa histórica de assertividade das ordens concluídas).'
+const HINT_ACERTO_INSPECOES = 'Inspeções de campo que confirmaram irregularidade, sobre o total concluído.'
+
+const shareOf = (part: number, whole: number) => (whole > 0 ? (part / whole) * 100 : 0)
+
+/** Rodapé com a barra da parte sobre o todo (ex.: prioritárias sobre a fila) e o texto de referência. */
+function ShareFootnote({ percent, tone, children }: { percent: number; tone: string; children: string }) {
+  return (
+    <span className="flex flex-col gap-1.5 pt-1">
+      <ShareBar percent={percent} tone={tone} />
+      <span>{children}</span>
+    </span>
+  )
+}
 
 function snapshotNotes(snapshot: LossesSnapshot): string[] {
   const notes = [
-    snapshot.competencia_fixada ? 'Competência fixada para a demonstração, e não a mais recente.' : null,
-    snapshot.ucs_na_fila === 0 ? 'Nenhuma UC com queda suspeita nesta competência.' : null,
+    snapshot.ucs_na_fila === 0 ? 'Fila vazia nesta competência.' : null,
     snapshot.ucs_na_fila > 0 && snapshot.ucs_prioritarias === 0
-      ? `Nenhuma UC com chance alta de acerto; as ${countFormatter.format(snapshot.ucs_na_fila)} da fila têm chance baixa.`
+      ? `Nenhuma UC prioritária; ${countFormatter.format(snapshot.ucs_na_fila)} na fila com baixa chance de acerto.`
       : null
   ]
   return notes.filter((note) => note !== null)
@@ -31,31 +37,27 @@ function snapshotNotes(snapshot: LossesSnapshot): string[] {
 
 /**
  * Retrato atual da Fila de Perdas, sem comparação: o histórico de inspeções cobre só ago a dez/2025.
+ * O mês de referência fica no título da seção, na página.
  * Energia e valor contam só as UCs prioritárias, como na aba "Prioritárias" da Fila de Inspeção (ADR-028).
  *
  * @param props - Retrato devolvido pela API.
  * @returns Bloco com UCs prioritárias, energia, retorno esperado e taxa de acerto das inspeções.
  */
 export function LossesSnapshotCard({ snapshot }: { snapshot: LossesSnapshot }) {
-  const reference = snapshot.competencia_referencia ? formatMonth(snapshot.competencia_referencia) : 'sem medição'
   const notes = snapshotNotes(snapshot)
   const inspections = snapshot.inspecoes_avaliadas === null
-    ? 'taxa geral de referência, sem histórico de campo'
-    : `${countFormatter.format(snapshot.inspecoes_avaliadas)} inspeções avaliadas`
+    ? 'Taxa de referência'
+    : `${countFormatter.format(snapshot.inspecoes_avaliadas)} inspeções`
 
   return (
     <div data-testid="losses-snapshot" className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-foreground text-sm font-medium">Fila de Perdas em {reference}</span>
-        <Badge variant="muted">Retrato atual, sem comparação</Badge>
-      </div>
       {notes.length > 0 ? <p className="text-muted-foreground text-xs">{notes.join(' ')}</p> : null}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
           label="UCs prioritárias"
           hint={HINT_UCS_PRIORITARIAS}
           value={formatIndicatorValue(snapshot.ucs_prioritarias, 'UCS')}
-          footnote={`de ${formatIndicatorValue(snapshot.ucs_na_fila, 'UCS')} na fila`}
+          footnote={<ShareFootnote percent={shareOf(snapshot.ucs_prioritarias, snapshot.ucs_na_fila)} tone="bg-warning">{`de ${formatIndicatorValue(snapshot.ucs_na_fila, 'UCS')} na fila`}</ShareFootnote>}
         />
         <StatTile
           label="Energia recuperável"
@@ -66,13 +68,13 @@ export function LossesSnapshotCard({ snapshot }: { snapshot: LossesSnapshot }) {
           label="Retorno esperado por ano"
           hint={HINT_RETORNO_ESPERADO}
           value={formatIndicatorValue(snapshot.retorno_esperado_rs_ano, 'RS')}
-          footnote={`até ${formatIndicatorValue(snapshot.valor_prioritario_rs_ano, 'RS')} se todas confirmarem`}
+          footnote={<ShareFootnote percent={shareOf(snapshot.retorno_esperado_rs_ano, snapshot.valor_prioritario_rs_ano)} tone="bg-success">{`Potencial: ${formatIndicatorValue(snapshot.valor_prioritario_rs_ano, 'RS')}`}</ShareFootnote>}
         />
         <StatTile
           label="Acerto das inspeções"
           hint={HINT_ACERTO_INSPECOES}
           value={formatIndicatorValue(snapshot.taxa_acerto_pct, 'PCT')}
-          footnote={inspections}
+          footnote={<ShareFootnote percent={snapshot.taxa_acerto_pct} tone="bg-primary">{inspections}</ShareFootnote>}
         />
       </div>
     </div>
