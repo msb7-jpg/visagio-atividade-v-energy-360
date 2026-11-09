@@ -91,6 +91,27 @@ def test_validator_blocks_destructive_query_hidden_in_batch():
     assert cat_limit == SqlErrorCategory.SECURITY_VIOLATION
 
 
+def _has_analytics_tables() -> bool:
+    """Verifica se o banco analítico contém as tabelas de fatos populadas."""
+    try:
+        from app.db.session import get_readonly_db_connection
+
+        with get_readonly_db_connection() as conn:
+            cur = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='fato_faturamento'"
+            )
+            return cur.fetchone() is not None
+    except Exception:
+        return False
+
+
+requires_analytics_db = pytest.mark.skipif(
+    not _has_analytics_tables(),
+    reason="Requer o banco de dados analítico populado v_energy.db (executado localmente após ingestão do lakehouse).",
+)
+
+
+@requires_analytics_db
 def test_central_business_question_multi_query_execution():
     """
     Testa P1, P2, P3 e P4 do ROTEIRO_APRESENTACAO.md diretamente no v_energy.db:
@@ -142,6 +163,7 @@ def test_central_business_question_multi_query_execution():
     assert "IPUTINGA" in toon_context
 
 
+@requires_analytics_db
 def test_grid_quality_and_uc360_cross_domain_queries():
     """Testa P5 (Qualidade da Rede DEC/FEC PRODIST Módulo 8 + Causas) e P6 (Visão 360 da UC) no v_energy.db."""
     grid_and_uc_sql = """
@@ -183,6 +205,7 @@ def test_grid_quality_and_uc360_cross_domain_queries():
     assert int(uc_row["total_faturas"]) > 0
 
 
+@requires_analytics_db
 def test_four_neighborhoods_may_2025_consumption_drop_without_gd():
     """
     Testa a evidência temporal de queda brusca a partir de maio de 2025 nos 4 bairros críticos
