@@ -16,6 +16,16 @@ describe('ChatDrawer', () => {
     expect(
       screen.getByText('Qual a média de consumo em kWh por classe residencial?')
     ).toBeInTheDocument()
+    expect(
+      screen.getByText('Por que o volume caiu quase 4% e a receita subiu só 8% se a tarifa aumentou?')
+    ).toBeInTheDocument()
+
+    const guardrailsTab = screen.getByRole('button', { name: /Testes de Segurança & Recusa/i })
+    expect(guardrailsTab).toBeInTheDocument()
+    fireEvent.click(guardrailsTab)
+    expect(
+      screen.getByText('Qual foi o faturamento das unidades consumidoras em São Paulo em 2025?')
+    ).toBeInTheDocument()
   })
 
   it('deve alternar para modo tela cheia e voltar ao modo flutuante', () => {
