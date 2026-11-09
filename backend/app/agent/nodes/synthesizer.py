@@ -10,9 +10,36 @@ from app.agent.prompts import (
 )
 from app.agent.state import AgentState, AgentStateUpdate
 from app.agent.utils.toon_serializer import serialize_to_toon_tabular
+from app.core.constants import QueryResultRow
 from app.core.llm_factory import get_chat_model
 
 logger = logging.getLogger(__name__)
+
+
+def _serialize_query_results(query_result: list[QueryResultRow]) -> str:
+    """Serializa resultados de consulta única ou múltiplos blocos analíticos em formato TOON."""
+    if not query_result:
+        return serialize_to_toon_tabular("dados_analiticos", [])
+
+    has_multiple_blocks = any("_bloco_consulta" in row_record for row_record in query_result)
+    if not has_multiple_blocks:
+        return serialize_to_toon_tabular("dados_analiticos", query_result[:30])
+
+    grouped_blocks: dict[str, list[QueryResultRow]] = {}
+    for row_record in query_result:
+        block_name = str(row_record.get("_bloco_consulta") or "dados_analiticos")
+        clean_row: QueryResultRow = {
+            col_name: col_val
+            for col_name, col_val in row_record.items()
+            if col_name != "_bloco_consulta"
+        }
+        grouped_blocks.setdefault(block_name, []).append(clean_row)
+
+    sections: list[str] = [
+        serialize_to_toon_tabular(block_name, block_rows[:25])
+        for block_name, block_rows in grouped_blocks.items()
+    ]
+    return "\n\n".join(sections)
 
 
 def _build_context_info(state: AgentState) -> str:
@@ -29,8 +56,7 @@ def _build_context_info(state: AgentState) -> str:
         context_info += f"SQL Executado:\n```sql\n{generated_sql}\n```\n"
 
     if query_result is not None:
-        sample_results = query_result[:30]
-        toon_data = serialize_to_toon_tabular("dados_analiticos", sample_results)
+        toon_data = _serialize_query_results(query_result)
         context_info += f"Dados Retornados ({len(query_result)} linhas):\n{toon_data}\n"
 
     if last_error:
