@@ -421,3 +421,14 @@
   - "Inspeções anteriores": ícone e cor por resultado, data e inspetor em selo.
 - **Validação de Testes:**
   - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; 785 testes aprovados (testes do painel e do gráfico atualizados).
+
+### [2026-11-09] - Revisão do PR #104: conflito com a main, eixo da tarifa e paleta do assistente
+- **Autor:** Bernardo H
+- **Branch:** `style/fatia-06-melhorias-interface` (PR #104, João Henrique)
+- **O que foi feito:**
+  - Merge da `main` na branch do PR: em `LossesSnapshotCard.tsx` ficaram os textos de ajuda dos blocos de "Perdas" vindos da `main` e o texto do PR em "Retorno esperado por ano"; em `AreaRevenueTable.test.tsx` ficou a versão do PR.
+  - Gráfico de comparação de bairros: na tarifa, o eixo Y vai do menor ao maior valor (arredondados de R$ 0,05 em R$ 0,05), com aviso de que não começa em zero; receita e volume continuam a partir do zero (`axisDomainOf` e `isZoomedAxis` em `comparisonSeries.ts`).
+  - Assistente de IA no amarelo e preto da IA: ícone do cabeçalho, avatar do agente e botões de enviar e de tentar de novo em `brand`; destaques internos (passo em andamento, comandos, grifo, citação, link e foco do campo) trocaram o azul por fundo e borda âmbar com texto em preto (`design.md` atualizado).
+- **Validação de Testes:**
+  - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; 875 testes aprovados.
+  - Backend: Ruff, Pylint 10/10, import-linter e 941 testes aprovados.
