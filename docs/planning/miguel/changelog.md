@@ -6,6 +6,22 @@
 
 ## Registros de Execução
 
+### [2026-11-09] - Reestruturação do Roteiro Oficial & Botão 'Pergunta do Case' na Topbar do Portal
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Reestruturação Estratégica do Roteiro ([`docs/ROTEIRO_APRESENTACAO.md`](docs/ROTEIRO_APRESENTACAO.md)):**
+    - Abertura imediata no minuto 00:00 com o enigma de Henrique Duarte (*"A base de clientes cresceu e a tarifa subiu 10,5%... mas o volume caiu quase 4% e a receita subiu só 8%"*), eliminando duplicações do texto.
+    - Estruturação padronizada dos 6 blocos com: 👉 *O que apontar na tela (Guia Visual)*, 🗣️ *O que falar (Discurso Limpo)* e 💡 *A Resposta Direta*.
+    - Aplicação de elipses literais `[...]` nas falas divididas entre telas (Patrícia Lins e Henrique Duarte).
+  - **Botão e Popover 'Pergunta do Case' na Topbar (`CaseQuestionButton.tsx` & `caseQuestions.ts`):**
+    - Criado catálogo de perguntas literais dos stakeholders por rota em `frontend/src/lib/caseQuestions.ts` (constante pura, sem overhead de context).
+    - Criado o componente `CaseQuestionButton.tsx` com visual corporativo sóbrio (ícone `HelpCircle` da Lucide, sem emojis) e Popover Radix UI / shadcn.
+    - Integrado de forma fixa na barra superior (`AppLayout.tsx`), disponível em todas as telas com 1 clique.
+  - **Testes e Qualidade:**
+    - Criado teste unitário em `frontend/src/components/layout/__tests__/CaseQuestionButton.test.tsx` (100% aprovado).
+    - `make lint-frontend` e `make lint-backend` 100% aprovados (ESLint, Fallow `maintainability 91.5`, Ruff, Pylint 10.00/10, import-linter).
+    - `make test-all` 100% aprovado (858 testes no frontend e 941 no backend).
+
 ### [2026-11-09] - Banco SQLite In-Memory Isolado para Testes do Agente (Sem `skipif`)
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**
