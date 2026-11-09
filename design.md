@@ -79,7 +79,7 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 ## 1. Visão Geral e Filosofia Visual
 
 - **Estilo:** ferramenta de trabalho de uma distribuidora de energia. Sóbria, densa e legível: o dado é o protagonista, a interface fica em segundo plano.
-- **Cores:** base neutra quente (off-white e tinta quase preta), **um** azul de marca (`--primary`) para ações, links e item ativo, e o âmbar (`--brand`) só no símbolo da marca e no assistente de IA. O chat da IA usa amarelo e preto: fundos, bordas, avatar e botões em `brand`, e texto e ícones em `foreground` (âmbar como cor de texto não tem contraste sobre fundo claro). Cor de estado (verde, âmbar, vermelho) só quando informa algo.
+- **Cores:** base neutra quente (off-white e tinta quase preta), **um** azul de marca (`--primary`) para ações, links e item ativo, e o âmbar (`--brand`) só no símbolo da marca e no botão do assistente. Cor de estado (verde, âmbar, vermelho) só quando informa algo.
 - **Profundidade:** superfícies planas com borda de 1px (`--border`). Sem vidro, sem `backdrop-blur`, sem brilho, sem cartões que sobem no hover. Sombra só em menus, diálogos e no botão do assistente.
 - **Movimento:** curto e discreto (100–200ms, *ease-out*), via `motion/react`. Nada de molas, pulsos ou escala.
 - **Texto:** frases curtas e objetivas. O subtítulo da tela diz o que ela responde em uma linha; explicação longa (fórmula, critério) vai para o ícone de ajuda ou tooltip. Sem CAIXA ALTA em títulos, selos e dados (dados que chegam em caixa alta são convertidos com `formatSentenceCase` ou `displayName`). A única exceção é o **rótulo de seção** e o **cabeçalho de tabela**, que usam caixa alta pequena e espaçada (`text-xs font-medium tracking-wide uppercase text-muted-foreground`) para separar a estrutura do conteúdo.
@@ -110,7 +110,7 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 | `--border` | `#E2E2DC` | `#2B2D32` | `border-border` | Divisórias, bordas de card e tabela |
 | `--input` | `#84888F` | `#60656D` | `border-input` | Borda de campos (3:1 sobre fundo e card) |
 | `--ring` | `#1B4D89` | `#8CB2EE` | `ring-ring` | Anel de foco (2px, deslocado 2px) |
-| `--brand` / `-foreground` | `#F2B01E` / `#18191C` | `#F2B01E` / `#18191C` | `text-brand`, `bg-brand` | Só o símbolo da marca (fundo `bg-brand`, raio em `text-brand-foreground`), o botão do assistente e o de enviar (`<Button variant="brand">`), o avatar e o ícone do cabeçalho do chat, os destaques do chat (`bg-brand/15` a `/35`, `border-brand`) e o ponto de "respondendo" |
+| `--brand` / `-foreground` | `#F2B01E` / `#18191C` | `#F2B01E` / `#18191C` | `text-brand`, `bg-brand` | Só o símbolo da marca (fundo `bg-brand`, raio em `text-brand-foreground`), o botão do assistente (`<Button variant="brand">`) e o ponto de "respondendo" |
 | `--sidebar` | `#FBFBF9` | `#131416` | `bg-sidebar` | Menu lateral e painel de marca do login |
 | `--chart-1…5` | `#1B4D89 #C2621B #6B5CA5 #868C94 #2A8577` | `#8CB2EE #EE9A5E #B3A6E8 #70767F #5FC4B4` | `fill-chart-1` etc. | Séries; `chart-4` é o cinza de comparação (ano anterior, "outros") |
 | `--map-1…4` | `#5A88C4 #2F62A3 #1B4782 #0C2442` | `#B4CEF3 #7FA8E2 #5185D6 #2F63C9` | `fill-map-1` etc. | Escala do mapa de DEC (Continuidade): do menor para o maior, sem verde e vermelho e sem branco; no escuro vai de azul-claro a azul forte; todos com 3:1 sobre fundo e card |

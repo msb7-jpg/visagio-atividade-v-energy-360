@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react'
+import { Bot } from 'lucide-react'
 import type { JSX } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -25,16 +25,16 @@ export function AgentAvatar({ isStreaming = false, className }: AgentAvatarProps
   return (
     <div
       className={cn(
-        'relative flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand text-brand-foreground shadow-sm',
-        isStreaming ? 'ring-2 ring-brand/40' : null,
+        'relative flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-gradient-to-b from-card to-secondary shadow-sm',
+        isStreaming ? 'border-primary/50 shadow-sm shadow-primary/25' : null,
         className
       )}
     >
-      <Sparkles className="size-4" />
+      <Bot className={cn('size-4 text-muted-foreground', isStreaming ? 'text-primary' : null)} />
       {isStreaming ? (
         <span className="absolute -top-0.5 -right-0.5 flex size-2.5">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand opacity-75" />
-          <span className="relative inline-flex size-2.5 rounded-full bg-brand ring-2 ring-card" />
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
+          <span className="relative inline-flex size-2.5 rounded-full bg-primary" />
         </span>
       ) : null}
     </div>

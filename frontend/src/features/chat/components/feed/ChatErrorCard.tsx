@@ -46,7 +46,7 @@ export function ChatErrorCard({
 
       <div className="flex flex-wrap items-center gap-2 border-t border-destructive/15 pt-1">
         {onRetry ? (
-          <Button type="button" variant="brand" size="sm" onClick={onRetry}>
+          <Button type="button" variant="default" size="sm" onClick={onRetry}>
             <span className="flex items-center gap-1.5 text-xs">
               <RotateCcw className="size-3.5" />
               <span>Tentar Novamente</span>

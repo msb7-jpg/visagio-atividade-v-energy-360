@@ -26,8 +26,8 @@ const STEP_STATUS_MAP: Record<string, StepStatusVisual> = {
     icon: <CheckCircle2 className="size-3.5" />
   },
   [STEP_STATUS.ACTIVE]: {
-    badgeClass: 'border-brand/60 bg-brand/20 text-foreground shadow-sm',
-    textClass: 'text-foreground font-semibold animate-pulse',
+    badgeClass: 'border-primary/50 bg-primary/15 text-primary shadow-sm shadow-primary/20',
+    textClass: 'text-primary font-semibold animate-pulse',
     icon: <Loader2 className="size-3.5 animate-spin" />
   },
   [STEP_STATUS.ERROR]: {

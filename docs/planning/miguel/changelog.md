@@ -6,6 +6,18 @@
 
 ## Registros de Execução
 
+### [2026-11-09] - Restauração da Identidade Visual Sóbria do Chat e Ícone do Bot
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Reversão do Estilo Amarelo e Ícone Sparkles no Chat:**
+    - Revertidas as alterações de cores customizadas da IA (`bg-brand`, texto em contraste forte amarelo/preto) introduzidas no commit `8e4f2c6`.
+    - Restaurada a paleta sóbria do Design System: tons neutros (`border-border`, `bg-muted`, `bg-card`, `bg-secondary`) e destaque em azul corporativo (`primary`).
+    - Restaurado o ícone original `Bot` no `AgentAvatar` e no cabeçalho `ChatWidgetHeader` no lugar de `Sparkles`.
+    - Revertida a marcação `<mark>` de respostas do assistente para o tom suave `bg-primary/25 text-foreground`.
+    - Alinhado com o `design.md`.
+  - **Validação e Qualidade:**
+    - `make lint-all` e `make test-all` 100% aprovados.
+
 ### [2026-11-09] - Divisão Oficial da Apresentação em Dupla (Bernardo & Miguel)
 - **Autor:** Miguel & Bernardo
 - **O que foi feito:**

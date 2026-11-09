@@ -51,7 +51,7 @@ const MARKDOWN_COMPONENTS: Components = {
     <li className="my-0.5">{children}</li>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="my-2 rounded-r border-l-2 border-brand bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground">
+    <blockquote className="my-2 rounded-r border-l-2 border-primary/60 bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground">
       {children}
     </blockquote>
   ),
@@ -59,7 +59,7 @@ const MARKDOWN_COMPONENTS: Components = {
     <strong className="font-semibold text-foreground">{children}</strong>
   ),
   mark: ({ children }) => (
-    <mark className="rounded-sm bg-brand/35 px-1 py-0.5 font-medium text-foreground box-decoration-clone">
+    <mark className="rounded-sm bg-primary/25 px-1 py-0.5 font-medium text-foreground box-decoration-clone">
       {children}
     </mark>
   ),
@@ -72,7 +72,7 @@ const MARKDOWN_COMPONENTS: Components = {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-foreground underline decoration-brand decoration-2 underline-offset-2 hover:decoration-foreground"
+      className="text-primary underline hover:text-primary/80"
     >
       {children}
     </a>

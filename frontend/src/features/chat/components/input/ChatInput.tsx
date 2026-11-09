@@ -65,7 +65,7 @@ export function ChatInput({
     <div
       ref={containerRef}
       className={cn(
-        'relative rounded-lg border border-border bg-card p-2 shadow-xl transition focus-within:border-brand focus-within:ring-1 focus-within:ring-brand/50',
+        'relative rounded-lg border border-border bg-card p-2 shadow-xl transition focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50',
         className
       )}
     >
@@ -91,7 +91,7 @@ export function ChatInput({
           <Plus
             className={cn(
               'size-4 text-muted-foreground transition-transform duration-200',
-              isMenuOpenExplicit ? 'rotate-45 text-foreground' : null
+              isMenuOpenExplicit ? 'rotate-45 text-primary' : null
             )}
           />
         </Button>
@@ -131,7 +131,6 @@ export function ChatInput({
           <Button
             type="button"
             size="icon"
-            variant="brand"
             onClick={handleSend}
             disabled={!hasContentToSend || isInputDisabled}
             aria-label="Enviar mensagem"

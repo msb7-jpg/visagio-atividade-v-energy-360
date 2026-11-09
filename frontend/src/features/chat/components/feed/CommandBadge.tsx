@@ -25,11 +25,11 @@ export function CommandBadge({ command, args, className }: CommandBadgeProps): J
   return (
     <span
       className={cn(
-        'inline-flex select-none items-center gap-1.5 rounded-full border border-brand/60 bg-brand/15 px-2.5 py-0.5 font-mono text-xs font-medium text-foreground shadow-xs',
+        'inline-flex select-none items-center gap-1.5 rounded-full border border-primary/40 bg-card px-2.5 py-0.5 font-mono text-xs font-medium text-foreground shadow-xs',
         className
       )}
     >
-      <span className="font-semibold text-foreground">{normalizedCommand}</span>
+      <span className="font-semibold text-primary">{normalizedCommand}</span>
       {args ? <span className="font-normal text-muted-foreground">{args}</span> : null}
     </span>
   )
