@@ -26,8 +26,8 @@ export function SuggestionsExplorer({ onSelectPrompt }: SuggestionsExplorerProps
   const currentList = tab === 'business' ? BUSINESS_SUGGESTIONS : GUARDRAIL_SUGGESTIONS
 
   return (
-    <div className="flex max-w-2xl flex-col items-center gap-3">
-      <div className="inline-flex rounded-md border border-border bg-muted/40 p-1">
+    <div className="flex w-full max-w-xl flex-col items-center gap-3">
+      <div className="grid w-full grid-cols-2 rounded-md border border-border bg-muted/40 p-1 sm:inline-flex sm:w-auto">
         <Button
           type="button"
           size="sm"
@@ -35,7 +35,7 @@ export function SuggestionsExplorer({ onSelectPrompt }: SuggestionsExplorerProps
           onClick={() => setTab('business')}
         >
           <Sparkles className="size-3.5 text-primary" />
-          <span>Análises do Case</span>
+          <span className="truncate">Análises do Case</span>
         </Button>
         <Button
           type="button"
@@ -44,11 +44,11 @@ export function SuggestionsExplorer({ onSelectPrompt }: SuggestionsExplorerProps
           onClick={() => setTab('guardrail')}
         >
           <ShieldCheck className="size-3.5 text-warning" />
-          <span>Testes de Segurança & Recusa</span>
+          <span className="truncate">Testes de Segurança & Recusa</span>
         </Button>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="flex w-full flex-col gap-2">
         {currentList.map(item => {
           const Icon = item.icon
           return (
@@ -56,18 +56,25 @@ export function SuggestionsExplorer({ onSelectPrompt }: SuggestionsExplorerProps
               key={item.prompt}
               type="button"
               variant="outline"
-              size="sm"
+              size="multiline"
+              fullWidth
+              className="group justify-between text-left"
               onClick={() => onSelectPrompt(item.prompt)}
             >
-              <span className="flex items-center gap-1.5 text-xs">
-                <Icon className="size-3.5 shrink-0 text-primary" />
-                <span className="text-foreground">{item.prompt}</span>
-                {item.badge ? (
-                  <Badge variant={tab === 'guardrail' ? 'destructive' : 'muted'} className="shrink-0">
-                    {item.badge}
-                  </Badge>
-                ) : null}
+              <span className="flex min-w-0 flex-1 items-start gap-2 text-left">
+                <Icon className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                <span className="break-words text-xs leading-snug text-foreground">
+                  {item.prompt}
+                </span>
               </span>
+              {item.badge ? (
+                <Badge
+                  variant={tab === 'guardrail' ? 'destructive' : 'muted'}
+                  className="ml-2 shrink-0 self-start"
+                >
+                  {item.badge}
+                </Badge>
+              ) : null}
             </Button>
           )
         })}

@@ -9,8 +9,8 @@ export type ResizeDirection =
   | 'bottom-left'
   | null
 
-const MIN_WIDTH = 380
-const MIN_HEIGHT = 480
+const BASE_MIN_WIDTH = 380
+const BASE_MIN_HEIGHT = 480
 
 interface ResizeCalculationInput {
   direction: ResizeDirection
@@ -29,22 +29,32 @@ interface ResizeCalculationResult {
   offsetY: number
 }
 
+function getDimensionsBounds() {
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1280
+  const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800
+  const minWidth = Math.min(BASE_MIN_WIDTH, Math.max(280, windowWidth - 24))
+  const minHeight = Math.min(BASE_MIN_HEIGHT, Math.max(360, windowHeight - 32))
+  const maxWidth = Math.max(minWidth, windowWidth - 24)
+  const maxHeight = Math.max(minHeight, windowHeight - 32)
+  return { minWidth, minHeight, maxWidth, maxHeight }
+}
+
 function calculateHorizontal(
   direction: ResizeDirection,
   initialWidth: number,
   initialOffsetX: number,
   deltaX: number
 ): { width: number; offsetX: number } {
-  const maxWidth = Math.max(MIN_WIDTH, window.innerWidth - 32)
+  const { minWidth, maxWidth } = getDimensionsBounds()
   if (direction === 'top-right' || direction === 'right' || direction === 'bottom-right') {
     return {
-      width: Math.min(maxWidth, Math.max(MIN_WIDTH, initialWidth + deltaX)),
+      width: Math.min(maxWidth, Math.max(minWidth, initialWidth + deltaX)),
       offsetX: initialOffsetX
     }
   }
   if (direction === 'top-left' || direction === 'left' || direction === 'bottom-left') {
     const candidateWidth = initialWidth - deltaX
-    if (candidateWidth >= MIN_WIDTH && candidateWidth <= maxWidth) {
+    if (candidateWidth >= minWidth && candidateWidth <= maxWidth) {
       return { width: candidateWidth, offsetX: initialOffsetX + deltaX }
     }
   }
@@ -57,16 +67,16 @@ function calculateVertical(
   initialOffsetY: number,
   deltaY: number
 ): { height: number; offsetY: number } {
-  const maxHeight = Math.max(MIN_HEIGHT, window.innerHeight - 32)
+  const { minHeight, maxHeight } = getDimensionsBounds()
   if (direction === 'top-right' || direction === 'top-left' || direction === 'top') {
     const candidateHeight = initialHeight - deltaY
-    if (candidateHeight >= MIN_HEIGHT && candidateHeight <= maxHeight) {
+    if (candidateHeight >= minHeight && candidateHeight <= maxHeight) {
       return { height: candidateHeight, offsetY: initialOffsetY + deltaY }
     }
   }
   if (direction === 'bottom-right' || direction === 'bottom-left' || direction === 'bottom') {
     return {
-      height: Math.min(maxHeight, Math.max(MIN_HEIGHT, initialHeight + deltaY)),
+      height: Math.min(maxHeight, Math.max(minHeight, initialHeight + deltaY)),
       offsetY: initialOffsetY
     }
   }
@@ -74,7 +84,7 @@ function calculateVertical(
 }
 
 /**
- * Calcula nova largura, altura e offsets com restrições mínimas e limites de viewport.
+ * Calcula nova largura, altura e offsets com restrições mínimas responsivas e limites de viewport.
  */
 export function calculateResizeDimensions(input: ResizeCalculationInput): ResizeCalculationResult {
   const horiz = calculateHorizontal(input.direction, input.initialWidth, input.initialOffsetX, input.deltaX)
