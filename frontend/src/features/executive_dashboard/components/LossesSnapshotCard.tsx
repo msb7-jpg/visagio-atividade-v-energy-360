@@ -10,6 +10,15 @@ import { formatIndicatorValue, formatMonthlyKwh } from '@/features/executive_das
 const countFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
 
 const NO_COMPARISON_HINT = 'Retrato da Fila de Perdas na competência de referência. Não é comparado com outro período por decisão: o histórico de inspeções cobre só ago a dez/2025.'
+const HINT_UCS_PRIORITARIAS =
+  'Unidades consumidoras com queda atípica de consumo e chance calculada de irregularidade acima de 30%, priorizadas para envio de equipe a campo.'
+
+const HINT_ENERGIA_RECUPERAVEL =
+  'Soma do volume mensal estimado de energia desviada (kWh/mês) em todas as UCs prioritárias da fila, medido pela diferença entre o consumo histórico normal e o consumo recente após a queda.'
+
+const HINT_ACERTO_INSPECOES =
+  'Percentual de inspeções realizadas em campo que confirmaram irregularidade material ou furto no medidor (taxa histórica de assertividade das ordens concluídas).'
+
 const EXPECTED_RETURN_HINT = 'Valor por ano das UCs prioritárias, ponderado pela chance de acerto de cada uma. O teto é o valor se todas confirmarem a irregularidade.'
 
 function snapshotNotes(snapshot: LossesSnapshot): string[] {
@@ -52,10 +61,15 @@ export function LossesSnapshotCard({ snapshot }: { snapshot: LossesSnapshot }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
           label="UCs prioritárias"
+          hint={HINT_UCS_PRIORITARIAS}
           value={formatIndicatorValue(snapshot.ucs_prioritarias, 'UCS')}
           footnote={`de ${formatIndicatorValue(snapshot.ucs_na_fila, 'UCS')} na fila`}
         />
-        <StatTile label="Energia recuperável" value={formatMonthlyKwh(snapshot.energia_prioritaria_kwh_mes)} />
+        <StatTile
+          label="Energia recuperável"
+          hint={HINT_ENERGIA_RECUPERAVEL}
+          value={formatMonthlyKwh(snapshot.energia_prioritaria_kwh_mes)}
+        />
         <StatTile
           label="Retorno esperado por ano"
           hint={EXPECTED_RETURN_HINT}
@@ -64,6 +78,7 @@ export function LossesSnapshotCard({ snapshot }: { snapshot: LossesSnapshot }) {
         />
         <StatTile
           label="Acerto das inspeções"
+          hint={HINT_ACERTO_INSPECOES}
           value={formatIndicatorValue(snapshot.taxa_acerto_pct, 'PCT')}
           footnote={inspections}
         />

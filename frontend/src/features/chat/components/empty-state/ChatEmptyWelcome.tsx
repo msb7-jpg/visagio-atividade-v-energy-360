@@ -35,7 +35,7 @@ export function ChatEmptyWelcome({
       </p>
 
       <div
-        className={`relative z-10 mt-5 flex flex-wrap justify-center gap-2 ${
+        className={`relative z-10 mt-5 flex w-full max-w-xl justify-center px-1 sm:px-2 ${
           isStreaming ? 'pointer-events-none opacity-50' : ''
         }`}
       >

@@ -288,8 +288,8 @@ html.theme-transition * {
 .chat-widget-resizable {
   width: var(--widget-w, 28rem);
   height: var(--widget-h, 42rem);
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100dvh - 2rem);
+  max-width: calc(100vw - 1.5rem);
+  max-height: calc(100dvh - 1.5rem);
 }
 
 [data-chat-scroll-container]::-webkit-scrollbar {

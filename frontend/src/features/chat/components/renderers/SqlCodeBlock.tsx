@@ -1,9 +1,12 @@
 import { Check, ChevronRight, Copy, Database } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CollapsibleMotion } from '@/components/animations/CollapsibleMotion'
 import { useTheme } from '@/components/layout/useTheme'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { SqlStatementsTabs } from '@/features/chat/components/renderers/SqlStatementsTabs'
 import { escapeHtml, highlightSql } from '@/features/chat/components/renderers/sqlHighlighter'
+import { splitSqlStatements } from '@/features/chat/components/renderers/sqlStatements'
 import { useCopyToClipboard } from '@/lib/clipboard'
 import { cn, handleKeyboardClick } from '@/lib/utils'
 
@@ -11,14 +14,14 @@ import { cn, handleKeyboardClick } from '@/lib/utils'
  * Propriedades para renderização do bloco de código SQL.
  */
 export interface SqlCodeBlockProps {
-  /** Texto da consulta SQL formatada. */
+  /** Texto da consulta SQL formatada (simples ou múltiplas instruções em lote). */
   query: string
   /** Classes CSS adicionais. */
   className?: string
 }
 
 /**
- * Bloco colapsável com syntax highlighting e botão de cópia para consultas SQL.
+ * Bloco colapsável com syntax highlighting, alternância de abas multi-query e botão de cópia.
  *
  * @param props - Propriedades com a query SQL e estilização.
  * @returns Elemento JSX do card de código SQL interativo.
@@ -29,17 +32,36 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
   const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
 
+  const statements = useMemo(() => splitSqlStatements(query), [query])
+  const [selectedTabId, setSelectedTabId] = useState<string>('sql-stmt-1')
+
+  const resolvedTabId = useMemo(() => {
+    if (statements.length <= 1 || selectedTabId === 'all') {
+      return selectedTabId
+    }
+    const exists = statements.some(stmt => stmt.id === selectedTabId)
+    return exists ? selectedTabId : statements[0].id
+  }, [selectedTabId, statements])
+
+  const activeSql = useMemo(() => {
+    if (statements.length <= 1 || resolvedTabId === 'all') {
+      return query
+    }
+    const found = statements.find(stmt => stmt.id === resolvedTabId)
+    return found ? found.sql : query
+  }, [query, resolvedTabId, statements])
+
   useEffect(() => {
     let isMounted = true
     async function highlight() {
       try {
-        const html = await highlightSql(query, appTheme === 'escuro')
+        const html = await highlightSql(activeSql, appTheme === 'escuro')
         if (isMounted) {
           setHighlightedHtml(html)
         }
       } catch {
         if (isMounted) {
-          setHighlightedHtml(`<pre><code>${escapeHtml(query)}</code></pre>`)
+          setHighlightedHtml(`<pre><code>${escapeHtml(activeSql)}</code></pre>`)
         }
       }
     }
@@ -47,11 +69,11 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
     return () => {
       isMounted = false
     }
-  }, [query, appTheme])
+  }, [activeSql, appTheme])
 
   const handleCopy = (event: React.MouseEvent) => {
     event.stopPropagation()
-    void copy(query)
+    void copy(activeSql)
   }
 
   return (
@@ -79,7 +101,13 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
           />
           <Database className="size-3.5 text-muted-foreground" />
           <span className="text-xs font-semibold text-foreground">Consulta SQL</span>
-
+          {statements.length > 1 ? (
+            <Badge variant="outline">
+              {statements.length}
+              {' '}
+              consultas
+            </Badge>
+          ) : null}
           <span className="text-xs text-muted-foreground">
             {isExpanded ? '(clique para recolher)' : '(clique para expandir)'}
           </span>
@@ -107,6 +135,11 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
       </div>
 
       <CollapsibleMotion isExpanded={isExpanded}>
+        <SqlStatementsTabs
+          statements={statements}
+          activeId={resolvedTabId}
+          onSelect={setSelectedTabId}
+        />
         <div className="overflow-x-auto border-t border-border bg-muted/20 p-4 font-mono text-xs leading-relaxed text-foreground">
           {highlightedHtml ? (
             // Injeção segura: highlightedHtml é gerado exclusivamente pelo Shiki
@@ -114,7 +147,7 @@ export function SqlCodeBlock({ query, className }: SqlCodeBlockProps) {
             // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
             <div dangerouslySetInnerHTML={{ __html: highlightedHtml }} className="[&_pre]:bg-transparent! [&_pre]:p-0!" />
           ) : (
-            <pre className="text-muted-foreground">{query}</pre>
+            <pre className="text-muted-foreground">{activeSql}</pre>
           )}
         </div>
       </CollapsibleMotion>

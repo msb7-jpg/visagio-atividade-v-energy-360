@@ -67,7 +67,10 @@ export function ChatWidget({
     return null
   }
 
-  const positionClass = position === 'bottom-left' ? 'left-6 bottom-6' : 'right-6 bottom-6'
+  const positionClass =
+    position === 'bottom-left'
+      ? 'left-3 bottom-3 sm:left-6 sm:bottom-6'
+      : 'right-3 bottom-3 sm:right-6 sm:bottom-6'
 
   return createPortal(
     <div className={cn('relative', className)}>

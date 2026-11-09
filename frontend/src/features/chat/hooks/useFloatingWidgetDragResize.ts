@@ -15,24 +15,34 @@ interface ResizeState {
   initialOffsetY: number
 }
 
-const DEFAULT_WIDTH = 448
-const DEFAULT_HEIGHT = 672
+const DEFAULT_WIDTH = 600
+const DEFAULT_HEIGHT = 740
+
+function getInitialDimensions(): { width: number; height: number } {
+  if (typeof window === 'undefined') {
+    return { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT }
+  }
+  const isMobile = window.innerWidth < 640
+  const width = isMobile ? Math.min(DEFAULT_WIDTH, window.innerWidth - 24) : DEFAULT_WIDTH
+  const height = isMobile ? Math.min(DEFAULT_HEIGHT, window.innerHeight - 32) : DEFAULT_HEIGHT
+  return { width, height }
+}
 
 /**
- * Hook para controle de dimensões de redimensionamento de janela flutuante com clamp.
+ * Hook para controle de dimensões de redimensionamento de janela flutuante com clamp responsivo.
  *
  * @param isFullscreen - Se o modo tela cheia está ativo para desabilitar resize.
  * @returns Estados e handlers para redimensionamento do widget.
  */
 export function useFloatingWidgetDragResize(isFullscreen: boolean) {
-  const [size, setSize] = useState({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT })
+  const [size, setSize] = useState(getInitialDimensions)
   const resizeStateRef = useRef<ResizeState>({
     isResizing: false,
     direction: null,
     startX: 0,
     startY: 0,
-    initialWidth: DEFAULT_WIDTH,
-    initialHeight: DEFAULT_HEIGHT,
+    initialWidth: size.width,
+    initialHeight: size.height,
     initialOffsetX: 0,
     initialOffsetY: 0
   })
@@ -82,7 +92,7 @@ export function useFloatingWidgetDragResize(isFullscreen: boolean) {
   )
 
   const resetSize = useCallback(() => {
-    setSize({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT })
+    setSize(getInitialDimensions())
   }, [])
 
   return {

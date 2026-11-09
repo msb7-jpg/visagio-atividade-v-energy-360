@@ -27,7 +27,8 @@ const buttonVariants = cva(
         icon: 'size-9',
         iconLg: 'size-14 [&_svg]:size-6',
         touch: 'h-11 px-3',
-        inline: 'h-auto px-0'
+        inline: 'h-auto px-0',
+        multiline: 'h-auto min-h-9 py-2 px-3 whitespace-normal'
       },
       fullWidth: {
         true: 'w-full',

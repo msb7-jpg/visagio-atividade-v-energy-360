@@ -10,7 +10,10 @@ interface Point {
   y: number
 }
 
-const PADDING = 24 // 24px margem do viewport
+function getResponsivePadding(): number {
+  if (typeof window === 'undefined') return 24
+  return window.innerWidth < 640 ? 12 : 24
+}
 
 /**
  * Determina o ponto de destino (x, y) de transformação para o canto mais próximo da tela.
@@ -23,6 +26,7 @@ export function calculateNearestSnapTarget({
 }: SnapPointInput): Point {
   const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1280
   const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800
+  const padding = getResponsivePadding()
 
   const centerX = rect.left + rect.width / 2
   const centerY = rect.top + rect.height / 2
@@ -30,8 +34,8 @@ export function calculateNearestSnapTarget({
   const isLeftHalf = centerX < windowWidth / 2
   const isTopHalf = centerY < windowHeight / 2
 
-  const maxDeltaX = windowWidth - width - 2 * PADDING
-  const maxDeltaY = windowHeight - height - 2 * PADDING
+  const maxDeltaX = windowWidth - width - 2 * padding
+  const maxDeltaY = windowHeight - height - 2 * padding
 
   if (baseAnchor === 'bottom-right') {
     return {
@@ -56,9 +60,10 @@ export function calculateDragConstraints(
 ) {
   const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1280
   const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800
+  const padding = getResponsivePadding()
 
-  const maxDeltaX = Math.max(0, windowWidth - width - 2 * PADDING)
-  const maxDeltaY = Math.max(0, windowHeight - height - 2 * PADDING)
+  const maxDeltaX = Math.max(0, windowWidth - width - 2 * padding)
+  const maxDeltaY = Math.max(0, windowHeight - height - 2 * padding)
 
   if (baseAnchor === 'bottom-right') {
     return {

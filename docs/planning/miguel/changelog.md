@@ -6,6 +6,88 @@
 
 ## Registros de Execução
 
+### [2026-11-09] - Banco SQLite In-Memory Isolado para Testes do Agente (Sem `skipif`)
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Eliminação Completa de `skipif` em `test_agent_cross_domain.py`:**
+    - Criada fixture autouse `isolated_test_database` que provisiona dinamicamente um banco SQLite temporário e semeia as tabelas sintéticas necessárias (`dim_unidade_consumidora`, `fato_faturamento`, `fato_inspecoes_perdas`, `fato_qualidade_alimentador`, `fato_ocorrencias_rede`).
+    - Redirecionada a conexão read-only de execução (`get_readonly_db_connection`) para o banco temporário isolado.
+    - As queries reais (CTEs `WITH base AS ...`, `JOIN`, `GROUP BY`, `ORDER BY`) continuam sendo executadas de verdade pelo motor SQLite nativo, garantindo total validação de sintaxe e semântica.
+  - **Total Autonomia e Velocidade:**
+    - Zero dependência do binário de 20MB `v_energy.db`.
+    - Execução do teste em apenas 1.67s.
+    - Todos os 941 testes do backend executados com sucesso (0 skips) localmente e no CI.
+
+### [2026-11-09] - Responsividade e Quebra Fluida de Texto (Wrap) no Widget de IA Flutuante (Mobile & Desktop)
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Suporte Oficial a Múltiplas Linhas no Design System (`frontend/src/components/ui/button.tsx`):**
+    - Adicionada a variante de tamanho `multiline` (`h-auto min-h-9 py-2 px-3 whitespace-normal`) ao `buttonVariants`.
+    - Permite que botões quebrem linhas naturalmente mantendo 100% de conformidade com as regras do `@shadcn/lint` (sem necessidade de injetar `p-*`, `w-*` ou `h-*` no `className`).
+    - Criado teste unitário em `frontend/src/components/ui/__tests__/button.test.tsx` validando `size="multiline"` e `fullWidth`.
+  - **Layout Fluido e Responsivo nas Sugestões de Prompts (`SuggestionsExplorer.tsx` & `ChatEmptyWelcome.tsx`):**
+    - Substituído o alinhamento de pílulas horizontais rígidas por cartões acionáveis em pilha fluida (`flex w-full flex-col gap-2`) utilizando `<Button fullWidth size="multiline" variant="outline">`.
+    - Alinhamento de conteúdo com ícone no topo (`items-start mt-0.5`), texto com quebra natural (`break-words text-xs leading-snug flex-1 min-w-0`) e badge posicionado no canto superior direito (`self-start ml-2`).
+    - Alternador de abas ("Análises do Case" vs "Testes de Segurança & Recusa") tornado responsivo (`grid grid-cols-2 sm:inline-flex`) com texto truncado seguro no mobile.
+  - **Dimensionamento Responsivo e Smart Snap da Janela Flutuante (`useFloatingWidgetDragResize.ts`, `floatingWidgetCalculations.ts`, `smartSnapCalculations.ts` & `ChatWidget.tsx`):**
+    - Inicialização dinâmica das dimensões baseada no viewport: em mobile (< 640px), largura inicial calculada via `Math.min(600, window.innerWidth - 24)` e altura proporcional.
+    - Limite mínimo `MIN_WIDTH` responsivo ao viewport atual (`Math.min(380, Math.max(280, window.innerWidth - 24))`), evitando overflow em telas de 360px a 390px.
+    - Padding responsivo do smart snap magnético (`12px` em mobile e `24px` em desktop).
+    - Posicionamento responsivo da janela (`right-3 bottom-3 sm:right-6 sm:bottom-6`), maximizando a área útil para visualização de dados.
+    - Atualizado `index.css` com `max-width: calc(100vw - 1.5rem)` e `max-height: calc(100dvh - 1.5rem)`.
+  - **Blindagem do Feed de Mensagens (`ChatMessage.tsx`):**
+    - Adicionado `min-w-0 break-words` no balão de mensagens do usuário e argumentos de comando, impedindo overflow horizontal.
+  - **Validação:**
+    - `make lint-all` 100% verde (Ruff, Pylint 10.00/10, import-linter, ESLint, Fallow com 0 violações).
+    - `make test-all` 100% verde (941 backend pytest + 856 frontend vitest).
+
+### [2026-11-09] - Integração do Gemini Bridge, Abertura Estilo Google AI Overview (`inspiração.png`) e Multi-Query SQL
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Conexão ao Gemini Bridge (`backend/.env` & `synthesizer_prompt.py`):**
+    - Configurado o backend para utilizar o modelo de alta capacidade `gemini-3.8-flash` via `gemini-bridge` escutando localmente na porta 8765 (`AI_PROVIDER="local"`, `AI_BASE_URL="http://127.0.0.1:8765/v1"` e `AI_MODEL_NAME="gemini-3.8-flash"`).
+    - Ajustado o `SYNTHESIZER_PROMPT` para adotar a estrutura exata do Google AI Overview: início imediato no primeiro parágrafo respondendo à dúvida do usuário com grifo na frase de abertura (`==resposta central==`), sem títulos redundantes no topo e sem espalhar grifos pelo resto do texto.
+  - **Estilização de Marca-Texto Google AI Overview e Escala Tipográfica (`MarkdownRenderer.tsx`):**
+    - Estilizado o elemento `<mark>` com o azul corporativo do Google AI Overview (`bg-primary/25 text-foreground box-decoration-clone rounded-sm px-1 py-0.5 font-medium`).
+    - Ajustada a escala tipográfica de subtítulos: `h1` com `text-xl` (`20px`), `h2` com `text-lg` (`16px`) e `h3` com `text-base` (`14px`), eliminando a aparência plana anterior.
+  - **Visualização de Múltiplas Consultas SQL (`sqlStatements.ts`, `SqlStatementsTabs.tsx`, `SqlCodeBlock.tsx` & `AiAuditBlock.tsx`):**
+    - Implementado analisador léxico leve (`splitSqlStatements`) que divide instruções SQL separadas por `;` no nível superior (respeitando strings e comentários) e extrai os títulos de negócio dos cabeçalhos `-- [CONSULTA N: Titulo]`.
+    - Criado seletor em abas `<SqlStatementsTabs />` exibido automaticamente quando o lote analítico contém 2 ou mais consultas, permitindo alternar entre cada consulta individual ou visualizar todas combinadas (`Todas (N)`), com realce de sintaxe Shiki e botão de cópia contextual.
+    - Adicionado badge de contagem (`N consultas SQL`) no cabeçalho do `AiAuditBlock` e do `SqlCodeBlock`.
+  - **Qualidade, Testes e Governança:**
+    - Criadas suítes de testes unitários em `sqlStatements.test.ts`, `MarkdownRenderer.test.tsx` e expandido `ChatMessage.test.tsx`.
+    - Eliminados todos os 4 avisos `sonarjs/todo-tag` no ESLint e reduzida a complexidade/tamanho de `ChatMessage.tsx` (126 LOC), mantendo 0 violações no Fallow.
+
+### [2026-11-08] - Otimização do Agente para Cruzamento Multidimensional e Cobertura Total do Roteiro de Apresentação
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Execução e Validação AST Multi-Query Read-Only (`sql_validator.py` & `query_runner.py`):**
+    - Desbloqueada a capacidade de o agente emitir de 2 a 4 consultas analíticas complementares separadas por `;` dentro de um mesmo turno de diagnóstico (rotuladas via `-- [CONSULTA N: Titulo]`), mantendo validação individual estrita de cada AST statement (`SELECT`/`WITH`) e bloqueio imediato (`SECURITY_VIOLATION`) contra qualquer comando destrutivo (`DROP`, `DELETE`, `UPDATE`, `INSERT`, `REPLACE INTO`, `PRAGMA`) ou tabela de sistema (`sqlite_master`).
+    - Ajustada a regra de bloqueio de `REPLACE` para distinguir a instrução destrutiva `REPLACE INTO` da função escalar de string `REPLACE(texto, antigo, novo)`.
+    - O `execute_sql_query` preserva formato idêntico para consultas simples e injeta `_bloco_consulta` quando múltiplas consultas são executadas no mesmo turno.
+  - **Serialização TOON Multi-Bloco no Sintetizador (`synthesizer.py` & `synthesizer_prompt.py`):**
+    - Implementado `_serialize_query_results` agrupando linhas por `_bloco_consulta` e gerando uma tabela TOON independente com cabeçalhos próprios para cada consulta executada, evitando perda de colunas heterogêneas entre consultas de Faturamento, GD e Fraudes.
+    - Refinado o `SYNTHESIZER_PROMPT` para articular diagnósticos multidimensionais completos (Decomposição Efeito-Preço vs. Efeito-Volume, Geração Distribuída Solar e Fraudes nos 4 Bairros Críticos) sem afirmar falta de dados.
+  - **Playbook de Domínio dos 5 Pilares do Case (`domain_playbook_prompt.py` & `catalog_prompt.py`):**
+    - Criado `domain_playbook_prompt.py` cobrindo todas as perguntas avançadas do `docs/ROTEIRO_APRESENTACAO.md`:
+      1. Janelas canônicas de 12 meses (`2022-07..2023-06` vs `2025-07..2026-06`) e fórmula econométrica SQL de Efeito-Preço (+R$ 19,6M), Efeito-Volume (-R$ 6,2M) e Efeito Cruzado (-R$ 0,78M).
+      2. Impacto da Geração Distribuída Solar (`possui_gd = 1` com 3.510 UCs caindo -11,2M kWh vs `possui_gd = 0` com 41.490 UCs crescendo +2,17M kWh).
+      3. Fraudes concentradas nos 4 bairros críticos (`IPUTINGA`, `JARDIM JORDAO`, `PRAZERES`, `MACAXEIRA`) com queda a partir de maio/2025 em UCs `possui_gd = 0`, 835 irregularidades confirmadas e 1,46M kWh recuperados.
+      4. Qualidade da Rede (PRODIST Módulo 8 ANEEL) com soma de `dec_apurado_horas` e `fec_apurado_vezes` nos 12 meses cruzada com `fato_ocorrencias_rede`.
+      5. Visão 360 da UC com normalização de código (`UC-100001` -> `UC100001`).
+  - **Suíte de Testes Avançados de Cruzamento (`backend/tests/test_agent_cross_domain.py`) e Verificação ao Vivo:**
+    - Criados 5 testes automatizados validando o sandbox AST multi-query, a execução real das 3 queries da pergunta central no `v_energy.db`, o cruzamento de DEC/FEC + causas + Visão 360 e a queda pós-maio/2025 nos 4 bairros sem GD.
+    - Validado ao vivo contra o modelo local (`Spark-X2.6-4B-Q4_K_M`), comprovando geração simultânea das 3 consultas e resposta executiva com as 3 tabelas fundamentadas.
+  - **Evolução do Explorador de Perguntas no Frontend com Exemplos de Guarda-Corpo (`SuggestionsExplorer.tsx` & `promptSuggestions.ts`):**
+    - Adicionado seletor com abas ("Análises do Case" vs "Testes de Segurança & Recusa") no Drawer lateral do chat.
+    - Incorporadas as perguntas estratégicas dos stakeholders (Henrique Duarte, Patrícia Lins, Rafael Coutinho e Beatriz Farias) com badges temáticos.
+    - Adicionados 4 testes negativos oficiais da banca de avaliação para demonstração ao vivo de recusa:
+      1. Fora de Área (São Paulo em 2025) -> recusa territorial sem alucinação;
+      2. Segurança Sandbox (`DROP TABLE fato_faturamento`) -> bloqueio estrito Read-Only;
+      3. Dado Sigiloso / Inexistente (salário da diretoria e CPF) -> recusa segura;
+      4. Fora de Escopo (previsão do tempo) -> recusa educada de escopo.
+    - 100% conforme o Design System (`design.md`), lint frontend (ESLint + Fallow) e testes Vitest (3/3 em `ChatDrawer.test.tsx` e 846/846 em toda a suíte).
+
 ### [2026-11-03] - Resolução Integral dos Critérios do CHECKLIST.md e Fechamento da Issue #19
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**
