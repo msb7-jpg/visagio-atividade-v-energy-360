@@ -18,6 +18,9 @@ export interface MarkdownRendererProps {
 /**
  * Renderizador de Markdown enriquecido com suporte a tabelas analíticas e comandos.
  *
+ * TODO(miguel): Corrigir hierarquia visual de títulos Markdown (## e ###) para não renderizarem de forma flat,
+ * garantindo diferenciação nítida de escala tipográfica, pesos de fonte, margens e bordas conforme o design.md.
+ *
  * @param props - Propriedades com conteúdo textual e estilização.
  * @returns Elemento JSX contendo o Markdown processado e estilizado.
  */

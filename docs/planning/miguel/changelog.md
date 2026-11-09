@@ -6,6 +6,36 @@
 
 ## Registros de Execução
 
+### [2026-11-08] - Otimização do Agente para Cruzamento Multidimensional e Cobertura Total do Roteiro de Apresentação
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Execução e Validação AST Multi-Query Read-Only (`sql_validator.py` & `query_runner.py`):**
+    - Desbloqueada a capacidade de o agente emitir de 2 a 4 consultas analíticas complementares separadas por `;` dentro de um mesmo turno de diagnóstico (rotuladas via `-- [CONSULTA N: Titulo]`), mantendo validação individual estrita de cada AST statement (`SELECT`/`WITH`) e bloqueio imediato (`SECURITY_VIOLATION`) contra qualquer comando destrutivo (`DROP`, `DELETE`, `UPDATE`, `INSERT`, `REPLACE INTO`, `PRAGMA`) ou tabela de sistema (`sqlite_master`).
+    - Ajustada a regra de bloqueio de `REPLACE` para distinguir a instrução destrutiva `REPLACE INTO` da função escalar de string `REPLACE(texto, antigo, novo)`.
+    - O `execute_sql_query` preserva formato idêntico para consultas simples e injeta `_bloco_consulta` quando múltiplas consultas são executadas no mesmo turno.
+  - **Serialização TOON Multi-Bloco no Sintetizador (`synthesizer.py` & `synthesizer_prompt.py`):**
+    - Implementado `_serialize_query_results` agrupando linhas por `_bloco_consulta` e gerando uma tabela TOON independente com cabeçalhos próprios para cada consulta executada, evitando perda de colunas heterogêneas entre consultas de Faturamento, GD e Fraudes.
+    - Refinado o `SYNTHESIZER_PROMPT` para articular diagnósticos multidimensionais completos (Decomposição Efeito-Preço vs. Efeito-Volume, Geração Distribuída Solar e Fraudes nos 4 Bairros Críticos) sem afirmar falta de dados.
+  - **Playbook de Domínio dos 5 Pilares do Case (`domain_playbook_prompt.py` & `catalog_prompt.py`):**
+    - Criado `domain_playbook_prompt.py` cobrindo todas as perguntas avançadas do `docs/ROTEIRO_APRESENTACAO.md`:
+      1. Janelas canônicas de 12 meses (`2022-07..2023-06` vs `2025-07..2026-06`) e fórmula econométrica SQL de Efeito-Preço (+R$ 19,6M), Efeito-Volume (-R$ 6,2M) e Efeito Cruzado (-R$ 0,78M).
+      2. Impacto da Geração Distribuída Solar (`possui_gd = 1` com 3.510 UCs caindo -11,2M kWh vs `possui_gd = 0` com 41.490 UCs crescendo +2,17M kWh).
+      3. Fraudes concentradas nos 4 bairros críticos (`IPUTINGA`, `JARDIM JORDAO`, `PRAZERES`, `MACAXEIRA`) com queda a partir de maio/2025 em UCs `possui_gd = 0`, 835 irregularidades confirmadas e 1,46M kWh recuperados.
+      4. Qualidade da Rede (PRODIST Módulo 8 ANEEL) com soma de `dec_apurado_horas` e `fec_apurado_vezes` nos 12 meses cruzada com `fato_ocorrencias_rede`.
+      5. Visão 360 da UC com normalização de código (`UC-100001` -> `UC100001`).
+  - **Suíte de Testes Avançados de Cruzamento (`backend/tests/test_agent_cross_domain.py`) e Verificação ao Vivo:**
+    - Criados 5 testes automatizados validando o sandbox AST multi-query, a execução real das 3 queries da pergunta central no `v_energy.db`, o cruzamento de DEC/FEC + causas + Visão 360 e a queda pós-maio/2025 nos 4 bairros sem GD.
+    - Validado ao vivo contra o modelo local (`Spark-X2.6-4B-Q4_K_M`), comprovando geração simultânea das 3 consultas e resposta executiva com as 3 tabelas fundamentadas.
+  - **Evolução do Explorador de Perguntas no Frontend com Exemplos de Guarda-Corpo (`SuggestionsExplorer.tsx` & `promptSuggestions.ts`):**
+    - Adicionado seletor com abas ("Análises do Case" vs "Testes de Segurança & Recusa") no Drawer lateral do chat.
+    - Incorporadas as perguntas estratégicas dos stakeholders (Henrique Duarte, Patrícia Lins, Rafael Coutinho e Beatriz Farias) com badges temáticos.
+    - Adicionados 4 testes negativos oficiais da banca de avaliação para demonstração ao vivo de recusa:
+      1. Fora de Área (São Paulo em 2025) -> recusa territorial sem alucinação;
+      2. Segurança Sandbox (`DROP TABLE fato_faturamento`) -> bloqueio estrito Read-Only;
+      3. Dado Sigiloso / Inexistente (salário da diretoria e CPF) -> recusa segura;
+      4. Fora de Escopo (previsão do tempo) -> recusa educada de escopo.
+    - 100% conforme o Design System (`design.md`), lint frontend (ESLint + Fallow) e testes Vitest (3/3 em `ChatDrawer.test.tsx` e 846/846 em toda a suíte).
+
 ### [2026-11-03] - Resolução Integral dos Critérios do CHECKLIST.md e Fechamento da Issue #19
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

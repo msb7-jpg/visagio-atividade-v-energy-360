@@ -94,6 +94,7 @@ function AssistantMessageBody({
         </div>
       ) : null}
 
+      {/* TODO(miguel): Implementar highlight visual da parte mais importante da resposta analítica (estilo Gemini: manchete/takeaway em card destacado no topo do balão de resposta). */}
       {message.content ? <MarkdownRenderer content={message.content} /> : null}
 
       {showActions ? (

@@ -7,6 +7,8 @@ import { ThoughtInspector } from '@/features/chat/components/renderers/ThoughtIn
 import type { AgentStepItem } from '@/features/chat/types/chat.types'
 import { cn, handleKeyboardClick } from '@/lib/utils'
 
+// TODO(miguel): Exibir múltiplas consultas SQL geradas no frontend quando houver lote analítico
+// (ex.: abas ou sub-acordeons para cada consulta individual rotulada em _bloco_consulta).
 export interface AiAuditBlockProps {
   steps?: AgentStepItem[]
   thought?: string | null

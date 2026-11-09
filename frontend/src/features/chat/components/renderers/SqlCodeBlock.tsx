@@ -10,6 +10,8 @@ import { cn, handleKeyboardClick } from '@/lib/utils'
 /**
  * Propriedades para renderização do bloco de código SQL.
  */
+// TODO(miguel): Permitir alternância visual entre múltiplas queries SQL quando a resposta analítica contiver
+// mais de uma consulta executada em lote (ex.: abas para Decomposição, GD Solar e Fraudes).
 export interface SqlCodeBlockProps {
   /** Texto da consulta SQL formatada. */
   query: string
