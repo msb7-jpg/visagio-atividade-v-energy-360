@@ -228,6 +228,7 @@ Os números dos exemplos são ilustrativos.
 - [ ] **Célio:** avisar que `period_totals_query` (`revenue/queries.py`) perdeu o filtro de competência no `WHERE` para ficar mais rápida (mesmos números, ADR-016).
 - [x] Quadro de IA com números reais (após o #35). (28/10; base e variação enviadas desde o #52, 30/10)
 - [x] Retrato de perdas só com as UCs prioritárias e o retorno esperado (ADR-028). (30/10)
+- [x] Painel mais visual: placar do período, gráfico do que mais mudou, barras "Antes" e "Agora" por indicador e grade sem buracos (só apresentação). (09/11)
 
 ### Documentação
 - [x] ADRs do Painel no `docs/DECISOES.md`: escolha dos indicadores, períodos, avaliação, DEC/FEC da área, inadimplência e perdas sem comparação. (27/10)

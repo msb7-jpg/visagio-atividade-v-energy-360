@@ -1,5 +1,4 @@
 import type { DashboardPeriods, PeriodWindow } from '@/features/executive_dashboard/types/executiveDashboardTypes'
-import { formatMonth } from '@/lib/periods/periodPresets'
 
 const COMPETENCIA_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/
 const MONTHS_PER_YEAR = 12
@@ -81,16 +80,6 @@ export function competenciasOf(window: PeriodWindow): string[] {
     const year = startYear + Math.floor(monthIndex / MONTHS_PER_YEAR)
     return `${year}-${String((monthIndex % MONTHS_PER_YEAR) + 1).padStart(2, '0')}`
   })
-}
-
-/**
- * Descreve uma janela para leitura humana.
- *
- * @param window - Janela de competências.
- * @returns Texto como "jul/2022 a jun/2023".
- */
-export function describeWindow(window: PeriodWindow): string {
-  return `${formatMonth(window.competencia_inicio)} a ${formatMonth(window.competencia_fim)}`
 }
 
 /**

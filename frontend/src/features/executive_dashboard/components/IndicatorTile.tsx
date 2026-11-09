@@ -1,12 +1,13 @@
 import { StatTile } from '@/components/data/StatTile'
 import { Badge } from '@/components/ui/badge'
+import { ComparisonBars } from '@/features/executive_dashboard/components/ComparisonBars'
 import type { Indicator } from '@/features/executive_dashboard/types/executiveDashboardTypes'
 import { formatIndicatorChange, formatIndicatorValue } from '@/features/executive_dashboard/utils/indicatorFormatters'
 import { EVALUATIONS, variationArrow } from '@/features/executive_dashboard/utils/indicatorTrend'
 
 /**
  * Bloco de um indicador em três camadas, sempre na mesma ordem: valor atual, variação com o selo da avaliação
- * e, no rodapé, o valor do período base e o detalhe secundário. O número da variação fica neutro com a seta do
+ * e, no rodapé, as barras "Antes" e "Agora" na mesma escala e o detalhe secundário. O número da variação fica neutro com a seta do
  * sentido; só o selo carrega a cor e o texto de melhorou ou piorou, para o mesmo sinal não aparecer três vezes.
  *
  * @param props - Indicador devolvido pela API.
@@ -35,14 +36,14 @@ export function IndicatorTile({ indicator }: { indicator: Indicator }) {
         </>
       )}
       footnote={(
-        <>
-          <span>Antes: {formatIndicatorValue(indicator.base, indicator.unidade)}</span>
+        <div className="flex flex-col gap-2 pt-1">
+          <ComparisonBars base={indicator.base} atual={indicator.atual} unit={indicator.unidade} tone={evaluation.barColor} />
           {detail ? (
-            <span className="border-border mt-2 block border-t pt-2">
-              {detail.titulo}: {formatIndicatorValue(detail.atual, detail.unidade)} (antes {formatIndicatorValue(detail.base, detail.unidade)})
+            <span className="border-border block border-t pt-2">
+              {detail.titulo}: {formatIndicatorValue(detail.atual, detail.unidade)} · antes {formatIndicatorValue(detail.base, detail.unidade)}
             </span>
           ) : null}
-        </>
+        </div>
       )}
     />
   )
