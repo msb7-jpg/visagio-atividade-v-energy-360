@@ -3,6 +3,7 @@ import { ChevronRight } from 'lucide-react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { LoadingSkeleton } from '@/components/feedback/LoadingSkeleton'
 import { BrandMark } from '@/components/layout/BrandMark'
+import { CaseQuestionButton } from '@/components/layout/CaseQuestionButton'
 import { navItemForPath } from '@/components/layout/navItems'
 import { SidebarNav } from '@/components/layout/SidebarNav'
 import { UserMenu } from '@/components/layout/UserMenu'
@@ -50,6 +51,7 @@ export function AppLayout() {
         <header className="border-border bg-card sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b px-4 sm:px-6">
           <HeaderTrail />
           <div className="flex items-center gap-2">
+            <CaseQuestionButton />
             <ChatDrawer />
             <UserMenu />
           </div>

@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tooltip } from '@/components/ui/tooltip-card'
 import { GroupHeading } from '@/features/executive_dashboard/components/GroupHeading'
 import { IndicatorGroups } from '@/features/executive_dashboard/components/IndicatorGroups'
 import { LossesSnapshotCard } from '@/features/executive_dashboard/components/LossesSnapshotCard'
@@ -17,13 +19,20 @@ import { formatMonth } from '@/lib/periods/periodPresets'
 
 const FALLBACK_AVAILABLE_PERIOD = { competencia_inicio: '2022-07', competencia_fim: '2026-06' }
 
-/** Mês do retrato da Fila de Perdas, ao lado do título da seção. */
+const NO_COMPARISON_HINT = 'Retrato da competência de referência. Não é comparado com outro período por decisão: o histórico de inspeções cobre só ago a dez/2025.'
+
+/** Mês do retrato da Fila de Perdas ao lado do título da seção; o selo explica no tooltip por que não há comparação. */
 function LossesReference({ reference }: { reference?: string | null }) {
   if (!reference) return null
   return (
     <span className="flex items-center gap-2">
       <span className="text-foreground text-sm font-medium">{formatMonth(reference)}</span>
-      <Badge variant="muted">Retrato atual</Badge>
+      <Tooltip content={NO_COMPARISON_HINT}>
+        <Button type="button" variant="inline" size="inline">
+          <Badge variant="muted">Retrato atual</Badge>
+          <span className="sr-only">: {NO_COMPARISON_HINT}</span>
+        </Button>
+      </Tooltip>
     </span>
   )
 }

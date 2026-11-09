@@ -1,6 +1,7 @@
 import { Bot, GripHorizontal, Maximize2, Minimize2, Trash2, X } from 'lucide-react'
 import type { JSX, PointerEvent as ReactPointerEvent } from 'react'
 import { Button } from '@/components/ui/button'
+import { ChatCaseQuestionButton } from '@/features/chat/components/header/ChatCaseQuestionButton'
 
 /**
  * Propriedades do cabeçalho de controle do widget de chat.
@@ -71,6 +72,7 @@ export function ChatWidgetHeader({
       </div>
 
       <div className="flex items-center gap-1">
+        <ChatCaseQuestionButton />
         {hasMessages ? (
           <Button
             type="button"

@@ -134,3 +134,14 @@
 - **Autor:** Bernardo H, na branch `perf/fila-inspecao-e-insight-receita`.
 - **O que foi feito:** `SmartInsightCard context="revenue"` abaixo dos indicadores, com os períodos e os recortes da tela (`revenueInsightFilters`). O servidor recalcula os indicadores e os efeitos da decomposição no banco (`chat/insight_metrics.py`), só para o diretor, e a verificação de fidelidade barra número que não esteja neles. Fecha o último item da issue #11.
 - **Validação de Testes:** teste da página da Receita com o pedido do insight e teste do contexto `revenue` no backend.
+
+### [2026-11-09] - Layout Split View com histórico persistente e remoção de minibarras
+- **Autor:** Celio
+- **O que foi feito:**
+  - `AreaRevenueCard.tsx`: layout dividido (split view `xl:grid-cols-12`) com a tabela de áreas à esquerda (`xl:col-span-7`) e o painel gráfico persistente à direita (`xl:col-span-5`). Seleção do primeiro bairro por padrão e expansão para largura total na aba de municípios.
+  - `NeighborhoodHistoryPanel.tsx`: componente persistente exibindo a série contínua de 24 meses (`MonthlyBarChart`) do bairro ativo com abas para Receita, Volume faturado e Tarifa média.
+  - `AreaRevenueTable.tsx` e `AreaRevenueRow.tsx`: remoção da coluna de 12 meses (sparklines mockadas e botões inline de expansão) para melhor distribuição e aproveitamento de espaço; linhas tornam-se clicáveis com indicação visual de seleção (`data-state="selected"`).
+  - Remoção de arquivos obsoletos (`AreaComparisonChart.tsx`, `ComparisonLineChart.tsx`, `useAreaComparison.ts`, `comparisonSeries.ts`, `MonthlySparkline.tsx`, `MonthlyBreakdown.tsx`).
+- **Validação de Testes:**
+  - `make lint-all` e `make test-all` aprovados com 100% de sucesso.
+

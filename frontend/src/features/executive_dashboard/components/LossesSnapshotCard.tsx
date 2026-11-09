@@ -1,3 +1,4 @@
+import { Info } from 'lucide-react'
 import { ShareBar } from '@/components/data/ShareBar'
 import { StatTile } from '@/components/data/StatTile'
 import type { LossesSnapshot } from '@/features/executive_dashboard/types/executiveDashboardTypes'
@@ -41,7 +42,7 @@ function snapshotNotes(snapshot: LossesSnapshot): string[] {
  * Energia e valor contam só as UCs prioritárias, como na aba "Prioritárias" da Fila de Inspeção (ADR-028).
  *
  * @param props - Retrato devolvido pela API.
- * @returns Bloco com UCs prioritárias, energia, retorno esperado e taxa de acerto das inspeções.
+ * @returns Blocos de UCs prioritárias, energia, retorno esperado e acerto das inspeções, e os avisos curtos.
  */
 export function LossesSnapshotCard({ snapshot }: { snapshot: LossesSnapshot }) {
   const notes = snapshotNotes(snapshot)
@@ -51,7 +52,6 @@ export function LossesSnapshotCard({ snapshot }: { snapshot: LossesSnapshot }) {
 
   return (
     <div data-testid="losses-snapshot" className="flex flex-col gap-3">
-      {notes.length > 0 ? <p className="text-muted-foreground text-xs">{notes.join(' ')}</p> : null}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
           label="UCs prioritárias"
@@ -77,6 +77,16 @@ export function LossesSnapshotCard({ snapshot }: { snapshot: LossesSnapshot }) {
           footnote={<ShareFootnote percent={snapshot.taxa_acerto_pct} tone="bg-primary">{inspections}</ShareFootnote>}
         />
       </div>
+      {notes.length > 0 ? (
+        <ul aria-label="Avisos da Fila de Perdas" className="flex flex-col gap-1">
+          {notes.map((note) => (
+            <li key={note} className="text-muted-foreground flex items-center gap-1.5 text-xs">
+              <Info className="size-3.5 shrink-0" aria-hidden="true" />
+              {note}
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   )
 }

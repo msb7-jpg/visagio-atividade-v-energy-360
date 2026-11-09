@@ -6,6 +6,44 @@
 
 ## Registros de Execução
 
+### [2026-11-09] - Restauração da Identidade Visual Sóbria do Chat e Ícone do Bot
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Reversão do Estilo Amarelo e Ícone Sparkles no Chat:**
+    - Revertidas as alterações de cores customizadas da IA (`bg-brand`, texto em contraste forte amarelo/preto) introduzidas no commit `8e4f2c6`.
+    - Restaurada a paleta sóbria do Design System: tons neutros (`border-border`, `bg-muted`, `bg-card`, `bg-secondary`) e destaque em azul corporativo (`primary`).
+    - Restaurado o ícone original `Bot` no `AgentAvatar` e no cabeçalho `ChatWidgetHeader` no lugar de `Sparkles`.
+    - Revertida a marcação `<mark>` de respostas do assistente para o tom suave `bg-primary/25 text-foreground`.
+    - Alinhado com o `design.md`.
+  - **Validação e Qualidade:**
+    - `make lint-all` e `make test-all` 100% aprovados.
+
+### [2026-11-09] - Divisão Oficial da Apresentação em Dupla (Bernardo & Miguel)
+- **Autor:** Miguel & Bernardo
+- **O que foi feito:**
+  - **Definição da Apresentação em Dupla ([`docs/ROTEIRO_APRESENTACAO.md`](docs/ROTEIRO_APRESENTACAO.md)):**
+    - **Bernardo Heuer (00:00 – 09:00 · 9 min):** Abertura, TI & Engenharia de Dados (Painel Executivo), O Diagnóstico Comercial de Henrique Duarte (Inteligência Comercial) e Gestão de Perdas & Fila de Fiscalização (Fila de Inspeção), com frase formal de passagem de bastão.
+    - **Miguel Batista (09:00 – 15:00 · 6 min):** Qualidade da Rede & Indicadores DEC/FEC da ANEEL (Operação), Atendimento ao Consumidor & UC 360 (Atendimento) e Assistente IA Text-to-SQL & Fechamento da Sessão (IA Embutida).
+    - Distribuição dos líderes de resposta para as 8 perguntas prováveis da banca avaliadora (Bernardo: BD/SQLite, GD solar, fraude nos bairros e rotina de campo; Miguel: segurança e honestidade da IA, metodologia DEC/FEC, escalabilidade de produção e rastreabilidade nas tabelas Gold).
+    - Checklist prático atualizado para a dupla no dia D.
+
+
+### [2026-11-09] - Reestruturação do Roteiro Oficial & Botão 'Pergunta do Case' na Topbar do Portal
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Reestruturação Estratégica do Roteiro ([`docs/ROTEIRO_APRESENTACAO.md`](docs/ROTEIRO_APRESENTACAO.md)):**
+    - Abertura imediata no minuto 00:00 com o enigma de Henrique Duarte (*"A base de clientes cresceu e a tarifa subiu 10,5%... mas o volume caiu quase 4% e a receita subiu só 8%"*), eliminando duplicações do texto.
+    - Estruturação padronizada dos 6 blocos com: 👉 *O que apontar na tela (Guia Visual)*, 🗣️ *O que falar (Discurso Limpo)* e 💡 *A Resposta Direta*.
+    - Aplicação de elipses literais `[...]` nas falas divididas entre telas (Patrícia Lins e Henrique Duarte).
+  - **Botão e Popover 'Pergunta do Case' na Topbar (`CaseQuestionButton.tsx` & `caseQuestions.ts`):**
+    - Criado catálogo de perguntas literais dos stakeholders por rota em `frontend/src/lib/caseQuestions.ts` (constante pura, sem overhead de context).
+    - Criado o componente `CaseQuestionButton.tsx` com visual corporativo sóbrio (ícone `HelpCircle` da Lucide, sem emojis) e Popover Radix UI / shadcn.
+    - Integrado de forma fixa na barra superior (`AppLayout.tsx`), disponível em todas as telas com 1 clique.
+  - **Testes e Qualidade:**
+    - Criado teste unitário em `frontend/src/components/layout/__tests__/CaseQuestionButton.test.tsx` (100% aprovado).
+    - `make lint-frontend` e `make lint-backend` 100% aprovados (ESLint, Fallow `maintainability 91.5`, Ruff, Pylint 10.00/10, import-linter).
+    - `make test-all` 100% aprovado (858 testes no frontend e 941 no backend).
+
 ### [2026-11-09] - Banco SQLite In-Memory Isolado para Testes do Agente (Sem `skipif`)
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

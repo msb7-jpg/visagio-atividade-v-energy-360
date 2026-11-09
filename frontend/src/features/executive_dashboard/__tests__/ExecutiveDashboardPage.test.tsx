@@ -110,7 +110,10 @@ describe('ExecutiveDashboardPage', () => {
     const revenueCard = await screen.findByTestId('indicator-faturamento')
     expect(screen.getByRole('heading', { name: 'Comercial' })).toBeTruthy()
     expect(within(revenueCard).getByText('Melhorou')).toBeTruthy()
-    expect(within(revenueCard).getByText('+10%')).toBeTruthy()
+    const variation = within(revenueCard).getByText('+10%')
+    expect(variation.parentElement).toHaveClass('text-foreground')
+    expect(variation.parentElement).not.toHaveClass('text-success')
+    expect(variation.parentElement?.textContent).toBe('↑ +10%')
     expect(within(revenueCard).getByText('Antes')).toBeTruthy()
     expect(within(revenueCard).getByText('Agora')).toBeTruthy()
     const outageCard = screen.getByTestId('indicator-dec_area')
@@ -143,7 +146,9 @@ describe('ExecutiveDashboardPage', () => {
 
     const overdueCard = await screen.findByTestId('indicator-inadimplencia')
     expect(within(overdueCard).getByText('+0,05 p.p.')).toBeTruthy()
-    expect(within(overdueCard).getByText(/Valor vencido: R\$\s6,1\smi/)).toBeTruthy()
+    const detail = within(overdueCard).getByText(/Valor vencido: R\$\s6,1\smi/)
+    expect(detail).toHaveClass('border-t')
+    expect(within(overdueCard).getByText('Antes')).not.toBe(detail)
     expect(within(overdueCard).getByText('Estável')).toBeTruthy()
   })
 
@@ -189,11 +194,13 @@ describe('ExecutiveDashboardPage', () => {
     const snapshot = await screen.findByTestId('losses-snapshot')
     expect(screen.getByText('jun/2026')).toBeTruthy()
     expect(screen.getByText('Retrato atual')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Não é comparado com outro período por decisão/ })).toBeTruthy()
     expect(within(snapshot).getByText(fullText('12 UCs'))).toBeTruthy()
     expect(within(snapshot).getByText('de 40 UCs na fila')).toBeTruthy()
     expect(within(snapshot).getByText(fullText(/^R\$\s11 mil$/))).toBeTruthy()
     expect(within(snapshot).getByText(/Potencial: R\$\s12 mil/)).toBeTruthy()
     expect(within(snapshot).getByText('20 inspeções')).toBeTruthy()
+    expect(within(snapshot).queryByRole('list', { name: 'Avisos da Fila de Perdas' })).toBeNull()
   })
 
   it('avisa quando a fila só tem UCs de baixa chance', async () => {
@@ -210,6 +217,7 @@ describe('ExecutiveDashboardPage', () => {
 
     const snapshot = await screen.findByTestId('losses-snapshot')
     expect(within(snapshot).getByText(/Fila vazia nesta competência/)).toBeTruthy()
+    expect(within(snapshot).getByRole('list', { name: 'Avisos da Fila de Perdas' }).querySelectorAll('li')).toHaveLength(1)
   })
 
   it('mostra o erro dos indicadores sem esconder as perdas', async () => {
