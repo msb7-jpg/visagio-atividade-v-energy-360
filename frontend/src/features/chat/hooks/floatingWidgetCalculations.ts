@@ -9,8 +9,8 @@ export type ResizeDirection =
   | 'bottom-left'
   | null
 
-const MIN_WIDTH = 340
-const MIN_HEIGHT = 440
+const MIN_WIDTH = 380
+const MIN_HEIGHT = 480
 
 interface ResizeCalculationInput {
   direction: ResizeDirection

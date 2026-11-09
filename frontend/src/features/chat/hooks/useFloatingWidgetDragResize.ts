@@ -15,8 +15,8 @@ interface ResizeState {
   initialOffsetY: number
 }
 
-const DEFAULT_WIDTH = 448
-const DEFAULT_HEIGHT = 672
+const DEFAULT_WIDTH = 600
+const DEFAULT_HEIGHT = 740
 
 /**
  * Hook para controle de dimensões de redimensionamento de janela flutuante com clamp.
