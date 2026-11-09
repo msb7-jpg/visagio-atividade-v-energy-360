@@ -7,7 +7,7 @@ describe('Button', () => {
     render(<Button>Clique aqui</Button>)
     const button = screen.getByRole('button', { name: /Clique aqui/i })
     expect(button).toBeInTheDocument()
-    expect(button.className).toContain('bg-primary')
+    expect(button.className).toContain('bg-brand')
     expect(button.className).toContain('h-9')
   })
 

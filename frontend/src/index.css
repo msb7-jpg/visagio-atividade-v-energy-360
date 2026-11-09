@@ -64,7 +64,7 @@
   --shadow-sm: 0 1px 2px rgba(16, 17, 19, 0.06);
 }
 
-/* Tema claro (padrão do portal). */
+/* Tema claro (padrão do portal): branco com amarelo. Ações em amarelo (`--brand`), links e ícones em tinta, foco em dourado. */
 :root {
   color-scheme: light;
   --background: #F6F6F3;
@@ -73,12 +73,12 @@
   --card-foreground: #18191C;
   --muted: #F0F0EC;
   --muted-foreground: #5A5E66;
-  --primary: #1B4D89;
+  --primary: #18191C;
   --primary-foreground: #FFFFFF;
   --secondary: #ECECE7;
   --secondary-foreground: #18191C;
-  --accent: #E9EFF7;
-  --accent-foreground: #1B4D89;
+  --accent: #FCF4DE;
+  --accent-foreground: #18191C;
   --destructive: #B42318;
   --destructive-foreground: #FFFFFF;
   --success: #0D6640;
@@ -87,25 +87,25 @@
   --warning-foreground: #FFFFFF;
   --border: #E2E2DC;
   --input: #84888F;
-  --ring: #1B4D89;
+  --ring: #8F6600;
   --brand: #F2B01E;
   --brand-foreground: #18191C;
   --sidebar: #FBFBF9;
-  --chart-1: #1B4D89;
-  --chart-2: #C2621B;
+  --chart-1: #8F6600;
+  --chart-2: #2A8577;
   --chart-3: #6B5CA5;
   --chart-4: #868C94;
-  --chart-5: #2A8577;
-  --map-1: #5A88C4;
-  --map-2: #2F62A3;
-  --map-3: #1B4782;
-  --map-4: #0C2442;
+  --chart-5: #B03A6E;
+  --map-1: #B07A0A;
+  --map-2: #8A5F00;
+  --map-3: #5E4100;
+  --map-4: #33230A;
   --radius: 6px;
   --shadow-xl: 0 4px 12px rgba(16, 17, 19, 0.08);
   --shadow-2xl: 0 8px 24px rgba(16, 17, 19, 0.1);
 }
 
-/* Tema escuro (opção do menu do usuário): grafite neutro. */
+/* Tema escuro (opção do menu do usuário): grafite neutro com amarelo como cor principal (`--primary`). */
 .dark {
   color-scheme: dark;
   --background: #101113;
@@ -114,33 +114,33 @@
   --card-foreground: #ECECEE;
   --muted: #1E2024;
   --muted-foreground: #A3A7AE;
-  --primary: #8CB2EE;
-  --primary-foreground: #101113;
+  --primary: #F2B01E;
+  --primary-foreground: #18191C;
   --secondary: #232529;
   --secondary-foreground: #ECECEE;
-  --accent: #1B2534;
-  --accent-foreground: #A9C6F5;
-  --destructive: #F2897E;
+  --accent: #2A2312;
+  --accent-foreground: #F5CE6E;
+  --destructive: #F26B7A;
   --destructive-foreground: #1A0A09;
   --success: #5DC68F;
   --success-foreground: #101113;
-  --warning: #E6B045;
-  --warning-foreground: #1A1204;
+  --warning: #F0884A;
+  --warning-foreground: #1A0E04;
   --border: #2B2D32;
   --input: #60656D;
-  --ring: #8CB2EE;
+  --ring: #F2B01E;
   --brand: #F2B01E;
   --brand-foreground: #18191C;
   --sidebar: #131416;
-  --chart-1: #8CB2EE;
-  --chart-2: #EE9A5E;
+  --chart-1: #F2B01E;
+  --chart-2: #5FC4B4;
   --chart-3: #B3A6E8;
   --chart-4: #70767F;
-  --chart-5: #5FC4B4;
-  --map-1: #B4CEF3;
-  --map-2: #7FA8E2;
-  --map-3: #5185D6;
-  --map-4: #2F63C9;
+  --chart-5: #E88AB4;
+  --map-1: #8A6516;
+  --map-2: #BC8A1C;
+  --map-3: #E8B030;
+  --map-4: #F8DC94;
   --shadow-xl: 0 8px 20px rgba(0, 0, 0, 0.35);
   --shadow-2xl: 0 16px 40px rgba(0, 0, 0, 0.45);
 }

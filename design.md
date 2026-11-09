@@ -1,7 +1,7 @@
 ---
-version: "2.1.0"
+version: "2.2.0"
 name: "Grid 360 (V-Energy Grid 360)"
-description: "Design System oficial do V-Energy Grid 360: ferramenta interna de operação, medição, faturamento e IA de uma distribuidora de energia. Visual corporativo e sóbrio: base neutra quente, um azul de marca, âmbar só no símbolo, tema claro por padrão, IBM Plex Sans e IBM Plex Mono, raio de 6px e superfícies planas."
+description: "Design System oficial do V-Energy Grid 360: ferramenta interna de operação, medição, faturamento e IA de uma distribuidora de energia. Visual corporativo e sóbrio: base neutra quente com o amarelo da marca nas ações (branco com amarelo no claro, preto com amarelo no escuro), tema claro por padrão, IBM Plex Sans e IBM Plex Mono, raio de 6px e superfícies planas."
 colors:
   light:
     background: "#F6F6F3"
@@ -9,10 +9,10 @@ colors:
     card: "#FFFFFF"
     muted: "#F0F0EC"
     muted-foreground: "#5A5E66"
-    primary: "#1B4D89"
+    primary: "#18191C"
     primary-foreground: "#FFFFFF"
     secondary: "#ECECE7"
-    accent: "#E9EFF7"
+    accent: "#FCF4DE"
     destructive: "#B42318"
     success: "#0D6640"
     warning: "#8A4600"
@@ -26,13 +26,13 @@ colors:
     card: "#17181B"
     muted: "#1E2024"
     muted-foreground: "#A3A7AE"
-    primary: "#8CB2EE"
-    primary-foreground: "#101113"
+    primary: "#F2B01E"
+    primary-foreground: "#18191C"
     secondary: "#232529"
-    accent: "#1B2534"
-    destructive: "#F2897E"
+    accent: "#2A2312"
+    destructive: "#F26B7A"
     success: "#5DC68F"
-    warning: "#E6B045"
+    warning: "#F0884A"
     border: "#2B2D32"
     input: "#60656D"
     brand: "#F2B01E"
@@ -79,7 +79,7 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 ## 1. Visão Geral e Filosofia Visual
 
 - **Estilo:** ferramenta de trabalho de uma distribuidora de energia. Sóbria, densa e legível: o dado é o protagonista, a interface fica em segundo plano.
-- **Cores:** base neutra quente (off-white e tinta quase preta), **um** azul de marca (`--primary`) para ações, links e item ativo, e o âmbar (`--brand`) só no símbolo da marca e no botão do assistente. Cor de estado (verde, âmbar, vermelho) só quando informa algo.
+- **Cores:** base neutra quente (off-white e tinta quase preta) com **o amarelo da marca** (`--brand`, `#F2B01E`) como cor de ação: botão principal, selo padrão, ícone do resumo da IA, item ativo do menu e o assistente. No tema claro (branco com amarelo), links, ícones e marcadores usam a tinta (`--primary` = `#18191C`), porque o amarelo sobre branco não tem contraste para texto (1,9:1), e o foco usa um dourado escuro. No tema escuro (preto com amarelo), o próprio amarelo é o `--primary`. Sem azul na interface. Cor de estado (verde, laranja, vermelho) só quando informa algo; o "atenção" é laranja para não se confundir com o amarelo da marca.
 - **Profundidade:** superfícies planas com borda de 1px (`--border`). Sem vidro, sem `backdrop-blur`, sem brilho, sem cartões que sobem no hover. Sombra só em menus, diálogos e no botão do assistente.
 - **Movimento:** curto e discreto (100–200ms, *ease-out*), via `motion/react`. Nada de molas, pulsos ou escala.
 - **Texto:** frases curtas e objetivas. O subtítulo da tela diz o que ela responde em uma linha; explicação longa (fórmula, critério) vai para o ícone de ajuda ou tooltip. Sem CAIXA ALTA em títulos, selos e dados (dados que chegam em caixa alta são convertidos com `formatSentenceCase` ou `displayName`). A única exceção é o **rótulo de seção** e o **cabeçalho de tabela**, que usam caixa alta pequena e espaçada (`text-xs font-medium tracking-wide uppercase text-muted-foreground`) para separar a estrutura do conteúdo.
@@ -101,19 +101,19 @@ Este documento é a **Fonte Única da Verdade (*Single Source of Truth - SSOT*)*
 | `--foreground` | `#18191C` | `#ECECEE` | `text-foreground` | Texto principal |
 | `--card` / `--card-foreground` | `#FFFFFF` / `#18191C` | `#17181B` / `#ECECEE` | `bg-card text-card-foreground` | Cards, menus, barra superior, gaveta |
 | `--muted` / `--muted-foreground` | `#F0F0EC` / `#5A5E66` | `#1E2024` / `#A3A7AE` | `bg-muted text-muted-foreground` | Cabeçalho de tabela, hover, rótulos, legendas |
-| `--primary` / `--primary-foreground` | `#1B4D89` / `#FFFFFF` | `#8CB2EE` / `#101113` | `bg-primary text-primary-foreground` | Botão principal, links, foco, série 1 |
+| `--primary` / `--primary-foreground` | `#18191C` / `#FFFFFF` | `#F2B01E` / `#18191C` | `text-primary`, `bg-primary/10` | Links, ícones de destaque, marcadores pequenos e tons translúcidos. O botão principal usa `--brand` |
 | `--secondary` / `--secondary-foreground` | `#ECECE7` / `#18191C` | `#232529` / `#ECECEE` | `bg-secondary text-secondary-foreground` | Botão neutro, avatar, balão do usuário no chat |
-| `--accent` / `--accent-foreground` | `#E9EFF7` / `#1B4D89` | `#1B2534` / `#A9C6F5` | `bg-accent text-accent-foreground` | Linha selecionada, destaque informativo |
-| `--destructive` / `-foreground` | `#B42318` / `#FFFFFF` | `#F2897E` / `#1A0A09` | `bg-destructive text-destructive-foreground` | Piora, erro, atraso, recusa |
+| `--accent` / `--accent-foreground` | `#FCF4DE` / `#18191C` | `#2A2312` / `#F5CE6E` | `bg-accent text-accent-foreground` | Fundo do resumo da IA, linha selecionada, destaque informativo (creme no claro, grafite quente no escuro) |
+| `--destructive` / `-foreground` | `#B42318` / `#FFFFFF` | `#F26B7A` / `#1A0A09` | `bg-destructive text-destructive-foreground` | Piora, erro, atraso, recusa |
 | `--success` / `-foreground` | `#0D6640` / `#FFFFFF` | `#5DC68F` / `#101113` | `bg-success text-success-foreground` | Melhoria, pago, concluído |
-| `--warning` / `-foreground` | `#8A4600` / `#FFFFFF` | `#E6B045` / `#1A1204` | `bg-warning text-warning-foreground` | Atenção |
+| `--warning` / `-foreground` | `#8A4600` / `#FFFFFF` | `#F0884A` / `#1A0E04` | `bg-warning text-warning-foreground` | Atenção. Laranja nos dois temas, longe do amarelo da marca |
 | `--border` | `#E2E2DC` | `#2B2D32` | `border-border` | Divisórias, bordas de card e tabela |
 | `--input` | `#84888F` | `#60656D` | `border-input` | Borda de campos (3:1 sobre fundo e card) |
-| `--ring` | `#1B4D89` | `#8CB2EE` | `ring-ring` | Anel de foco (2px, deslocado 2px) |
-| `--brand` / `-foreground` | `#F2B01E` / `#18191C` | `#F2B01E` / `#18191C` | `text-brand`, `bg-brand` | Só o símbolo da marca (fundo `bg-brand`, raio em `text-brand-foreground`), o botão do assistente (`<Button variant="brand">`) e o ponto de "respondendo" |
+| `--ring` | `#8F6600` | `#F2B01E` | `ring-ring` | Anel de foco (2px, deslocado 2px): dourado escuro no claro (3:1 sobre branco), amarelo no escuro |
+| `--brand` / `-foreground` | `#F2B01E` / `#18191C` | `#F2B01E` / `#18191C` | `bg-brand text-brand-foreground` | Cor de ação nos dois temas: botão principal (`<Button>` padrão), selo padrão, símbolo da marca, ícone do resumo da IA e dos blocos da UC 360, indicador do item ativo do menu e o assistente. Sempre como fundo, com texto `brand-foreground`; nunca como texto sobre fundo claro |
 | `--sidebar` | `#FBFBF9` | `#131416` | `bg-sidebar` | Menu lateral e painel de marca do login |
-| `--chart-1…5` | `#1B4D89 #C2621B #6B5CA5 #868C94 #2A8577` | `#8CB2EE #EE9A5E #B3A6E8 #70767F #5FC4B4` | `fill-chart-1` etc. | Séries; `chart-4` é o cinza de comparação (ano anterior, "outros") |
-| `--map-1…4` | `#5A88C4 #2F62A3 #1B4782 #0C2442` | `#B4CEF3 #7FA8E2 #5185D6 #2F63C9` | `fill-map-1` etc. | Escala do mapa de DEC (Continuidade): do menor para o maior, sem verde e vermelho e sem branco; no escuro vai de azul-claro a azul forte; todos com 3:1 sobre fundo e card |
+| `--chart-1…5` | `#8F6600 #2A8577 #6B5CA5 #868C94 #B03A6E` | `#F2B01E #5FC4B4 #B3A6E8 #70767F #E88AB4` | `fill-chart-1` etc. | Séries: dourado, verde-azulado, roxo, cinza e rosa (validadas para daltonismo; o laranja saiu por ficar perto do dourado); `chart-4` é o cinza de comparação (ano anterior, "outros") |
+| `--map-1…4` | `#B07A0A #8A5F00 #5E4100 #33230A` | `#8A6516 #BC8A1C #E8B030 #F8DC94` | `fill-map-1` etc. | Escala âmbar do mapa de DEC (Continuidade): do menor para o maior, sem verde e vermelho e sem branco; no claro escurece até o marrom, no escuro clareia até o amarelo; todos com 3:1 sobre fundo e card |
 
 **Receitas derivadas (sem criar token novo):** tint de success/warning/destructive = `bg-success/15`; hover do primary = `bg-primary/85`; série "Outros" e eixos = `muted-foreground`; sombra = `shadow-sm`. Todo `-foreground` é texto sobre a cor correspondente (contraste AA ≥ 4,5).
 
@@ -165,12 +165,12 @@ A tipografia usa duas fontes carregadas via Google Fonts em `frontend/index.html
 - **Regra de Ouro:** O linter proíbe classes de largura e cor no `className` do Button (`deny: ["w-*", "h-*", "p-*", "bg-*"]`).
 - **Botão com 100% de largura:** Use a propriedade nativa `fullWidth` (`<Button fullWidth>Entrar</Button>`). Nunca passe `className="w-full"`.
 - **Variantes:**
-  - `default`: fundo `bg-primary`, texto branco, sem sombra. Uma ação principal por área.
+  - `default`: fundo amarelo `bg-brand`, texto `brand-foreground` (preto), sem sombra, nos dois temas. Uma ação principal por área.
   - `outline`: borda de 1px (`border-border`) sobre `bg-card`, hover `bg-muted`.
   - `secondary`: fundo `bg-secondary`, para ações alternativas.
   - `destructive`: vermelho semântico para exclusão ou cancelamento.
   - `ghost`: texto `muted-foreground`, só hover.
-  - `link`: texto `primary` com underline no hover.
+  - `link`: texto `primary` (tinta no claro, amarelo no escuro) com underline no hover.
   - `inline` (com `size="inline"`): texto normal com sublinhado pontilhado, para termos com explicação em tooltip (ex.: cabeçalhos "Queda" e "Score").
 - **Tamanhos:** `sm` (h-8), `default` (h-9), `lg` (h-10), `icon` (size-9), `touch` (h-11), `inline` (sem altura nem padding).
 - **Ícones em Botões:** Componha ícones dentro de `<span>` ou utilize `[&_svg]:size-4` automático:

@@ -19,10 +19,10 @@ describe('OrderFlowBar', () => {
     expect(screen.queryByRole('button', { name: /Importar/ })).not.toBeInTheDocument()
   })
 
-  it('pinta o Registrar achado de azul, com a variante principal', () => {
+  it('pinta o Registrar achado de amarelo, com a variante principal', () => {
     render(<OrderFlowBar onRegister={vi.fn()} />)
 
-    expect(screen.getByRole('button', { name: 'Registrar achado' })).toHaveClass('bg-primary')
+    expect(screen.getByRole('button', { name: 'Registrar achado' })).toHaveClass('bg-brand')
   })
 
   it('abre o registro ao clicar em Registrar achado', () => {
