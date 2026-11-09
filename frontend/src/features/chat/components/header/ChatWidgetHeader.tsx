@@ -1,4 +1,4 @@
-import { Bot, GripHorizontal, Maximize2, Minimize2, Trash2, X } from 'lucide-react'
+import { GripHorizontal, Maximize2, Minimize2, Sparkles, Trash2, X } from 'lucide-react'
 import type { JSX, PointerEvent as ReactPointerEvent } from 'react'
 import { Button } from '@/components/ui/button'
 
@@ -54,12 +54,12 @@ export function ChatWidgetHeader({
         {!isFullscreen ? (
           <GripHorizontal className="size-4 text-muted-foreground/60 transition-colors hover:text-foreground" />
         ) : null}
-        <div className="relative flex size-8 items-center justify-center rounded-md border border-border bg-muted text-foreground">
-          <Bot className="size-4" />
+        <div className="relative flex size-8 items-center justify-center rounded-md bg-brand text-brand-foreground" aria-hidden="true">
+          <Sparkles className="size-4" />
           {isStreaming ? (
-            <span className="absolute -top-0.5 -right-0.5 flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex size-2 rounded-full bg-primary" />
+            <span className="absolute -top-1 -right-1 flex size-2.5">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand opacity-75" />
+              <span className="relative inline-flex size-2.5 rounded-full bg-brand ring-2 ring-card" />
             </span>
           ) : null}
         </div>

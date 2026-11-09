@@ -27,9 +27,9 @@ export function TableRendererHeader({
       return <ArrowUpDown className="size-3 text-muted-foreground opacity-40 group-hover/col:opacity-100" />
     }
     if (sortDirection === 'asc') {
-      return <ArrowUp className="size-3 text-primary" />
+      return <ArrowUp className="size-3 text-foreground" />
     }
-    return <ArrowDown className="size-3 text-primary" />
+    return <ArrowDown className="size-3 text-foreground" />
   }
 
   return (
@@ -39,7 +39,7 @@ export function TableRendererHeader({
           <th
             key={`${header}-${String(columnIndex)}`}
             onClick={() => onSort(columnIndex)}
-            className="group/col cursor-pointer select-none px-4 py-3 text-sm font-semibold capitalize tracking-normal text-foreground transition-colors hover:text-primary"
+            className="group/col cursor-pointer select-none px-4 py-3 text-sm font-semibold capitalize tracking-normal text-foreground transition-colors hover:bg-brand/10"
           >
             <div className="flex items-center gap-1.5">
               <span>{header}</span>

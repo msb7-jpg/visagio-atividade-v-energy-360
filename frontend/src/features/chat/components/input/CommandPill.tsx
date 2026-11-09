@@ -21,7 +21,7 @@ export function CommandPill({ command, onRemove }: CommandPillProps) {
   return (
     <div
       data-testid="input-command-pill"
-      className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-full border border-primary/50 bg-primary/20 px-3 py-1 font-mono text-xs font-semibold text-primary shadow-xs"
+      className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-full border border-brand/60 bg-brand/20 px-3 py-1 font-mono text-xs font-semibold text-foreground shadow-xs"
     >
       <span>{command}</span>
       <Button

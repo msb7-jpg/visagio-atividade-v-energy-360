@@ -32,7 +32,7 @@ describe('MarkdownRenderer', () => {
     const secondMark = screen.getByText('R$ 19,6 milhões de efeito-preço')
 
     expect(firstMark.tagName).toBe('MARK')
-    expect(firstMark.className).toContain('bg-primary/25')
+    expect(firstMark.className).toContain('bg-brand/35')
     expect(secondMark.tagName).toBe('MARK')
   })
 
