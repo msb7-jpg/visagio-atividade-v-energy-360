@@ -65,3 +65,7 @@ Thumbs.db
 
 # Databricks Asset Bundle (estado local do deploy)
 .databricks/
+
+# Local Temporary Assets
+/*.png
+
