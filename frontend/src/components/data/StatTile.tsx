@@ -7,7 +7,7 @@ interface StatTileProps {
   label: string
   value: ReactNode
   /** Como o número é calculado; aparece no ícone de ajuda ao lado do rótulo. */
-  hint?: string
+  hint?: string | ReactNode
   /** Linha logo abaixo do valor: a variação, um selo de situação ou o total de referência. */
   change?: ReactNode
   /** Rodapé discreto: o valor do período anterior ou o contexto do número. */

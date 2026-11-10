@@ -78,7 +78,7 @@ function renderView() {
 describe('ContinuityView', () => {
   it('consulta a API sem município e com o mês do evento incluído', async () => {
     renderView()
-    expect(await screen.findByText('DEC simplificado (h por UC)')).toBeInTheDocument()
+    expect(await screen.findByText('DEC (h por UC)')).toBeInTheDocument()
     expect(mockedGet).toHaveBeenCalledWith('/quality/continuity', {
       params: { municipio: undefined, incluir_evento: true },
       signal: expect.anything()

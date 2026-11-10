@@ -11,7 +11,7 @@ describe('CaseQuestionButton', () => {
       </MemoryRouter>
     )
 
-    const button = screen.getByRole('button', { name: /pergunta do case/i })
+    const button = screen.getByRole('button', { name: /dor do cliente/i })
     expect(button).toBeInTheDocument()
 
     fireEvent.click(button)
@@ -27,7 +27,7 @@ describe('CaseQuestionButton', () => {
       </MemoryRouter>
     )
 
-    const button = screen.getByRole('button', { name: /pergunta do case/i })
+    const button = screen.getByRole('button', { name: /dor do cliente/i })
     expect(button).toBeInTheDocument()
 
     fireEvent.click(button)
@@ -43,6 +43,6 @@ describe('CaseQuestionButton', () => {
       </MemoryRouter>
     )
 
-    expect(screen.queryByRole('button', { name: /pergunta do case/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /dor do cliente/i })).not.toBeInTheDocument()
   })
 })

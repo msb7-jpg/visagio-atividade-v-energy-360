@@ -51,7 +51,7 @@ export function ContinuityKpiCards({ kpis, periods }: { kpis: ContinuityKpis; pe
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <ComparisonCard
-        title="DEC simplificado (h por UC)"
+        title="DEC (h por UC)"
         formula="Soma das horas de interrupção dividida pelas UCs atendidas, ponderada entre alimentadores. Serve para comparar alimentadores e períodos entre si."
         value={`${formatDecimal(kpis.dec.current)} h`}
         previousValue={`${formatDecimal(kpis.dec.previous)} h`}
@@ -59,7 +59,7 @@ export function ContinuityKpiCards({ kpis, periods }: { kpis: ContinuityKpis; pe
         comparison={kpis.dec}
       />
       <ComparisonCard
-        title="FEC simplificado (por UC)"
+        title="FEC (por UC)"
         formula="UCs interrompidas divididas pelas UCs atendidas, ponderada entre alimentadores."
         value={formatDecimal(kpis.fec.current)}
         previousValue={formatDecimal(kpis.fec.previous)}

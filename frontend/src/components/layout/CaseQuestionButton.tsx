@@ -22,10 +22,10 @@ export function CaseQuestionButton() {
         <Button
           variant="outline"
           size="sm"
-          aria-label="Pergunta do Case"
+          aria-label="Dor do Cliente"
         >
           <HelpCircle aria-hidden="true" />
-          <span className="hidden sm:inline">Pergunta do Case</span>
+          <span className="hidden sm:inline">Dor do Cliente</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 text-left">

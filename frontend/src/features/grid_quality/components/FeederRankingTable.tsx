@@ -1,12 +1,54 @@
 import { ShareBar } from '@/components/data/ShareBar'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip-card'
-import { Table, TableBody, TableCell, TableColumns, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { QualityStatusBadge } from '@/features/grid_quality/components/QualityStatusBadge'
 import { formatDecimal } from '@/features/grid_quality/utils/qualityFormatters'
 import type { FeederRanking, QualityStatus } from '@/features/grid_quality/types/qualityTypes'
 
-const COLUMNS = ['Alimentador', 'DEC no ano (h)', 'Limite DEC (h)', 'Excesso DEC (h)', 'FEC no ano', 'Limite FEC', 'Situação'] as const
+interface ColumnDef {
+  key: string
+  label: string
+  tooltip: string
+}
+
+const COLUMNS: readonly ColumnDef[] = [
+  {
+    key: 'alimentador',
+    label: 'Alimentador',
+    tooltip: 'Circuito elétrico de média tensão que atende um conjunto de unidades consumidoras (UCs).'
+  },
+  {
+    key: 'dec',
+    label: 'DEC no ano (horas)',
+    tooltip: 'Duração Equivalente de Interrupção acumulada no ano civil (em horas). Média de horas sem luz por UC atendida (PRODIST Módulo 8 da ANEEL).'
+  },
+  {
+    key: 'dec_limite',
+    label: 'Limite DEC (horas)',
+    tooltip: 'Meta máxima anual de horas de interrupção fixada pela ANEEL para o conjunto elétrico do circuito.'
+  },
+  {
+    key: 'dec_excesso',
+    label: 'Excesso DEC (horas)',
+    tooltip: 'Diferença entre o DEC acumulado no ano e o limite da ANEEL. Valores positivos indicam violação da meta regulatória.'
+  },
+  {
+    key: 'fec',
+    label: 'FEC no ano (vezes)',
+    tooltip: 'Frequência Equivalente de Interrupção acumulada no ano civil (número médio de quedas de energia por UC atendida, PRODIST Módulo 8 da ANEEL).'
+  },
+  {
+    key: 'fec_limite',
+    label: 'Limite FEC (vezes)',
+    tooltip: 'Meta máxima anual de interrupções toleradas pela ANEEL para o conjunto elétrico.'
+  },
+  {
+    key: 'status',
+    label: 'Situação',
+    tooltip: 'Classificação perante as metas da ANEEL: Conforme (<85% do limite), Alerta (85% a 100%) ou Acima do limite (>100%).'
+  }
+]
 
 const APPROXIMATE_LIMIT_HINT =
   'Limite aproximado: mediana dos conjuntos mapeados da RMR, usada onde não há conjunto próprio (ADR-003).'
@@ -53,7 +95,19 @@ interface FeederRankingTableProps {
 export function FeederRankingTable({ feeders, onSelect }: FeederRankingTableProps) {
   return (
     <Table>
-      <TableColumns columns={COLUMNS} />
+      <TableHeader>
+        <TableRow>
+          {COLUMNS.map((column) => (
+            <TableHead key={column.key}>
+              <Tooltip content={column.tooltip}>
+                <span className="inline-flex cursor-help items-center gap-1 border-b border-dotted border-muted-foreground/50 pb-0.5">
+                  <span>{column.label}</span>
+                </span>
+              </Tooltip>
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
       <TableBody>
         {feeders.map((feeder) => (
           <TableRow key={feeder.id_alimentador}>

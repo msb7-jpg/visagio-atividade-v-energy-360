@@ -115,13 +115,13 @@ describe('GridQualityPage', () => {
 
     expect(await screen.findByText('18,5')).toBeInTheDocument()
     expect(screen.getByText('9,25')).toBeInTheDocument()
-    // Cartões de situação: 1 violação (50%), 0 alertas (0%), 1 conforme (50%) de 2 circuitos.
+    // Cartões de situação: 1 violação (50%), 0 alertas (0%), 1 conforme (50%) de 2 alimentadores.
     expect(screen.getAllByText('50%')).toHaveLength(2)
     expect(screen.getByText('0%')).toBeInTheDocument()
-    expect(screen.getAllByText('1 de 2 circuitos.')).toHaveLength(2)
-    expect(screen.getByText('0 de 2 circuitos.')).toBeInTheDocument()
+    expect(screen.getAllByText('1 de 2 alimentadores.')).toHaveLength(2)
+    expect(screen.getByText('0 de 2 alimentadores.')).toBeInTheDocument()
     expect(screen.getAllByText(/Média do acumulado no ano até 03\/2000/)).toHaveLength(2)
-    expect(screen.getByText('Situação dos 2 circuitos')).toBeInTheDocument()
+    expect(screen.getByText('Situação dos 2 alimentadores')).toBeInTheDocument()
   })
 
   it('mostra o acumulado no ano ao lado do limite anual e o status de cada alimentador', async () => {
