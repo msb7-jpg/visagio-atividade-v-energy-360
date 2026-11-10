@@ -26,7 +26,7 @@ export function Customer360Section({ id, step, title, description, icon, childre
       className="bg-card border-border flex min-w-0 scroll-mt-28 flex-col gap-4 rounded-md border p-5"
     >
       <div className="border-border flex flex-wrap items-center gap-x-3 gap-y-1 border-b pb-3">
-        <span className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-sm text-xs font-semibold" aria-hidden="true">
+        <span className="bg-brand text-brand-foreground flex size-6 items-center justify-center rounded-sm text-xs font-semibold" aria-hidden="true">
           {step}
         </span>
         <h2 id={id} className="text-foreground flex items-center gap-2 text-base font-semibold">

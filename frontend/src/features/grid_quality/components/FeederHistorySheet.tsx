@@ -1,11 +1,17 @@
+import { Zap } from 'lucide-react'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { FeederCustomersTable } from '@/features/grid_quality/components/FeederCustomersTable'
-import { FeederTimeSeriesChart } from '@/features/grid_quality/components/FeederTimeSeriesChart'
-import type { AffectedCustomer, FeederHistory } from '@/features/grid_quality/types/qualityTypes'
+import { FeederCustomersList } from '@/features/grid_quality/components/FeederCustomersList'
+import { FeederSheetBody } from '@/features/grid_quality/components/FeederSheetBody'
+import { QualityStatusBadge } from '@/features/grid_quality/components/QualityStatusBadge'
+import { FeederSheetSection } from '@/features/grid_quality/components/FeederSheetSection'
+import type { AffectedCustomer, FeederHistory, FeederRanking } from '@/features/grid_quality/types/qualityTypes'
+import { describeFeeder } from '@/features/grid_quality/utils/feederSummary'
 
 interface FeederHistorySheetProps {
   feederId: string | null
+  /** Linha do ranking do alimentador aberto: situação, acumulados e limites do ano. */
+  feeder: FeederRanking | undefined
   history: FeederHistory | undefined
   isLoading: boolean
   isError: boolean
@@ -18,13 +24,15 @@ interface FeederHistorySheetProps {
 }
 
 /**
- * Gaveta lateral com a série histórica de 48 meses e os clientes mais afetados do alimentador selecionado.
+ * Painel lateral do alimentador: situação no ano contra o limite, DEC ano a ano, horas por mês e os clientes
+ * mais afetados, no mesmo padrão do painel da UC na Fila de Inspeção.
  *
- * @param props - Alimentador aberto, estado das consultas do histórico e dos clientes e callback de fechamento.
- * @returns Gaveta com skeleton, erro, vazio, o gráfico e a tabela de clientes.
+ * @param props - Alimentador aberto, linha do ranking, estado das consultas e fechamento.
+ * @returns Sheet com cabeçalho fixo e corpo com rolagem própria.
  */
 export function FeederHistorySheet({
   feederId,
+  feeder,
   history,
   isLoading,
   isError,
@@ -37,34 +45,48 @@ export function FeederHistorySheet({
 }: FeederHistorySheetProps) {
   const points = history?.pontos ?? []
   const affectedCustomers = customers ?? []
+  const customersBlock = (
+    <AsyncState
+      isLoading={isCustomersLoading}
+      isError={isCustomersError}
+      isEmpty={affectedCustomers.length === 0}
+      errorTitle="Não foi possível carregar os clientes"
+      onRetry={onRetryCustomers}
+      emptyTitle="Nenhum cliente com interrupção neste alimentador"
+    >
+      <FeederCustomersList customers={affectedCustomers} />
+    </AsyncState>
+  )
   return (
     <Sheet open={feederId !== null} onOpenChange={(isOpen) => (isOpen ? undefined : onClose())}>
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
-        <SheetHeader>
-          <SheetTitle>Alimentador {feederId}</SheetTitle>
-          <SheetDescription>DEC acumulado no ano contra o limite anual de referência; o valor do mês aparece ao passar o mouse.</SheetDescription>
-        </SheetHeader>
-        <AsyncState
-          isLoading={isLoading}
-          isError={isError}
-          isEmpty={points.length === 0}
-          errorTitle="Não foi possível carregar o histórico"
-          onRetry={onRetryHistory}
-          emptyTitle="Sem histórico para este alimentador"
-        >
-          <FeederTimeSeriesChart points={points} />
-        </AsyncState>
-        <h3 className="text-foreground text-sm font-bold">Clientes mais afetados (últimos 12 meses)</h3>
-        <AsyncState
-          isLoading={isCustomersLoading}
-          isError={isCustomersError}
-          isEmpty={affectedCustomers.length === 0}
-          errorTitle="Não foi possível carregar os clientes"
-          onRetry={onRetryCustomers}
-          emptyTitle="Nenhum cliente com interrupção neste alimentador"
-        >
-          <FeederCustomersTable customers={affectedCustomers} />
-        </AsyncState>
+      <SheetContent side="right" className="flex w-full flex-col sm:max-w-xl">
+        <div className="border-border -mx-6 border-b px-6 pb-5">
+          <SheetHeader>
+            <div className="flex flex-wrap items-center gap-2.5 pr-8">
+              <SheetTitle>Alimentador {feederId}</SheetTitle>
+              {feeder ? <QualityStatusBadge status={feeder.status} /> : null}
+            </div>
+            <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+              <Zap className="size-4 shrink-0" aria-hidden="true" />
+              <SheetDescription>{describeFeeder(feeder ?? history?.pontos.at(-1))}</SheetDescription>
+            </div>
+          </SheetHeader>
+        </div>
+        <div className="-mx-6 min-h-0 flex-1 overflow-y-auto px-6 py-2">
+          <AsyncState
+            isLoading={isLoading}
+            isError={isError}
+            isEmpty={points.length === 0}
+            errorTitle="Não foi possível carregar o histórico"
+            onRetry={onRetryHistory}
+            emptyTitle="Sem histórico para este alimentador"
+          >
+            {points.length > 0 ? <FeederSheetBody points={points} feeder={feeder} /> : null}
+          </AsyncState>
+          <div className="border-border mt-5 border-t">
+            <FeederSheetSection title="Clientes mais afetados · 12 meses">{customersBlock}</FeederSheetSection>
+          </div>
+        </div>
       </SheetContent>
     </Sheet>
   )

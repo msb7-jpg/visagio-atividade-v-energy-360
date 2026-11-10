@@ -10,7 +10,7 @@ interface OrderSheetActionsProps {
 
 /**
  * Ações da planilha de campo, no topo da aba à direita: exportar as ordens para despacho e importar os resultados
- * preenchidos. Os dois são neutros; o azul fica com "Registrar achado", na faixa do ciclo da ordem.
+ * preenchidos. Os dois são neutros; o amarelo fica com "Registrar achado", na faixa do ciclo da ordem.
  *
  * @param props - `canExport` liga o botão de exportar; `onImport` abre o envio da planilha preenchida.
  * @returns Linha alinhada à direita; importar só aparece para quem pode editar perdas.

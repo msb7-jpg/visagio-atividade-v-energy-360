@@ -20,9 +20,9 @@ export function SidebarNav() {
           to={navLink.path}
           className={({ isActive }) =>
             cn(
-              'flex items-center gap-3 rounded-md px-3 py-2.5 text-base font-medium transition-colors',
+              'relative flex items-center gap-3 rounded-md px-3 py-2.5 text-base font-medium transition-colors',
               isActive
-                ? 'bg-card text-foreground shadow-sm ring-1 ring-border'
+                ? 'bg-card text-foreground shadow-sm ring-1 ring-border before:bg-brand before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-full'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             )}
         >

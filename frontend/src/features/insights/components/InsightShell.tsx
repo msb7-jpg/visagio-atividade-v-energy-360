@@ -28,7 +28,7 @@ export function InsightShell({ tone, actions, children }: InsightShellProps) {
     <section role="region" aria-label="Resumo da IA" className="border-primary/20 bg-accent flex flex-col gap-4 rounded-md border p-5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-sm" aria-hidden="true">
+          <span className="bg-brand text-brand-foreground flex size-6 items-center justify-center rounded-sm" aria-hidden="true">
             <Sparkles className="size-3.5" />
           </span>
           <span className="text-primary text-xs font-semibold tracking-wide uppercase">Resumo da IA</span>

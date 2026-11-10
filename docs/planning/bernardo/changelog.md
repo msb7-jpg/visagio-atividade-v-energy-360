@@ -449,3 +449,31 @@
   - Merge da `main` (PR #104 do João e ajustes do Miguel em Perdas): o `IndicatorTile.tsx` do João ficou, com a variação em cor neutra, e recebeu as barras "Antes" e "Agora"; o tooltip "não é comparado por decisão" foi para o selo "Retrato atual", que agora fica ao lado do título "Perdas"; a lista de avisos com ícone abaixo dos cards de Perdas ficou.
 - **Validação de Testes:**
   - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; 862 testes aprovados (testes novos do placar, da ordem do gráfico e de `dashboardSummary`).
+
+### [2026-11-10] - Paleta amarela em todas as telas (design system)
+- **Autor:** Bernardo H
+- **Branch:** `style/design-system-paleta-amarela`
+- **O que foi feito:**
+  - Troca feita nos tokens do `index.css`, e não tela por tela: todas as telas mudam juntas, inclusive o chat, sem reescrever os arquivos de outras fatias.
+  - Tema claro (branco com amarelo): botão principal e selo padrão em `bg-brand` (amarelo `#F2B01E` com texto preto); `--primary` passa a ser a tinta `#18191C` (links e ícones), porque o amarelo sobre branco tem 1,9:1 e não serve para texto; foco em dourado escuro `#8F6600`; `--accent` creme `#FCF4DE` no lugar do azul-claro.
+  - Tema escuro (preto com amarelo): `--primary` e `--ring` no amarelo `#F2B01E` com texto preto; `--accent` grafite quente.
+  - "Atenção" no escuro passou de `#E6B045` (o mesmo tom do amarelo, ΔE 2,6) para laranja `#F0884A`, e "piorou" de `#F2897E` para `#F26B7A`, para os três não se confundirem.
+  - Séries dos gráficos validadas com o script de paleta da skill de dataviz: dourado, verde-azulado, roxo, cinza e rosa (o laranja da série 2 saiu por ficar perto do dourado). Mapa de DEC em escala âmbar.
+  - Ícone do Resumo da IA e números dos blocos da UC 360 em amarelo; indicador amarelo no item ativo do menu.
+  - `design.md` atualizado para a versão 2.2.0. Comentários que falavam em "botão azul" corrigidos.
+- **Validação de Testes:**
+  - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; 877 testes aprovados, incluindo os 118 de contraste nos dois temas (testes do botão e do "Registrar achado" atualizados para `bg-brand`).
+
+### [2026-11-10] - Painel do alimentador na Qualidade da Rede (UI)
+- **Autor:** Bernardo H
+- **Branch:** `style/design-system-paleta-amarela`
+- **O que foi feito:**
+  - Redesenho do painel lateral que abre ao clicar no código de um alimentador (código da Fatia 06; só apresentação, mesmas rotas e dados da API), no mesmo padrão do painel da UC na Fila de Inspeção.
+  - Cabeçalho com o selo da situação (acima do limite, alerta ou conforme) e "Conjunto · UCs atendidas"; corpo com rolagem própria.
+  - "No ano": DEC e FEC acumulados em barras com a marca do limite anual e a distância até ele ("2,81 h acima do limite"); a cor segue a situação da API.
+  - "Horas sem energia por ano": o gráfico em dente de serra (acumulado que zera em janeiro, 48 meses) virou uma barra por ano contra o limite, com os anos incompletos marcados.
+  - "Horas sem energia por mês": colunas dos últimos 12 meses com o pior mês em destaque (jul/2025, o temporal).
+  - "Clientes mais afetados": a tabela de 5 colunas virou lista em que a linha inteira abre a UC 360; nomes legíveis e barra das horas. A lista não some mais quando o histórico falha.
+  - `FeederTimeSeriesChart.tsx` e `FeederCustomersTable.tsx` removidos (sem uso); cálculos de leitura em `utils/feederSummary.ts`, com testes.
+- **Validação de Testes:**
+  - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; testes da Qualidade da Rede atualizados.

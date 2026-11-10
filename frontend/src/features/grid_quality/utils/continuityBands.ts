@@ -11,7 +11,7 @@ export interface DecBand {
 }
 
 /**
- * Faixas de DEC do mapa, da menor para a maior: escala de azul (`map-1` a `map-4`) que escurece conforme o DEC piora,
+ * Faixas de DEC do mapa, da menor para a maior: escala âmbar (`map-1` a `map-4`) que escurece conforme o DEC piora,
  * com degraus bem separados e sem o verde e o vermelho de ganho e perda das outras telas.
  */
 export const DEC_BANDS: DecBand[] = [

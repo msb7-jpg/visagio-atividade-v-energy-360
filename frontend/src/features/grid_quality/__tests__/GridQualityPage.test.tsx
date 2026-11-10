@@ -161,7 +161,11 @@ describe('GridQualityPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'ALIM-TESTE-01' }))
 
     expect(await screen.findByText('Alimentador ALIM-TESTE-01')).toBeInTheDocument()
-    expect(await screen.findByText('DEC acumulado no ano (h)')).toBeInTheDocument()
+    const sheet = screen.getByRole('dialog')
+    expect(await within(sheet).findByText('Horas sem energia (DEC)')).toBeInTheDocument()
+    expect(within(sheet).getByText('Acima do limite de referência')).toBeInTheDocument()
+    expect(within(sheet).getByRole('list', { name: 'DEC por ano' }).querySelectorAll('li')).toHaveLength(2)
+    expect(within(sheet).getByText(/Pior mês:/)).toBeInTheDocument()
     expect(mockedApi.getFeederHistory).toHaveBeenCalledWith('ALIM-TESTE-01', expect.anything())
   })
 
@@ -170,10 +174,10 @@ describe('GridQualityPage', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'ALIM-TESTE-01' }))
 
-    expect(await screen.findByText('Clientes mais afetados (últimos 12 meses)')).toBeInTheDocument()
+    expect(await screen.findByText('Clientes mais afetados · 12 meses')).toBeInTheDocument()
     expect(mockedApi.getAffectedCustomers).toHaveBeenCalledWith('ALIM-TESTE-01', expect.anything())
-    expect(await screen.findByText('TITULAR TESTE')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Ver ficha' })).toHaveAttribute('href', '/customers?uc=UC-TESTE-01')
+    expect(await screen.findByText('Titular Teste')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Abrir Titular Teste (UC-TESTE-01) na UC 360' })).toHaveAttribute('href', '/customers?uc=UC-TESTE-01')
   })
 
   it('pagina o ranking, abre a gaveta de qualquer página e volta à primeira ao trocar o filtro', async () => {
@@ -236,7 +240,7 @@ describe('GridQualityPage', () => {
 
     screen.getAllByRole('button', { name: 'Tentar novamente' }).forEach((button) => fireEvent.click(button))
 
-    expect(await screen.findByText('TITULAR TESTE')).toBeInTheDocument()
+    expect(await screen.findByText('Titular Teste')).toBeInTheDocument()
     expect(mockedApi.getFeederHistory).toHaveBeenCalledTimes(2)
     expect(mockedApi.getAffectedCustomers).toHaveBeenCalledTimes(2)
   })

@@ -28,7 +28,7 @@ function OrderFlowLegend() {
 }
 
 /**
- * Faixa acima do quadro: o ciclo da ordem à esquerda e, à direita, o único botão azul da aba, "Registrar achado".
+ * Faixa acima do quadro: o ciclo da ordem à esquerda e, à direita, o único botão principal (amarelo) da aba, "Registrar achado".
  * Exportar e importar ficam em `OrderSheetActions`, no topo.
  *
  * @param props - `onRegister` abre o registro manual de um achado.
