@@ -18,15 +18,14 @@ interface UpdateInspectionVariables {
   payload: InspectionOrderUpdate
 }
 
-// O backtest e a lista de inspetores não dependem das ordens que se mudam hoje: o servidor só considera ordens
-// anteriores ao último corte do backtest, e os inspetores vêm do histórico de campo. Continuam valendo depois de
-// gerar, concluir ou cancelar uma ordem, e refazê-los só custaria uma chamada à toa.
-const UNAFFECTED_BY_ORDERS = new Set<unknown>([lossKeys.backtestSeries()[1], lossKeys.inspectors()[1]])
+// A lista de inspetores não depende das ordens que se mudam hoje: ela vem do histórico de campo. Continua valendo
+// depois de gerar, concluir ou cancelar uma ordem, e refazê-la só custaria uma chamada à toa.
+const UNAFFECTED_BY_ORDERS = new Set<unknown>([lossKeys.inspectors()[1]])
 
 /**
  * Invalida fila, ordens e tudo o que depende delas: gerar, concluir ou cancelar uma ordem muda essas listas.
  *
- * @returns Callback de invalidação do domínio de perdas, que poupa o backtest e a lista de inspetores.
+ * @returns Callback de invalidação do domínio de perdas, que poupa a lista de inspetores.
  */
 function useInvalidateLosses() {
   const queryClient = useQueryClient()

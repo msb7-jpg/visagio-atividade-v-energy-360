@@ -12,7 +12,6 @@ import type {
   SuspiciousUnitsPageRequest,
   UploadResult
 } from '@/features/loss_management/types/lossTypes'
-import type { BacktestSeries } from '@/features/loss_management/types/backtestTypes'
 import type { ExcludedQueue, ExcludedUnitsFilter } from '@/features/loss_management/types/excludedTypes'
 import type { OrderEvent } from '@/features/loss_management/types/orderEventTypes'
 import type { UnitDetail } from '@/features/loss_management/types/unitDetailTypes'
@@ -28,11 +27,6 @@ export const lossApi = {
 
   async listOrderEvents(idInspecao: number, signal?: AbortSignal): Promise<OrderEvent[]> {
     const { data } = await apiClient.get<OrderEvent[]>(`/losses/inspections/${idInspecao}/events`, { signal })
-    return data
-  },
-
-  async getBacktestSeries(signal?: AbortSignal): Promise<BacktestSeries> {
-    const { data } = await apiClient.get<BacktestSeries>('/losses/backtest/series', { signal })
     return data
   },
 

@@ -42,7 +42,6 @@ const CHANGED_BY_AN_ORDER: Array<[string, QueryKey]> = [
 ]
 
 const UNAFFECTED_BY_AN_ORDER: Array<[string, QueryKey]> = [
-  ['o backtest', lossKeys.backtestSeries()],
   ['a lista de inspetores', lossKeys.inspectors()]
 ]
 

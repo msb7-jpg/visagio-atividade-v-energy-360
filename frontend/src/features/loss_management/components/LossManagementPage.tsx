@@ -1,6 +1,5 @@
-import { BarChart3, ClipboardList, EyeOff, ListOrdered } from 'lucide-react'
+import { ClipboardList, EyeOff, ListOrdered } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { EffectivenessTab } from '@/features/loss_management/components/EffectivenessTab'
 import { ExcludedQueueTab } from '@/features/loss_management/components/ExcludedQueueTab'
 import { InspectionOrdersTab } from '@/features/loss_management/components/InspectionOrdersTab'
 import { SuspiciousQueueTab } from '@/features/loss_management/components/SuspiciousQueueTab'
@@ -15,7 +14,7 @@ const withCount = (label: string, count: number | undefined) =>
 /**
  * Página da Fila de Inspeção: fila priorizada de UCs suspeitas e ordens de inspeção em campo.
  *
- * @returns Página com as abas "Fila priorizada", "Fora da fila", "Ordens de inspeção" e "Efetividade".
+ * @returns Página com as abas "Fila priorizada", "Fora da fila" e "Ordens de inspeção".
  */
 export function LossManagementPage() {
   const queue = useSuspiciousQueueController()
@@ -40,9 +39,6 @@ export function LossManagementPage() {
             <TabsTrigger value="orders">
               <ClipboardList aria-hidden="true" className="size-4" /> {withCount('Ordens de inspeção', orders?.length)}
             </TabsTrigger>
-            <TabsTrigger value="effectiveness">
-              <BarChart3 aria-hidden="true" className="size-4" /> Efetividade
-            </TabsTrigger>
           </TabsList>
           <TabsContent value="suspects" className="mt-4">
             <SuspiciousQueueTab queue={queue} />
@@ -52,9 +48,6 @@ export function LossManagementPage() {
           </TabsContent>
           <TabsContent value="orders" className="mt-4">
             <InspectionOrdersTab />
-          </TabsContent>
-          <TabsContent value="effectiveness" className="mt-4">
-            <EffectivenessTab />
           </TabsContent>
         </Tabs>
       </main>

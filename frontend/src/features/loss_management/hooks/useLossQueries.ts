@@ -1,6 +1,5 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
-  backtestSeriesQueryOptions,
   excludedUnitsQueryOptions,
   inspectionsQueryOptions,
   inspectorsQueryOptions,
@@ -83,15 +82,6 @@ export function useQueueFiltersQuery() {
  */
 export function useExcludedUnitsQuery(filters: ExcludedUnitsFilter) {
   return useInfiniteQuery(excludedUnitsQueryOptions(filters))
-}
-
-/**
- * Backtest da fila em todos os cortes: a seleção refeita em cada mês, medida nas inspeções dos meses seguintes.
- *
- * @returns Estado da query da série, com um resultado por corte, do mais antigo ao mais recente.
- */
-export function useBacktestSeriesQuery() {
-  return useQuery(backtestSeriesQueryOptions())
 }
 
 /**

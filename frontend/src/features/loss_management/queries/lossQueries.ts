@@ -7,7 +7,6 @@ export const lossKeys = {
   all: ['losses'] as const,
   suspiciousUnits: (filters: SuspiciousUnitsFilter) => [...lossKeys.all, 'suspicious-units', filters] as const,
   orderEvents: (idInspecao: number) => [...lossKeys.all, 'order-events', idInspecao] as const,
-  backtestSeries: () => [...lossKeys.all, 'backtest-series'] as const,
   excludedUnits: (filters: ExcludedUnitsFilter) => [...lossKeys.all, 'excluded-units', filters] as const,
   unitDetail: (idUc: string, fullHistory: boolean) => [...lossKeys.all, 'unit-detail', idUc, fullHistory] as const,
   inspections: () => [...lossKeys.all, 'inspections'] as const,
@@ -150,22 +149,6 @@ export function excludedUnitsQueryOptions(filters: ExcludedUnitsFilter) {
     getNextPageParam: (_lastPage, allPages) => nextQueueOffset(allPages),
     staleTime: LOSS_STALE_TIME_MS,
     placeholderData: keepPreviousData
-  })
-}
-
-// O backtest só muda com a carga da Gold e com o código; o servidor guarda o resultado depois do primeiro cálculo.
-const BACKTEST_STALE_TIME_MS = 10 * 60 * 1000
-
-/**
- * Opções da consulta do backtest da fila em todos os cortes disponíveis, com a capacidade mensal como tamanho.
- *
- * @returns Opções de query com cache longo e cancelamento via signal.
- */
-export function backtestSeriesQueryOptions() {
-  return queryOptions({
-    queryKey: lossKeys.backtestSeries(),
-    queryFn: ({ signal }) => lossApi.getBacktestSeries(signal),
-    staleTime: BACKTEST_STALE_TIME_MS
   })
 }
 

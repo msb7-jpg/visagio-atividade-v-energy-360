@@ -487,3 +487,13 @@
   - Conferido na tela com o banco real: o segundo clique em "Variação" leva Jardim Jordão e as outras quedas ao topo; "Fora da fila" com 73 páginas (1.814 UCs).
 - **Validação de Testes:**
   - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; 883 testes aprovados (testes novos da direção da ordenação e da paginação com busca do lote seguinte).
+
+### [2026-11-10] - Remoção da aba "Efetividade" da Fila de Inspeção (UI)
+- **Autor:** Bernardo H
+- **Branch:** `main`
+- **O que foi feito:**
+  - A aba "Efetividade" (backtest da seleção e resultados de campo) foi criada para testar a fila durante o desenvolvimento e saiu da tela, a pedido do time. A Fila de Inspeção fica com "Fila priorizada", "Fora da fila" e "Ordens de inspeção".
+  - Removidos os 12 arquivos usados só por ela (`EffectivenessTab`, `BacktestSeriesView`, `BacktestCard`, `BacktestSeriesTable`, `BandCalibrationTable`, `SizeComparisonTable`, `FieldResultsKpis`, `useEffectivenessController`, `backtestTypes`, `backtestFormat`, `effectivenessSelection` e `fieldResultsSample`), os 5 testes deles e, nos arquivos compartilhados, a consulta, a chamada e a chave de cache do backtest. O `blobErrorBody` ficou, porque a exportação das ordens usa.
+  - O endpoint `GET /losses/backtest/series` do backend continua existindo, sem uso na tela. Os documentos de planejamento do Adrian ainda citam a aba (não editados, pela regra de isolamento).
+- **Validação de Testes:**
+  - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; 840 testes aprovados.
