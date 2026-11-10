@@ -6,6 +6,22 @@
 
 ## Registros de Execução
 
+### [2026-11-09] - Desacoplamento do Domain Playbook Prompt e Raciocínio de Causa-Raiz por Primeiros Princípios
+- **Autor:** Miguel / Antigravity
+- **O que foi feito:**
+  - **Refatoração do `domain_playbook_prompt.py` (Primeiros Princípios vs. Decoreba):**
+    - Removidos números fixos e gabaritos acoplados (*3.510 UCs*, *835 fraudes*, *+R$ 19,6M*, *-R$ 6,2M*).
+    - Formalizada a **Identidade Financeira da Receita** e a **Decomposição de Fisher (Efeito-Preço vs. Efeito-Volume vs. Efeito-Cruzado)** parametrizada para qualquer janela temporal $[T_0, T_1]$, classe de consumo ou município.
+    - Estabelecida a **Árvore de Causa-Raiz de Contração de Volume Faturado** em dois vetores estruturais: Vetor A (Autoconsumo Solar via `possui_gd = 1`) e Vetor B (Perdas Não-Técnicas/Fraudes em `possui_gd = 0` cruzado com `fato_inspecoes_perdas`).
+    - Adicionado `NULLIF(..., 0)` nas divisões tarifárias para evitar divisão por zero em recortes vazios.
+  - **Desacoplamento do `synthesizer_prompt.py`:**
+    - Removidas referências estáticas aos números do case na diretriz de síntese multidimensional, instruindo o modelo a interpretar dinamicamente os blocos TOON retornados pela execução SQL.
+  - **Melhoria do `scripts/dev_local.sh`:**
+    - Passou a inspecionar `AI_BASE_URL` e `AI_MODEL_NAME` do `backend/.env`, iniciando automaticamente o daemon `gemini-bridge` na porta `:8765` quando configurado e exibindo o modelo real em uso (`gemini-3.8-flash`).
+  - **Testes e Validação (`test_agent_cross_domain.py`):**
+    - Adicionado teste `test_generalized_fisher_decomposition_custom_period_and_prompt_decoupling` validando ausência de gabarito hardcoded nos prompts e execução multi-query para períodos e recortes customizados (2024 vs 2025, Comercial em Jaboatão).
+    - Validado ao vivo com `gemini-3.8-flash` tanto em recortes customizados quanto na pergunta canônica da banca.
+
 ### [2026-11-09] - Restauração da Identidade Visual Sóbria do Chat e Ícone do Bot
 - **Autor:** Miguel / Antigravity
 - **O que foi feito:**

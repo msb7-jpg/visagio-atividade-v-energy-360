@@ -35,11 +35,11 @@ Toda a contratação da nossa equipe nasceu de uma inquietante constatação na 
 ### 2. A Resposta Comprovada Baseada nos Dados
 A investigação quantitativa da nossa plataforma revelou com precisão matemática o que aconteceu com o faturamento:
 - A receita total avançou de **R$ 157,1 mi** para **R$ 169,7 mi** (+8,0%, ou +R$ 12,6 mi).
-- A **tarifa média realizada subiu 13,8%**, gerando um acréscimo positivo de **+R$ 22,6 milhões** de receita (**efeito-preço**).
-- No entanto, o volume total faturado despencou **5,1%** (de 227,0 mil MWh para 215,4 mil MWh), subtraindo **R$ 8,0 milhões** de receita (**efeito-volume**).
+- A **tarifa média realizada subiu 12,5%** (de R$ 0,6919 para R$ 0,7783/kWh, impulsionada por tributos e bandeiras tarifárias), gerando um acréscimo positivo de **+R$ 20,4 milhões** de receita (**efeito-preço**).
+- No entanto, o volume total faturado recuou **4,0%** (de 227,1 mil MWh para 218,0 mil MWh — exatamente o "quase 4%" da fala do Diretor Comercial), subtraindo **R$ 6,2 milhões** de receita (**efeito-volume**).
 - **As duas causas fundamentais da queda de volume identificadas nos dados:**
-  1. **Geração Distribuída (GD - Painéis Solares):** 3,5 mil clientes de médio e alto consumo adotaram energia solar. Essa autogeração reduziu o faturamento da distribuidora em 11.314 MWh, explicando **97,4% de toda a queda de volume líquido**. O cliente não parou de consumir energia; ele consome a energia que gerou no próprio telhado.
-  2. **Fraude Concentrada em 4 Bairros:** Nos bairros de **Iputinga**, **Macaxeira**, **Jardim Jordão** e **Prazeres**, o consumo despencou bruscamente a partir de maio de 2025. Das 871 inspeções de campo realizadas nesses locais, **835 (96%) confirmaram irregularidades e furto de energia**. Esse desvio representa um potencial de até **R$ 2,02 milhões** anuais de receita recuperável pela fiscalização.
+  1. **Geração Distribuída (GD - Painéis Solares):** 3.496 clientes (3.115 residenciais e 381 comerciais, nenhuma indústria) adotaram energia solar. Essa autogeração reduziu as compras da rede nessas unidades em **11.222 MWh** (queda de 61% no faturamento desses clientes), superando a queda líquida de toda a base mantida (-9.829 MWh), enquanto os clientes sem painel cresceram +0,7%.
+  2. **Fraude Concentrada em 4 Bairros:** Nos bairros de **Iputinga**, **Macaxeira**, **Jardim Jordão** e **Prazeres**, o consumo despencou bruscamente a partir de maio de 2025. Do total de 1.389 inspeções de campo realizadas pela distribuidora com 871 irregularidades confirmadas, **835 (95,9%) estavam concentradas exatamente nesses 4 bairros**. Esse desvio representa um potencial de até **R$ 2,02 milhões** anuais de receita em jogo pela fiscalização.
 
 > [!TIP]
 > **Apoio ao Vivo na Interface:** Em todas as páginas do portal, na barra superior ao lado do caminho da página, há o botão **`Pergunta do Case`**. Se der um branco durante a apresentação, clique nele para abrir a citação exata e a pergunta que aquela tela responde!
@@ -102,20 +102,20 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
 
 - 👉 **O que apontar na tela (Inteligência Comercial):**
   1. No menu lateral, clique em **Comercial > Inteligência Comercial**.
-  2. Aponte para o **gráfico de Decomposição da Receita**: destaque a barra verde do **Efeito-Preço (+R$ 22,6 mi)** e a barra vermelha do **Efeito-Volume (-R$ 8,0 mi)**.
-  3. Aponte para o bloco de **Geração Distribuída (GD)**: mostre que os 3,5 mil clientes com painel solar deixaram de comprar 11,3 mil MWh da rede.
+  2. Aponte para o **gráfico de Decomposição da Receita**: destaque a barra verde do **Efeito-Preço (+R$ 20,4 mi)** e a barra vermelha do **Efeito-Volume (-R$ 6,2 mi)**.
+  3. Aponte para o bloco de **Geração Distribuída (GD)**: mostre que os 3.496 clientes com painel solar deixaram de comprar 11,2 mil MWh da rede.
   4. Na tabela por município e bairro, aponte os quatro bairros críticos no topo de perda: **Iputinga, Macaxeira, Jardim Jordão e Prazeres**.
 
 - 🗣️ **O que falar:**
   > *"Entramos agora no coração da pergunta de Henrique Duarte: por que a receita subiu apenas 8% se a tarifa aumentou?  
   > Aqui na tela de **Inteligência Comercial**, a matemática fecha centavo a centavo:  
-  > O reajuste tarifário gerou um ganho de **R$ 22,6 milhões** — o **efeito-preço**. No entanto, o volume físico faturado caiu **5,1%**, o que destruiu **R$ 8,0 milhões** de receita — o **efeito-volume**.  
+  > O reajuste tarifário gerou um ganho de **R$ 20,4 milhões** — o **efeito-preço**. No entanto, o volume físico faturado caiu **4,0%** (exatamente o 'quase 4%' citado pelo diretor), o que subtraiu **R$ 6,2 milhões** de receita — o **efeito-volume**.  
   > Investigando os dados, encontramos as duas causas definitivas dessa queda:  
-  > Primeira causa: **Energia Solar (GD).** Cerca de 3,5 mil clientes de alto consumo passaram a gerar sua própria energia no telhado. Eles deixaram de comprar 11,3 mil MWh da rede, explicando **97,4% de toda a queda líquida de volume**. O cliente não parou de consumir energia; apenas consome a energia do próprio telhado.  
-  > Segunda causa: **Fraude Concentrada.** O volume restante perdido está localizado em quatro bairros: Iputinga e Macaxeira no Recife, e Jardim Jordão e Prazeres em Jaboatão. Nesses locais, o consumo despencou bruscamente a partir de maio de 2025. E as 871 inspeções em campo confirmaram que 96% eram fraude no medidor, somando mais de **R$ 2 milhões** em receita recuperável."*
+  > Primeira causa: **Energia Solar (GD).** 3.496 clientes de consumo relevante (3.115 residenciais e 381 comerciais) passaram a gerar sua própria energia no telhado. Eles faturaram 61% a menos e deixaram de comprar 11,2 mil MWh da rede — o que supera toda a queda líquida de volume da empresa. O cliente não parou de consumir energia; apenas consome a energia do próprio telhado.  
+  > Segunda causa: **Fraude Concentrada.** O volume restante perdido está localizado em quatro bairros: Iputinga e Macaxeira no Recife, e Jardim Jordão e Prazeres em Jaboatão. Nesses locais, o consumo despencou bruscamente a partir de maio de 2025. Das 1.389 inspeções em campo com 871 irregularidades confirmadas, nada menos que **835 (95,9%) estavam nesses 4 bairros**, somando até **R$ 2,02 milhões** anuais de receita em jogo para recuperação."*
 
 - 💡 **A Resposta Direta:**
-  > *"A receita cresceu pouco porque a energia solar absorveu 97% da queda de volume e o restante foi furto concentrado em 4 bairros."*
+  > *"A receita cresceu pouco porque a energia solar absorveu mais do que a queda líquida inteira (-11,2 mil MWh) e o restante foi furto concentrado em 4 bairros."*
 
 ---
 
@@ -131,7 +131,7 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
   2. Aponte para a **tabela ordenada por Prioridade**: mostre que as unidades no topo têm o maior potencial de recuperação de energia (kWh).
   3. Aponte para a coluna **Motivo da Suspeita**: explique que o algoritmo cruza quebra de consumo com a lista de painéis solares para nunca fiscalizar quem tem solar honesto.
   4. Mostre o botão **Exportar CSV** (para a rota de campo) e a área de **Upload de Planilha** (para carregar o laudo dos fiscais sem digitação).
-  5. Clique na aba **Efetividade** e aponte para a taxa histórica de acerto do modelo calibrado para 200 inspeções por mês.
+  5. Clique na aba **Efetividade** e aponte para a taxa histórica de acerto do modelo (62,7% geral e 92,5% no patamar alto da fila).
 
 - 🗣️ **O que falar:**
   > *"Para o Gerente de Perdas Rafael Coutinho, cada inspeção em vão é um dia de equipe jogado fora.  
@@ -141,7 +141,7 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
   > **Passo a palavra agora para o Miguel**, que vai demonstrar como a plataforma atende a Operação com os indicadores da ANEEL, agiliza o Atendimento ao Consumidor e traz o poder da IA generativa Text-to-SQL."*
 
 - 💡 **A Resposta Direta:**
-  > *"Acabamos com o desperdício em campo: o gestor tem uma fila inteligente que mira R$ 2,02 milhões com 96% de assertividade comprovada."*
+  > *"Acabamos com o desperdício em campo: o gestor tem uma fila inteligente que mira até R$ 2,02 milhões com acerto de 92,5% no patamar alto da fila."*
 
 ---
 
@@ -154,19 +154,19 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
 
 - 👉 **O que apontar na tela (Qualidade da Rede):**
   1. No menu lateral, clique em **Operação > Qualidade da Rede**.
-  2. Aponte para os cards de indicadores oficiais: **DEC** (duração média em horas) e **FEC** (frequência de interrupções).
-  3. Aponte para o seletor de **Alimentador** e destaque os circuitos com sinalização visual de alerta (próximos ou acima do limite da ANEEL).
-  4. Aponte para a decomposição por causa de falha (falhas internas atacáveis vs causas climáticas/externas).
+  2. Aponte para os cards de indicadores: **DEC médio acumulado no ano (horas)** e **FEC médio no ano (vezes)**, e o bloco de **Situação dos 122 circuitos**.
+  3. Na **tabela de ranking de alimentadores**, clique no código de um circuito para abrir a **gaveta lateral (Drawer)**, mostrando a série histórica mensal e os clientes mais afetados.
+  4. Aponte para a decomposição por causa de falha (falhas atacáveis por poda/manutenção preventiva vs causas climáticas/externas).
 
 - 🗣️ **O que falar:**
   > *"Obrigado, Bernardo. Boa tarde a todos os membros da banca.  
-  > Para a Gerente de Operação Beatriz Farias, estabilidade da rede significa evitar multas pesadas da ANEEL.  
-  > Na tela **Qualidade da Rede**, calculamos de forma automatizada no pipeline as duas métricas oficiais do PRODIST Módulo 8 da ANEEL: o **DEC** — horas que os clientes ficaram sem luz — e o **FEC** — quantidade de vezes que faltou energia.  
-  > O sistema permite acompanhar esses números ao longo dos 4 anos e, principalmente, filtrar por **alimentador** — que são os circuitos de média tensão dos bairros.  
-  > Destacamos visualmente os alimentadores mais críticos, orientando a manutenção preventiva exatamente onde o risco de estourar as metas regulatórias é iminente."*
+  > Para a Gerente de Operação Beatriz Farias, estabilidade da rede significa proteger a qualidade do fornecimento aos clientes.  
+  > Na tela **Qualidade da Rede**, calculamos de forma automatizada no pipeline as métricas da ANEEL baseadas no PRODIST Módulo 8: o **DEC** — horas médias sem luz por cliente — e o **FEC** — quantidade média de quedas de energia.  
+  > O sistema traz o panorama dos 122 circuitos de média tensão e permite ranquear os alimentadores mais críticos em relação aos limites regulatórios de referência.  
+  > Clicando em qualquer alimentador, a gaveta lateral abre o histórico mensal e a lista de clientes mais atingidos, direcionando as turmas de campo e poda exatamente para os circuitos de maior retorno."*
 
 - 💡 **A Resposta Direta:**
-  > *"Monitoramento em conformidade estrita com o PRODIST da ANEEL, direcionando a manutenção para onde ela mais previne multas."*
+  > *"Monitoramento com base no PRODIST da ANEEL, priorizando a manutenção preventiva nos circuitos de maior impacto aos clientes."*
 
 ---
 
@@ -179,13 +179,13 @@ A investigação quantitativa da nossa plataforma revelou com precisão matemát
 
 - 👉 **O que apontar na tela (UC 360):**
   1. No menu lateral, clique em **Atendimento > UC 360**.
-  2. Digite no campo de busca o código de uma unidade: `UC-0001`.
+  2. Digite no campo de busca o código de uma unidade: `UC100094`.
   3. Aponte para o **gráfico comparativo de consumo**: barras do ano atual lado a lado com o mesmo mês do ano anterior.
   4. Aponte para os cards de contexto: **badge de energia solar (GD)**, **histórico de faturas**, **interrupções no circuito da rua** e **chamados anteriores**.
 
 - 🗣️ **O que falar:**
   > *"No atendimento ao cliente, cada segundo na linha custa dinheiro e satisfação. A Gerente Camila Barreto relatou que seus operadores precisavam abrir quatro sistemas diferentes e demoravam minutos para responder uma dúvida de conta alta.  
-  > Na tela **UC 360**, basta digitar o código da UC. Em milissegundos, o atendente visualiza:  
+  > Na tela **UC 360**, basta digitar o código da UC — como a `UC100094`. Em milissegundos, o atendente visualiza:  
   > 1. O gráfico de consumo comparado com o ano passado — tirando a dúvida na hora se o consumo real subiu;  
   > 2. Se o cliente possui painel solar instalado;  
   > 3. Se a rua dele teve ocorrência de falta de energia recente;  
@@ -230,7 +230,7 @@ As 8 perguntas de maior probabilidade que a banca examinadora fará, com a respo
 ### 1. Pergunta sobre Escolha do Banco de Dados:
 > *"Por que vocês escolheram SQLite no backend em vez de PostgreSQL?"*
 - **Líder da Resposta:** Bernardo Heuer (ou apoio técnico conjunto)
-- **Resposta:** *"O SQLite foi uma escolha técnica consciente para o escopo da área piloto (45 mil UCs e 2,1 milhões de registros). Ele torna a aplicação 100% autocontida, com portabilidade total e zero dependência de infraestrutura externa em homologação. Toda a camada Gold foi modelada em terceira forma normal e indexada nas chaves de maior tráfego (competência, alimentador e código de UC), atingindo tempos de resposta inferiores a 100 milissegundos nas rotas da API e nas consultas da IA."*
+- **Resposta:** *"O SQLite foi uma escolha técnica consciente para o escopo da área piloto (45 mil UCs e 2,1 milhões de registros). Ele torna a aplicação 100% autocontida, com portabilidade total e zero dependência de infraestrutura externa em homologação. Toda a camada Gold foi modelada em Star Schema (Modelo Dimensional com dimensões e fatos) e indexada nas chaves de maior tráfego (competência, alimentador e código de UC), atingindo tempos de resposta inferiores a 100 milissegundos nas rotas da API e nas consultas da IA."*
 
 ---
 
@@ -242,23 +242,23 @@ As 8 perguntas de maior probabilidade que a banca examinadora fará, com a respo
 ---
 
 ### 3. Pergunta sobre o Impacto da Geração Distribuída (GD):
-> *"Se apenas 3,5 mil UCs possuem energia solar de um total de 45 mil, como ela explica 97,4% da queda de volume faturado?"*
+> *"Se apenas 3,5 mil UCs possuem energia solar de um total de 45 mil, como ela explica a queda de volume faturado?"*
 - **Líder da Resposta:** Bernardo Heuer
-- **Resposta:** *"A adoção de energia solar exige investimento inicial e ocorreu nos maiores consumidores da concessão: comércios, pequenas indústrias e residências de grande porte. Embora sejam 7,8% das conexões, essas 3,5 mil UCs tinham consumo elevado. A energia gerada pelo sol é consumida instantaneamente no imóvel e abatida antes da fatura. Portanto, eles deixaram de comprar 11,3 mil MWh da rede, o que corresponde matematicamente a 97,4% do recuo de 11,6 mil MWh entre os períodos."*
+- **Resposta:** *"A adoção de energia solar ocorreu em 3.496 UCs (3.115 residenciais e 381 comerciais, nenhuma indústria). Embora representem 7,8% das conexões, essas unidades faturaram 61% a menos após a instalação dos painéis. Elas deixaram de comprar 11.222 MWh da rede, o que supera toda a queda líquida de 9.829 MWh da base de clientes mantidos (as UCs sem painel solar cresceram +0,7%). A energia gerada pelo sol é consumida instantaneamente no imóvel e abatida antes da fatura, gerando uma redução estrutural de volume."*
 
 ---
 
 ### 4. Pergunta sobre a Fraude nos 4 Bairros:
 > *"Qual é a evidência real nos dados de que houve fraude nos quatro bairros críticos a partir de maio de 2025?"*
 - **Líder da Resposta:** Bernardo Heuer
-- **Resposta:** *"Cruzamos as curvas mensais de faturamento com os laudos de campo. Em Iputinga, Macaxeira, Jardim Jordão e Prazeres, o consumo residencial despencou repentinamente a partir de maio de 2025 sem relação com placas solares. A confirmação definitiva veio da fiscalização: das 871 inspeções efetuadas nesses bairros, 835 (96%) registraram irregularidade material no medidor (violação de lacre, bobina adulterada ou ligação direta), isolando um potencial de R$ 2,02 milhões anuais de receita recuperável."*
+- **Resposta:** *"Cruzamos as curvas mensais de faturamento com os laudos de campo. Em Iputinga, Macaxeira, Jardim Jordão e Prazeres, o consumo residencial despencou repentinamente a partir de maio de 2025 sem relação com placas solares. A confirmação definitiva veio da fiscalização: das 1.389 inspeções efetuadas pela distribuidora com 871 irregularidades confirmadas (62,7% de acerto geral), nada menos que 835 (95,9%) estavam concentradas nesses 4 bairros (violação de lacre, bobina adulterada ou ligação direta), isolando um potencial de até R$ 2,02 milhões anuais de receita em jogo."*
 
 ---
 
 ### 5. Pergunta sobre Metodologia Regulatória (DEC e FEC):
 > *"Como vocês calcularam o DEC e o FEC a partir das ocorrências de rede?"*
 - **Líder da Resposta:** Miguel Batista
-- **Resposta:** *"Implementamos as fórmulas oficiais do PRODIST Módulo 8 da ANEEL. Para cada alimentador em cada mês, o DEC é a soma da duração de cada interrupção ponderada pela quantidade de unidades consumidoras atingidas, dividida pelo total de UCs atendidas pelo alimentador. O FEC é análogo, ponderando a quantidade de interrupções. Esse cálculo permite comparar circuitos de portes completamente diferentes de forma justa e regulatória."*
+- **Resposta:** *"Implementamos a fórmula da ANEEL baseada no PRODIST Módulo 8. Para cada alimentador em cada mês, o DEC é a soma da duração de cada interrupção ponderada pela quantidade de unidades consumidoras atingidas, dividida pelo total de UCs atendidas pelo alimentador. O FEC é análogo, ponderando a quantidade de interrupções. Como os limites regulatórios da ANEEL são anuais e por conjunto elétrico, nós os incorporamos como limites de referência para nortear o ranking operacional e priorizar a manutenção preventiva nos circuitos mais vulneráveis."*
 
 ---
 
@@ -272,14 +272,36 @@ As 8 perguntas de maior probabilidade que a banca examinadora fará, com a respo
 ### 7. Pergunta sobre Escalabilidade para Produção:
 > *"Se a diretoria decidir colocar esse sistema em produção para 2 milhões de clientes no estado inteiro, o que mudaria na arquitetura?"*
 - **Líder da Resposta:** Miguel Batista
-- **Resposta:** *"A arquitetura já foi desenhada para isso: 1. O pipeline de dados já está em PySpark no Databricks, bastando escalar horizontalmente o cluster de processamento. 2. Substituiríamos o SQLite local por uma instância distribuída gerenciada (como PostgreSQL particionado ou BigQuery). 3. O backend FastAPI é sem estado (stateless) e o portal React é compilado estaticamente, viabilizando escalabilidade imediata sob contêineres e balanceamento de carga com cache Redis."*
+- **Resposta:** *"A arquitetura já foi desenhada para isso: 1. O pipeline de dados já está em PySpark no Databricks, bastando escalar horizontalmente o cluster de processamento. 2. Substituiríamos o SQLite local por uma instância distribuída gerenciada (como PostgreSQL particionado ou BigQuery). 3. O backend FastAPI e o portal React viabilizam escalabilidade imediata sob contêineres e balanceamento de carga com cache Redis e banco de suporte."*
 
 ---
 
 ### 8. Pergunta sobre Rastreabilidade nas Tabelas Gold:
 > *"Quais tabelas e colunas específicas comprovaram essa tese da GD e da Fraude?"*
 - **Líder da Resposta:** Bernardo Heuer & Miguel Batista
-- **Resposta:** *"1. Na `fato_faturamento`, medimos que o volume faturado encolheu 11.618 MWh (-5,1%). 2. Na `dim_unidade_consumidora`, filtramos `possui_gd = 1` e medimos que esses 3,5k clientes deixaram de comprar 11.314 MWh (97,4% da perda). 3. Filtrando as UCs restantes sem GD na `fato_faturamento`, isolamos a queda abrupta a partir de maio de 2025 em Iputinga, Macaxeira, Jardim Jordão e Prazeres. 4. Na `fato_inspecoes_perdas`, confirmamos que 835 de 871 laudos nesses 4 bairros atestaram irregularidade comprovada (96% de assertividade)."*
+- **Resposta:** *"1. Na `fato_faturamento`, medimos que o volume faturado recuou de 227,1 mil para 218,0 mil MWh (-4,0%). 2. Na `dim_unidade_consumidora`, filtramos `possui_gd = 1` e medimos que as 3.496 UCs com solar deixaram de comprar 11.222 MWh (-61% no faturamento delas). 3. Filtrando as UCs sem GD na `fato_faturamento`, isolamos a queda abrupta a partir de maio de 2025 em Iputinga, Macaxeira, Jardim Jordão e Prazeres (onde 894 UCs caíram mais de 40%). 4. Na `fato_inspecoes_perdas`, confirmamos que 835 de 871 irregularidades atestadas estavam nesses 4 bairros."*
+
+---
+
+## 📊 Números para Saber de Cor (Guia Rápido da Apresentação)
+
+> **A resposta em uma frase:** A receita subiu só 8,0% porque a alta de 12,5% da tarifa média foi em parte anulada pela queda de 4,0% do volume, causada pelos clientes com painel solar, que deixaram de comprar mais do que a queda líquida inteira da empresa; a fraude em quatro bairros é a segunda causa e a única recuperável pela fiscalização.
+
+| Tema / Métrica | Número Exato | Como Dizer na Fala Executiva |
+|---|---|---|
+| **Receita Total** | R$ 157,1 mi $\rightarrow$ R$ 169,7 mi | **+8,0%** (ou +R$ 12,6 milhões) |
+| **Volume Faturado** | 227,1 mil $\rightarrow$ 218,0 mil MWh | **Queda de 4,0%** (a mesma ordem da fala do Diretor Comercial) |
+| **Tarifa Média Realizada** | R$ 0,6919 $\rightarrow$ R$ 0,7783/kWh | **+12,5%** (reajuste homologado de 10,5% + bandeiras tarifárias e tributos) |
+| **Ponte de Receita (Preço vs Volume)** | Preço +R$ 20,4 mi \| Volume -R$ 6,2 mi | O efeito-preço impulsionou, mas o efeito-volume consumiu R$ 6,2 mi de receita |
+| **Geração Distribuída (GD Solar)** | **-11.222 MWh** nas UCs com painel | Mais que a queda líquida total (-9.829 MWh); UCs sem painel cresceram +0,7% |
+| **Perfil dos Clientes com GD** | **3.496 UCs** (3.115 residenciais e 381 comerciais) | 7,8% das conexões; faturaram 61% a menos após a instalação |
+| **Fraude nos 4 Bairros Críticos** | Iputinga, Macaxeira, Jardim Jordão e Prazeres | Consumo caiu a partir de mai/2025; 894 UCs despencaram $\ge$ 40% |
+| **Receita em Jogo na Fraude** | **Até R$ 2,02 milhões / ano** | Potencial máximo estimado de recuperação nas áreas fraudadas |
+| **Inspeções de Campo Realizadas** | **1.389 inspeções**, com **871 irregularidades** | 62,7% de acerto geral; **835 das 871 irregularidades (95,9%)** nos 4 bairros |
+| **Inadimplência da Carteira** | 5,5% $\rightarrow$ 5,4% | R$ 9,2 milhões vencidos sob gestão comercial |
+| **DEC Médio Anual (Horas/Cliente)** | 1,47 h $\rightarrow$ 3,45 h | Sem o evento atípico de jul/2025: 1,51 h |
+| **FEC Médio Anual (Quedas/Cliente)** | 0,89 $\rightarrow$ 1,31 vezes | Sem o evento atípico de jul/2025: 0,91 vezes |
+| **Fila de Inspeção de Perdas** | Priorização calibrada para 200 inspeções/mês | 62,7% de acerto histórico geral e 92,5% nas faixas de alta prioridade |
 
 ---
 
@@ -288,5 +310,5 @@ As 8 perguntas de maior probabilidade que a banca examinadora fará, com a respo
 - [ ] **Ambiente Local Iniciado:** Garantir que o comando `make run-all` (ou `make run-all-ngrok`) esteja rodando e que as páginas abram instantaneamente em `http://localhost:5173`.
 - [ ] **Abas Pré-carregadas:** Deixar o navegador aberto com as telas da Navbar já carregadas em abas individuais (para evitar qualquer atraso de renderização durante a fala).
 - [ ] **Bernardo com Telas Prontas:** Painel Executivo, Inteligência Comercial e Fila de Inspeção (com arquivo CSV de exemplo na pasta se quiser demonstrar upload).
-- [ ] **Miguel com Telas Prontas:** Qualidade da Rede, UC 360 (código `UC-0001` testado) e Assistente IA (pergunta de demonstração copiada na área de transferência: *"Qual bairro teve a maior queda de volume faturado residencial no último ano?"*).
+- [ ] **Miguel com Telas Prontas:** Qualidade da Rede (testar o clique no alimentador para abrir o Drawer), UC 360 (código `UC100094` testado com todos os blocos) e Assistente IA (pergunta de demonstração copiada na área de transferência: *"Qual bairro teve a maior queda de volume faturado residencial no último ano?"*).
 - [ ] **Controle do Relógio:** Manter um cronômetro visível com a transição aos 09:00 minutos de Bernardo para Miguel e término cravado em 15:00 minutos.
