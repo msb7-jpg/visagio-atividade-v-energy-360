@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest'
 import { BrandMark } from '@/components/layout/BrandMark'
 
 describe('BrandMark', () => {
-  it('desenha o símbolo amarelo, com o raio em tinta, e não o contrário', () => {
+  it('mostra o logo como imagem decorativa, sem repetir o nome para leitores de tela', () => {
     const { container } = render(<BrandMark />)
 
-    const symbol = container.querySelector('span[aria-hidden="true"]')
-    expect(symbol).toHaveClass('bg-brand', 'text-brand-foreground')
-    expect(symbol).not.toHaveClass('bg-foreground')
-    expect(symbol?.querySelector('svg')).toBeInTheDocument()
+    const logo = container.querySelector('img')
+    expect(logo).toHaveAttribute('src', expect.stringContaining('logo-venergy'))
+    expect(logo).toHaveAttribute('alt', '')
+    expect(logo).toHaveClass('size-12')
   })
 
   it('mostra o nome do produto por padrão e o esconde com withName={false}', () => {
