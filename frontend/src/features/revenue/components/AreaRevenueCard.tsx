@@ -9,7 +9,7 @@ import { AreaRevenueTable } from '@/features/revenue/components/AreaRevenueTable
 import { NeighborhoodHistoryPanel } from '@/features/revenue/components/NeighborhoodHistoryPanel'
 import { useRevenueHistoryQuery } from '@/features/revenue/hooks/useRevenueQueries'
 import type { BreakdownPage, NeighborhoodRef, RevenueQuery } from '@/features/revenue/types/revenueTypes'
-import { searchAndSort, toAreaRevenue, type AreaSortField } from '@/features/revenue/utils/areaRevenue'
+import { DEFAULT_AREA_SORT, nextAreaSort, searchAndSort, toAreaRevenue, type AreaSort, type AreaSortField } from '@/features/revenue/utils/areaRevenue'
 import { getRevenueErrorMessage } from '@/features/revenue/utils/revenueErrorMessage'
 
 type AreaLevel = 'bairro' | 'municipio'
@@ -45,12 +45,12 @@ interface AreaRevenueCardProps {
 export function AreaRevenueCard({ query, neighborhoodsQuery, municipalitiesQuery }: AreaRevenueCardProps) {
   const [level, setLevel] = useState<AreaLevel>('bairro')
   const [search, setSearch] = useState('')
-  const [sortField, setSortField] = useState<AreaSortField>('revenue')
+  const [sort, setSort] = useState<AreaSort>(DEFAULT_AREA_SORT)
   const [page, setPage] = useState(1)
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<NeighborhoodRef | null>(null)
 
   const source = level === 'bairro' ? neighborhoodsQuery : municipalitiesQuery
-  const areas = searchAndSort((source.data?.items ?? []).map(toAreaRevenue), search, sortField)
+  const areas = searchAndSort((source.data?.items ?? []).map(toAreaRevenue), search, sort)
   const totalPages = Math.max(1, Math.ceil(areas.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
   const labels = LEVEL_LABELS[level]
@@ -72,7 +72,7 @@ export function AreaRevenueCard({ query, neighborhoodsQuery, municipalitiesQuery
     setSelectedNeighborhood(null)
   }
   const changeSort = (field: AreaSortField) => {
-    setSortField(field)
+    setSort(nextAreaSort(sort, field))
     setPage(1)
   }
 
@@ -119,7 +119,7 @@ export function AreaRevenueCard({ query, neighborhoodsQuery, municipalitiesQuery
                 areas={pageAreas}
                 monthsInWindow={monthsInWindow}
                 levelLabel={labels.column}
-                sortField={sortField}
+                sort={sort}
                 selectedKey={selectedKey}
                 onSort={changeSort}
                 onSelect={setSelectedNeighborhood}

@@ -26,7 +26,7 @@ describe('AreaRevenueTable', () => {
         areas={[area]}
         monthsInWindow={12}
         levelLabel="Bairro"
-        sortField="revenue"
+        sort={{ field: 'revenue', direction: 'desc' }}
         selectedKey={null}
         onSort={vi.fn()}
         onSelect={onSelect}
@@ -46,7 +46,7 @@ describe('AreaRevenueTable', () => {
         areas={[area]}
         monthsInWindow={12}
         levelLabel="Bairro"
-        sortField="revenue"
+        sort={{ field: 'revenue', direction: 'desc' }}
         selectedKey={area.key}
         onSort={vi.fn()}
         onSelect={onSelect}
@@ -69,7 +69,7 @@ describe('AreaRevenueTable', () => {
         areas={[area]}
         monthsInWindow={12}
         levelLabel="Bairro"
-        sortField="revenue"
+        sort={{ field: 'revenue', direction: 'desc' }}
         selectedKey={null}
         onSort={onSort}
         onSelect={vi.fn()}
@@ -78,5 +78,22 @@ describe('AreaRevenueTable', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /tarifa média/i }))
     expect(onSort).toHaveBeenCalledWith('tariff')
+  })
+
+  it('marca a direção da coluna ordenada no cabeçalho', () => {
+    render(
+      <AreaRevenueTable
+        areas={[area]}
+        monthsInWindow={12}
+        levelLabel="Bairro"
+        sort={{ field: 'revenuePct', direction: 'asc' }}
+        selectedKey={null}
+        onSort={vi.fn()}
+        onSelect={vi.fn()}
+      />
+    )
+
+    expect(screen.getByRole('columnheader', { name: /variação/i })).toHaveAttribute('aria-sort', 'ascending')
+    expect(screen.getByRole('columnheader', { name: /receita atual/i })).toHaveAttribute('aria-sort', 'none')
   })
 })

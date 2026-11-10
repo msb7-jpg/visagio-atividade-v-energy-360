@@ -20,6 +20,27 @@ export interface AreaRevenue {
 
 export type AreaSortField = 'revenue' | 'revenuePct' | 'volumeKwh' | 'tariff'
 
+/** Coluna e direção da ordenação da tabela: `desc` do maior para o menor, `asc` do menor para o maior. */
+export interface AreaSort {
+  field: AreaSortField
+  direction: 'asc' | 'desc'
+}
+
+/** Ordenação inicial: receita atual, do maior para o menor. */
+export const DEFAULT_AREA_SORT: AreaSort = { field: 'revenue', direction: 'desc' }
+
+/**
+ * Próxima ordenação ao clicar em um cabeçalho: coluna nova começa do maior para o menor; a mesma coluna inverte.
+ *
+ * @param current - Ordenação em uso.
+ * @param field - Coluna clicada.
+ * @returns Ordenação seguinte.
+ */
+export function nextAreaSort(current: AreaSort, field: AreaSortField): AreaSort {
+  if (current.field !== field) return { field, direction: 'desc' }
+  return { field, direction: current.direction === 'desc' ? 'asc' : 'desc' }
+}
+
 const percentChange = (current: number | null, base: number | null) =>
   current !== null && base !== null && base !== 0 ? ((current - base) / base) * 100 : null
 
@@ -52,17 +73,23 @@ const normalize = (text: string) =>
   text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 
 /**
- * Busca pelo nome (sem acento e sem diferenciar maiúsculas) e ordena do maior para o menor.
+ * Busca pelo nome (sem acento e sem diferenciar maiúsculas) e ordena pela coluna, nas duas direções.
  *
  * @param areas - Bairros ou municípios.
  * @param search - Texto digitado; vazio mantém todos.
- * @param field - Coluna da ordenação.
- * @returns Lista filtrada e ordenada; valores ausentes vão para o fim.
+ * @param sort - Coluna e direção da ordenação.
+ * @returns Lista filtrada e ordenada; valores ausentes vão para o fim nas duas direções.
  */
-export function searchAndSort(areas: AreaRevenue[], search: string, field: AreaSortField): AreaRevenue[] {
+export function searchAndSort(areas: AreaRevenue[], search: string, sort: AreaSort = DEFAULT_AREA_SORT): AreaRevenue[] {
   const term = normalize(search.trim())
   const matches = term
     ? areas.filter((area) => normalize(`${area.name} ${area.place ?? ''}`).includes(term))
     : areas
-  return [...matches].sort((left, right) => (right[field] ?? Number.NEGATIVE_INFINITY) - (left[field] ?? Number.NEGATIVE_INFINITY))
+  const sign = sort.direction === 'desc' ? -1 : 1
+  return [...matches].sort((left, right) => {
+    const leftValue = left[sort.field]
+    const rightValue = right[sort.field]
+    if (leftValue === null || rightValue === null) return (leftValue === null ? 1 : 0) - (rightValue === null ? 1 : 0)
+    return sign * (leftValue - rightValue)
+  })
 }

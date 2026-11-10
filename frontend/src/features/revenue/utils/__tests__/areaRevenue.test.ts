@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BreakdownRow } from '@/features/revenue/types/revenueTypes'
-import { searchAndSort, toAreaRevenue } from '@/features/revenue/utils/areaRevenue'
+import { nextAreaSort, searchAndSort, toAreaRevenue } from '@/features/revenue/utils/areaRevenue'
 
 const row = (overrides: Partial<BreakdownRow>): BreakdownRow => ({
   municipio: 'RECIFE',
@@ -47,16 +47,25 @@ describe('searchAndSort', () => {
     toAreaRevenue(row({ bairro: 'BOA VIAGEM', receita_atual_rs: 500, volume_atual_kwh: 0 }))
   ]
 
-  it('ordena da maior para a menor receita', () => {
-    expect(searchAndSort(areas, '', 'revenue').map((area) => area.name)).toEqual(['Gracas', 'Boa Viagem', 'Pina'])
+  it('ordena da maior para a menor receita e, invertendo, da menor para a maior', () => {
+    expect(searchAndSort(areas, '', { field: 'revenue', direction: 'desc' }).map((area) => area.name)).toEqual(['Gracas', 'Boa Viagem', 'Pina'])
+    expect(searchAndSort(areas, '', { field: 'revenue', direction: 'asc' }).map((area) => area.name)).toEqual(['Pina', 'Boa Viagem', 'Gracas'])
+  })
+
+  it('começa uma coluna nova do maior para o menor e inverte ao clicar de novo', () => {
+    const byRevenue = { field: 'revenue', direction: 'desc' } as const
+    expect(nextAreaSort(byRevenue, 'tariff')).toEqual({ field: 'tariff', direction: 'desc' })
+    expect(nextAreaSort(byRevenue, 'revenue')).toEqual({ field: 'revenue', direction: 'asc' })
+    expect(nextAreaSort({ field: 'revenue', direction: 'asc' }, 'revenue')).toEqual({ field: 'revenue', direction: 'desc' })
   })
 
   it('busca sem diferenciar acento e maiúsculas, também pelo município', () => {
-    expect(searchAndSort(areas, 'graças', 'revenue').map((area) => area.name)).toEqual(['Gracas'])
-    expect(searchAndSort(areas, 'recife', 'revenue')).toHaveLength(3)
+    expect(searchAndSort(areas, 'graças').map((area) => area.name)).toEqual(['Gracas'])
+    expect(searchAndSort(areas, 'recife')).toHaveLength(3)
   })
 
-  it('manda as áreas sem tarifa para o fim', () => {
-    expect(searchAndSort(areas, '', 'tariff').at(-1)?.name).toBe('Boa Viagem')
+  it('manda as áreas sem tarifa para o fim nas duas direções', () => {
+    expect(searchAndSort(areas, '', { field: 'tariff', direction: 'desc' }).at(-1)?.name).toBe('Boa Viagem')
+    expect(searchAndSort(areas, '', { field: 'tariff', direction: 'asc' }).at(-1)?.name).toBe('Boa Viagem')
   })
 })
