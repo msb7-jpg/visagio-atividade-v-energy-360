@@ -59,9 +59,21 @@ cleanup() {
 }
 trap cleanup SIGINT SIGTERM
 
-# Garante que o modelo local na GPU esteja ativo se o provedor for 'local'
+# Garante que o provedor de LLM configurado esteja ativo
 AI_PROV=$(grep -E "^AI_PROVIDER=" "${ROOT_DIR}/backend/.env" 2>/dev/null | cut -d= -f2 | tr -d '"' | tr -d "'" || echo "")
-if [ "$AI_PROV" = "local" ] || [ -z "$AI_PROV" ]; then
+AI_URL=$(grep -E "^AI_BASE_URL=" "${ROOT_DIR}/backend/.env" 2>/dev/null | cut -d= -f2 | tr -d '"' | tr -d "'" || echo "")
+AI_MDL=$(grep -E "^AI_MODEL_NAME=" "${ROOT_DIR}/backend/.env" 2>/dev/null | cut -d= -f2 | tr -d '"' | tr -d "'" || echo "")
+
+if [[ "$AI_URL" == *"8765"* ]]; then
+    if ! curl -s -m 1 http://127.0.0.1:8765/v1/models >/dev/null 2>&1; then
+        if command -v gemini-bridge >/dev/null 2>&1; then
+            echo -e "${C_CYAN}==> Iniciando Gemini Bridge (:8765)...${C_RESET}"
+            gemini-bridge start >/dev/null 2>&1 || true
+            sleep 1
+        fi
+    fi
+    echo -e "${C_GREEN}✓ Gemini Bridge ativo em :8765 (Modelo: ${AI_MDL:-gemini-3.8-flash})${C_RESET}"
+elif [ "$AI_PROV" = "local" ] || [ -z "$AI_PROV" ] || [[ "$AI_URL" == *"1234"* ]]; then
     if ! curl -s -m 1 http://127.0.0.1:1234/health >/dev/null 2>&1 && ! curl -s -m 1 http://127.0.0.1:1234/v1/models >/dev/null 2>&1; then
         if command -v lcpp >/dev/null 2>&1; then
             echo -e "${C_CYAN}==> Iniciando LLM Local na GPU (:1234)...${C_RESET}"
@@ -69,7 +81,7 @@ if [ "$AI_PROV" = "local" ] || [ -z "$AI_PROV" ]; then
             sleep 2
         fi
     else
-        echo -e "${C_GREEN}✓ LLM Local ativo em :1234 (GPU NVIDIA RTX 5060)${C_RESET}"
+        echo -e "${C_GREEN}✓ LLM Local ativo em :1234 (GPU NVIDIA RTX 5060 - Modelo: ${AI_MDL:-Spark-X2.6-4B})${C_RESET}"
     fi
 fi
 
