@@ -477,3 +477,13 @@
   - `FeederTimeSeriesChart.tsx` e `FeederCustomersTable.tsx` removidos (sem uso); cálculos de leitura em `utils/feederSummary.ts`, com testes.
 - **Validação de Testes:**
   - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; testes da Qualidade da Rede atualizados.
+
+### [2026-11-10] - Ordenação da receita por bairro e paginação do "Fora da fila" (UI)
+- **Autor:** Bernardo H
+- **Branch:** `main`
+- **O que foi feito:**
+  - Inteligência Comercial › Receita por bairro (Fatia 04): os cabeçalhos "Receita atual", "Variação", "Volume atual" e "Tarifa média" só ordenavam do maior para o menor, e clicar de novo não fazia nada. Agora a coluna nova começa do maior para o menor, e o segundo clique inverte; a seta e o `aria-sort` acompanham a direção, e áreas sem valor ficam no fim nas duas direções (`nextAreaSort` e `searchAndSort` em `utils/areaRevenue.ts`).
+  - Fila de Inspeção › Fora da fila (Fatia 05): o "Carregar mais" virou paginação de 25 em 25 ("Página X de Y" e "Mostrando 26–50 de N UCs"), como na fila priorizada; ao pular para uma página além do que já veio, os lotes seguintes são buscados no servidor; trocar o motivo volta para a página 1.
+  - Conferido na tela com o banco real: o segundo clique em "Variação" leva Jardim Jordão e as outras quedas ao topo; "Fora da fila" com 73 páginas (1.814 UCs).
+- **Validação de Testes:**
+  - Frontend: `eslint`, Fallow, `tsc -b` e build sem erros; 883 testes aprovados (testes novos da direção da ordenação e da paginação com busca do lote seguinte).

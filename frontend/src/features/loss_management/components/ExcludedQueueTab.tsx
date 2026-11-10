@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AsyncState } from '@/components/feedback/AsyncState'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Pagination } from '@/components/ui/pagination'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useExcludedUnitsQuery } from '@/features/loss_management/hooks/useLossQueries'
 import type { ExclusionReason } from '@/features/loss_management/types/excludedTypes'
@@ -14,11 +15,29 @@ import {
 import { formatInteger } from '@/features/loss_management/utils/lossFormatters'
 
 const EMPTY_VALUE = '—'
+const PAGE_SIZE = 25
+
+type ExcludedPager = Pick<ReturnType<typeof useExcludedUnitsQuery>, 'data' | 'hasNextPage' | 'fetchNextPage'>
+
+const countLoaded = (data: ExcludedPager['data']) => data?.pages.reduce((count, page) => count + page.itens.length, 0) ?? 0
+
+/**
+ * Busca no servidor os lotes seguintes até cobrir a página pedida, ou até a lista acabar.
+ *
+ * @param pager - Estado da consulta infinita (o resultado de cada busca serve de ponto de partida para a próxima).
+ * @param needed - Quantas UCs a página pedida exige.
+ */
+async function loadUntil(pager: ExcludedPager, needed: number): Promise<void> {
+  const loaded = countLoaded(pager.data)
+  if (loaded >= needed || !pager.hasNextPage) return
+  const next = await pager.fetchNextPage()
+  if (countLoaded(next.data) > loaded) await loadUntil(next, needed)
+}
 
 /**
  * Aba "Fora da fila": UCs com queda de consumo que a fila deixou de fora, com o motivo e quando voltam a ser avaliadas.
  *
- * @returns Resumo por motivo (filtra a tabela) e a tabela paginada pelo servidor.
+ * @returns Resumo por motivo (filtra a tabela) e a tabela em páginas de 25, buscando no servidor os lotes que faltam.
  */
 export function ExcludedQueueTab() {
   const [reason, setReason] = useState<ExclusionReason | undefined>(undefined)
@@ -26,6 +45,20 @@ export function ExcludedQueueTab() {
   const units = query.data?.pages.flatMap((page) => page.itens) ?? []
   const total = query.data?.pages[0]?.total ?? 0
   const summary = query.data?.pages[0]?.resumo ?? []
+  const [page, setPage] = useState(1)
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const firstIndex = (currentPage - 1) * PAGE_SIZE
+  const pageUnits = units.slice(firstIndex, firstIndex + PAGE_SIZE)
+
+  const changeReason = (nextReason: ExclusionReason | undefined) => {
+    setReason(nextReason)
+    setPage(1)
+  }
+  const changePage = (nextPage: number) => {
+    setPage(nextPage)
+    void loadUntil(query, nextPage * PAGE_SIZE)
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -38,7 +71,7 @@ export function ExcludedQueueTab() {
             variant={reason === entry.motivo ? 'default' : 'outline'}
             aria-pressed={reason === entry.motivo}
             title={EXCLUSION_HINTS[entry.motivo]}
-            onClick={() => setReason(reason === entry.motivo ? undefined : entry.motivo)}
+            onClick={() => changeReason(reason === entry.motivo ? undefined : entry.motivo)}
           >
             {EXCLUSION_LABELS[entry.motivo]} ({formatInteger(entry.total)})
           </Button>
@@ -67,7 +100,7 @@ export function ExcludedQueueTab() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {units.map((unit) => (
+              {pageUnits.map((unit) => (
                 <TableRow key={unit.id_uc}>
                   <TableCell>
                     <span className="font-mono">{unit.id_uc}</span>
@@ -86,19 +119,14 @@ export function ExcludedQueueTab() {
               ))}
             </TableBody>
           </Table>
-          <div className="mt-3 flex items-center justify-between gap-3 text-sm">
-            <span className="text-muted-foreground">
-              Mostrando {formatInteger(units.length)} de {formatInteger(total)} UCs
+          <div className="mt-3 flex flex-col gap-3">
+            <span className="text-muted-foreground text-xs">
+              {query.isFetchingNextPage && pageUnits.length === 0
+                ? 'Carregando as UCs desta página…'
+                : `Mostrando ${formatInteger(firstIndex + 1)}–${formatInteger(firstIndex + pageUnits.length)} de ${formatInteger(total)} UCs`}
             </span>
-            {query.hasNextPage ? (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={query.isFetchingNextPage}
-                onClick={() => void query.fetchNextPage()}
-              >
-                Carregar mais
-              </Button>
+            {totalPages > 1 ? (
+              <Pagination page={currentPage} totalPages={totalPages} onPageChange={changePage} label="Paginação das UCs fora da fila" />
             ) : null}
           </div>
         </AsyncState>

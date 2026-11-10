@@ -57,7 +57,7 @@ describe('ExcludedQueueTab', () => {
     expect(await screen.findByText('UC100046')).toBeInTheDocument()
     expect(screen.getByText('Inspeção em 10/08/2025')).toBeInTheDocument()
     expect(screen.getByText('01/11/2026')).toBeInTheDocument()
-    expect(screen.getByText('Mostrando 2 de 2 UCs')).toBeInTheDocument()
+    expect(screen.getByText('Mostrando 1–2 de 2 UCs')).toBeInTheDocument()
   })
 
   it('põe a tabela e o rodapé num cartão, como a lista da fila priorizada, e os filtros fora dele', async () => {
@@ -69,7 +69,7 @@ describe('ExcludedQueueTab', () => {
     const card = table.closest('.glass-panel')
     expect(card).not.toBeNull()
     expect(card).toHaveClass('p-4')
-    expect(card).toContainElement(screen.getByText('Mostrando 2 de 2 UCs'))
+    expect(card).toContainElement(screen.getByText('Mostrando 1–2 de 2 UCs'))
     expect(card).not.toContainElement(screen.getByRole('group', { name: 'Filtrar por motivo da exclusão' }))
   })
 
@@ -119,5 +119,22 @@ describe('ExcludedQueueTab', () => {
     renderTab()
 
     expect(await screen.findByText('Nenhuma UC fora da fila')).toBeInTheDocument()
+  })
+
+  it('pagina de 25 em 25 e busca no servidor o lote que falta', async () => {
+    const units = Array.from({ length: 30 }, (_, index) => ({ ...GD_UNIT, id_uc: `UC${String(index + 1).padStart(6, '0')}` }))
+    mockedApi.listExcludedUnits
+      .mockResolvedValueOnce({ ...queue(units.slice(0, 25)), total: 30 })
+      .mockResolvedValueOnce({ ...queue(units.slice(25)), total: 30 })
+    renderTab()
+
+    expect(await screen.findByText('Mostrando 1–25 de 30 UCs')).toBeInTheDocument()
+    expect(screen.getByText('Página 1 de 2')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
+
+    expect(await screen.findByText('Mostrando 26–30 de 30 UCs')).toBeInTheDocument()
+    expect(screen.getByText('UC000026')).toBeInTheDocument()
+    expect(screen.queryByText('UC000001')).not.toBeInTheDocument()
+    expect(mockedApi.listExcludedUnits).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 25 }), expect.anything())
   })
 })
