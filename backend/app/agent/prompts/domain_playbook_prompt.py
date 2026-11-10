@@ -1,34 +1,50 @@
-"""Playbook de Domínio e Cruzamento Multidimensional para o Agente Analítico V-Energy Grid 360."""
+"""Playbook de Domínio e Metodologia de Causa-Raiz para o Agente Analítico V-Energy Grid 360."""
 
 DOMAIN_PLAYBOOK_PROMPT = """
-PLAYBOOK DE INVESTIGAÇÃO ANALÍTICA, CRUZAMENTO DE DADOS E CAUSA-RAIZ (MANDATÓRIO):
+METODOLOGIA DE INVESTIGAÇÃO ANALÍTICA, PRIMEIROS PRINCÍPIOS E CAUSA-RAIZ (MANDATÓRIO):
 
-Você tem permissão e DEVE gerar de 2 a 3 consultas SQL separadas por ponto-e-vírgula (`;`)
-DENTRO DE UM ÚNICO BLOCO ```sql ... ``` SEMPRE que a pergunta do usuário pedir:
-- Explicação de causa-raiz ("por que o volume caiu?", "por que a receita subiu só 8%?",
-  "ninguém sabe explicar por quê", "o que explica a divergência entre tarifa e receita?");
-- Diagnóstico integrado ou cruzamento entre dimensões (Receita/Preço/Volume + Geração Distribuída +
-  Fraudes/Inspeções, ou DEC/FEC + Causas de Ocorrência, ou Visão 360 de uma UC);
-- Evidências nas tabelas que comprovam teses de negócio.
-Para perguntas simples e diretas (um único indicador, contagem ou ranking simples), gere apenas 1 consulta SQL.
+Você possui capacidade de execução Multi-Query e DEVE emitir de 2 a 3 consultas SQL separadas por
+ponto-e-vírgula (`;`) DENTRO DE UM ÚNICO BLOCO ```sql ... ``` sempre que a pergunta exigir:
+- Investigação de causa-raiz ("por que a receita/volume variou?", "o que explica a divergência entre
+  tarifa e faturamento?", "qual o motivo da queda de consumo?");
+- Diagnóstico multidimensional cruzando Faturamento (Preço vs. Volume), Geração Distribuída (GD) e
+  Perdas Não-Técnicas (Fraudes/Inspeções), ou Qualidade da Rede (DEC/FEC + Causas), ou Visão 360 de UC.
+Para perguntas diretas de métrica única, contagem ou ranking simples, gere apenas 1 consulta SQL.
 
-REGRAS DE DOMÍNIO DOS PILARES DO NEGÓCIO V-ENERGY:
+PRINCÍPIOS DE ENGENHARIA E ECONOMIA DA DISTRIBUIÇÃO DE ENERGIA:
 
-1. DIAGNÓSTICO EXECUTIVO CENTRAL: POR QUE O VOLUME CAIU (~4%) E A RECEITA SUBIU SÓ 8%?
-   - Janelas Canônicas de Comparação (12 meses fechados):
-     * "Primeiro ano da base": `competencia BETWEEN '2022-07' AND '2023-06'`
-     * "Últimos 12 meses" / "Último ano": `competencia BETWEEN '2025-07' AND '2026-06'`
-     * "Ano anterior": `competencia BETWEEN '2024-07' AND '2025-06'`
-   - A explicação baseada em dados exige cruzar 3 dimensões no MESMO bloco ```sql ... ```:
-     (1) Decomposição Efeito-Preço (+R$ 19,6M pela alta da tarifa média de R$ 0,6919 para R$ 0,7783/kWh)
-         vs Efeito-Volume (-R$ 6,2M pela queda física de 227,05M para 218,03M kWh);
-     (2) Geração Distribuída Solar (`possui_gd = 1`): 3.510 UCs de médio/alto consumo instalaram painéis
-         solares e reduziram sua compra da rede em -11,20M kWh (explicando ~97% da queda líquida),
-         enquanto as 41.490 UCs sem GD aumentaram o consumo em +2,17M kWh;
-     (3) Fraudes Concentradas em 4 Bairros (`fato_inspecoes_perdas`): nos clientes sem GD, a perda residual
-         concentrou-se em Iputinga, Jardim Jordão, Prazeres e Macaxeira (835 fraudes confirmadas e 1,46M kWh).
-   - SEMPRE que perguntarem por que o volume caiu e a receita subiu só 8% (ou diagnóstico de receita/volume),
-     emita EXATAMENTE este bloco multi-consulta com as 3 queries juntas:
+1. DECOMPOSIÇÃO FINANCEIRA (EFEITO-PREÇO VS. EFEITO-VOLUME) E ÁRVORE DE CAUSA-RAIZ DE VOLUME
+   - Identidade Fundamental da Receita:
+     `Receita Total (R$) = Volume Faturado (kWh) * Tarifa Média Realizada (R$/kWh)`.
+   - Decomposição de Variação entre dois períodos quaisquer T0 (inicial) e T1 (final):
+     * Tarifa Média: `P0 = Receita_T0 / Volume_T0` e `P1 = Receita_T1 / Volume_T1`
+     * `Efeito Preço (R$) = (P1 - P0) * Volume_T0` (impacto puro do reajuste tarifário/bandeiras)
+     * `Efeito Volume (R$) = (Volume_T1 - Volume_T0) * P0` (impacto puro da expansão ou retração física)
+     * `Efeito Cruzado (R$) = (P1 - P0) * (Volume_T1 - Volume_T0)`
+   - Árvore de Causa-Raiz para Queda de Volume ou Receita Abaixo do Reajuste Tarifário:
+     Sempre que a receita crescer menos que o aumento da tarifa (ou cair), significa que o Efeito-Volume
+     foi negativo (`Volume_T1 < Volume_T0`). No setor elétrico, a perda de volume faturado decorre de dois
+     vetores estruturais que você DEVE investigar simultaneamente em consultas separadas por `;`:
+     * Vetor A — Autoconsumo por Geração Distribuída Solar (`dim_unidade_consumidora.possui_gd`):
+       UCs que instalam geração solar (`possui_gd = 1`) injetam energia e abatem o consumo faturado da rede.
+       Segregue a evolução do volume entre `possui_gd = 1` e `possui_gd = 0` entre T0 e T1 para quantificar
+       quanto da retração física foi causada pela migração solar legítima vs. comportamento dos clientes sem GD.
+     * Vetor B — Perdas Não-Técnicas / Fraudes Comerciais (`fato_inspecoes_perdas`):
+       Em clientes sem GD (`possui_gd = 0`), quedas localizadas de volume faturado ou perdas residuais são
+       explicadas por irregularidades/desvios ("gatos", by-pass, medidor adulterado). Consulte
+       `fato_inspecoes_perdas` cruzada com `dim_unidade_consumidora` para apurar total de inspeções,
+       fraudes confirmadas (`SUM(irregularidade_constatada)`), assertividade e `SUM(kwh_recuperado)`.
+
+   - Parametrização Dinâmica de Períodos (T0 vs. T1) e Filtros de Escopo:
+     * Se o usuário especificar períodos (ex: "2023 vs 2024", "1º semestre de 2025 vs 2026") ou filtros
+       (ex: classe `'RESIDENCIAL'`, município `'OLINDA'`), aplique exatamente os períodos e filtros pedidos
+       nas cláusulas `CASE WHEN` e `WHERE` das consultas.
+     * Se a pergunta for ampla sobre o histórico da concessão sem especificar datas (ex: "por que o volume
+       caiu e a receita subiu só 8%?", "o que explica a divergência histórica entre tarifa e receita?"),
+       utilize a janela canônica de 12 meses fechados:
+       T0 = Primeiro Ano (`'2022-07' AND '2023-06'`) vs. T1 = Últimos 12 Meses (`'2025-07' AND '2026-06'`).
+
+   - Padrão Estrutural de Consultas para Diagnóstico de Receita e Volume (adapte T0, T1 e filtros conforme a pergunta):
 ```sql
 -- [CONSULTA 1: Decomposicao Receita Preco e Volume]
 WITH base AS (
@@ -46,13 +62,15 @@ WITH base AS (
   FROM fato_faturamento
 ),
 calc AS (
-  SELECT *, (rec_ano1_rs / vol_ano1_kwh) AS p0, (rec_ult12m_rs / vol_ult12m_kwh) AS p1 FROM base
+  SELECT *, (rec_ano1_rs / NULLIF(vol_ano1_kwh, 0)) AS p0,
+         (rec_ult12m_rs / NULLIF(vol_ult12m_kwh, 0)) AS p1
+  FROM base
 )
 SELECT ucs_ano1, ucs_ult12m,
        ROUND(rec_ano1_rs, 2) AS receita_ano1_rs, ROUND(rec_ult12m_rs, 2) AS receita_ult12m_rs,
-       ROUND((rec_ult12m_rs - rec_ano1_rs) * 100.0 / rec_ano1_rs, 2) AS var_receita_pct,
+       ROUND((rec_ult12m_rs - rec_ano1_rs) * 100.0 / NULLIF(rec_ano1_rs, 0), 2) AS var_receita_pct,
        ROUND(vol_ano1_kwh, 2) AS volume_ano1_kwh, ROUND(vol_ult12m_kwh, 2) AS volume_ult12m_kwh,
-       ROUND((vol_ult12m_kwh - vol_ano1_kwh) * 100.0 / vol_ano1_kwh, 2) AS var_volume_pct,
+       ROUND((vol_ult12m_kwh - vol_ano1_kwh) * 100.0 / NULLIF(vol_ano1_kwh, 0), 2) AS var_volume_pct,
        ROUND(p0, 4) AS tarifa_media_ano1, ROUND(p1, 4) AS tarifa_media_ult12m,
        ROUND((p1 - p0) * vol_ano1_kwh, 2) AS efeito_preco_rs,
        ROUND((vol_ult12m_kwh - vol_ano1_kwh) * p0, 2) AS efeito_volume_rs,
@@ -81,29 +99,29 @@ FROM fato_inspecoes_perdas i JOIN dim_unidade_consumidora u ON i.id_uc = u.id_uc
 GROUP BY u.bairro, u.municipio ORDER BY fraudes_confirmadas DESC LIMIT 4;
 ```
 
-2. GESTÃO DE PERDAS, FRAUDES NOS 4 BAIRROS A PARTIR DE MAIO/2025 E FILA DE INSPEÇÃO
-   - Nos clientes SEM painel solar (`possui_gd = 0`), houve queda brusca de consumo a partir de maio de 2025
-     (`'2025-05'`) nos 4 bairros críticos (`'IPUTINGA'`, `'MACAXEIRA'`, `'JARDIM JORDAO'`, `'PRAZERES'`).
-   - Regra de Ouro da Fila de Inspeção: NUNCA enviar equipe para fiscalizar queda de consumo sem filtrar
-     `possui_gd = 0` na `dim_unidade_consumidora`, evitando mandar fiscal em cliente honesto com placa solar.
-   - Se perguntarem especificamente sobre a evidência de fraude nos 4 bairros a partir de maio de 2025, combine
-     em um único bloco ```sql```: (1) comparação da média por fatura (`ROUND(AVG(CASE WHEN f.competencia BETWEEN
-     '2024-07' AND '2025-04' THEN f.consumo_faturado_kwh END), 2)` vs `'2025-05' AND '2026-06'`, sem `ELSE 0`)
-     das UCs `possui_gd = 0` nesses 4 bairros; e (2) a `CONSULTA 3` de `fato_inspecoes_perdas`.
+2. GESTÃO DE PERDAS COMERCIAIS, ANOMALIAS DE CONSUMO E FILA DE FISCALIZAÇÃO
+   - Regra de Ouro da Fiscalização: NUNCA selecione UCs para inspeção por queda de consumo sem filtrar
+     `possui_gd = 0` na `dim_unidade_consumidora`, pois clientes com geração solar têm queda legítima de
+     faturamento de rede e gerariam visitas improcedentes (falsos positivos).
+   - Para investigar quebras estruturais de consumo em clientes sem GD (ex: queda acentuada a partir de
+     maio/2025 `'2025-05'` em bairros suspeitos como `'IPUTINGA'`, `'MACAXEIRA'`, `'JARDIM JORDAO'`,
+     `'PRAZERES'`), compare a média por fatura antes vs. depois usando `ROUND(AVG(CASE WHEN f.competencia
+     BETWEEN <inicio_antes> AND <fim_antes> THEN f.consumo_faturado_kwh END), 2)` (sem `ELSE 0`, para não
+     diluir a média com zeros fora da janela) filtrando `u.possui_gd = 0`, e combine no mesmo bloco ```sql```
+     com a consulta de assertividade e recuperação de `fato_inspecoes_perdas`.
 
 3. QUALIDADE DA REDE (DEC/FEC - PRODIST MÓDULO 8 ANEEL) E CAUSAS DE INTERRUPÇÃO
-   - Na `fato_qualidade_alimentador`, `dec_apurado_horas` e `fec_apurado_vezes` são valores mensais. Para obter
-     o DEC ou FEC acumulado de um alimentador em uma janela (ex: últimos 12 meses `'2025-07' a '2026-06'`), use
-     SEMPRE `ROUND(SUM(dec_apurado_horas), 2)` e `ROUND(SUM(fec_apurado_vezes), 2)` agrupando por `id_alimentador`.
-   - Quando perguntarem quais alimentadores violaram metas e quais as causas das falhas, gere 2 consultas no
-     mesmo bloco ```sql```: (1) ranking de alimentadores por `ROUND(SUM(dec_apurado_horas), 2)` e `MAX(violou_meta)`
-     na `fato_qualidade_alimentador`; (2) causas de interrupção (`causa`, `COUNT(*)`, `ROUND(SUM(duracao_horas), 2)`)
-     na `fato_ocorrencias_rede`.
+   - Na `fato_qualidade_alimentador`, `dec_apurado_horas` e `fec_apurado_vezes` são valores mensais aditivos.
+     Para obter o DEC ou FEC acumulado de um alimentador em qualquer janela temporal, utilize sempre
+     `ROUND(SUM(dec_apurado_horas), 2)` e `ROUND(SUM(fec_apurado_vezes), 2)` agrupando por `id_alimentador`.
+   - Ao investigar alimentadores críticos ou que violaram metas (`MAX(violou_meta)`), gere 2 consultas no
+     mesmo bloco ```sql```: (1) ranking de alimentadores na `fato_qualidade_alimentador`; e (2) perfil de
+     causas de interrupção (`causa`, `COUNT(*)`, `ROUND(SUM(duracao_horas), 2)`) na `fato_ocorrencias_rede`.
 
-4. VISÃO 360 DA UC E ATENDIMENTO AO CLIENTE
-   - Códigos de UC no banco seguem o formato sem hífen `'UC100000'` a `'UC144999'`. Se o usuário informar
-     `'UC-100001'` ou `'UC100001'`, filtre com `REPLACE(UPPER(id_uc), '-', '')` (para `'UC-0001'`, `'UC100001'`).
-   - Para diagnóstico 360 de uma UC, gere 2 consultas no mesmo bloco ```sql```: (1) cadastro, `possui_gd` e
-     resumo de faturas/status em `fato_faturamento`; (2) interrupções em `fato_ocorrencias_rede` e chamados
-     em `fato_atendimentos`.
+4. VISÃO 360 DA UNIDADE CONSUMIDORA E ATENDIMENTO
+   - Os identificadores no banco seguem o padrão sem hífen (`'UC100000'` a `'UC144999'`). Normalize qualquer
+     entrada do usuário com `REPLACE(UPPER(id_uc), '-', '')`.
+   - Para diagnóstico 360 de uma UC, combine 2 consultas no mesmo bloco ```sql```: (1) perfil cadastral,
+     `possui_gd` e resumo de faturas/inadimplência em `fato_faturamento`; (2) histórico de interrupções em
+     `fato_ocorrencias_rede` e chamados/CSAT em `fato_atendimentos`.
 """

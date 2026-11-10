@@ -9,6 +9,8 @@ import pytest
 from app.agent.nodes.sql_executor import sql_executor_node
 from app.agent.nodes.sql_validator import split_and_extract_sql_queries, validate_sql_query
 from app.agent.nodes.synthesizer import _serialize_query_results
+from app.agent.prompts.domain_playbook_prompt import DOMAIN_PLAYBOOK_PROMPT
+from app.agent.prompts.synthesizer_prompt import SYNTHESIZER_PROMPT
 from app.agent.tools.query_runner import execute_sql_query
 from app.core.constants import SqlErrorCategory
 
@@ -64,40 +66,21 @@ GROUP BY u.bairro, u.municipio ORDER BY fraudes_confirmadas DESC LIMIT 4;
 
 SEED_CROSS_DOMAIN_SQL = """
 CREATE TABLE dim_unidade_consumidora (
-    id_uc TEXT PRIMARY KEY,
-    municipio TEXT,
-    bairro TEXT,
-    classe_consumo TEXT,
-    possui_gd BOOLEAN
+    id_uc TEXT PRIMARY KEY, municipio TEXT, bairro TEXT, classe_consumo TEXT, possui_gd BOOLEAN
 );
 CREATE TABLE fato_faturamento (
-    id_fatura TEXT PRIMARY KEY,
-    id_uc TEXT,
-    competencia TEXT,
-    valor_total_rs REAL,
-    consumo_faturado_kwh REAL,
-    status_pagamento TEXT
+    id_fatura TEXT PRIMARY KEY, id_uc TEXT, competencia TEXT,
+    valor_total_rs REAL, consumo_faturado_kwh REAL, status_pagamento TEXT
 );
-CREATE TABLE fato_inspecoes_perdas (
-    id_uc TEXT,
-    irregularidade_constatada INT,
-    kwh_recuperado REAL
-);
+CREATE TABLE fato_inspecoes_perdas (id_uc TEXT, irregularidade_constatada INT, kwh_recuperado REAL);
 CREATE TABLE fato_qualidade_alimentador (
-    id_alimentador TEXT,
-    competencia TEXT,
-    dec_apurado_horas REAL,
-    fec_apurado_vezes REAL,
-    violou_meta INT
+    id_alimentador TEXT, competencia TEXT, dec_apurado_horas REAL, fec_apurado_vezes REAL, violou_meta INT
 );
 CREATE TABLE fato_ocorrencias_rede (
-    id_alimentador TEXT,
-    competencia TEXT,
-    causa TEXT,
-    duracao_horas REAL
+    id_alimentador TEXT, competencia TEXT, causa TEXT, duracao_horas REAL
 );
 
-INSERT INTO dim_unidade_consumidora VALUES 
+INSERT INTO dim_unidade_consumidora VALUES
 ('UC_NOGD_1', 'RECIFE', 'BOA VIAGEM', 'RESIDENCIAL', 0),
 ('UC_GD_1', 'RECIFE', 'BOA VIAGEM', 'RESIDENCIAL', 1),
 ('UC_FR_1', 'RECIFE', 'IPUTINGA', 'RESIDENCIAL', 0),
@@ -106,7 +89,7 @@ INSERT INTO dim_unidade_consumidora VALUES
 ('UC_FR_4', 'JABOATAO', 'PRAZERES', 'COMERCIAL', 0),
 ('UC100001', 'RECIFE', 'BOA VIAGEM', 'RESIDENCIAL', 1);
 
-INSERT INTO fato_faturamento VALUES 
+INSERT INTO fato_faturamento VALUES
 ('F1', 'UC_NOGD_1', '2022-08', 157106191.43, 196383989.0, 'PAGA'),
 ('F2', 'UC_NOGD_1', '2025-08', 169682458.59, 198555000.0, 'PAGA'),
 ('F3', 'UC_GD_1', '2022-08', 1000.0, 20000000.0, 'PAGA'),
@@ -121,16 +104,12 @@ INSERT INTO fato_faturamento VALUES
 ('F12', 'UC_FR_4', '2025-06', 100.0, 200.0, 'PAGA'),
 ('F13', 'UC100001', '2025-08', 250.0, 300.0, 'VENCIDA');
 
-INSERT INTO fato_inspecoes_perdas VALUES 
-('UC_FR_1', 200, 1000.0),
-('UC_FR_2', 150, 800.0),
-('UC_FR_3', 250, 1200.0),
-('UC_FR_4', 235, 900.0);
+INSERT INTO fato_inspecoes_perdas VALUES
+('UC_FR_1', 200, 1000.0), ('UC_FR_2', 150, 800.0), ('UC_FR_3', 250, 1200.0), ('UC_FR_4', 235, 900.0);
 
-INSERT INTO fato_qualidade_alimentador VALUES 
-('ALM-JAB-016', '2025-08', 43.9, 12.0, 1);
+INSERT INTO fato_qualidade_alimentador VALUES ('ALM-JAB-016', '2025-08', 43.9, 12.0, 1);
 
-INSERT INTO fato_ocorrencias_rede VALUES 
+INSERT INTO fato_ocorrencias_rede VALUES
 ('ALM-JAB-016', '2025-08', 'VEGETACAO', 15.0),
 ('ALM-JAB-016', '2025-08', 'DESCARGA_ATMOSFERICA', 10.0),
 ('ALM-JAB-016', '2025-08', 'FALHA_EQUIPAMENTO', 5.0);
@@ -299,3 +278,32 @@ def test_four_neighborhoods_may_2025_consumption_drop_without_gd():
     assert len(rows) == 4
     for row_record in rows:
         assert float(row_record["media_depois_maio25"]) < float(row_record["media_antes_maio25"])
+
+
+def test_generalized_fisher_decomposition_custom_period_and_prompt_decoupling():
+    """Garante que os prompts não têm gabarito hardcoded e suportam períodos e recortes arbitrários."""
+    for hardcoded_value in ("3.510 UCs", "835 fraudes", "+R$ 19,6M", "-R$ 6,2M"):
+        assert hardcoded_value not in DOMAIN_PLAYBOOK_PROMPT
+        assert hardcoded_value not in SYNTHESIZER_PROMPT
+
+    custom_period_sql = """
+    -- [CONSULTA 1: Decomposicao Customizada 2024 vs 2025 Comercial Jaboatao]
+    SELECT u.municipio,
+           SUM(CASE WHEN f.competencia = '2024-08' THEN f.consumo_faturado_kwh ELSE 0 END) AS vol_t0,
+           SUM(CASE WHEN f.competencia = '2025-06' THEN f.consumo_faturado_kwh ELSE 0 END) AS vol_t1
+    FROM fato_faturamento f
+    JOIN dim_unidade_consumidora u ON f.id_uc = u.id_uc
+    WHERE u.classe_consumo = 'COMERCIAL' AND u.municipio = 'JABOATAO'
+    GROUP BY u.municipio;
+
+    -- [CONSULTA 2: Fraudes Confirmadas no Recorte Comercial Jaboatao]
+    SELECT u.bairro, SUM(i.irregularidade_constatada) AS fraudes
+    FROM fato_inspecoes_perdas i
+    JOIN dim_unidade_consumidora u ON i.id_uc = u.id_uc
+    WHERE u.classe_consumo = 'COMERCIAL' AND u.municipio = 'JABOATAO'
+    GROUP BY u.bairro ORDER BY fraudes DESC;
+    """
+    rows = execute_sql_query.invoke({"query": custom_period_sql})
+    assert len(rows) == 3
+    vol_row = next(r for r in rows if str(r.get("_bloco_consulta", "")).startswith("consulta_1"))
+    assert float(vol_row["vol_t1"]) < float(vol_row["vol_t0"])
